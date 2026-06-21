@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Potent Logistics</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'DM Sans','Segoe UI',sans-serif; background:#080808; color:#fff; }
+  #root { min-height:100vh; }
+  #error-box { display:none; padding:20px; background:#1a0000; color:#ff6b6b; font-family:monospace; font-size:13px; white-space:pre-wrap; word-break:break-word; line-height:1.6; }
+</style>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+<div id="error-box"></div>
+<div id="root">Loading...</div>
+
+<script>
+window.onerror = function(msg, src, line, col, err) {
+  var box = document.getElementById("error-box");
+  box.style.display = "block";
+  box.innerHTML = "<h2 style='margin-bottom:10px;'>⚠ Page Error</h2>" +
+                   "<div>" + String(msg).replace(/</g,"&lt;") + " (line " + line + ")</div>" +
+                   "<p style='margin-top:16px;color:#aaa;'>Screenshot this and send it over.</p>";
+  document.getElementById("root").style.display = "none";
+};
+</script>
+
+<script src="./app.js"></script>
+
+</body>
+</html>
