@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>POTENT Employee Handbook — All 33 Chapters</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#080808; color:#F2F2F2; font-family:'Segoe UI',Arial,sans-serif; }
+.top-bar { background:#080808; border-bottom:1px solid #1a1a1a; padding:10px 16px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+.top-bar-title { font-size:14px; font-weight:900; }
+.top-bar-title span { color:#F0E000; }
+.back-btn { background:#F0E000; color:#000; border:none; border-radius:6px; padding:5px 12px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; }
+.toc { max-width:700px; margin:0 auto; padding:20px 16px 60px; }
+.toc h1 { font-size:22px; font-weight:900; margin-bottom:4px; }
+.toc-sub { font-size:10px; color:#555; text-transform:uppercase; letter-spacing:1px; margin-bottom:20px; }
+.part-label { font-size:10px; color:#F0E000; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; margin:20px 0 8px; }
+.chap-btn { display:flex; align-items:center; justify-content:space-between; width:100%; background:#111; border:1px solid #222; border-radius:8px; padding:12px 14px; margin-bottom:6px; cursor:pointer; text-align:left; font-family:inherit; }
+.chap-btn:hover { border-color:#F0E000; }
+.chap-num { font-size:10px; color:#F0E000; font-weight:700; margin-bottom:2px; }
+.chap-name { font-size:13px; color:#F2F2F2; font-weight:600; }
+.chap-arrow { color:#F0E000; font-size:14px; flex-shrink:0; }
+.chapter-view { max-width:700px; margin:0 auto; padding:20px 16px 80px; display:none; }
+.ch-header { background:#F0E00010; border:1px solid #F0E00033; border-radius:10px; padding:14px 16px; margin-bottom:18px; }
+.ch-num { font-size:10px; color:#F0E000; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:3px; }
+.ch-title { font-size:20px; font-weight:900; color:#F2F2F2; }
+h2 { font-size:15px; font-weight:800; color:#F0E000; margin:20px 0 8px; }
+h3 { font-size:13px; font-weight:700; color:#F2F2F2; margin:14px 0 6px; }
+p { font-size:12px; color:#888; line-height:1.9; margin-bottom:10px; }
+.rule { background:#1a1a1a; border-left:3px solid #F0E000; border-radius:0 7px 7px 0; padding:10px 14px; margin-bottom:8px; font-size:12px; color:#888; line-height:1.7; }
+.rule strong { color:#F0E000; }
+.rule.red { border-color:#E53E3E; }
+.rule.red strong { color:#E53E3E; }
+.rule.green { border-color:#1DB954; }
+.rule.green strong { color:#1DB954; }
+.rule.purple { border-color:#9F7AEA; }
+.rule.purple strong { color:#9F7AEA; }
+.ul { list-style:none; margin-bottom:12px; }
+.ul li { font-size:12px; color:#888; padding:5px 0; border-bottom:1px solid #1a1a1a; display:flex; gap:8px; line-height:1.5; }
+.ul li::before { content:"✓"; color:#F0E000; font-weight:700; flex-shrink:0; }
+.ul li:last-child { border-bottom:none; }
+.quote { background:#111; border:1px solid #222; border-radius:8px; padding:14px 16px; margin:12px 0; font-size:12px; color:#F0E000; font-style:italic; line-height:1.9; }
+table { width:100%; border-collapse:collapse; margin-bottom:14px; font-size:11px; }
+th { background:#1a1a1a; color:#888; padding:7px 10px; font-weight:700; text-align:left; text-transform:uppercase; letter-spacing:0.8px; }
+td { padding:8px 10px; border-bottom:1px solid #1a1a1a; color:#888; }
+td strong { color:#F2F2F2; }
+.summary-box { background:#F0E00008; border:1px solid #F0E00022; border-radius:8px; padding:12px 14px; margin-top:16px; font-size:12px; color:#F0E000; line-height:1.8; }
+.nav-btns { display:flex; gap:8px; margin-top:24px; }
+.nav-btn { flex:1; background:#111; border:1px solid #333; border-radius:8px; padding:10px; font-size:12px; font-weight:700; color:#888; cursor:pointer; font-family:inherit; text-align:center; }
+.nav-btn:hover { border-color:#F0E000; color:#F0E000; }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="top-bar-title">POTENT <span>HANDBOOK</span></div>
+  <button class="back-btn" onclick="showTOC()">☰ All Chapters</button>
+</div>
+
+<!-- TABLE OF CONTENTS -->
+<div class="toc" id="toc">
+  <h1>Employee Handbook</h1>
+  <div class="toc-sub">33 Chapters · POTENT OPERATIONS LLC · Confidential</div>
+
+  <div class="part-label">Part I — The POTENT Sales Playbook</div>
+  <button class="chap-btn" onclick="showChapter(1)"><div><div class="chap-num">Chapter 1</div><div class="chap-name">The POTENT Way — Mission, Philosophy & The 10 Rules</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(2)"><div><div class="chap-num">Chapter 2</div><div class="chap-name">Know the Business Before You Sell It</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(3)"><div><div class="chap-num">Chapter 3</div><div class="chap-name">Know Your Customer — The Ideal Customer Profile</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(4)"><div><div class="chap-num">Chapter 4</div><div class="chap-name">Finding Prospects & Building the Pipeline</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(5)"><div><div class="chap-num">Chapter 5</div><div class="chap-name">The Discovery Conversation</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(6)"><div><div class="chap-num">Chapter 6</div><div class="chap-name">Mastering Questions</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(7)"><div><div class="chap-num">Chapter 7</div><div class="chap-name">The POTENT Calling & Conversation System</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(8)"><div><div class="chap-num">Chapter 8</div><div class="chap-name">Decision Makers, Qualification & Real Opportunities</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(9)"><div><div class="chap-num">Chapter 9</div><div class="chap-name">Objections & Reframing</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(10)"><div><div class="chap-num">Chapter 10</div><div class="chap-name">Closing & Getting Commitment</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(11)"><div><div class="chap-num">Chapter 11</div><div class="chap-name">Follow-Up Systems & Account Growth</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(12)"><div><div class="chap-num">Chapter 12</div><div class="chap-name">Sales Team Standards, Daily Numbers & the Scorecard</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(13)"><div><div class="chap-num">Chapter 13</div><div class="chap-name">Building the POTENT Sales Team</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(14)"><div><div class="chap-num">Chapter 14</div><div class="chap-name">The POTENT Vision, Culture & Founder Message</div></div><div class="chap-arrow">›</div></button>
+
+  <div class="part-label">Part I Extended — The Extended Playbook</div>
+  <button class="chap-btn" onclick="showChapter(15)"><div><div class="chap-num">Chapter 15</div><div class="chap-name">The POTENT Prospecting Machine</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(16)"><div><div class="chap-num">Chapter 16</div><div class="chap-name">The POTENT Sales Conversation System</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(17)"><div><div class="chap-num">Chapter 17</div><div class="chap-name">The POTENT Lead Vault System</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(18)"><div><div class="chap-num">Chapter 18</div><div class="chap-name">The POTENT Customer Intake & Protection System</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(19)"><div><div class="chap-num">Chapter 19</div><div class="chap-name">The POTENT Commission & Incentive Plan</div></div><div class="chap-arrow">›</div></button>
+
+  <div class="part-label">Part II — Operating POTENT</div>
+  <button class="chap-btn" onclick="showChapter(20)"><div><div class="chap-num">Chapter 20</div><div class="chap-name">Sales Team Management System</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(21)"><div><div class="chap-num">Chapter 21</div><div class="chap-name">The POTENT Operations System</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(22)"><div><div class="chap-num">Chapter 22</div><div class="chap-name">The POTENT Scaling Roadmap</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(23)"><div><div class="chap-num">Chapter 23</div><div class="chap-name">The POTENT Leadership System</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(24)"><div><div class="chap-num">Chapter 24</div><div class="chap-name">The POTENT Legacy System</div></div><div class="chap-arrow">›</div></button>
+
+  <div class="part-label">Part III — The POTENT Operations Playbook</div>
+  <button class="chap-btn" onclick="showChapter(25)"><div><div class="chap-num">Chapter 25</div><div class="chap-name">The POTENT App — If It's Not In the App, It Didn't Happen</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(26)"><div><div class="chap-num">Chapter 26</div><div class="chap-name">The Three Roles — Dispatch, Closer, Operations</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(27)"><div><div class="chap-num">Chapter 27</div><div class="chap-name">Daily Operating System</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(28)"><div><div class="chap-num">Chapter 28</div><div class="chap-name">Performance & Rewards</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(29)"><div><div class="chap-num">Chapter 29</div><div class="chap-name">Compensation, Rewards & Ownership</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(30)"><div><div class="chap-num">Chapter 30</div><div class="chap-name">Leadership & Scaling POTENT</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(31)"><div><div class="chap-num">Chapter 31</div><div class="chap-name">SOPs & Critical Situations</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(32)"><div><div class="chap-num">Chapter 32</div><div class="chap-name">Compliance & Safety SOP</div></div><div class="chap-arrow">›</div></button>
+  <button class="chap-btn" onclick="showChapter(33)"><div><div class="chap-num">Chapter 33</div><div class="chap-name">Emergency & Escalation SOP</div></div><div class="chap-arrow">›</div></button>
+</div>
+
+<!-- CHAPTER VIEW -->
+<div class="chapter-view" id="chapter-view">
+  <div id="chapter-content"></div>
+  <div class="nav-btns">
+    <button class="nav-btn" id="prev-btn" onclick="prevChapter()">← Previous</button>
+    <button class="nav-btn" onclick="showTOC()">☰ All Chapters</button>
+    <button class="nav-btn" id="next-btn" onclick="nextChapter()">Next →</button>
+  </div>
+</div>
+
+<script>
+var current = 1;
+
+var chapters = {
+1: {
+  num:"Chapter 1", title:"The POTENT Way",
+  html:`<h2>Our Mission</h2>
+<p>POTENT OPERATIONS exists to provide fast, dependable transportation and commercial solutions when timing matters. We help businesses stay moving, avoid costly delays, and solve problems when their normal plan no longer works. We are not simply moving freight — we are protecting businesses.</p>
+<h2>What We Do</h2>
+<ul class="ul"><li>Expedited transportation & same-day freight</li><li>Emergency transportation</li><li>Commercial deliveries & last-mile transportation</li><li>Trade show and event transportation</li><li>Specialty freight</li><li>Commercial curbside cleanouts ($500+ minimum)</li><li>Large non-hazardous removal projects</li></ul>
+<h2>What We Don't Do</h2>
+<ul class="ul"><li>Transport hazardous materials</li><li>Move household goods</li><li>Enter homes for junk removal</li><li>Perform inside moving services</li><li>Compete to be the cheapest company</li></ul>
+<h2>The POTENT Philosophy</h2>
+<p>We believe people buy certainty. People buy reliability. People buy professionalism. People buy communication. People buy trust. They rarely buy the lowest price. Our goal is to become the first phone call customers make when something important needs to move.</p>
+<h2>The 10 Rules of POTENT Sales</h2>
+<div class="rule green"><strong>Rule 1 — Problems Before Products.</strong> Never begin with what we do. Begin with understanding what the customer needs.</div>
+<div class="rule green"><strong>Rule 2 — Questions Create Sales.</strong> The person asking thoughtful questions controls the conversation.</div>
+<div class="rule green"><strong>Rule 3 — Listen More Than You Speak.</strong> Listen to understand. Not to respond.</div>
+<div class="rule green"><strong>Rule 4 — Diagnose Before You Recommend.</strong> Never offer a solution until you understand the situation.</div>
+<div class="rule green"><strong>Rule 5 — Sell Outcomes.</strong> We don't sell trucks. We sell confidence, speed, reliability, and peace of mind.</div>
+<div class="rule green"><strong>Rule 6 — Price Reflects Value.</strong> We don't apologize for professional pricing. Our value is measured by the problems we solve.</div>
+<div class="rule green"><strong>Rule 7 — Never Argue.</strong> If a customer disagrees, ask another question. Curiosity builds trust. Arguments destroy it.</div>
+<div class="rule green"><strong>Rule 8 — Every Conversation Ends With a Next Step.</strong> A quote. A follow-up. A meeting. Always move the relationship forward.</div>
+<div class="rule green"><strong>Rule 9 — Relationships Beat Transactions.</strong> One satisfied customer is worth more than one hundred cold calls. Take care of people and they will remember you.</div>
+<div class="rule green"><strong>Rule 10 — Represent POTENT With Pride.</strong> Be prepared. Be honest. Be professional. If we say we will do something, we do it.</div>
+<div class="summary-box">The standard: When someone hangs up after speaking with a POTENT representative, they should think: "That was one of the most professional conversations I've had with a transportation company." That is the POTENT way.</div>`
+},
+2: {
+  num:"Chapter 2", title:"Know the Business Before You Sell It",
+  html:`<p>You cannot sell what you do not understand. A salesperson's confidence comes from knowing what we do, who we help, why customers need us, when we are the right solution, and when we are not.</p>
+<h2>Our Core Services</h2>
+<h3>1. Expedited Transportation</h3>
+<ul class="ul"><li>Emergency freight</li><li>Same-day transportation</li><li>Time-sensitive deliveries</li><li>Overflow transportation</li><li>Backup carrier support</li></ul>
+<h3>2. General Freight</h3>
+<ul class="ul"><li>Manufactured products</li><li>Industrial materials</li><li>Commercial goods</li><li>Store fixtures</li><li>Event equipment</li><li>Specialty items</li></ul>
+<h3>3. Trade Show & Event Transportation</h3>
+<p>Events operate on deadlines. A missed delivery can affect exhibitors, vendors, brands, and customer experiences. We specialize in trade shows, corporate events, pop-ups, exhibitions, and specialty equipment.</p>
+<h3>4. Commercial Curbside Removal</h3>
+<div class="rule red"><strong>Minimum project target: $500+</strong> — We do not compete for small pickup jobs. We focus on profitable commercial projects: business cleanouts, warehouse cleanouts, store fixture removal, commercial debris removal, large furniture/appliance removal.</div>
+<h2>What Makes Us Different</h2>
+<div class="rule"><strong>We Are Not A Load Board Company.</strong> Businesses need faster communication, more flexibility, reliable backup options, and real relationships. POTENT focuses on direct customer relationships.</div>
+<div class="rule"><strong>We Are Not Selling A Truck.</strong> A customer does not wake up thinking "I need a box truck." They think "I have a problem." The truck is the tool. The solution is what creates value.</div>
+<h2>What Customers Actually Buy</h2>
+<ul class="ul"><li>Speed — "Can you solve this quickly?"</li><li>Reliability — "Can I trust you?"</li><li>Communication — "Will I know what is happening?"</li><li>Confidence — "Can I stop worrying about this?"</li><li>Partnership — "Can I call you again?"</li></ul>
+<h2>How to Position POTENT</h2>
+<div class="rule red"><strong>Never say:</strong> "We have a truck available."</div>
+<div class="rule green"><strong>Say:</strong> "We help companies solve transportation problems when timing is critical."</div>
+<div class="rule red"><strong>Never say:</strong> "We haul junk."</div>
+<div class="rule green"><strong>Say:</strong> "We provide commercial curbside removal solutions for larger cleanout projects."</div>`
+},
+3: {
+  num:"Chapter 3", title:"Know Your Customer",
+  html:`<p>The right customers make selling easier. The wrong customers waste time. Our goal is not to talk to everyone — it is to find the people who need POTENT.</p>
+<h2>The POTENT Ideal Customer Profile (ICP)</h2>
+<p>A great customer has: a problem that costs them money, a reason to act, and the ability to pay for professional service.</p>
+<h2>Customer Categories</h2>
+<h3>Category 1 — Manufacturing Companies</h3>
+<p>Manufacturers cannot afford downtime. One missing component can stop an entire operation.</p>
+<p><strong>Decision makers:</strong> Plant Manager, Operations Manager, Logistics Manager, Supply Chain Manager, Purchasing Manager, Warehouse Manager</p>
+<p><strong>Questions to ask:</strong> "How do you handle transportation emergencies today?" / "What happens when a shipment is delayed?" / "Do you have a backup carrier when your normal option fails?"</p>
+<h3>Category 2 — Automotive Suppliers</h3>
+<p>Automotive operates on strict timelines. A missed shipment can create major production problems.</p>
+<h3>Category 3 — Warehouses & Distribution Centers</h3>
+<p>Constantly deal with overflow, missed pickups, customer deadlines, and inventory movement.</p>
+<h3>Category 4 — 3PL Companies</h3>
+<p>3PLs need reliable capacity for urgent service, overflow freight, or last-minute coverage.</p>
+<h3>Category 5 — Property Management & Commercial Cleanouts</h3>
+<p>Need dependable vendors for tenant turnover, property preparation, large removals, commercial debris.</p>
+<h3>Category 6 — Event & Trade Show Companies</h3>
+<p>Events are deadline-driven. A late delivery can ruin an event.</p>
+<h2>Buying Triggers — When They're Most Likely to Need Us</h2>
+<ul class="ul"><li>New facility opening</li><li>Company expansion</li><li>New contracts being awarded</li><li>Large projects coming up</li><li>Events scheduled</li><li>Supply chain issues happening</li><li>Seasonal demand spikes</li></ul>
+<h2>Red Flags — Bad Customers to Avoid</h2>
+<div class="rule red"><strong>Be careful with:</strong> People only focused on lowest price, customers refusing basic paperwork, customers who avoid payment discussions, unrealistic expectations, unsafe requests, last-minute chaos with no respect for process.</div>`
+},
+4: {
+  num:"Chapter 4", title:"Finding Prospects & Building the Pipeline",
+  html:`<p>Sales is a numbers game, but successful sales is a quality game. A salesperson who understands 50 companies deeply will beat one who randomly contacts 500.</p>
+<h2>The POTENT Pipeline Stages</h2>
+<table><tr><th>Stage</th><th>Description</th></tr>
+<tr><td>1 — Prospect Identified</td><td>Found a company that fits our customer profile</td></tr>
+<tr><td>2 — Contact Attempted</td><td>Reached out via phone, email, LinkedIn</td></tr>
+<tr><td>3 — Conversation Started</td><td>Have contact with someone — goal: understand their operation</td></tr>
+<tr><td>4 — Qualified Opportunity</td><td>Discovered a transportation need and decision-making process</td></tr>
+<tr><td>5 — Quote / Proposal</td><td>Customer understands the value — provide the solution</td></tr>
+<tr><td>6 — Customer</td><td>First job completed — goal changes to serving and growing</td></tr></table>
+<h2>Where to Find Prospects</h2>
+<ul class="ul"><li>Google Maps — search manufacturers, warehouses, distribution centers, machine shops</li><li>LinkedIn — search "Logistics Manager Atlanta" / "Plant Manager Georgia"</li><li>Company websites — contact pages, leadership, operations info</li><li>Industry directories and manufacturing associations</li><li>Chamber of Commerce listings</li></ul>
+<h2>The 1,000 Company Strategy</h2>
+<table><tr><th>Category</th><th>Target</th></tr>
+<tr><td>Manufacturers</td><td>250</td></tr>
+<tr><td>Warehouses</td><td>250</td></tr>
+<tr><td>Automotive Suppliers</td><td>150</td></tr>
+<tr><td>Machine Shops</td><td>100</td></tr>
+<tr><td>Distribution Companies</td><td>100</td></tr>
+<tr><td>3PL Companies</td><td>100</td></tr>
+<tr><td>Event Companies</td><td>50</td></tr></table>
+<h2>Daily Prospecting Standard</h2>
+<div class="rule"><strong>Every Day:</strong> Research 10 new companies · Make 50 outbound calls · Send 25 personalized emails · Follow up on 10 previous conversations</div>
+<div class="rule red"><strong>The POTENT Rule of Follow-Up:</strong> Most opportunities are lost because people stop too early. A customer may not need us today — but they may need us tomorrow. Stay professional. Stay connected.</div>`
+},
+5: {
+  num:"Chapter 5", title:"The Discovery Conversation",
+  html:`<p>The purpose of a discovery conversation is not to give a presentation. It is to discover. The best salespeople are not the ones who talk the most — they are the ones who understand the most.</p>
+<h2>The POTENT Discovery Framework</h2>
+<h3>Step 1 — Build Rapport</h3>
+<div class="rule">"Thanks for taking a few minutes. I don't want to waste your time. I just want to understand how you currently handle transportation and see if there's anywhere we could potentially help."</div>
+<h3>Step 2 — Understand Their Current Situation</h3>
+<ul class="ul"><li>"Can you tell me a little about how your transportation currently works?"</li><li>"Who handles your transportation decisions?"</li><li>"Are you using your own fleet, outside carriers, or a combination?"</li><li>"How often are shipments moving?"</li></ul>
+<h3>Step 3 — Find the Problem</h3>
+<ul class="ul"><li>"How often do urgent transportation situations come up?"</li><li>"What happens when your normal carrier cannot cover a shipment?"</li><li>"Have you ever had a shipment delayed that caused a bigger issue?"</li></ul>
+<h3>Step 4 — Understand the Impact</h3>
+<ul class="ul"><li>"When that happens, what does that affect?"</li><li>"How does that impact your operation?"</li><li>"Does that create extra costs, delays, or stress for your team?"</li></ul>
+<h3>Step 5 — Discover the Desired Future</h3>
+<ul class="ul"><li>"If you could improve one thing about your current transportation process, what would it be?"</li><li>"What would the ideal transportation partner look like?"</li><li>"What would make your job easier?"</li></ul>
+<h2>The 1–10 Framework</h2>
+<div class="rule"><strong>Ask:</strong> "On a scale of 1–10, how confident are you in your current backup transportation options?" Then: "Why that number?" Then if they say 7: <strong>"Why isn't it lower?"</strong> — This makes the customer sell themselves on the importance of solving their own problem.</div>
+<h2>The POTENT Question Ladder</h2>
+<table><tr><th>Type</th><th>Example</th></tr>
+<tr><td>Surface Question</td><td>"Do you have transportation providers?"</td></tr>
+<tr><td>Problem Question</td><td>"What happens when they cannot cover something?"</td></tr>
+<tr><td>Impact Question</td><td>"What does that cost your company?"</td></tr>
+<tr><td>Solution Question</td><td>"What would having a reliable backup option mean for your team?"</td></tr></table>`
+},
+6: {
+  num:"Chapter 6", title:"Mastering Questions",
+  html:`<p>Questions are the salesperson's greatest tool. Average salespeople try to have the perfect answer. Great salespeople learn to ask the perfect question.</p>
+<h2>The 3 Types of Questions</h2>
+<h3>1. Situation Questions — Understand Their World</h3>
+<ul class="ul"><li>"How are you currently handling transportation?"</li><li>"How many shipments move through your operation each week?"</li><li>"Who is involved when transportation decisions are made?"</li></ul>
+<h3>2. Problem Questions — Find Friction</h3>
+<ul class="ul"><li>"Where do you see the biggest challenges today?"</li><li>"What happens when a carrier misses a pickup?"</li><li>"What situations create the most stress for your team?"</li><li>"Where does your current process break down?"</li></ul>
+<h3>3. Impact Questions — Understand the Cost</h3>
+<ul class="ul"><li>"What happens when that occurs?"</li><li>"How does that affect your operation?"</li><li>"How much time does your team spend fixing those issues?"</li><li>"What does a delay mean for your customers?"</li></ul>
+<h2>Reframing Objections With Questions</h2>
+<div class="rule"><strong>"We already have a carrier."</strong><br>Weak: "We can do it cheaper."<br>Strong: "That makes sense. Most companies we speak with already have transportation partners. I'm curious — what do you do when your current carrier cannot cover an urgent request?"</div>
+<div class="rule"><strong>"Just send me information."</strong><br>Weak: "Okay."<br>Strong: "Absolutely. Before I send that, can I ask what specifically would be most useful for you to see?"</div>
+<div class="rule"><strong>"Your price is high."</strong><br>Weak: "Let me lower it."<br>Strong: "Compared to what you're currently using?"</div>
+<h2>The 3 A's Framework</h2>
+<div class="rule green"><strong>1. Acknowledge</strong> — "I understand." "That makes sense." "I appreciate you bringing that up."</div>
+<div class="rule green"><strong>2. Associate</strong> — Connect their concern to something relevant: "Most companies we work with had a similar concern before they looked at the impact of delayed shipments."</div>
+<div class="rule green"><strong>3. Ask</strong> — "What would need to happen for this to make sense?" / "What would be the biggest concern preventing you from moving forward?"</div>
+<div class="summary-box">The Golden Rule: Never try to be the smartest person in the conversation. Be the most curious person. Customers will tell you exactly how to help them. You just have to listen.</div>`
+},
+7: {
+  num:"Chapter 7", title:"The POTENT Calling & Conversation System",
+  html:`<p>Southern hospitality. Serious sales. Real relationships. Every call follows: Open → Discover → Listen → Dig → Qualify → Understand → Solve → Close → Follow Up.</p>
+<h2>The POTENT Opening</h2>
+<div class="rule">"Hey, this is [NAME] with POTENT Operations. How are you doing today?" — Let them answer. Then:<br><br>"I'll keep this quick — I know you've got a business to run. Did I catch you with about 30 seconds?"<br><br>If yes: "I appreciate it. The reason I'm calling is pretty simple. We help businesses when they have freight that needs to move quickly, when their regular transportation can't cover something, or when they need another reliable option. Out of curiosity — how are you currently handling those situations?" <strong>Then STOP. Listen.</strong></div>
+<h2>Why We Ask "Out of Curiosity"</h2>
+<p>Because we're genuinely trying to understand. "Out of curiosity, how often does that happen?" / "Out of curiosity, what normally happens when your regular carrier can't cover it?" Questions make people think and reveal opportunities.</p>
+<h2>Digging Deeper When They Identify a Problem</h2>
+<ul class="ul"><li>"How long has that been an issue?"</li><li>"What have you tried so far?"</li><li>"Why hasn't that completely solved it?"</li><li>"How does that affect your operation?"</li><li>"On a scale of 1–10, how important is it to fix that?"</li></ul>
+<div class="rule"><strong>Key technique:</strong> If they say 6, ask "Why isn't it lower?" — not "Why isn't it higher?" They will sell themselves on the importance of solving their own problem.</div>
+<h2>Common Objections In the Moment</h2>
+<div class="rule"><strong>"I need to think about it."</strong><br>Acknowledge: "Absolutely. Take your time."<br>Associate: "Usually when someone tells me they need to think about it, there's one part they're not completely comfortable with."<br>Ask: "What's the main concern?" Then: "What would it take for you to feel comfortable saying yes?"</div>
+<div class="rule"><strong>"We already have a carrier."</strong><br>"Absolutely. If they're taking care of you, I wouldn't expect you to replace them just because I called." Then: "Out of curiosity — what happens when they're booked or something needs to move immediately?"</div>
+<div class="rule"><strong>"Send me information."</strong><br>"Absolutely. I don't want to send you a bunch of generic stuff. What would actually be useful for you?" Then: "And when would be a good time for me to follow back up?"</div>
+<div class="rule"><strong>"Your price is too high."</strong><br>Don't get defensive. "Is it higher than what you're currently paying, or higher than what you expected this particular shipment to cost?" Then: "How important is the delivery timeline?" Then: "What happens to your operation if it doesn't arrive when you need it?"</div>
+<h2>The Close</h2>
+<div class="rule green">"Based on what you've told me, it sounds like [PROBLEM] is really the biggest issue. Did I get that right?" If yes: "And what you're really looking for is [DESIRED RESULT], correct?" If yes: "Then I think we can help you with that. Let's get you set up." — <strong>Stop talking. Let them respond.</strong></div>
+<div class="summary-box">The POTENT Rule: Never make the customer feel sold. Make them feel heard, understood, respected, valued. Then give them a legitimate solution.</div>`
+},
+8: {
+  num:"Chapter 8", title:"Decision Makers, Qualification & Real Opportunities",
+  html:`<p>A conversation is not a customer. A customer opportunity exists when we understand there is a problem, the problem matters, the company can make a decision, and POTENT can provide a solution.</p>
+<h2>Common Decision Makers</h2>
+<table><tr><th>Industry</th><th>Decision Makers</th></tr>
+<tr><td>Manufacturing / Industrial</td><td>Plant Manager, Logistics Manager, Supply Chain Manager, Operations Manager, Purchasing Manager</td></tr>
+<tr><td>Warehouses / Distribution</td><td>Distribution Manager, Warehouse Manager, Operations Director</td></tr>
+<tr><td>3PL Companies</td><td>Carrier Manager, Transportation Manager, Operations Manager</td></tr>
+<tr><td>Commercial Removal</td><td>Property Manager, Facilities Manager, Regional Manager, Owner, General Manager</td></tr></table>
+<h2>The POTENT Qualification Framework</h2>
+<div class="rule"><strong>1. Need</strong> — Do they have a problem we solve? "What challenges do you experience with your current setup?"</div>
+<div class="rule"><strong>2. Impact</strong> — Does the problem matter? "What happens when that occurs?"</div>
+<div class="rule"><strong>3. Timing</strong> — When could this be important? "Are there upcoming projects where additional support would help?"</div>
+<div class="rule"><strong>4. Authority</strong> — Can they make decisions? "Who else is involved when choosing transportation partners?"</div>
+<div class="rule"><strong>5. Fit</strong> — Are we a good match? "Are you looking for a reliable backup option, or mainly focused on the lowest possible price?"</div>
+<h2>Lead Temperature System</h2>
+<div class="rule green"><strong>Hot — Ready:</strong> Has current problem, needs solution soon, asked about pricing, wants next steps. Action: Move quickly. Schedule. Quote. Close.</div>
+<div class="rule"><strong>Warm — Potential:</strong> Interested, has occasional problems, not urgent today. Action: Nurture. Follow up. Provide value. Stay visible.</div>
+<div class="rule red"><strong>Cold — Not Ready:</strong> No need, no interest, poor fit. Action: Do not waste energy. Stay professional. Move on.</div>
+<h2>Red Flags</h2>
+<div class="rule red">People only focused on the lowest price, customers refusing basic paperwork, customers who avoid payment discussions, unrealistic expectations, poor communication before becoming a customer.</div>`
+},
+9: {
+  num:"Chapter 9", title:"Objections & Reframing",
+  html:`<p>An objection is not rejection. An objection is information. A customer who says "It's too expensive" or "We already have someone" is telling you there is something they have not fully understood yet.</p>
+<h2>The POTENT Rule</h2>
+<div class="rule red"><strong>Never defend. Never argue. Discover.</strong> When someone pushes back, do not immediately explain. Do not become emotional. Do not try to prove them wrong. Become curious.</div>
+<h2>The 3 A Framework</h2>
+<div class="rule green"><strong>1. Acknowledge</strong> — Show you heard them: "That makes sense." "I understand." "I appreciate you sharing that."</div>
+<div class="rule green"><strong>2. Associate</strong> — Connect to a bigger conversation: "I hear that from many companies. Most already have transportation options — the reason they look for another partner is usually when their normal option can't cover an urgent situation."</div>
+<div class="rule green"><strong>3. Ask</strong> — Return control: "What specifically makes you feel that way?" / "What would need to happen for this to make sense?"</div>
+<h2>Handling Every Major Objection</h2>
+<div class="rule"><strong>Objection 1: "We Already Have A Carrier"</strong><br>Wrong: "We can do it cheaper." (Now you're competing on price.)<br>POTENT: "That makes sense. Most companies we work with already have transportation providers. I'm curious — what happens when your current carriers are unavailable or something urgent comes up?"</div>
+<div class="rule"><strong>Objection 2: "Just Send Me Information"</strong><br>Wrong: "Okay, I'll email you."<br>POTENT: "Absolutely. So I send something useful — what type of transportation situations do you normally need support with?"</div>
+<div class="rule"><strong>Objection 3: "We Don't Need Anything Right Now"</strong><br>POTENT: "I understand. Most companies don't need emergency transportation every day. Do you currently have a backup option in place if something urgent happens?"</div>
+<div class="rule"><strong>Objection 4: "Your Price Is Too High"</strong><br>Never immediately discount. POTENT: "When you say high, is the concern the budget itself, or are you comparing it to another option?" Then: "Besides price, what is most important when choosing a transportation partner?"</div>
+<div class="rule"><strong>Objection 5: "I Need To Think About It"</strong><br>POTENT: "Of course. Usually when someone says they need to think about it, there is something specific they are considering. Can I ask what part you want to think through?"</div>
+<div class="summary-box">A "no" can still create value: "I appreciate your honesty. Before I let you go, can I ask what would need to be different for a company like ours to become useful to you?" Their answer teaches you.</div>`
+},
+10: {
+  num:"Chapter 10", title:"Closing & Getting Commitment",
+  html:`<p>Closing is simply helping a qualified customer make a decision. It is not convincing, pushing, or talking someone into something.</p>
+<h2>The POTENT Closing Belief</h2>
+<div class="rule green"><strong>The customer should never feel sold. They should feel understood.</strong> The goal is not "How do I get them to say yes?" The goal is "Have we discovered enough value that moving forward makes sense?"</div>
+<h2>Before You Close — Agreement Stacking</h2>
+<div class="rule"><strong>Problem:</strong> "From what you've shared, the biggest challenge is ___, correct?"</div>
+<div class="rule"><strong>Impact:</strong> "And when that happens, it creates ___ for your team, correct?"</div>
+<div class="rule"><strong>Goal:</strong> "So ideally, you would want a transportation partner that can ___, correct?"</div>
+<p>The customer confirms their own situation before you present the solution.</p>
+<h2>Closing Techniques</h2>
+<div class="rule"><strong>The Assumptive Close</strong> (when clearly interested): "Based on what we discussed, the next step would be getting your company set up so we can be available when you need support. Does that make sense?"</div>
+<div class="rule"><strong>The Choice Close:</strong> "Would it make more sense to start with emergency support only, or would you like to discuss becoming a regular backup transportation partner?"</div>
+<div class="rule"><strong>The Next Step Close:</strong> "What would be the best next step from your side to get us approved as a transportation option?"</div>
+<div class="rule green"><strong>The Direct Close:</strong> "Based on everything we've discussed, is there any reason we shouldn't move forward?" — Then be quiet.</div>
+<h2>Silence Is a Skill</h2>
+<div class="rule red"><strong>Many salespeople lose deals because they talk after asking for the business.</strong> Ask for commitment. Then stop talking. Let the customer answer. Silence creates space for decisions.</div>
+<h2>Handling Last-Minute Hesitation</h2>
+<div class="rule"><strong>"I just need to think about it."</strong> → "Of course. Before you do — is there anything specific you're unsure about?"</div>
+<div class="rule"><strong>"I need to talk to my boss."</strong> → "That makes sense. What do you think they will want to know before making a decision?"</div>
+<div class="rule"><strong>"Send me a proposal."</strong> → "Absolutely. Before I put that together — what are the most important things you would like the proposal to solve?"</div>
+<h2>Creating Real Urgency</h2>
+<div class="rule red"><strong>Never create fake urgency.</strong> Do not say "Sign today or the offer disappears." Real urgency comes from consequences: "What happens if this situation occurs again and you don't have another option?"</div>`
+},
+11: {
+  num:"Chapter 11", title:"Follow-Up Systems & Account Growth",
+  html:`<p>Most salespeople do not lose because they cannot find opportunities. They lose because they stop too soon. The money is in the follow-up.</p>
+<h2>The POTENT Follow-Up Rule</h2>
+<div class="rule red"><strong>Every conversation needs a next step. Never end with "Let me know."</strong> That puts all responsibility on the customer. Instead: "When would be a good time for us to reconnect?"</div>
+<h2>The Follow-Up Timeline</h2>
+<table><tr><th>When</th><th>What To Do</th></tr>
+<tr><td>Day 1</td><td>Initial contact — call, email, LinkedIn connection</td></tr>
+<tr><td>Day 3</td><td>Value follow-up — share a relevant tip, not "did you decide?"</td></tr>
+<tr><td>Day 7</td><td>"Hi [Name], wanted to follow up and see if transportation support is something your team ever needs help with."</td></tr>
+<tr><td>Day 14</td><td>"Just checking in. Even if there's nothing needed today, I wanted to make sure you had a transportation contact if something unexpected comes up."</td></tr>
+<tr><td>Monthly</td><td>Nurture — tips, company updates, availability reminder</td></tr></table>
+<h2>Turning One Job Into Repeat Business</h2>
+<p>The first job is not the finish line. It is the audition. After completing a successful delivery, ask: "How did everything go from your perspective?" Then: "We appreciate the opportunity. We would love to be a resource anytime you need additional transportation support."</p>
+<h2>The 24-Hour Customer Follow-Up</h2>
+<p>After every completed job, contact the customer: "How did everything go?" / "Was there anything we could improve?" / "Is there anything coming up where we could help again?"</p>
+<h2>Account Growth Questions</h2>
+<ul class="ul"><li>"How often do situations like this come up?"</li><li>"Are there other locations or departments that could use transportation support?"</li><li>"Who else in your company handles transportation needs?"</li></ul>
+<h2>The Difference Between a Vendor and a Partner</h2>
+<div class="rule green"><strong>A vendor waits for orders. A partner understands the business.</strong> We want to become "the company they call before there is a problem."</div>
+<div class="summary-box">The POTENT Customer Lifecycle: Prospect → Conversation → Opportunity → Customer → Partner. The first sale creates revenue. The second sale creates a business. Follow-up creates relationships. Relationships create predictable income.</div>`
+},
+12: {
+  num:"Chapter 12", title:"Sales Team Standards, Daily Numbers & the Scorecard",
+  html:`<p>Great salespeople are built through systems. Motivation changes. Systems create consistency.</p>
+<h2>Daily Sales Standard</h2>
+<table><tr><th>Activity</th><th>Daily Minimum</th></tr>
+<tr><td>New company contacts researched</td><td><strong style="color:#F0E000;">25</strong></td></tr>
+<tr><td>Outbound phone calls</td><td><strong style="color:#F0E000;">50</strong></td></tr>
+<tr><td>Personalized emails sent</td><td><strong style="color:#F0E000;">25</strong></td></tr>
+<tr><td>Follow-ups completed</td><td><strong style="color:#F0E000;">10</strong></td></tr>
+<tr><td>CRM updates</td><td><strong style="color:#F0E000;">Every interaction documented</strong></td></tr></table>
+<h2>Weekly Sales Goals</h2>
+<p>Each salesperson tracks activity (calls, emails, new prospects, conversations, meetings, quotes) and results (new customers, jobs closed, revenue generated, recurring opportunities).</p>
+<h2>Commission Structure</h2>
+<table><tr><th>Job Type</th><th>Commission</th></tr>
+<tr><td>Standard collected revenue</td><td><strong style="color:#F0E000;">12.5%</strong></td></tr>
+<tr><td>Same-day payment jobs</td><td><strong style="color:#F0E000;">10%</strong></td></tr>
+<tr><td>$10,000 revenue milestone</td><td><strong style="color:#1DB954;">+$500 bonus</strong></td></tr></table>
+<div class="rule"><strong>Commission is earned when:</strong> Customer agreement is completed, service is successfully completed, and payment is received. This protects the company and rewards real results.</div>
+<h2>Why Recurring Business Is Valuable</h2>
+<p>One emergency shipment is good. A recurring customer changes the company. A salesperson who creates a Monday–Friday route every week did not just make a sale — they created an asset.</p>
+<h2>The Rule of Ownership</h2>
+<div class="rule red"><strong>A salesperson is responsible for their pipeline. No excuses.</strong> The professional question is always: "What can I improve?"</div>`
+},
+13: {
+  num:"Chapter 13", title:"Building the POTENT Sales Team",
+  html:`<p>The first sales hires will determine the culture of the business. We need competitive people, problem solvers, self-motivated individuals, strong communicators, and people who want unlimited earning potential.</p>
+<h2>The First Sales Team Structure</h2>
+<div class="rule"><strong>Position 1 — Business Development Closer:</strong> Find companies, start conversations, uncover problems, create customers. Required: confidence, curiosity, discipline, persistence, ability to ask questions, ability to handle rejection.</div>
+<div class="rule"><strong>Position 2 — Sales Development / Appointment Setter:</strong> Build prospect lists, make first contact, qualify leads, schedule meetings, update CRM.</div>
+<div class="rule"><strong>Position 3 — Operations Manager / Future Right-Hand:</strong> Learns customers, dispatch, sales, operations, vendors, and processes. Long-term goal: help manage trucks, drivers, customer relationships, and daily operations.</div>
+<h2>Commission Structure for New Hires</h2>
+<ul class="ul"><li>One-Time Jobs — commission based on completed and collected revenue</li><li>Recurring Customers — higher commission (created predictable revenue)</li><li>Contracts — highest rewards (weekly dedicated routes = major value)</li></ul>
+<h2>The Sales Interview Process</h2>
+<p><strong>Step 1 — Personality:</strong> "Tell me about the hardest thing you ever accomplished." / "How do you handle rejection?"</p>
+<p><strong>Step 2 — Sales Test:</strong> Ask them to sell you something simple. Do they ask questions first?</p>
+<p><strong>Step 3 — Problem-Solving:</strong> Scenario: "A company says they already have a carrier. What do you say?" Look for curiosity, not pressure.</p>
+<h2>The First 30 Days</h2>
+<table><tr><th>Week</th><th>Focus</th></tr>
+<tr><td>Week 1</td><td>Learn: company, services, customers, app, sales process</td></tr>
+<tr><td>Week 2</td><td>Practice: scripts, objections, discovery questions</td></tr>
+<tr><td>Week 3</td><td>Begin: prospecting, calls, emails, CRM activity</td></tr>
+<tr><td>Week 4</td><td>Improve: review calls, improve messaging, build pipeline</td></tr></table>`
+},
+14: {
+  num:"Chapter 14", title:"The POTENT Vision, Culture & Founder Message",
+  html:`<h2>Welcome to POTENT</h2>
+<p>POTENT is not just a transportation company. It is an ecosystem built around creativity, ownership, business, and opportunity. The foundation started in 2019. The vision has always been bigger than one product, one service, or one industry.</p>
+<h2>The POTENT Ecosystem</h2>
+<div class="rule"><strong>POTENT Operations</strong> — Expedited transportation and logistics. Helping businesses solve urgent problems.</div>
+<div class="rule"><strong>POTENT Apparel</strong> — Creative fashion. Limited collections. Premium brand experiences.</div>
+<div class="rule"><strong>POTENT Playbook</strong> — Education. Business systems. Knowledge sharing.</div>
+<div class="rule"><strong>POTENT Events / Bodega</strong> — Community. Experiences. Networking. Entertainment. Brand activations.</div>
+<div class="rule"><strong>AEMNIPOTENT</strong> — The larger vision: unlimited potential, multiple industries, multiple opportunities, one connected ecosystem.</div>
+<h2>The POTENT Culture</h2>
+<div class="rule green"><strong>We Win Together.</strong> POTENT is being built with a long-term mindset. The goal is not just to create jobs — it is to create a team of people who grow, learn, and build something together.</div>
+<h2>The 90-Day Challenge</h2>
+<div class="rule green"><strong>First Major Milestone: $100,000 revenue growth within 90 days.</strong> If the team achieves this goal, POTENT celebrates with a company-paid team vacation. Win together. Celebrate together.</div>
+<h2>The Founder Message</h2>
+<div class="quote">"POTENT started as an idea in 2019. Through learning, persistence, and creativity, it became a foundation for something bigger. The mission now is to build a company where people can create opportunities, develop skills, and grow. This cannot be built alone. The future of POTENT depends on the people willing to step up, contribute, and build together. The vision is big. The standard is high. The opportunity is real. Welcome to POTENT."</div>`
+},
+15: {
+  num:"Chapter 15", title:"The POTENT Prospecting Machine",
+  html:`<p>A transportation company does not grow by waiting for customers to find us. We create opportunities. The mission: build a predictable system for finding businesses that need our services.</p>
+<h2>Primary Customer Groups</h2>
+<h3>1. Manufacturing Companies</h3>
+<p>Automotive suppliers, machine shops, metal/plastic manufacturers, fabrication companies. Problems: production delays, missing parts, urgent shipments, missed pickups, carrier failures.</p>
+<h3>2. Distribution & Warehouse Companies</h3>
+<p>Distribution centers, fulfillment centers, wholesale suppliers. Problems: overflow freight, last-minute transportation, customer deadlines, extra capacity needs.</p>
+<h3>3. 3PL & Logistics Companies</h3>
+<p>Freight brokers, third-party logistics providers. Need reliable backup carriers, quick capacity, trustworthy partners.</p>
+<h3>4. Automotive Industry</h3>
+<p>Tier suppliers, parts manufacturers, repair facilities. Automotive downtime is extremely expensive.</p>
+<h3>5. Commercial Cleanout Customers</h3>
+<p>Property managers, commercial buildings, retail locations, warehouses relocating. Services: commercial cleanouts, store fixture removal, curbside only, non-hazardous materials only, $500+ jobs.</p>
+<h2>Geographic Target Areas</h2>
+<div class="rule"><strong>Primary Market — Atlanta Metro:</strong> Conyers, Covington, Lithonia, Decatur, Stone Mountain, McDonough, Stockbridge, Griffin, Atlanta industrial areas.</div>
+<div class="rule"><strong>Secondary Market — Georgia Expansion:</strong> Savannah, Macon, Augusta, Athens, Columbus.</div>
+<div class="rule"><strong>Future Market — Interstate:</strong> Tennessee, Florida, Alabama, South Carolina, North Carolina.</div>
+<h2>Daily Prospecting Standard</h2>
+<div class="rule"><strong>Every Day:</strong> Research 25 new companies · Make 50 outbound calls · Send 25 personalized emails · Complete 10 follow-ups</div>`
+},
+16: {
+  num:"Chapter 16", title:"The POTENT Sales Conversation System",
+  html:`<p>Sales is discovering what problem exists, how serious it is, and whether POTENT is the right solution. The best salespeople are not the ones who talk the most — they ask the best questions.</p>
+<h2>The POTENT Sales Frame</h2>
+<div class="rule">Current State → Problem → Impact → Desired Future<br><br>Every customer conversation should discover: where they are now, what problems they experience, what those problems cost, and what they want instead.</div>
+<h2>Cold Call Opening</h2>
+<div class="rule">"Hi, this is [NAME] with POTENT OPERATIONS. Did I catch you with a quick minute?" (wait)<br><br>"We work with businesses that need reliable transportation solutions when normal options are unavailable. I was curious — how are you currently handling urgent or last-minute transportation needs?"</div>
+<h2>When They Respond</h2>
+<div class="rule"><strong>"We already have carriers."</strong> → "That makes sense. Most companies we speak with already have transportation partners. I'm curious — when those carriers are unavailable or something urgent comes up, what is your current backup plan?"</div>
+<div class="rule"><strong>"We don't need anything right now."</strong> → "I understand. Most companies don't need emergency transportation every day. The reason I'm reaching out is because problems usually happen unexpectedly. Would it make sense to have a reliable backup option available if something comes up?"</div>
+<div class="rule"><strong>"Send me information."</strong> → "Absolutely. Before I do — can I ask one quick question so I send something relevant? What type of transportation challenges does your company usually run into?"</div>
+<h2>Discovery Questions</h2>
+<div class="rule"><strong>Company Questions:</strong> "What does your company specialize in?" / "How does transportation fit into your operation?" / "How often are shipments moving?"</div>
+<div class="rule"><strong>Problem Questions:</strong> "What happens when a carrier misses a pickup?" / "Have you ever had a shipment become urgent unexpectedly?"</div>
+<div class="rule"><strong>Impact Questions:</strong> "What does a delay cost your company?" / "Does a missed shipment affect production or customers?"</div>
+<h2>The Closing Frame</h2>
+<div class="rule green">"Based on what we discussed, does it make sense for POTENT to be a transportation resource for your team?"</div>`
+},
+17: {
+  num:"Chapter 17", title:"The POTENT Lead Vault System",
+  html:`<p>POTENT is not sending salespeople into the market blindly. The company provides the foundation: target companies, industry information, contact information, sales scripts, a CRM system, and a follow-up process. The salesperson's job is execution.</p>
+<h2>What Is Inside Each Company Profile</h2>
+<div class="rule"><strong>Company Information:</strong> Company name, industry, website, location, company size</div>
+<div class="rule"><strong>Contact Information:</strong> Decision maker name, job title, phone, email, LinkedIn</div>
+<div class="rule"><strong>Business Information:</strong> Type of operation, potential transportation needs, possible pain points</div>
+<div class="rule"><strong>Sales Tracking:</strong> Date contacted, conversation notes, follow-up date, status, next action</div>
+<h2>Sales Process With the Lead Vault</h2>
+<table><tr><th>Step</th><th>Action</th></tr>
+<tr><td>1</td><td>Review Company — understand who they are and why POTENT may help</td></tr>
+<tr><td>2</td><td>Initial Contact — phone, email, or LinkedIn. Goal: start a conversation</td></tr>
+<tr><td>3</td><td>Discovery — find their transportation setup, problems, urgent needs</td></tr>
+<tr><td>4</td><td>Update CRM — every conversation documented. No lost opportunities.</td></tr>
+<tr><td>5</td><td>Follow-Up — professional follow-up creates relationships</td></tr></table>
+<h2>Lead Priority System</h2>
+<div class="rule green"><strong>Hot Leads:</strong> Immediate needs, urgent transportation issues. Action: contact immediately.</div>
+<div class="rule"><strong>Warm Leads:</strong> Potential need, future opportunities. Action: nurture relationship.</div>
+<div class="rule red"><strong>Cold Leads:</strong> No current need, no response. Action: stay organized and continue follow-up.</div>
+<div class="summary-box">The Lead Vault removes excuses. The question is no longer "Who do I call?" The question is: "How many opportunities did I create today?"</div>`
+},
+18: {
+  num:"Chapter 18", title:"The POTENT Customer Intake & Protection System",
+  html:`<p>We vet customers the same way customers vet us. Professional companies have standards.</p>
+<h2>The POTENT Customer Qualification Process</h2>
+<p>Before accepting ongoing business, we collect: legal company name, DBA name, business address, billing address, website, years in business, industry, main contact, and accounting contact.</p>
+<h2>Customer Questionnaire</h2>
+<div class="rule"><strong>Operations Questions:</strong> What type of transportation needs do you have? How often do you need transportation support? What problems are you trying to solve? What does a transportation failure cost your company?</div>
+<div class="rule"><strong>For Freight Jobs:</strong> Pickup location, delivery location, date/time required, weight, dimensions, number of pieces, special requirements, contact information.</div>
+<div class="rule"><strong>For Cleanouts:</strong> Business/property address, photos when available, description of materials, estimated volume, access information, preferred completion date.</div>
+<h2>Payment Terms</h2>
+<div class="rule green"><strong>Preferred: Payment at completion.</strong> Transportation companies have real expenses immediately — fuel, insurance, maintenance, repairs, equipment, labor.</div>
+<div class="rule"><strong>For contract customers:</strong> Maximum Net 14 days. Any extended terms require approval.</div>
+<div class="rule red"><strong>Same-Day Payment:</strong> For approved jobs, preferred payment is same day upon completion or before equipment leaves the location when applicable.</div>
+<h2>Non-Payment Protection</h2>
+<p>POTENT reserves the right to pursue all available remedies for unpaid services, including collection actions, contract enforcement, lien rights when legally available, and additional recovery options.</p>
+<div class="summary-box">The goal is not to make business difficult. It is to protect everyone. A customer who respects our process receives better service and a reliable transportation partner.</div>`
+},
+19: {
+  num:"Chapter 19", title:"The POTENT Commission & Incentive Plan",
+  html:`<p>Simple. Transparent. Performance based. You create revenue, you get paid.</p>
+<h2>Standard Sales Commission</h2>
+<table><tr><th>Revenue Type</th><th>Commission Rate</th><th>Example</th></tr>
+<tr><td>Standard collected revenue</td><td><strong style="color:#F0E000;">12.5%</strong></td><td>$2,000 job = $250</td></tr>
+<tr><td>Same-day payment jobs</td><td><strong style="color:#F0E000;">10%</strong></td><td>Better cash flow for company</td></tr>
+<tr><td>$10,000 milestone</td><td><strong style="color:#1DB954;">+$500 bonus</strong></td><td>Per milestone hit</td></tr></table>
+<div class="rule"><strong>When commission is earned:</strong> Customer agreement completed → service successfully completed → payment received. Commission is paid after POTENT receives payment. This protects everyone.</div>
+<h2>Contract Account Rewards</h2>
+<p>The biggest opportunities come from recurring business: daily routes, weekly transportation, dedicated accounts. A salesperson who creates a major recurring account may receive additional bonuses or advancement opportunities.</p>
+<h2>No Commission Limit</h2>
+<div class="rule green"><strong>There is no artificial ceiling.</strong> A person who creates $5,000 in revenue earns accordingly. A person who creates $100,000+ creates a much larger opportunity.</div>
+<h2>The POTENT Transparency System</h2>
+<p>Sales representatives receive access to their own account inside the POTENT Operations app. The app becomes the source of truth — tracking leads, opportunities, revenue, jobs, and commission earned. No confusion. No guessing.</p>`
+},
+20: {
+  num:"Chapter 20", title:"Sales Team Management System",
+  html:`<p>Building a sales machine, not just hiring salespeople. A company scales because it creates a system where people can succeed.</p>
+<h2>Daily Sales Rhythm</h2>
+<div class="rule"><strong>Morning Sales Block:</strong> Review pipeline, review follow-ups, prioritize opportunities, prepare outreach.</div>
+<div class="rule"><strong>Prospecting Block:</strong> Cold calls, emails, LinkedIn outreach, follow-ups — primary focus on creating conversations.</div>
+<div class="rule"><strong>Afternoon Business Block:</strong> Customer conversations, quotes, account development, relationship building.</div>
+<div class="rule"><strong>End-of-Day Review:</strong> Every salesperson updates calls completed, conversations created, opportunities, follow-ups needed, next actions.</div>
+<h2>Weekly Sales Meeting Agenda</h2>
+<ul class="ul"><li>Numbers Review — calls, emails, conversations, quotes, customers won, revenue</li><li>Wins — celebrate new customers, good conversations, progress</li><li>Challenges — identify objections, problems, areas to improve</li><li>Training — improve questions, sales skills, industry knowledge</li></ul>
+<h2>Sales Scorecard</h2>
+<div class="rule"><strong>Activity Metrics:</strong> Calls, emails, follow-ups, meetings, quotes</div>
+<div class="rule"><strong>Performance Metrics:</strong> Customers acquired, revenue generated, recurring accounts, customer retention</div>
+<div class="rule red"><strong>The Rule of Data:</strong> Feelings do not run companies. Numbers do. Track everything.</div>
+<h2>Coaching System</h2>
+<p>If someone struggles, first identify the problem: lack of training? Lack of confidence? Wrong approach? Lack of effort? Then provide coaching, practice, feedback, and resources. High performers receive more responsibility, more opportunity, and leadership consideration.</p>`
+},
+21: {
+  num:"Chapter 21", title:"The POTENT Operations System",
+  html:`<p>Sales creates opportunity. Operations creates trust. A customer does not stay because of the first sale — they stay because POTENT delivers.</p>
+<h2>The POTENT Job Lifecycle</h2>
+<table><tr><th>Step</th><th>Action</th></tr>
+<tr><td>1 — Customer Qualification</td><td>Confirm customer info, pickup, delivery, requirements, timeline, pricing, payment expectations</td></tr>
+<tr><td>2 — Job Approval</td><td>Confirm scope, price, date/time, contact info, special requirements. No confusion.</td></tr>
+<tr><td>3 — Job Assignment</td><td>System tracks customer, job details, assigned driver, schedule, status</td></tr>
+<tr><td>4 — Customer Communication</td><td>Updates before, during, and after service. Professional communication creates trust.</td></tr>
+<tr><td>5 — Completion Documentation</td><td>Completion confirmation, customer approval, photos, invoice, payment status</td></tr></table>
+<h2>Commercial Cleanout Rules</h2>
+<div class="rule red"><strong>POTENT Does NOT Do:</strong> Household moving, inside residential cleanouts, hazardous materials, paint, chemicals, unsafe materials.</div>
+<div class="rule"><strong>Target Jobs:</strong> Profitable commercial projects — $500+ minimum. Quality opportunities, not small unprofitable work.</div>
+<h2>Customer Retention System</h2>
+<p>After completion, ask: "Is transportation something your company regularly needs support with?" / "What other situations would make having POTENT available valuable?"</p>
+<p>One job can become: emergency shipment → repeat customer → weekly service → dedicated account.</p>
+<div class="summary-box">Sales makes promises. Operations keeps promises. Both sides create the customer experience. The goal: deliver excellence every time.</div>`
+},
+22: {
+  num:"Chapter 22", title:"The POTENT Scaling Roadmap",
+  html:`<p>From one truck to a transportation company. The first truck is proof of concept — not the end goal.</p>
+<h2>Stage 1 — Foundation</h2>
+<p>Current mission: build the first profitable operation. Focus: create customers, build recurring revenue, establish reputation, perfect systems, create predictable cash flow.</p>
+<h2>Stage 2 — Interstate Expansion</h2>
+<p>As POTENT grows: interstate authority, MC number, additional compliance systems, expanded insurance, professional carrier operations. Goal: move from local expedited provider to regional transportation company.</p>
+<h2>Stage 3 — Compliance & Safety System</h2>
+<div class="rule"><strong>Driver Qualification System:</strong> Applications, license verification, driving history review, required qualifications.</div>
+<div class="rule"><strong>Safety Program:</strong> Vehicle inspections, maintenance records, safety procedures, driver expectations.</div>
+<div class="rule"><strong>Drug & Alcohol Compliance:</strong> For applicable interstate commercial operations, required testing programs, documentation, records, and policies.</div>
+<h2>Stage 4 — Building the Fleet</h2>
+<p>Goal is not to own trucks — it is to build a transportation company. Growth may include additional box trucks, cargo vans, straight trucks, and specialized equipment. Every asset must generate revenue.</p>
+<h2>Stage 5 — Building the Team</h2>
+<table><tr><th>Role</th><th>Responsibility</th></tr>
+<tr><td>Drivers</td><td>Safe transportation, professional customer interaction, equipment care</td></tr>
+<tr><td>Dispatch / Operations</td><td>Scheduling, driver coordination, customer communication</td></tr>
+<tr><td>Sales Team</td><td>New customers, account growth, partnerships</td></tr>
+<tr><td>Operations Manager</td><td>Daily execution, team management, quality control</td></tr></table>
+<h2>Stage 6 — Recurring Revenue</h2>
+<p>Move from one-time jobs → repeat customers → weekly contracts → dedicated accounts. Manufacturing lanes, automotive suppliers, distribution partners, event logistics.</p>
+<div class="summary-box">One truck. One team. One system. A much bigger future.</div>`
+},
+23: {
+  num:"Chapter 23", title:"The POTENT Leadership System",
+  html:`<p>A company cannot become great if everything depends on one person. The purpose of POTENT is not to create jobs where people complete tasks — it is to create opportunities where people can grow and become leaders.</p>
+<h2>The POTENT Leadership Philosophy</h2>
+<div class="rule green"><strong>Leadership is earned through:</strong> Results, Character, Consistency, Problem solving, Loyalty, Ability to help others succeed.</div>
+<h2>How Leaders Are Identified</h2>
+<div class="rule"><strong>Take Ownership:</strong> They do not wait for problems to be solved. They find solutions.</div>
+<div class="rule"><strong>Create Results:</strong> Measurable outcomes — revenue created, customers gained, processes improved.</div>
+<div class="rule"><strong>Protect the Company:</strong> They care about reputation, customers, team, and resources.</div>
+<div class="rule"><strong>Help Others Win:</strong> A true leader creates more leaders.</div>
+<h2>The Leadership Path</h2>
+<table><tr><th>Level</th><th>Description</th></tr>
+<tr><td>Level 1 — Team Member</td><td>Learn systems, customers, processes, standards</td></tr>
+<tr><td>Level 2 — High Performer</td><td>Consistent results, reliability, initiative</td></tr>
+<tr><td>Level 3 — Team Leader</td><td>Help train others, support daily operations, improve systems</td></tr>
+<tr><td>Level 4 — Executive Leadership</td><td>Manage departments, make strategic decisions, help grow the company</td></tr></table>
+<h2>Ownership & Partnership Opportunities</h2>
+<div class="rule purple"><strong>For proven leaders, future opportunities may include:</strong> Increased compensation, leadership bonuses, profit participation, and ownership discussions. These opportunities are earned through performance, trust, and long-term commitment.</div>
+<div class="summary-box">The POTENT Promise: For the right people, this is not just a job. This is an opportunity to be part of something bigger — a transportation company, a business ecosystem, a future.</div>`
+},
+24: {
+  num:"Chapter 24", title:"The POTENT Legacy System",
+  html:`<p>POTENT was never created to be just one business. It is a connected ecosystem built around creativity, transportation, entrepreneurship, and creating opportunities. Everything starts with one principle: build something that lasts.</p>
+<h2>The POTENT Ecosystem</h2>
+<div class="rule"><strong>POTENT Operations</strong> — The logistics foundation. Expedited transportation, emergency freight, commercial deliveries, specialty transportation, regional and interstate growth.</div>
+<div class="rule"><strong>POTENT Apparel / POTENT Couture</strong> — The creative division. Premium fashion, limited collections, brand experiences, community.</div>
+<div class="rule"><strong>POTENT Playbook</strong> — The education and business development division. Entrepreneurship, sales systems, brand building, business knowledge.</div>
+<div class="rule"><strong>POTENT Events</strong> — The experience division. Community events, fashion experiences, business networking, entertainment.</div>
+<h2>The MULTICITY Vision</h2>
+<p>Long-term goal: create a connected network across cities. Multiple markets. Multiple opportunities. One POTENT standard. MULTICITY represents expansion, collaboration, community, and opportunity.</p>
+<h2>The AEMNIPOTENT Vision</h2>
+<p>AEMNIPOTENT represents the highest level of the vision — not just one company, not just one industry, but a collection of businesses, assets, ideas, and opportunities built over time.</p>
+<div class="quote">"POTENT started with a vision. A vision to create. A vision to build. A vision to prove that a person can transform their life through discipline, learning, and execution. The future is not built by waiting. It is built by action. One customer. One relationship. One opportunity. One city at a time. This is POTENT. This is the standard. This is the legacy."</div>`
+},
+25: {
+  num:"Chapter 25", title:"The POTENT App",
+  html:`<p>If it's not in the app, it didn't happen. The app is the company's source of truth. Every lead, customer, job, quote, payment, follow-up, and important conversation must be recorded.</p>
+<h2>What Must Be Logged</h2>
+<div class="rule"><strong>Leads:</strong> Company/contact name, phone, email, source, industry, decision maker, notes, lead status, next action, follow-up date. Use pipeline statuses: New → Contacted → Qualified → Quote → Follow-Up → Won → Lost. Never leave a lead without a next action.</div>
+<div class="rule"><strong>Customers:</strong> Contacts, locations, services used, pricing/quote information, notes, payment status, communication history.</div>
+<div class="rule"><strong>Jobs:</strong> Customer, pickup, destination, date/time, service, freight details, weight, stops, helper requirement, special instructions, price, payment terms, status.</div>
+<div class="rule"><strong>Payments:</strong> Amount, payment status, date, method, invoice/job reference. Never mark a payment received when it has not actually been received.</div>
+<h2>Admin Access Rules</h2>
+<div class="rule red"><strong>Access is for company business only. Do NOT:</strong> Delete records to hide activity, change information without authorization, share login credentials, use customer information outside company business.</div>
+<h2>End-of-Day Rule</h2>
+<div class="rule red"><strong>Before leaving:</strong> No unanswered customer request. No unassigned job. No missing payment status. No lead without a next action. No important conversation left undocumented.</div>`
+},
+26: {
+  num:"Chapter 26", title:"The Three Roles",
+  html:`<p>Everyone has a job. Nobody should be confused about who owns what.</p>
+<h2>Role 1 — Dispatch / Admin</h2>
+<div class="rule green"><strong>Owns:</strong> Incoming calls, customer intake, job entry, scheduling, quotes within approved pricing, payment processing, customer updates, app accuracy, basic customer service.</div>
+<div class="rule"><strong>Escalates:</strong> Pricing exceptions, large opportunities, safety issues, unusual freight, major complaints, anything outside authority.</div>
+<h2>Role 2 — Sales Closer</h2>
+<div class="rule green"><strong>Owns:</strong> Outbound prospecting, cold calls, discovery, qualification, quotes/opportunities, closing, follow-up, new accounts, revenue generation.</div>
+<p>Primary question: "What problem are we solving?" The closer does not sell just to make a sale. Find the problem first.</p>
+<h2>Role 3 — Operations Manager / Future CEO</h2>
+<div class="rule green"><strong>Owns:</strong> Daily operation, team coordination, dispatch oversight, customer escalation, performance, operational problems, numbers, training, accountability.</div>
+<p>Long-term goal: this person is capable of running day-to-day business without the owner.</p>
+<h2>The Owner's Long-Term Responsibility</h2>
+<div class="rule"><strong>Vision, Strategy, Major relationships, Capital, Expansion, New opportunities, Building the POTENT ecosystem.</strong> The goal is not for the owner to do everyone's job. The goal is to build people who can run the machine.</div>`
+},
+27: {
+  num:"Chapter 27", title:"Daily Operating System",
+  html:`<p>The rhythm that keeps every job, lead, and dollar accounted for.</p>
+<h2>Morning — Before Work Begins</h2>
+<ul class="ul"><li>Open the app</li><li>Review new leads</li><li>Review today's jobs</li><li>Review unpaid/open jobs</li><li>Review follow-ups due today</li><li>Identify priorities and assign tasks</li></ul>
+<h2>During the Day — By Role</h2>
+<div class="rule"><strong>Dispatch / Admin:</strong> Answer → Understand → Enter → Quote → Schedule → Confirm → Update</div>
+<div class="rule"><strong>Closer:</strong> Research → Call → Discover → Qualify → Solve → Close → Follow Up</div>
+<div class="rule"><strong>Operations Manager:</strong> Review → Coordinate → Solve → Measure → Coach</div>
+<h2>Customer Request Flow</h2>
+<div class="rule">Inquiry → Information → Quote → Customer Approval → Booking → Dispatch → Completion → Payment → Follow-Up<br><strong>Nothing gets skipped.</strong></div>
+<h2>When Something Goes Wrong</h2>
+<div class="rule red"><strong>1. Identify</strong> — What happened? <strong>2. Contain</strong> — What can we do immediately? <strong>3. Communicate</strong> — Who needs to know? <strong>4. Solve</strong> — What is the best available solution? <strong>5. Document</strong> — Put it in the app. <strong>6. Prevent</strong> — What needs to change so it doesn't happen again?</div>
+<h2>End of Day — Before Closing</h2>
+<ul class="ul"><li>Update every active lead</li><li>Update every active job</li><li>Confirm payment status</li><li>Complete follow-ups</li><li>Resolve or escalate outstanding issues</li><li>Make sure the app is accurate</li></ul>`
+},
+28: {
+  num:"Chapter 28", title:"Performance & Rewards",
+  html:`<p>POTENT is performance-driven. Everyone knows their role, their numbers, and the company goal.</p>
+<h2>First 90-Day Company Goal</h2>
+<div class="rule green"><strong>$100,000 REVENUE — 90 Days</strong><br><br>The 90-Day System: Set the target → Execute roles → Track numbers → Correct what isn't working → Reward the win → Reset and go again.<br><br>Team Vacation: When the company reaches the 90-day goal, the qualifying team earns a paid company vacation.</div>
+<h2>Performance By Role</h2>
+<table><tr><th>Role</th><th>What Gets Measured</th></tr>
+<tr><td>Closer</td><td>Calls, conversations, decision makers reached, qualified opportunities, quotes, new accounts, revenue, collections</td></tr>
+<tr><td>Dispatch / Admin</td><td>Calls answered, response time, quotes, jobs booked, payment accuracy, customer issues, app accuracy</td></tr>
+<tr><td>Operations Manager</td><td>Revenue, profitability, jobs completed, on-time performance, collections, team performance, problems resolved</td></tr></table>
+<h2>Accountability Process</h2>
+<div class="rule"><strong>If performance is below standard:</strong> Identify → Coach → Measure → Improve. If performance consistently does not improve, the company may make staffing changes. The goal is to have the right people in the right positions producing results. <strong>No passengers.</strong></div>`
+},
+29: {
+  num:"Chapter 29", title:"Compensation, Rewards & Ownership",
+  html:`<p>Rewards are rewarded here.</p>
+<h2>Commission</h2>
+<table><tr><th>Revenue Type</th><th>Commission</th></tr>
+<tr><td>Qualifying Collected Revenue</td><td><strong style="color:#F0E000;">12.5%</strong></td></tr>
+<tr><td>Qualifying Same-Day Payment Jobs</td><td><strong style="color:#F0E000;">10%</strong></td></tr></table>
+<p>Commission is calculated according to the employee's written compensation agreement. Commission is paid after POTENT receives payment.</p>
+<h2>Bonuses</h2>
+<ul class="ul"><li>Revenue bonuses</li><li>Performance bonuses</li><li>Team bonuses</li><li>Annual bonuses</li><li>Special incentives</li></ul>
+<h2>Six-Month Ownership Milestone</h2>
+<div class="rule purple"><strong>TARGET: 10% company ownership after 6 months.</strong><br><br>POTENT believes the people who help build the company should have an opportunity to participate in its success. After six months, an eligible team member who has consistently met performance, conduct, and role requirements reaches the ownership milestone.<br><br>The ownership interest must be formally transferred through the company's LLC operating agreement and required legal documents. <strong>The handbook itself does not transfer ownership.</strong></div>
+<h2>What Earns the Milestone</h2>
+<ul class="ul"><li>Consistent performance</li><li>Reliability and accountability</li><li>Leadership demonstrated</li><li>Revenue contribution</li><li>Customer value created</li><li>Team contribution</li><li>Commitment to POTENT</li></ul>
+<div class="quote">"I don't want people working here forever with no path forward. If you help build the company, create value, take responsibility, and prove you belong here, I want you to have the opportunity to participate in what you helped create."</div>`
+},
+30: {
+  num:"Chapter 30", title:"Leadership & Scaling POTENT",
+  html:`<p>The title isn't the achievement. Capability is.</p>
+<h2>The Path</h2>
+<div class="rule">Employee → High Performer → Leader → Manager → Operations Leader → Future CEO</div>
+<h2>What the Future CEO Must Understand</h2>
+<table><tr><th>Area</th><th>What to Know</th></tr>
+<tr><td>Sales</td><td>How customers are found, qualified, closed, retained, and expanded</td></tr>
+<tr><td>Operations</td><td>How jobs move from booking to completion</td></tr>
+<tr><td>Finance</td><td>Revenue, expenses, margins, collections, and cash flow</td></tr>
+<tr><td>People</td><td>Hiring, training, coaching, accountability, and leadership</td></tr>
+<tr><td>Compliance</td><td>Transportation, insurance, safety, and regulatory requirements</td></tr>
+<tr><td>Growth</td><td>How to increase customers, capacity, revenue, and profitability</td></tr></table>
+<h2>Owner → CEO Transition</h2>
+<table><tr><th>Stage</th><th>State</th></tr>
+<tr><td>Stage 1</td><td>Owner teaches</td></tr>
+<tr><td>Stage 2</td><td>Leader assists</td></tr>
+<tr><td>Stage 3</td><td>Leader takes responsibility</td></tr>
+<tr><td>Stage 4</td><td>Leader runs daily operations</td></tr>
+<tr><td>Stage 5</td><td>Owner receives reports instead of managing every task</td></tr>
+<tr><td>Stage 6</td><td>Owner focuses on growth</td></tr></table>
+<h2>Scaling Opportunities</h2>
+<ul class="ul"><li>More customers and recurring accounts</li><li>More drivers and equipment</li><li>Larger commercial contracts</li><li>Interstate authority and operations</li><li>Additional markets</li><li>Additional POTENT business divisions</li></ul>
+<div class="rule red"><strong>Don't scale chaos. Build the system first.</strong></div>`
+},
+31: {
+  num:"Chapter 31", title:"SOPs & Critical Situations",
+  html:`<p>Standard procedures for the moments that matter most.</p>
+<h2>New Customer SOP</h2>
+<div class="rule">Answer → Identify need → Collect information → Create customer in app → Quote → Confirm → Book → Dispatch → Complete → Collect payment → Follow up</div>
+<h2>New Commercial Account</h2>
+<p>Collect: legal/company name, contact, phone, email, billing information, locations, service requirements, payment terms, authorized contacts. Send required company documents. Create the account in the app.</p>
+<h2>Expedited Job</h2>
+<p>Confirm: pickup, destination, deadline, freight, weight, pieces, access, special requirements, price, payment. Then dispatch.</p>
+<h2>Commercial Cleanout</h2>
+<p>Confirm: location, type of property, material description, approximate volume, photos, access, curbside requirements, desired date, price, payment. Do not accept prohibited materials. When uncertain: STOP and escalate.</p>
+<h2>When a Delay Happens</h2>
+<div class="rule red"><strong>Immediately:</strong> Identify the cause → Notify operations → Notify the customer → Determine new ETA → Document it → Follow up until resolved.<br><br><strong>Never allow a customer to discover a delay before POTENT tells them.</strong></div>
+<h2>Customer Complaint</h2>
+<div class="rule">Listen. Don't argue. Acknowledge. Find the facts. Solve. Document. Follow up. If you cannot resolve it within your authority: escalate immediately.</div>
+<h2>Payment Problem</h2>
+<div class="rule red">Record the actual status. Do not mark paid when it isn't paid. Do not promise payment terms you aren't authorized to offer. Escalate unresolved commercial payment issues.</div>`
+},
+32: {
+  num:"Chapter 32", title:"Compliance & Safety SOP",
+  html:`<p>If you're unsure whether a job is legal, safe, insured, or within POTENT's authority — stop and contact the Owner immediately.</p>
+<h2>Zero Impairment Driving Rule</h2>
+<div class="rule red" style="font-size:12px;line-height:2;"><strong>No weed. No alcohol. No intoxicating substances before or during driving. EVER.</strong><br><br>This isn't about judging personal life. Once you get behind the wheel representing POTENT, the standard changes. We're responsible for our customers, their freight, other people on the road, our employees, our insurance, and our company.<br><br><strong>Off the clock = your personal life. Behind the wheel for POTENT = zero impairment. No exceptions. No debate.</strong><br><br>If you are not fit to drive: DO NOT DRIVE. Notify management immediately. There is no job, shipment, deadline, or paycheck worth risking someone's life.</div>
+<h2>Before Accepting Any Job</h2>
+<ul class="ul"><li>Correct service and equipment for the job</li><li>Pickup and delivery locations confirmed</li><li>Freight description — no hazardous or prohibited materials</li><li>Vehicle/load capacity not exceeded</li><li>Required insurance and authority in place</li><li>Any special access requirements noted</li></ul>
+<h2>At Pickup — Confirm</h2>
+<ul class="ul"><li>Correct customer and freight</li><li>Freight condition documented — photograph any damage before loading</li><li>Quantity verified when applicable</li></ul>
+<h2>Accident Protocol</h2>
+<div class="rule red"><strong>1. Stop safely. 2. Check for injuries. 3. Contact emergency services when needed. 4. Protect the scene/freight. 5. Notify Owner immediately. 6. Document everything. 7. Do NOT admit fault or make promises about liability.</strong></div>
+<h2>Freight Damage</h2>
+<div class="rule red"><strong>Photograph it. Document the condition. Notify Owner. Notify customer through proper channel. Do NOT promise reimbursement or liability decisions.</strong></div>
+<h2>Compliance Issue</h2>
+<p>If law enforcement, DOT, a customer, broker, insurer, or another authority raises a compliance issue: remain professional → provide required information → notify Owner → document everything.</p>`
+},
+33: {
+  num:"Chapter 33", title:"Emergency & Escalation SOP",
+  html:`<p>When something goes wrong: protect people, protect freight, communicate, document, solve. Never hide a problem. Bad news early can be fixed. Bad news hidden becomes a crisis.</p>
+<h2>The Escalation Levels</h2>
+<div class="rule"><strong>Level 1 — Employee Handles It:</strong> Normal customer/service issue within their authority.</div>
+<div class="rule"><strong>Level 2 — Manager:</strong> Pricing exceptions, customer disputes, major delays, operational problems, unusual requests.</div>
+<div class="rule red"><strong>Level 3 — Owner Immediately:</strong> Accident, injury, freight loss/damage, legal threat, insurance issue, compliance issue, major financial issue, media/public issue, or anything you're simply unsure about. <strong>When in doubt: escalate.</strong></div>
+<h2>Driver Breakdown</h2>
+<div class="rule red">1. Get somewhere safe. 2. Notify Owner. 3. Notify customer. 4. Determine if roadside assistance is needed. 5. Protect the freight. 6. Determine replacement transportation if necessary. 7. Document the incident.</div>
+<h2>Failed Delivery</h2>
+<div class="rule red"><strong>Do not abandon freight.</strong> Document the situation → contact customer → notify Owner → wait for instructions on the authorized next step.</div>
+<h2>Wrong Address</h2>
+<div class="rule red"><strong>STOP.</strong> Don't drive somewhere else because someone tells you verbally. Verify the change through the proper customer/management process and document it.</div>
+<h2>Customer Changes the Job</h2>
+<p>Don't promise new pricing yourself unless authorized. Document the change. Get updated authorization from Owner.</p>
+<h2>Legal Threat</h2>
+<div class="rule red">If someone says "I'm suing you" or threatens legal action: stay calm → don't argue → don't admit fault → don't make promises → document exactly what happened → notify Owner immediately.</div>
+<h2>The One Rule Every Employee Remembers</h2>
+<div class="quote">People first. Freight second. Customer informed. Owner informed. Everything documented.</div>
+<div class="summary-box">PROBLEMS BEFORE PRODUCTS. That is the POTENT way.</div>`
+}
+};
+
+function showTOC() {
+  document.getElementById('toc').style.display = 'block';
+  document.getElementById('chapter-view').style.display = 'none';
+  window.scrollTo(0, 0);
+}
+
+function showChapter(n) {
+  current = n;
+  var ch = chapters[n];
+  if (!ch) return;
+  document.getElementById('toc').style.display = 'none';
+  document.getElementById('chapter-view').style.display = 'block';
+  document.getElementById('chapter-content').innerHTML =
+    '<div class="ch-header"><div class="ch-num">' + ch.num + ' of 33</div><div class="ch-title">' + ch.title + '</div></div>' + ch.html;
+  document.getElementById('prev-btn').style.opacity = n <= 1 ? '0.3' : '1';
+  document.getElementById('next-btn').style.opacity = n >= 33 ? '0.3' : '1';
+  window.scrollTo(0, 0);
+}
+
+function prevChapter() { if (current > 1) showChapter(current - 1); }
+function nextChapter() { if (current < 33) showChapter(current + 1); }
+</script>
+</body>
+</html>
