@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>POTENT PRÄDƏKT® — Employee Portal</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #080808; color: #F2F2F2; font-family: 'Segoe UI', Arial, sans-serif; }
+  .nav { position: sticky; top: 0; background: #080808; border-bottom: 1px solid #1a1a1a; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; z-index: 100; flex-wrap: wrap; gap: 8px; }
+  .nav-brand { font-size: 16px; font-weight: 900; }
+  .nav-brand span { color: #F0E000; }
+  .nav-links { display: flex; gap: 4px; flex-wrap: wrap; }
+  .nav-link { background: transparent; border: 1px solid #333; color: #888; border-radius: 6px; padding: 4px 10px; font-size: 10px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .nav-link.active, .nav-link:hover { background: #F0E000; color: #000; border-color: #F0E000; }
+  .section { display: none; padding: 24px 16px 80px; max-width: 760px; margin: 0 auto; }
+  .section.active { display: block; }
+  h1 { font-size: 24px; font-weight: 900; color: #F2F2F2; margin-bottom: 4px; }
+  h2 { font-size: 16px; font-weight: 800; color: #F0E000; margin: 24px 0 8px; }
+  h3 { font-size: 13px; font-weight: 700; color: #F2F2F2; margin: 16px 0 6px; }
+  p { font-size: 12px; color: #888; line-height: 1.8; margin-bottom: 10px; }
+  .sub { font-size: 10px; color: #555; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
+  .card { background: #111; border: 1px solid #222; border-radius: 10px; padding: 14px; margin-bottom: 10px; }
+  .badge { display: inline-block; border-radius: 20px; padding: 3px 10px; font-size: 10px; font-weight: 700; }
+  .badge-owner { background: #F0E00022; color: #F0E000; }
+  .badge-dispatch { background: #4299E122; color: #4299E1; }
+  .badge-driver { background: #1DB95422; color: #1DB954; }
+  .ul { list-style: none; }
+  .ul li { font-size: 12px; color: #888; padding: 5px 0; border-bottom: 1px solid #1a1a1a; display: flex; gap: 8px; line-height: 1.5; }
+  .ul li::before { content: "✓"; color: #F0E000; font-weight: 700; flex-shrink: 0; }
+  .ul li:last-child { border-bottom: none; }
+  .app-link { display: flex; align-items: center; justify-content: space-between; background: #111; border: 1px solid #222; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; text-decoration: none; }
+  .app-link:hover { border-color: #F0E000; }
+  .app-link-info { display: flex; align-items: center; gap: 10px; }
+  .app-link-icon { font-size: 20px; }
+  .app-link-name { font-size: 13px; font-weight: 700; color: #F2F2F2; }
+  .app-link-url { font-size: 10px; color: #F0E000; }
+  .cred-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #1a1a1a; }
+  .cred-label { font-size: 11px; color: #666; }
+  .cred-value { font-size: 12px; font-weight: 700; color: #F0E000; font-family: monospace; background: #F0E00012; padding: 2px 8px; border-radius: 5px; }
+  .rule { background: #1a1a1a; border-left: 3px solid #F0E000; border-radius: 0 8px 8px 0; padding: 10px 14px; margin-bottom: 8px; font-size: 12px; color: #888; line-height: 1.7; }
+  .rule strong { color: #F0E000; }
+  .rule.red { border-color: #E53E3E; }
+  .rule.red strong { color: #E53E3E; }
+  .rule.green { border-color: #1DB954; }
+  .rule.green strong { color: #1DB954; }
+  .rule.purple { border-color: #9F7AEA; }
+  .rule.purple strong { color: #9F7AEA; }
+  .step { display: flex; gap: 12px; margin-bottom: 12px; }
+  .step-num { width: 28px; height: 28px; border-radius: 50%; background: #F0E00022; border: 2px solid #F0E000; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; color: #F0E000; flex-shrink: 0; }
+  .step-content { flex: 1; }
+  .step-title { font-size: 12px; font-weight: 700; color: #F2F2F2; margin-bottom: 2px; }
+  .step-desc { font-size: 11px; color: #666; line-height: 1.6; }
+  .status-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid #1a1a1a; font-size: 12px; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 11px; }
+  th { background: #1a1a1a; color: #888; padding: 7px 10px; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: 0.8px; }
+  td { padding: 8px 10px; border-bottom: 1px solid #1a1a1a; color: #888; }
+  td strong { color: #F2F2F2; }
+  .chapter-header { background: #F0E00010; border: 1px solid #F0E00033; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; }
+  .chapter-num { font-size: 10px; color: #F0E000; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+  .chapter-title { font-size: 15px; font-weight: 900; color: #F2F2F2; }
+  .sign-box { border: 1px solid #333; border-radius: 10px; padding: 20px; margin-top: 16px; }
+  .sign-line { border-bottom: 1px solid #444; margin-bottom: 6px; height: 28px; }
+  .sign-label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+  .quote { background: #111; border: 1px solid #222; border-radius: 8px; padding: 14px; margin: 12px 0; font-size: 12px; color: #F0E000; font-style: italic; line-height: 1.8; }
+</style>
+</head>
+<body>
+<div class="nav">
+  <div class="nav-brand">POTENT <span>PRÄDƏKT</span>®</div>
+  <div class="nav-links">
+    <button class="nav-link active" onclick="show('welcome')">Welcome</button>
+    <button class="nav-link" onclick="show('apps')">Apps</button>
+    <button class="nav-link" onclick="show('handbook')">Handbook</button>
+    <button class="nav-link" onclick="show('sales')">Sales</button>
+    <button class="nav-link" onclick="show('leads')">Leads</button>
+    <button class="nav-link" onclick="show('dispatch')">Dispatch</button>
+    <button class="nav-link" onclick="show('drivers')">Drivers</button>
+    <button class="nav-link" onclick="show('compliance')">Compliance</button>
+    <button class="nav-link" onclick="show('rules')">Rules</button>
+    <button class="nav-link" onclick="show('sign')">Sign</button>
+  </div>
+</div>
+
+<div id="welcome" class="section active">
+  <div class="sub">Employee Portal · Confidential · POTENT PRÄDƏKT®</div>
+  <h1>Welcome to POTENT.</h1>
+  <p>You are not here to memorize scripts. You are not here to pressure people. You are here to solve problems. Every phone call. Every email. Every relationship. Starts with one question: "What problem can we solve?" That is the POTENT way.</p>
+  <div style="background:#F0E00010;border:1px solid #F0E00033;border-radius:12px;padding:16px;margin:16px 0;">
+    <div style="font-size:11px;font-weight:700;color:#F0E000;margin-bottom:8px;">Company at a glance</div>
+    <table><tr><td><strong>Company</strong></td><td>Potent Logistics LLC / POTENT OPERATIONS LLC</td></tr>
+    <tr><td><strong>Owner</strong></td><td>ANTHONY EMMANUEL FIGUEROA MENDES®</td></tr>
+    <tr><td><strong>Brand</strong></td><td>POTENT PRÄDƏKT®</td></tr>
+    <tr><td><strong>Phone</strong></td><td>(770) 648-4228</td></tr>
+    <tr><td><strong>Email</strong></td><td>potentlogistics@pm.me</td></tr></table>
+  </div>
+  <h2>Our Mission</h2>
+  <p>POTENT OPERATIONS exists to provide fast, dependable transportation and commercial solutions when timing matters. We help businesses stay moving and solve problems when their normal plan no longer works.</p>
+  <h2>What We Do</h2>
+  <ul class="ul">
+    <li>Expedited transportation and same-day freight</li>
+    <li>Emergency transportation</li>
+    <li>Commercial deliveries and last-mile transportation</li>
+    <li>Trade show and event transportation</li>
+    <li>Commercial curbside cleanouts — $500+ minimum</li>
+    <li>Large non-hazardous removal projects</li>
+  </ul>
+  <h2>What We Do NOT Do</h2>
+  <ul class="ul">
+    <li>Transport hazardous materials</li>
+    <li>Move household goods</li>
+    <li>Enter homes for junk removal</li>
+    <li>Perform inside moving services</li>
+    <li>Compete to be the cheapest</li>
+  </ul>
+  <h2>The 3 Business Lines</h2>
+  <div class="card"><div style="font-size:13px;font-weight:800;color:#F2F2F2;margin-bottom:4px;">📦 Potent Logistics — Delivery & Hauling</div><p style="margin:0;">Box truck delivery, junk removal, cleanouts, freight. Our core operation.</p></div>
+  <div class="card"><div style="font-size:13px;font-weight:800;color:#F2F2F2;margin-bottom:4px;">💻 POTENT OS — Software Licensing</div><p style="margin:0;">We license our dispatch system to other logistics companies. $3,500–$12,500 per fleet.</p></div>
+  <div class="card"><div style="font-size:13px;font-weight:800;color:#F2F2F2;margin-bottom:4px;">🚛 POTENT LOADBOARD — Truck Marketplace</div><p style="margin:0;">Marketplace connecting box truck operators with loads. potentloadboard.netlify.app</p></div>
+  <h2>Your Role</h2>
+  <div class="card">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:130px;"><div class="badge badge-owner" style="margin-bottom:6px;">👑 Owner</div><p style="font-size:11px;margin:0;">All access. Full system. License manager. Vision and strategy.</p></div>
+      <div style="flex:1;min-width:130px;"><div class="badge badge-dispatch" style="margin-bottom:6px;">📞 Dispatch / Closer</div><p style="font-size:11px;margin:0;">Quote, Jobs, Leads, Calendar, Driver App. Book jobs and close sales.</p></div>
+      <div style="flex:1;min-width:130px;"><div class="badge badge-driver" style="margin-bottom:6px;">🚐 Driver</div><p style="font-size:11px;margin:0;">Driver panel and Driver App. Execute jobs and log all activity.</p></div>
+    </div>
+  </div>
+</div>
+
+<div id="apps" class="section">
+  <div class="sub">All Platforms</div>
+  <h1>Your Apps.</h1>
+  <p>Bookmark all of these on your phone right now.</p>
+  <h2>Operations</h2>
+  <a class="app-link" href="https://potentoperations.netlify.app" target="_blank">
+    <div class="app-link-info"><div class="app-link-icon">⚡</div><div><div class="app-link-name">POTENT OS — Main Platform</div><div class="app-link-url">potentoperations.netlify.app</div><div style="font-size:10px;color:#555;margin-top:1px;">Dispatch · Jobs · Driver App · Leads · Payroll · Leaderboard</div></div></div>
+    <div style="color:#F0E000;font-size:16px;">→</div>
+  </a>
+  <a class="app-link" href="https://potentloadboard.netlify.app" target="_blank">
+    <div class="app-link-info"><div class="app-link-icon">🚛</div><div><div class="app-link-name">POTENT LOADBOARD</div><div class="app-link-url">potentloadboard.netlify.app</div><div style="font-size:10px;color:#555;margin-top:1px;">Box truck load marketplace</div></div></div>
+    <div style="color:#F0E000;font-size:16px;">→</div>
+  </a>
+  <h2>Sales Tools</h2>
+  <a class="app-link" href="https://potentoperations.netlify.app?apply" target="_blank">
+    <div class="app-link-info"><div class="app-link-icon">📋</div><div><div class="app-link-name">POTENT OS Waitlist</div><div class="app-link-url">potentoperations.netlify.app?apply</div><div style="font-size:10px;color:#555;margin-top:1px;">Send to potential POTENT OS customers</div></div></div>
+    <div style="color:#F0E000;font-size:16px;">→</div>
+  </a>
+  <h2>Owner Only</h2>
+  <a class="app-link" href="https://potentoperations.netlify.app?potent-os-admin" target="_blank">
+    <div class="app-link-info"><div class="app-link-icon">🔐</div><div><div class="app-link-name">License Manager</div><div class="app-link-url">potentoperations.netlify.app?potent-os-admin</div><div style="font-size:10px;color:#555;margin-top:1px;">PW: POTENTOS_ADMIN_2026</div></div></div>
+    <div style="color:#F0E000;font-size:16px;">→</div>
+  </a>
+  <a class="app-link" href="https://potentloadboard.netlify.app?admin" target="_blank">
+    <div class="app-link-info"><div class="app-link-icon">🛠</div><div><div class="app-link-name">Loadboard Admin</div><div class="app-link-url">potentloadboard.netlify.app?admin</div><div style="font-size:10px;color:#555;margin-top:1px;">PW: POTENTBOARD2026</div></div></div>
+    <div style="color:#F0E000;font-size:16px;">→</div>
+  </a>
+  <h2>Logins — POTENT OS</h2>
+  <p style="font-size:11px;color:#555;">potentoperations.netlify.app → scroll to bottom → tap copyright text to open login.</p>
+  <div class="card">
+    <div style="font-size:12px;font-weight:700;color:#F0E000;margin-bottom:8px;">👑 Owner</div>
+    <div class="cred-row" style="border:none;"><span class="cred-label">POTENT (Owner)</span><span class="cred-value">POTENTADMIN0421</span></div>
+  </div>
+  <div class="card">
+    <div style="font-size:12px;font-weight:700;color:#4299E1;margin-bottom:8px;">📞 Dispatch / Sales — 10 Slots</div>
+    <div class="cred-row"><span class="cred-label">Dispatch 1</span><span class="cred-value">DISPATCH1PL</span></div>
+    <div class="cred-row"><span class="cred-label">Dispatch 2</span><span class="cred-value">DISPATCH2PL</span></div>
+    <div class="cred-row"><span class="cred-label">Dispatch 3</span><span class="cred-value">DISPATCH3PL</span></div>
+    <div class="cred-row"><span class="cred-label">Dispatch 4</span><span class="cred-value">DISPATCH4PL</span></div>
+    <div class="cred-row"><span class="cred-label">Dispatch 5</span><span class="cred-value">DISPATCH5PL</span></div>
+    <div class="cred-row"><span class="cred-label">Dispatch 6</span><span class="cred-value">DISPATCH6PL</span></div>
+    <div class="cred-row"><span class="cred-label">Dispatch 7</span><span class="cred-value">DISPATCH7PL</span></div>
+    <div class="cred-row"><span class="cred-label">Dispatch 8</span><span class="cred-value">DISPATCH8PL</span></div>
+    <div class="cred-row"><span class="cred-label">Dispatch 9</span><span class="cred-value">DISPATCH9PL</span></div>
+    <div class="cred-row" style="border:none;"><span class="cred-label">Dispatch 10</span><span class="cred-value">DISPATCH10PL</span></div>
+  </div>
+  <div class="card">
+    <div style="font-size:12px;font-weight:700;color:#1DB954;margin-bottom:8px;">🚐 Driver — 3 Slots</div>
+    <div class="cred-row"><span class="cred-label">Driver 1</span><span class="cred-value">DRIVERPL</span></div>
+    <div class="cred-row"><span class="cred-label">Driver 2</span><span class="cred-value">DRIVER2PL</span></div>
+    <div class="cred-row" style="border:none;"><span class="cred-label">Driver 3</span><span class="cred-value">DRIVER3PL</span></div>
+  </div>
+  <div class="rule red"><strong>NEVER</strong> share your password. Everything done under your login has your name and timestamp on it.</div>
+</div>
+
+<div id="handbook" class="section">
+  <div class="sub">Employee Handbook · 33 Chapters</div>
+  <h1>How We Operate.</h1>
+  <div class="chapter-header">
+    <div class="chapter-num">Chapter 1</div>
+    <div class="chapter-title">The POTENT Way — 10 Rules Every Employee Lives By</div>
+  </div>
+  <div class="rule green"><strong>Rule 1 — Problems Before Products.</strong> Never begin with what we do. Begin with what the customer needs.</div>
+  <div class="rule green"><strong>Rule 2 — Questions Create Sales.</strong> The person asking thoughtful questions controls the conversation.</div>
+  <div class="rule green"><strong>Rule 3 — Listen More Than You Speak.</strong> Listen to understand. Not to respond.</div>
+  <div class="rule green"><strong>Rule 4 — Diagnose Before You Recommend.</strong> Never offer a solution until you understand the situation.</div>
+  <div class="rule green"><strong>Rule 5 — Sell Outcomes.</strong> We don't sell trucks. We sell confidence, speed, reliability, and peace of mind.</div>
+  <div class="rule green"><strong>Rule 6 — Price Reflects Value.</strong> We don't apologize for professional pricing.</div>
+  <div class="rule green"><strong>Rule 7 — Never Argue.</strong> Ask another question. Curiosity builds trust. Arguments destroy it.</div>
+  <div class="rule green"><strong>Rule 8 — Every Conversation Ends With a Next Step.</strong> Always move the relationship forward.</div>
+  <div class="rule green"><strong>Rule 9 — Relationships Beat Transactions.</strong> One satisfied customer is worth more than one hundred cold calls.</div>
+  <div class="rule green"><strong>Rule 10 — Represent POTENT With Pride.</strong> If we say we will do something, we do it.</div>
+
+  <div class="chapter-header" style="margin-top:20px;">
+    <div class="chapter-num">Chapters 2–3</div>
+    <div class="chapter-title">Know The Business & Know Your Customer</div>
+  </div>
+  <p>You cannot sell what you don't understand. The POTENT customer is a company where transportation problems cost them money.</p>
+  <ul class="ul">
+    <li>Manufacturing companies — production delays, missing parts, urgent shipments</li>
+    <li>Warehouses and distribution centers — overflow, last-minute needs</li>
+    <li>3PL and logistics companies — need reliable backup carriers fast</li>
+    <li>Automotive suppliers — downtime is extremely expensive</li>
+    <li>Property management — tenant turnover, commercial cleanouts</li>
+    <li>Event companies — deadline-driven, specialty transport</li>
+  </ul>
+
+  <div class="chapter-header" style="margin-top:20px;">
+    <div class="chapter-num">Chapter 14</div>
+    <div class="chapter-title">The POTENT Vision & Founder Message</div>
+  </div>
+  <div class="quote">"POTENT started as an idea in 2019. Through learning, persistence, and creativity, it became a foundation for something bigger. The mission now is to build a company where people can create opportunities, develop skills, and grow. This cannot be built alone. Welcome to POTENT."</div>
+
+  <div class="chapter-header" style="margin-top:20px;">
+    <div class="chapter-num">Chapter 19 & 29</div>
+    <div class="chapter-title">Commission Plan & Ownership Milestone</div>
+  </div>
+  <table>
+    <tr><th>Revenue Type</th><th>Commission</th></tr>
+    <tr><td>Standard collected revenue</td><td><strong style="color:#F0E000;">12.5%</strong></td></tr>
+    <tr><td>Same-day payment jobs</td><td><strong style="color:#F0E000;">10%</strong></td></tr>
+    <tr><td>$10,000 revenue milestone bonus</td><td><strong style="color:#1DB954;">+$500 bonus</strong></td></tr>
+  </table>
+  <div class="rule purple"><strong>6-Month Ownership Milestone:</strong> After 6 months of consistent performance, conduct, and results — a qualifying team member may earn a path to 10% company ownership. Requires formal legal documentation. The handbook itself does not transfer ownership.</div>
+  <div class="rule green"><strong>90-Day Team Goal: $100,000 revenue.</strong> Hit it — POTENT pays for a company vacation. Win together. Celebrate together.</div>
+
+  <div class="chapter-header" style="margin-top:20px;">
+    <div class="chapter-num">Chapters 26–27</div>
+    <div class="chapter-title">The 3 Roles & Daily Operating System</div>
+  </div>
+  <div class="card"><div style="font-size:12px;font-weight:700;color:#4299E1;margin-bottom:4px;">📞 Dispatch / Admin</div><p style="margin:0;font-size:11px;color:#666;">Incoming calls, customer intake, job entry, scheduling, quotes, payments, customer updates, app accuracy.</p></div>
+  <div class="card"><div style="font-size:12px;font-weight:700;color:#F0E000;margin-bottom:4px;">🏆 Sales Closer</div><p style="margin:0;font-size:11px;color:#666;">Outbound prospecting, cold calls, discovery, qualification, closing, follow-up, new accounts, revenue.</p></div>
+  <div class="card"><div style="font-size:12px;font-weight:700;color:#1DB954;margin-bottom:4px;">⚙ Operations Manager</div><p style="margin:0;font-size:11px;color:#666;">Daily operations, team coordination, dispatch oversight, escalation, performance, accountability, training.</p></div>
+</div>
+
+<div id="sales" class="section">
+  <div class="sub">Sales Playbook · Chapters 4–18</div>
+  <h1>Selling the POTENT Way.</h1>
+  <div class="chapter-header">
+    <div class="chapter-num">Chapter 7</div>
+    <div class="chapter-title">The POTENT Calling System</div>
+  </div>
+  <p>Southern hospitality. Serious sales. Real relationships. Every call: Open → Discover → Listen → Dig → Qualify → Solve → Close → Follow Up.</p>
+  <h3>Opening Script</h3>
+  <div class="rule">"Hey, this is [NAME] with POTENT Operations. How are you doing today?" — Let them answer. Then: "I'll keep this quick — I know you've got a business to run. Did I catch you with about 30 seconds?"</div>
+  <div class="rule">"The reason I'm calling is we help businesses when freight needs to move quickly, when regular transportation can't cover something, or when they need a reliable option. Out of curiosity — how are you currently handling those situations?" <strong>Then STOP. Listen.</strong></div>
+
+  <h3>Objection Responses</h3>
+  <div class="rule"><strong>"We already have a carrier."</strong> → "That makes sense. Most companies we work with already have providers. I'm curious — what happens when those carriers are unavailable or something urgent comes up?"</div>
+  <div class="rule"><strong>"Send me information."</strong> → "Absolutely. Before I do — what type of transportation challenges does your company usually run into?"</div>
+  <div class="rule"><strong>"Your price is too high."</strong> → "Is it higher than what you're currently paying, or higher than you expected?" Then: "How important is the delivery timeline?"</div>
+  <div class="rule"><strong>"I need to think about it."</strong> → "Of course. Usually there's something specific they're considering. What would you say is the biggest thing?"</div>
+  <div class="rule"><strong>"We don't need anything right now."</strong> → "I understand. Problems usually happen unexpectedly. Do you have a backup option in place if something urgent comes up?"</div>
+
+  <div class="chapter-header" style="margin-top:20px;">
+    <div class="chapter-num">Chapter 10</div>
+    <div class="chapter-title">Closing — Confirm Before You Close</div>
+  </div>
+  <div class="rule"><strong>Problem confirmed:</strong> "The biggest challenge is ___, correct?"</div>
+  <div class="rule"><strong>Impact confirmed:</strong> "When that happens, it creates ___ for your team, correct?"</div>
+  <div class="rule"><strong>Goal confirmed:</strong> "You would want a partner that can ___, correct?"</div>
+  <div class="rule green"><strong>Direct Close:</strong> "Based on everything we discussed, is there any reason we shouldn't move forward?" — Then be quiet. Silence is a skill.</div>
+
+  <div class="chapter-header" style="margin-top:20px;">
+    <div class="chapter-num">Chapter 11</div>
+    <div class="chapter-title">Follow-Up System</div>
+  </div>
+  <table>
+    <tr><th>When</th><th>What to Do</th></tr>
+    <tr><td>Day 1</td><td>Initial contact — create awareness</td></tr>
+    <tr><td>Day 3</td><td>Value follow-up — relevant tip, not "did you decide?"</td></tr>
+    <tr><td>Day 7</td><td>Check-in — is transportation support ever needed?</td></tr>
+    <tr><td>Day 14</td><td>Stay connected — available if something urgent comes up</td></tr>
+    <tr><td>Monthly</td><td>Nurture — tips, updates, availability</td></tr>
+  </table>
+  <div class="rule red"><strong>Never end a call with "Let me know."</strong> Always set a specific next step.</div>
+
+  <div class="chapter-header" style="margin-top:20px;">
+    <div class="chapter-num">Chapter 12</div>
+    <div class="chapter-title">Daily Sales Standards</div>
+  </div>
+  <table>
+    <tr><th>Activity</th><th>Daily Minimum</th></tr>
+    <tr><td>New companies researched</td><td><strong style="color:#F0E000;">25</strong></td></tr>
+    <tr><td>Outbound calls made</td><td><strong style="color:#F0E000;">50</strong></td></tr>
+    <tr><td>Personalized emails sent</td><td><strong style="color:#F0E000;">25</strong></td></tr>
+    <tr><td>Follow-ups completed</td><td><strong style="color:#F0E000;">10</strong></td></tr>
+    <tr><td>CRM updates</td><td><strong style="color:#F0E000;">Every interaction</strong></td></tr>
+  </table>
+
+  <div class="chapter-header" style="margin-top:20px;">
+    <div class="chapter-num">Chapter 18</div>
+    <div class="chapter-title">Customer Intake & Payment Terms</div>
+  </div>
+  <div class="rule"><strong>Preferred payment:</strong> same day upon completion. For approved contract customers: maximum Net 14 days.</div>
+  <div class="rule red"><strong>Cleanouts minimum: $500+ only.</strong> No small pickup jobs. No household moving. No inside removal. No hazardous materials.</div>
+</div>
+
+<div id="leads" class="section">
+  <div class="sub">Dispatch Only · Leads Board</div>
+  <h1>Working the Leads Board.</h1>
+  <p>The Leads Board is inside POTENT OS under the 📋 Leads tab. 700+ pre-loaded Georgia business prospects. Call them, log outcomes, build relationships.</p>
+  <h2>How To Work a Lead</h2>
+  <div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-title">Log in as your dispatch account</div><div class="step-desc">potentoperations.netlify.app → tap copyright → select profile → enter password</div></div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-content"><div class="step-title">Open 📋 Leads tab → filter "Not Contacted"</div><div class="step-desc">Start here. Work systematically — don't cherry pick.</div></div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-content"><div class="step-title">Research the company first (30 seconds)</div><div class="step-desc">What do they do? What transportation problem might they have? Don't call blind.</div></div></div>
+  <div class="step"><div class="step-num">4</div><div class="step-content"><div class="step-title">Tap the phone number → call</div><div class="step-desc">Tap-to-call opens your dialer. Get to the decision maker.</div></div></div>
+  <div class="step"><div class="step-num">5</div><div class="step-content"><div class="step-title">Log the outcome IMMEDIATELY after the call</div><div class="step-desc">While it's fresh. Add notes — their pain point, objection, interest level.</div></div></div>
+  <div class="step"><div class="step-num">6</div><div class="step-content"><div class="step-title">Set follow-up date for warm leads</div><div class="step-desc">Any "Follow Up" outcome requires a specific date. If they said "call Thursday" — set Thursday.</div></div></div>
+  <h2>Call Outcomes</h2>
+  <table>
+    <tr><th>Outcome</th><th>When to Use</th><th>Status</th></tr>
+    <tr><td>No Answer</td><td>Phone rang, no pickup</td><td>Stays "Not Contacted"</td></tr>
+    <tr><td>Voicemail</td><td>Left voicemail</td><td>→ "Contacted"</td></tr>
+    <tr><td><strong style="color:#E53E3E;">Not Interested</strong></td><td>Clear no</td><td>→ "Closed"</td></tr>
+    <tr><td><strong style="color:#F0E000;">Follow Up</strong></td><td>Call back — date required</td><td>→ "Follow-Up"</td></tr>
+    <tr><td><strong style="color:#1DB954;">Interested</strong></td><td>They want more info</td><td>→ "Interested"</td></tr>
+    <tr><td><strong style="color:#1DB954;">Booked!</strong></td><td>Job confirmed / POTENT OS sold</td><td>→ "Booked"</td></tr>
+  </table>
+  <h2>What the Owner Sees</h2>
+  <ul class="ul">
+    <li>How many calls each rep made — today, week, month</li>
+    <li>How many leads each rep contacted</li>
+    <li>Follow-ups, interested, and booked counts per rep</li>
+    <li>Last time each rep was active</li>
+    <li>Every lead, outcome, and timestamp</li>
+  </ul>
+  <div class="rule red"><strong>Reps with zero activity are highlighted in red automatically. There is no hiding.</strong></div>
+</div>
+
+<div id="dispatch" class="section">
+  <div class="sub">Dispatch Protocol</div>
+  <h1>Booking & Dispatch.</h1>
+  <h2>Phone Quote — Do This In Order</h2>
+  <div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-title">Set Pricing Tier FIRST</div><div class="step-desc">Standard for new customers. Family/Loyalty for repeat. Never start at the floor.</div></div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-content"><div class="step-title">Enter customer name, phone, service type</div><div class="step-desc">Accurate — goes to driver and on confirmation email.</div></div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-content"><div class="step-title">Enter addresses — Street, City, State for both pickup and drop-off</div><div class="step-desc">All three fields. System geocodes and calculates mileage automatically.</div></div></div>
+  <div class="step"><div class="step-num">4</div><div class="step-content"><div class="step-title">Select speed, add-ons, payment method</div><div class="step-desc">Cash = 10% discount applied automatically. Card = Stripe charge at booking.</div></div></div>
+  <div class="step"><div class="step-num">5</div><div class="step-content"><div class="step-title">Read the LIVE QUOTE to the customer</div><div class="step-desc">Price updates in real time. Tell them the exact number shown.</div></div></div>
+  <div class="step"><div class="step-num">6</div><div class="step-content"><div class="step-title">Book It or Save Pending</div><div class="step-desc">✅ Book It for confirmed jobs. 📋 Save Pending Quote for cleanouts where Owner reviews price first.</div></div></div>
+  <h2>Pricing Reference</h2>
+  <table>
+    <tr><th>Tier</th><th>Discount</th><th>When</th></tr>
+    <tr><td>💛 Standard</td><td>Full rate</td><td>New customers, one-time jobs</td></tr>
+    <tr><td>👨‍👩‍👧 Family/Loyalty</td><td>15% off</td><td>Repeat customers, referrals only</td></tr>
+    <tr><td>🤝 Lowest Floor</td><td>20% off</td><td>ONLY to close — notify Owner first</td></tr>
+  </table>
+  <table>
+    <tr><th>Speed</th><th>Multiplier</th></tr>
+    <tr><td>Standard</td><td>×1.0</td></tr>
+    <tr><td>Urgent</td><td>×1.3</td></tr>
+    <tr><td>After-Hours</td><td>×1.6</td></tr>
+    <tr><td>Overnight</td><td>×1.8</td></tr>
+    <tr><td>Emergency</td><td>×2.0</td></tr>
+  </table>
+  <h2>Job Status Flow</h2>
+  <div class="status-row"><span><span class="status-dot" style="background:#4299E1;"></span>New</span><span style="color:#555;font-size:11px;">Auto-set at booking</span></div>
+  <div class="status-row"><span><span class="status-dot" style="background:#4299E1;"></span>Confirmed</span><span style="color:#555;font-size:11px;">After verbal confirm</span></div>
+  <div class="status-row"><span><span class="status-dot" style="background:#F0E000;"></span>Assigned</span><span style="color:#555;font-size:11px;">Driver assigned</span></div>
+  <div class="status-row"><span><span class="status-dot" style="background:#F0E000;"></span>En Route</span><span style="color:#555;font-size:11px;">Truck leaving</span></div>
+  <div class="status-row"><span><span class="status-dot" style="background:#F0E000;"></span>Arrived</span><span style="color:#555;font-size:11px;">At customer location</span></div>
+  <div class="status-row"><span><span class="status-dot" style="background:#F0E000;"></span>In Progress</span><span style="color:#555;font-size:11px;">Work has begun</span></div>
+  <div class="status-row"><span><span class="status-dot" style="background:#F0E000;"></span>Loading</span><span style="color:#555;font-size:11px;">Loading onto truck</span></div>
+  <div class="status-row"><span><span class="status-dot" style="background:#9F7AEA;"></span>In Transit</span><span style="color:#555;font-size:11px;">Heading to delivery</span></div>
+  <div class="status-row"><span><span class="status-dot" style="background:#1DB954;"></span>Delivered</span><span style="color:#555;font-size:11px;">Job physically complete</span></div>
+  <div class="status-row"><span><span class="status-dot" style="background:#1DB954;"></span>Paid</span><span style="color:#555;font-size:11px;">Payment confirmed</span></div>
+  <div class="status-row"><span><span class="status-dot" style="background:#1DB954;"></span>Completed</span><span style="color:#555;font-size:11px;">Fully closed out</span></div>
+  <div class="status-row" style="border:none;"><span><span class="status-dot" style="background:#E53E3E;"></span>Cancelled</span><span style="color:#555;font-size:11px;">Add reason in notes FIRST</span></div>
+  <h2>End of Day Checklist</h2>
+  <ul class="ul">
+    <li>No unanswered customer request</li>
+    <li>No unassigned job</li>
+    <li>No missing payment status</li>
+    <li>No lead without a next action</li>
+    <li>No important conversation undocumented</li>
+  </ul>
+</div>
+
+<div id="drivers" class="section">
+  <div class="sub">Driver Protocol · Chapters 21 & 32–33</div>
+  <h1>Driver Operations.</h1>
+  <p>Everything you need is in the POTENT OS Driver App tab. Open it on your phone browser — no download needed.</p>
+  <h2>Before Every Job</h2>
+  <ul class="ul">
+    <li>Check active jobs in Driver App</li>
+    <li>Confirm pickup address and customer phone</li>
+    <li>Perform vehicle inspection before driving</li>
+    <li>Update status to En Route when you leave</li>
+    <li>Call customer when 10 minutes away</li>
+  </ul>
+  <h2>At Pickup</h2>
+  <ul class="ul">
+    <li>Update status to Arrived</li>
+    <li>Photograph BOL before loading — tap 📸 Photo/BOL in Driver App</li>
+    <li>Confirm correct freight, quantity, condition — document damage before loading</li>
+    <li>Secure freight properly. Never overload vehicle.</li>
+    <li>Update to In Transit when loaded and leaving</li>
+  </ul>
+  <h2>At Delivery</h2>
+  <ul class="ul">
+    <li>Update status to Delivered</li>
+    <li>Photograph Proof of Delivery</li>
+    <li>Collect payment if cash job — count it, confirm amount</li>
+    <li>Report any damage to Owner BEFORE leaving site</li>
+  </ul>
+  <h2>Fuel Logging — Every Fill-Up, No Exceptions</h2>
+  <div class="rule red"><strong>Mandatory.</strong> Every fuel purchase must be logged with the state. Feeds quarterly IFTA tax report. Missing entries = tax filing problems.</div>
+  <div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-title">Tap ⛽ Log Fuel in Driver App</div></div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-content"><div class="step-title">Enter STATE — always (GA, TN, FL, AL, SC, NC...)</div></div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-content"><div class="step-title">Enter gallons and price per gallon</div></div></div>
+  <div class="step"><div class="step-num">4</div><div class="step-content"><div class="step-title">Tap Log Fuel ✓</div></div></div>
+  <h2>If Something Goes Wrong</h2>
+  <div class="rule red"><strong>Breakdown:</strong> Get somewhere safe → notify Owner → notify customer → protect freight.</div>
+  <div class="rule red"><strong>Accident:</strong> Stop → check injuries → call 911 if needed → call Owner before moving vehicle → document everything → do NOT admit fault.</div>
+  <div class="rule red"><strong>Freight damaged:</strong> Stop handling it → photograph → notify Owner → notify customer → do NOT promise refunds.</div>
+  <div class="rule red"><strong>Wrong address or job changes:</strong> STOP. Verify through Owner before proceeding. Document everything.</div>
+</div>
+
+<div id="compliance" class="section">
+  <div class="sub">Compliance & Safety · Chapters 32–33</div>
+  <h1>Safety & Compliance.</h1>
+  <p>If you're unsure whether a job is legal, safe, insured, or within POTENT's authority — STOP and contact the Owner.</p>
+  <h2>Zero Impairment Rule</h2>
+  <div class="rule red" style="font-size:12px;padding:14px 16px;line-height:2;">
+    <strong>No weed. No alcohol. No intoxicating substances before or during driving.</strong><br><br>
+    Once you're behind the wheel representing POTENT, the standard changes. We're responsible for our customers, their freight, other people on the road, our employees, our insurance, and our company.<br><br>
+    <strong>Off the clock = your personal life. Behind the wheel for POTENT = zero impairment. No exceptions. No debate.</strong><br><br>
+    If you are not fit to drive: DO NOT DRIVE. Notify management immediately. There is no job, deadline, or paycheck worth risking someone's life.
+  </div>
+  <h2>Before Accepting Any Job</h2>
+  <ul class="ul">
+    <li>Correct service and equipment for the job</li>
+    <li>Pickup and delivery locations confirmed</li>
+    <li>Freight described — no hazardous or prohibited materials</li>
+    <li>Vehicle load capacity not exceeded</li>
+    <li>Required insurance and authority in place</li>
+  </ul>
+  <div class="rule red"><strong>Never accept a job outside your authority, insurance, equipment, or legal requirements.</strong></div>
+  <h2>Escalation Levels</h2>
+  <div class="rule"><strong>Level 1 — You handle it:</strong> Normal customer/service issue within your authority.</div>
+  <div class="rule"><strong>Level 2 — Manager:</strong> Pricing exceptions, disputes, major delays, unusual requests.</div>
+  <div class="rule red"><strong>Level 3 — Owner immediately:</strong> Accident, injury, freight loss/damage, legal threat, insurance issue, compliance issue, anything you're unsure about.</div>
+  <div class="rule red"><strong>When in doubt — escalate. Always.</strong></div>
+  <div class="quote">People first. Freight second. Customer informed. Owner informed. Everything documented.</div>
+</div>
+
+<div id="rules" class="section">
+  <div class="sub">Non-Negotiable</div>
+  <h1>The Rules.</h1>
+  <h2>Zero Tolerance — Immediate Termination</h2>
+  <div class="rule red"><strong>No sharing credentials.</strong> Everything done under your login has your name on it.</div>
+  <div class="rule red"><strong>No sharing company data.</strong> Customer names, pricing, leads — nothing leaves this company. Ever. Federal law (DTSA) protects this.</div>
+  <div class="rule red"><strong>No discussing other employees' pay.</strong> Your rate is between you and the Owner.</div>
+  <div class="rule red"><strong>No side jobs using company equipment or contacts.</strong> Zero tolerance.</div>
+  <div class="rule red"><strong>No recording customers without consent.</strong> Georgia requires all-party consent.</div>
+  <div class="rule red"><strong>No impaired driving. Ever.</strong> See Compliance tab for full policy.</div>
+  <h2>Required Every Day</h2>
+  <div class="rule green"><strong>Log every interaction</strong> — calls, updates, fuel. If it's not in the app, it didn't happen.</div>
+  <div class="rule green"><strong>Keep job statuses current.</strong> Customers and Owner track in real time.</div>
+  <div class="rule green"><strong>Respond to Owner within 15 minutes</strong> during business hours.</div>
+  <div class="rule green"><strong>Flag problems immediately.</strong> A problem reported early is solved. Hidden = doubled.</div>
+  <h2>Intellectual Property</h2>
+  <ul class="ul">
+    <li>Copyright Act (17 U.S.C. § 102)</li>
+    <li>Defend Trade Secrets Act (18 U.S.C. § 1836)</li>
+    <li>Georgia Trade Secrets Act (O.C.G.A. § 10-1-760)</li>
+    <li>Registered trademark protection</li>
+  </ul>
+  <div class="rule red"><strong>Violating any of these is a federal matter, not just an employment matter.</strong></div>
+  <div class="quote">When someone hangs up after speaking with a POTENT representative, they should think: "That was one of the most professional conversations I've had with a transportation company." That is the standard. That is the POTENT way.</div>
+</div>
+
+<div id="sign" class="section">
+  <div class="sub">Acknowledgment</div>
+  <h1>Sign Off.</h1>
+  <p>By signing below, you confirm that you have read and understood everything in this portal — the handbook, your role, the apps, the sales playbook, dispatch protocols, driver protocols, compliance rules, and all company policies.</p>
+  <div class="card" style="margin-top:14px;">
+    <div style="font-size:13px;font-weight:700;color:#F2F2F2;margin-bottom:8px;">Employee Acknowledgment</div>
+    <p>I have read and understood the POTENT PRÄDƏKT® / Potent Logistics LLC / POTENT OPERATIONS LLC Employee Portal in its entirety. I agree to follow all protocols, maintain strict confidentiality of all company systems and data, and understand my activity is monitored and logged.</p>
+    <p>I understand that all systems, data, pricing, customer information, leads, and processes of POTENT PRÄDƏKT® are registered intellectual property of ANTHONY EMMANUEL FIGUEROA MENDES® and may not be shared, copied, or reproduced during or after my employment.</p>
+    <p>I understand and agree to the Zero Impairment driving policy. I understand violations may result in immediate termination and legal action.</p>
+    <div class="sign-box">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+        <div><div class="sign-line"></div><div class="sign-label">Full Legal Name (Print)</div></div>
+        <div><div class="sign-line"></div><div class="sign-label">Role / Position</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+        <div><div class="sign-line"></div><div class="sign-label">Signature</div></div>
+        <div><div class="sign-line"></div><div class="sign-label">Date</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div><div class="sign-line"></div><div class="sign-label">Phone Number</div></div>
+        <div><div class="sign-line"></div><div class="sign-label">Emergency Contact</div></div>
+      </div>
+    </div>
+    <p style="font-size:10px;color:#444;margin-top:10px;text-align:center;">© 2026 ANTHONY EMMANUEL FIGUEROA MENDES® · POTENT PRÄDƏKT® · All Rights Reserved</p>
+  </div>
+</div>
+
+<script>
+function show(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+  window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>
