@@ -1,0 +1,39 @@
+{
+  "name": "POTENT OS",
+  "short_name": "POTENT OS",
+  "description": "POTENT Logistics Dispatch & Operations Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080808",
+  "theme_color": "#F0E000",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/potent-logistics-site/main/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/potent-logistics-site/main/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "logistics", "productivity"],
+  "shortcuts": [
+    {
+      "name": "New Quote",
+      "short_name": "Quote",
+      "url": "/?tab=quote",
+      "description": "Create a new job quote"
+    },
+    {
+      "name": "Jobs",
+      "short_name": "Jobs",
+      "url": "/?tab=jobs",
+      "description": "View all jobs"
+    }
+  ]
+}
