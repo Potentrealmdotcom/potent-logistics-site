@@ -744,48 +744,6 @@ var TX = {
         readyConfirm: "Ich bestätige, dass die Angaben korrekt sind und bin bereit, kontaktiert zu werden.",
     },
 };
-// Global language state - shared between public and admin
-var _globalLang = getLang();
-var _langListeners = [];
-function subscribeLang(fn) { _langListeners.push(fn); }
-function unsubscribelang(fn) { _langListeners = _langListeners.filter(function (f) { return f !== fn; }); }
-function changeGlobalLang(l) { _globalLang = l; setLang(l); _langListeners.forEach(function (f) { f(l); }); }
-function t(key) { return (TX[_globalLang] && TX[_globalLang][key]) || TX.en[key] || key; }
-function useTranslations() {
-    var [lang, setLangState] = useState(getLang);
-    function changeLang(l) { changeGlobalLang(l); setLangState(l); }
-    function tLocal(key) { return (TX[lang] && TX[lang][key]) || TX.en[key] || key; }
-    return { lang, changeLang, t: tLocal };
-}
-function useLang() {
-    var [lang, setLangState] = useState(function () { return _globalLang; });
-    React.useEffect(function () {
-        subscribeLang(setLangState);
-        return function () { unsubscribelang(setLangState); };
-    }, []);
-    function tl(key) { return (TX[lang] && TX[lang][key]) || TX.en[key] || key; }
-    return { lang, t: tl };
-}
-function LangSwitcher({ lang, changeLang }) {
-    var langs = [
-        ["en", "🇺🇸"], ["es", "🇲🇽"], ["pt", "🇧🇷"], ["kk", "🇰🇿"],
-        ["ru", "🇷🇺"], ["fr", "🇫🇷"], ["zh", "🇨🇳"], ["ko", "🇰🇷"],
-        ["vi", "🇻🇳"], ["ar", "🇦🇪"], ["hi", "🇮🇳"], ["ht", "🇭🇹"],
-        ["pl", "🇵🇱"], ["de", "🇩🇪"],
-    ];
-    var [open, setOpen] = useState(false);
-    var current = langs.find(function (l) { return l[0] === lang; }) || langs[0];
-    return React.createElement("div", { style: { position: "relative" } },
-        React.createElement("button", { onClick: function () { setOpen(!open); }, style: { background: "transparent", border: "1px solid " + C.border, borderRadius: 6, padding: "4px 8px", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", gap: 4 } },
-            current[1],
-            React.createElement("span", { style: { fontSize: 9, color: C.dim, marginLeft: 2 } }, "\u25BC")),
-        open && React.createElement("div", { style: { position: "absolute", right: 0, top: "110%", background: C.card, border: "1px solid " + C.border, borderRadius: 8, padding: 6, zIndex: 999, display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 3, minWidth: 140 } }, langs.map(function (l) {
-            return React.createElement("button", { key: l[0], onClick: function () { changeLang(l[0]); setOpen(false); }, title: l[0].toUpperCase(), style: { background: lang === l[0] ? C.orange + "22" : "transparent", border: "1px solid " + (lang === l[0] ? C.orange : C.border), borderRadius: 5, padding: "5px 4px", cursor: "pointer", fontSize: 16, lineHeight: 1 } }, l[1]);
-        })));
-}
-// Global language state - shared between public and admin
-var _globalLang = getLang();
-var _langListeners = [];
 function subscribeLang(fn) { _langListeners.push(fn); }
 function unsubscribelang(fn) { _langListeners = _langListeners.filter(function (f) { return f !== fn; }); }
 function changeGlobalLang(l) { _globalLang = l; setLang(l); _langListeners.forEach(function (f) { f(l); }); }
