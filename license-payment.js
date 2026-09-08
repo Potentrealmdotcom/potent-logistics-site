@@ -1,4 +1,7 @@
-stripe = require(“stripe”)(process.env.STRIPE_SECRET_KEY);
+// netlify/functions/create-license-payment.js
+// Upload to: potent-logistics-site/netlify/functions/create-license-payment.js
+
+const stripe = require(“stripe”)(process.env.STRIPE_SECRET_KEY);
 
 exports.handler = async (event) => {
 if (event.httpMethod !== “POST”) {
