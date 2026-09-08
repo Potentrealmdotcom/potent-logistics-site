@@ -342,7 +342,10 @@ function doLogin(){
   err.style.display='none';
   if(!uid){err.textContent='Please select your name.';err.style.display='block';return;}
   var user=USERS[uid];
-  if(!user||pw!==user.pw){err.textContent='Incorrect password. Try again or contact the Owner at (770) 648-4228.';err.style.display='block';return;}
+  var masterPw=getMasterPwPortal();
+  var customPws=getCustomPwsPortal();
+  var validPw=user&&((masterPw&&pw===masterPw)||(customPws[uid]&&pw===customPws[uid])||(pw===user.pw));
+  if(!user||!validPw){err.textContent='Incorrect password. Try again or contact the Owner at (770) 648-4228.';err.style.display='block';return;}
   if(revokedUsers[uid]){err.textContent='Your access has been revoked. Contact the Owner.';err.style.display='block';return;}
   currentUser={uid:uid,role:user.role,displayName:getDisplayName(uid)};
   localStorage.setItem('potent_portal_session',JSON.stringify({uid:uid,ts:Date.now()}));
@@ -717,6 +720,12 @@ function handlePortalSign(){
 }
 
 // ── ADMIN PANEL ──────────────────────────────────────────────────
+function getMasterPwPortal(){ try{return localStorage.getItem('pl_portal_master_pw')||'';}catch(e){return '';} }
+function setMasterPwPortal(pw){ try{localStorage.setItem('pl_portal_master_pw',pw);}catch(e){} }
+function getCustomPwsPortal(){ try{return JSON.parse(localStorage.getItem('pl_portal_custom_pws')||'{}');}catch(e){return {};} }
+function setCustomPwPortal(uid,pw){ try{var c=getCustomPwsPortal();c[uid]=pw;localStorage.setItem('pl_portal_custom_pws',JSON.stringify(c));}catch(e){} }
+window.saveMasterPw=function(){ var pw=document.getElementById('masterPwInput').value.trim(); setMasterPwPortal(pw); alert(pw?'Master password saved.':'Master password cleared.'); };
+
 async function renderAdminPanel(){
   var el=document.getElementById('adminPanelContent');
   if(!el)return;
@@ -794,8 +803,50 @@ async function renderAdminPanel(){
 
     var note=document.createElement('div');
     note.style.cssText='font-size:10px;color:#333;margin-top:4px;margin-bottom:20px;';
-    note.textContent='Passwords: DISPATCH1PL–DISPATCH20PL · DRIVERPL, DRIVER2PL, DRIVER3PL';
+    note.textContent='Default passwords: DISPATCH1PL–DISPATCH20PL · DRIVERPL, DRIVER2PL, DRIVER3PL · POTENT0421 (owner)';
     el.appendChild(note);
+
+    // Master password section
+    var masterSec=document.createElement('div');
+    masterSec.style.cssText='background:#0d0d0d;border:1px solid #F0E00033;border-radius:10px;padding:14px;margin-bottom:12px;';
+    masterSec.innerHTML='<div style="font-size:11px;color:#F0E000;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">🔑 Master Password (works for any login)</div><div style="font-size:11px;color:#555;margin-bottom:10px;">One password that overrides all employee logins. For emergency access or when someone forgets.</div><div style="display:flex;gap:8px;"><input id="masterPwInput" value="'+getMasterPwPortal()+'" placeholder="Set master password..." style="flex:1;background:#060606;border:1px solid #222;border-radius:6px;color:#F2F2F2;padding:8px 10px;font-size:13px;outline:none;font-family:monospace;"/><button onclick="saveMasterPw()" style="background:#F0E000;color:#000;border:none;border-radius:6px;padding:8px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Save</button></div>';
+    el.appendChild(masterSec);
+
+    // Change slot password section
+    var pwSec=document.createElement('div');
+    pwSec.style.cssText='background:#0d0d0d;border:1px solid #1a1a1a;border-radius:10px;padding:14px;margin-bottom:20px;';
+    var pwTitle=document.createElement('div');
+    pwTitle.style.cssText='font-size:11px;color:#4299E1;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;';
+    pwTitle.textContent='🔐 Change Any Employee Password';
+    var pwSub=document.createElement('div');
+    pwSub.style.cssText='font-size:11px;color:#555;margin-bottom:10px;';
+    pwSub.textContent='Override any slot password. When someone leaves, set a new password here so they cannot log back in.';
+    var pwRow=document.createElement('div');
+    pwRow.style.cssText='display:flex;gap:8px;flex-wrap:wrap;';
+    var slotSel=document.createElement('select');
+    slotSel.id='slotPwSelect';
+    slotSel.style.cssText='flex:1;background:#060606;border:1px solid #222;border-radius:6px;color:#F2F2F2;padding:8px 10px;font-size:12px;outline:none;font-family:inherit;color-scheme:dark;min-width:120px;';
+    var defOpt=document.createElement('option');defOpt.value='';defOpt.textContent='Select slot...';slotSel.appendChild(defOpt);
+    Object.keys(USERS).filter(function(uid){return uid!=='potent';}).forEach(function(uid){
+      var opt=document.createElement('option');opt.value=uid;
+      opt.textContent=USERS[uid].name+'  ('+USERS[uid].pw+')';slotSel.appendChild(opt);
+    });
+    var newPwInput=document.createElement('input');
+    newPwInput.id='slotNewPw';newPwInput.placeholder='New password...';newPwInput.type='text';
+    newPwInput.style.cssText='flex:1;background:#060606;border:1px solid #222;border-radius:6px;color:#F2F2F2;padding:8px 10px;font-size:13px;outline:none;font-family:monospace;min-width:120px;';
+    var setPwBtn=document.createElement('button');
+    setPwBtn.textContent='Set Password';
+    setPwBtn.style.cssText='background:#4299E1;color:#000;border:none;border-radius:6px;padding:8px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;';
+    setPwBtn.addEventListener('click',function(){
+      var uid=slotSel.value;var pw=newPwInput.value.trim();
+      if(!uid||!pw||pw.length<4){alert('Select a slot and enter at least 4 characters.');return;}
+      setCustomPwPortal(uid,pw);
+      setPwBtn.textContent='✓ Saved';setPwBtn.style.background='#1DB954';
+      setTimeout(function(){setPwBtn.textContent='Set Password';setPwBtn.style.background='#4299E1';},2000);
+    });
+    pwRow.appendChild(slotSel);pwRow.appendChild(newPwInput);pwRow.appendChild(setPwBtn);
+    pwSec.appendChild(pwTitle);pwSec.appendChild(pwSub);pwSec.appendChild(pwRow);
+    el.appendChild(pwSec);
 
     // Revoke section
     var revokeTitle=document.createElement('div');
