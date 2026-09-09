@@ -7655,7 +7655,7 @@ function LeadsBoard(props) {
                     React.createElement("strong", null, "Notes:"),
                     " ",
                     lead.notes)),
-            React.createElement(LeadEmailPanel, { lead: lead, onSave: function(updatedLead){ setSelected(updatedLead); }, sendManualEmail: sendManualEmail, emailSending: emailSending, emailMsg: emailMsg }),
+            React.createElement(LeadEmailPanel, { lead: lead, onSave: function(updatedLead){ setLeads(function(prev){ return prev.map(function(l){ return l.id===updatedLead.id ? updatedLead : l; }); }); }, sendManualEmail: sendManualEmail, emailSending: emailSending, emailMsg: emailMsg }),
             history.length > 0 && React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "14px 16px", marginBottom: 14 } },
                 React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 } }, "Call History"),
                 history.map(function (h, i) {
@@ -9701,6 +9701,7 @@ function SafetyDashboard(props){
   var users=props.users||[];
   var jobs=props.jobs||[];
   var drivers=users.filter(function(u){return u.role==="driver";});
+  var notifSupported=(typeof Notification!=="undefined");
 
   function saveConfig(c){saveSafetyConfig(c);setConfigState(c);}
 
@@ -9714,7 +9715,11 @@ function SafetyDashboard(props){
 
   useEffect(function(){
     loadAlerts();
-    Notification.requestPermission();
+    try{
+      if(typeof Notification!=="undefined"&&Notification.requestPermission){
+        Notification.requestPermission();
+      }
+    }catch(e){}
     var interval=setInterval(loadAlerts,30000);
     return function(){clearInterval(interval);};
   },[]);
@@ -9815,8 +9820,13 @@ function SafetyDashboard(props){
       React.createElement("div",{style:{background:C.card,border:"1px solid "+C.border,borderRadius:10,padding:"16px"}},
         React.createElement("div",{style:{fontSize:12,fontWeight:700,color:C.white,marginBottom:12}},"🔔 Alert Notifications"),
         React.createElement("div",{style:{fontSize:11,color:C.dim,marginBottom:10}},"Enable browser notifications so alerts pop up even when this tab is in the background."),
-        React.createElement("button",{onClick:function(){Notification.requestPermission().then(function(p){alert(p==="granted"?"Notifications enabled. Alerts will pop up on your screen.":"Notifications blocked. Allow in browser settings.");});},style:{background:Notification.permission==="granted"?C.green+"22":"transparent",color:Notification.permission==="granted"?C.green:C.orange,border:"1px solid "+(Notification.permission==="granted"?C.green:C.orange),borderRadius:7,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},
-          Notification.permission==="granted"?"✅ Notifications Active — Click to Refresh":"Enable Alert Notifications"
+        React.createElement("button",{onClick:function(){
+            try{
+              if(typeof Notification==="undefined"){alert("Browser notifications are not supported on this device.");return;}
+              Notification.requestPermission().then(function(p){alert(p==="granted"?"Notifications enabled. Alerts will pop up on your screen.":"Notifications blocked. Allow in browser settings.");});
+            }catch(e){alert("Notifications are not available on this device.");}
+          },style:{background:notifSupported&&Notification.permission==="granted"?C.green+"22":"transparent",color:notifSupported&&Notification.permission==="granted"?C.green:C.orange,border:"1px solid "+(notifSupported&&Notification.permission==="granted"?C.green:C.orange),borderRadius:7,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},
+          notifSupported&&Notification.permission==="granted"?"✅ Notifications Active — Click to Refresh":(notifSupported?"Enable Alert Notifications":"Not supported on this device")
         )
       )
     ),
