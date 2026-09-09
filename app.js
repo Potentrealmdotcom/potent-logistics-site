@@ -16,7 +16,7 @@ var C = {
 // To add a dispatcher: copy any dispatch line, change id/name/password.
 // Passwords: owner sets them, employees never share.
 var USERS = [
-    { id: "potent", name: "POTENT", role: "owner", password: "POTENT0421", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents"] },
+    { id: "potent", name: "POTENT", role: "owner", password: "POTENT0421", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash"] },
     { id: "dispatch1", name: "Dispatch 1", role: "dispatch", password: "DISPATCH1PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
     { id: "dispatch2", name: "Dispatch 2", role: "dispatch", password: "DISPATCH2PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
     { id: "dispatch3", name: "Dispatch 3", role: "dispatch", password: "DISPATCH3PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
@@ -803,15 +803,43 @@ function useLang() {
     return { lang, t: tl };
 }
 function LangSwitcher({ lang, changeLang }) {
-    return React.createElement("div", { style: { display: "flex", gap: 4, alignItems: "center" } }, [["en", "🇺🇸"], ["es", "🇲🇽"], ["fr", "🇫🇷"]].map(function (l) {
-        return React.createElement("button", { key: l[0], onClick: function () { changeLang(l[0]); }, style: {
-                background: lang === l[0] ? C.orange : "transparent",
-                border: "1px solid " + (lang === l[0] ? C.orange : C.border),
-                borderRadius: 6, padding: "3px 7px", cursor: "pointer",
-                fontSize: 14, lineHeight: 1, fontFamily: "inherit",
-                opacity: lang === l[0] ? 1 : 0.5,
-            } }, l[1]);
-    }));
+    var [open, setOpen] = useState(false);
+    var ALL_LANGS = [
+        ["en","🇺🇸","English"],["es","🇲🇽","Español"],["pt","🇧🇷","Português"],
+        ["kk","🇰🇿","Қазақша"],["ru","🇷🇺","Русский"],["fr","🇫🇷","Français"],
+        ["zh","🇨🇳","中文"],["ko","🇰🇷","한국어"],["vi","🇻🇳","Tiếng Việt"],
+        ["ar","🇦🇪","العربية"],["hi","🇮🇳","हिन्दी"],["ht","🇭🇹","Kreyòl"],
+        ["pl","🇵🇱","Polski"],["de","🇩🇪","Deutsch"]
+    ];
+    var current = ALL_LANGS.find(function(l){return l[0]===lang;}) || ALL_LANGS[0];
+    return React.createElement("div", { style: { position: "relative", zIndex: 999 } },
+        React.createElement("button", {
+            onClick: function(){ setOpen(function(o){return !o;}); },
+            style: { background: "transparent", border: "1px solid "+C.border, borderRadius: 7,
+                padding: "5px 10px", cursor: "pointer", fontSize: 15, display: "flex",
+                alignItems: "center", gap: 5, color: C.white, fontFamily: "inherit" }
+        }, current[1], React.createElement("span", {style:{fontSize:9,color:C.dim}}, "▾")),
+        open && React.createElement("div", {
+            style: { position: "absolute", top: "110%", right: 0, background: C.card,
+                border: "1px solid "+C.border, borderRadius: 10, padding: 8, zIndex: 9999,
+                display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 4, minWidth: 200,
+                boxShadow: "0 8px 32px #000" }
+        },
+            ALL_LANGS.map(function(l){
+                return React.createElement("button", {
+                    key: l[0],
+                    onClick: function(){ changeLang(l[0]); setOpen(false); },
+                    style: { background: lang===l[0] ? C.orange+"22" : "transparent",
+                        border: "1px solid "+(lang===l[0] ? C.orange : C.border),
+                        borderRadius: 6, padding: "7px 8px", cursor: "pointer",
+                        fontSize: 11, display: "flex", alignItems: "center", gap: 6,
+                        color: lang===l[0] ? C.white : C.dim, fontFamily: "inherit",
+                        textAlign: "left" }
+                }, React.createElement("span",{style:{fontSize:15}},l[1]),
+                   React.createElement("span",null,l[2]));
+            })
+        )
+    );
 }
 var TRUCK_MPG = 9;
 var TRUCK_MAX_LBS = 4300;
@@ -4092,7 +4120,7 @@ function ReviewModal(props) {
             React.createElement(TxtIn, { label: "Your Name", value: f.name, onChange: function (v) { set("name", v); }, placeholder: "First name or initials" }),
             React.createElement(TxtIn, { label: "Job ID (optional)", value: f.jobId, onChange: function (v) { set("jobId", v); }, placeholder: "e.g. PL-260615-A1B2" }),
             React.createElement(Lbl, null, "Rating"),
-            React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 14 } }, [5, 4, 3, 2, 1].map(function (n) {
+            React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 14 } }, [1, 2, 3, 4, 5].map(function (n) {
                 return React.createElement("div", { key: n, onClick: function () { set("rating", n); }, style: { flex: 1, border: "1.5px solid " + (f.rating === n ? C.orange : C.border), borderRadius: 8, padding: "8px 4px", cursor: "pointer", background: f.rating === n ? C.orangeSoft : "transparent", textAlign: "center", fontSize: 18 } }, n <= f.rating ? "⭐" : "☆");
             })),
             React.createElement(TxtIn, { label: "Your Review", value: f.comment, onChange: function (v) { set("comment", v); }, placeholder: "Tell us about your experience...", rows: 3 }),
@@ -4654,13 +4682,28 @@ function ReviewsSection(props) {
                 React.createElement("div", null,
                     React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 4 } }, "Customer Reviews"),
                     React.createElement("div", { style: { fontSize: 22, fontWeight: 800, color: C.white } }, reviews.length > 0 ? ("⭐ " + avgRating + " · " + reviews.length + " review" + (reviews.length !== 1 ? "s" : "")) : "Be the first to leave a review")),
-                React.createElement("button", { onClick: function () { setShowModal(true); }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: "10px 18px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Leave a Review")),
+                React.createElement("button", { onClick: function () { setShowModal(true); }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: "10px 18px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Leave a Review"),
+            React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" } },
+                React.createElement("button", { onClick: function() {
+                    if(!confirm("This will flip all saved ratings (1→5, 2→4, 3→3, 4→2, 5→1). Use this once to fix reviews saved during the old bug. Continue?")) return;
+                    var revs = loadReviews().map(function(r){ return Object.assign({},r,{rating: 6 - (Number(r.rating)||1)}); });
+                    saveReviews(revs);
+                    alert("✅ All ratings flipped. Reload to see the fix.");
+                    location.reload();
+                }, style: { background: C.blue+"22", color: C.blue, border: "1px solid "+C.blue+"44", borderRadius: 7, padding: "6px 12px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "🔄 Fix Old Ratings (one-time)"),
+                React.createElement("button", { onClick: function() {
+                    if(!confirm("Delete ALL reviews permanently?")) return;
+                    saveReviews([]);
+                    alert("All reviews cleared.");
+                    location.reload();
+                }, style: { background: C.red+"22", color: C.red, border: "1px solid "+C.red+"44", borderRadius: 7, padding: "6px 12px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "🗑 Clear All Reviews")
+            )),
             reviews.slice(0, 6).map(function (r) {
                 return React.createElement("div", { key: r.id, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "14px 16px", marginBottom: 10 } },
                     React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } },
                         React.createElement("div", { style: { fontWeight: 700, color: C.white, fontSize: 13 } }, r.name),
                         React.createElement("div", { style: { fontSize: 12, color: C.dim } }, r.date)),
-                    React.createElement("div", { style: { color: C.orange, fontSize: 14, marginBottom: 6 } }, "⭐".repeat(r.rating) + "☆".repeat(5 - r.rating)),
+                    React.createElement("div", { style: { color: C.orange, fontSize: 14, marginBottom: 6 } }, "⭐".repeat(Number(r.rating)||0) + "☆".repeat(5 - (Number(r.rating)||0))),
                     React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.7 } }, r.comment),
                     r.jobId && React.createElement("div", { style: { fontSize: 10, color: C.faint, marginTop: 6 } },
                         "Job #",
@@ -9879,10 +9922,7 @@ function CEODashboard(props){
   );
 }
 
-// ── MOUNT APP ─────────────────────────────────────────────────────
-var rootEl = document.getElementById("root");
-var reactRoot = ReactDOM.createRoot(rootEl);
-reactRoot.render(React.createElement(Root));
+// [render moved to end]
 
 // ── MASTER PASSWORD EDITOR ─────────────────────────────────────────
 function MasterPwEditor(){
@@ -10103,3 +10143,8 @@ function OwnerSettings(props){
     )
   );
 }
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+var rootEl = document.getElementById("root");
+var reactRoot = ReactDOM.createRoot(rootEl);
+reactRoot.render(React.createElement(Root));
