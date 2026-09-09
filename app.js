@@ -432,7 +432,7 @@ if(typeof window!=="undefined"&&"serviceWorker" in navigator){
   window.addEventListener("load",function(){
     navigator.serviceWorker.register("/sw.js")
       .then(function(){ /* SW registered */ })
-      .catch(function(e){ console.log("SW failed:",e); });
+      .catch(function(e){ /* SW registration failed */ });
   });
 }
 
@@ -4683,7 +4683,7 @@ function ReviewsSection(props) {
                     React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 4 } }, "Customer Reviews"),
                     React.createElement("div", { style: { fontSize: 22, fontWeight: 800, color: C.white } }, reviews.length > 0 ? ("⭐ " + avgRating + " · " + reviews.length + " review" + (reviews.length !== 1 ? "s" : "")) : "Be the first to leave a review")),
                 React.createElement("button", { onClick: function () { setShowModal(true); }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: "10px 18px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Leave a Review"),
-            React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" } },
+            props.isOwner && React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" } },
                 React.createElement("button", { onClick: function() {
                     if(!confirm("This will flip all saved ratings (1→5, 2→4, 3→3, 4→2, 5→1). Use this once to fix reviews saved during the old bug. Continue?")) return;
                     var revs = loadReviews().map(function(r){ return Object.assign({},r,{rating: 6 - (Number(r.rating)||1)}); });
