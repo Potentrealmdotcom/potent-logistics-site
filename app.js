@@ -1720,6 +1720,11 @@ function sendLeadEmail(lead, templateKey, senderName) {
     return fetch("https://api.emailjs.com/api/v1.0/email/send", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ service_id: "service_e3qn0bs", template_id: "template_nxubdce", user_id: "6Qs0HIOLjJ6jfWHtp", template_params: params })
+    }).then(function(res){
+        if (res.ok) return res;
+        return res.text().then(function(errText){
+            throw new Error("EmailJS rejected the request (status " + res.status + "): " + errText);
+        });
     });
 }
 // ── CUSTOMER ETA ALERT — "your truck is close" email ────────────────
@@ -1746,6 +1751,11 @@ function sendETAAlert(job) {
     return fetch("https://api.emailjs.com/api/v1.0/email/send", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ service_id: "service_e3qn0bs", template_id: "template_nxubdce", user_id: "6Qs0HIOLjJ6jfWHtp", template_params: params })
+    }).then(function(res){
+        if (res.ok) return res;
+        return res.text().then(function(errText){
+            throw new Error("EmailJS rejected the request (status " + res.status + "): " + errText);
+        });
     });
 }
 // ── SHARED UI ─────────────────────────────────────────────────────
@@ -7701,10 +7711,10 @@ function LeadsBoard(props) {
             setEmailMsg("\u2705 " + LEAD_EMAIL_TEMPLATES[templateKey].label + " sent to " + lead.email);
             setEmailSending(false);
             setTimeout(function () { setEmailMsg(""); }, 4000);
-        }).catch(function () {
-            setEmailMsg("\u26A0 Failed to send. Check EmailJS setup.");
+        }).catch(function (err) {
+            setEmailMsg("\u26A0 " + (err && err.message ? err.message : "Failed to send. Check EmailJS setup."));
             setEmailSending(false);
-            setTimeout(function () { setEmailMsg(""); }, 4000);
+            setTimeout(function () { setEmailMsg(""); }, 8000);
         });
     }
     if (loading)
@@ -10169,6 +10179,7 @@ function OwnerSettings(props){
 
   var sections=[
     {id:"employees",label:"👤 Employees"},
+    {id:"testEmail",label:"📧 Test Email"},
     {id:"masterPw",label:"🔑 Master Password"},
     {id:"slotPw",label:"🔐 Change Passwords"},
   ];
@@ -10205,6 +10216,13 @@ function OwnerSettings(props){
     ),
 
     // ── MASTER PASSWORD ──
+    activeSection==="testEmail"&&React.createElement("div",null,
+      React.createElement("div",{style:{background:C.card,border:"1px solid "+C.border,borderRadius:12,padding:"16px"}},
+        React.createElement("div",{style:{fontSize:12,fontWeight:700,color:C.white,marginBottom:6}},"Send Test Email"),
+        React.createElement("div",{style:{fontSize:11,color:C.dim,marginBottom:14,lineHeight:1.7}},"Sends a real test email through EmailJS to "+BUSINESS_EMAIL+" and shows you exactly whether it succeeded or failed \u2014 and why."),
+        React.createElement(TestEmailTool,null)
+      )
+    ),
     activeSection==="masterPw"&&React.createElement("div",null,
       React.createElement("div",{style:{background:C.card,border:"1px solid "+C.border,borderRadius:12,padding:"16px"}},
         React.createElement("div",{style:{fontSize:12,fontWeight:700,color:C.white,marginBottom:6}},"Master Password"),
@@ -10353,3 +10371,63 @@ function LoginActivityView(){
 var rootEl = document.getElementById("root");
 var reactRoot = ReactDOM.createRoot(rootEl);
 reactRoot.render(React.createElement(Root));
+
+// ── TEST EMAIL TOOL — sends a real email and shows pass/fail ────────
+function TestEmailTool(){
+  var [sending,setSending]=useState(false);
+  var [result,setResult]=useState(null);
+  var [toEmail,setToEmail]=useState(BUSINESS_EMAIL);
+
+  function runTest(){
+    setSending(true);
+    setResult(null);
+    var payload = {
+      service_id: "service_e3qn0bs",
+      template_id: "template_nxubdce",
+      user_id: "6Qs0HIOLjJ6jfWHtp",
+      template_params: {
+        to_email: toEmail,
+        job_id: "TEST-" + Date.now(),
+        customer: "Test Email — POTENT OS",
+        phone: "N/A",
+        service: "System Test",
+        origin: "N/A",
+        destination: "N/A",
+        total: "$0",
+        payment: "N/A",
+        date: new Date().toLocaleString(),
+        notes: "This is a test email sent from the ⚙ Settings → Test Email tool to verify EmailJS is working correctly."
+      }
+    };
+    fetch("https://api.emailjs.com/api/v1.0/email/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    }).then(function(res){
+      return res.text().then(function(text){
+        setSending(false);
+        if(res.ok){
+          setResult({ok:true, msg:"✅ Email sent successfully to " + toEmail + ". Check your inbox (and spam folder) in the next minute."});
+        } else {
+          setResult({ok:false, msg:"❌ EmailJS rejected the request — status " + res.status + ". Response: " + text});
+        }
+      });
+    }).catch(function(err){
+      setSending(false);
+      setResult({ok:false, msg:"❌ Network error — the request never reached EmailJS. This usually means a browser extension, ad blocker, or network issue is blocking the call. Error: " + err.message});
+    });
+  }
+
+  return React.createElement("div",null,
+    React.createElement("div",{style:{display:"flex",gap:8,marginBottom:10}},
+      React.createElement("input",{value:toEmail,onChange:function(e){setToEmail(e.target.value);},placeholder:"Email to send test to",type:"email",
+        style:{flex:1,background:C.surface,border:"1px solid "+C.border,borderRadius:7,color:C.white,padding:"9px 12px",fontSize:13,outline:"none",fontFamily:"inherit"}}),
+      React.createElement("button",{onClick:runTest,disabled:sending,
+        style:{background:sending?C.dim:C.orange,color:"#000",border:"none",borderRadius:7,padding:"9px 18px",fontSize:12,fontWeight:700,cursor:sending?"default":"pointer",fontFamily:"inherit",flexShrink:0}},
+        sending?"Sending...":"Send Test")
+    ),
+    result && React.createElement("div",{style:{background:result.ok?"#0a1a0a":"#1a0000",border:"1px solid "+(result.ok?C.green:C.red)+"44",borderRadius:8,padding:"12px 14px",fontSize:12,color:result.ok?C.green:C.red,lineHeight:1.6}},result.msg),
+    React.createElement("div",{style:{fontSize:10,color:C.faint,marginTop:12,lineHeight:1.7}},
+      "If this fails with a 403 or 'origin not allowed' error: go to dashboard.emailjs.com \\u2192 Account \\u2192 Security \\u2192 add potentoperations.netlify.app to Allowed Origins. EmailJS blocks all sends from domains not on that list, with no error shown to the user \\u2014 only visible here.")
+  );
+}
