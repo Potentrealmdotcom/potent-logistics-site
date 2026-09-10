@@ -17,36 +17,36 @@ var C = {
 // Passwords: owner sets them, employees never share.
 var USERS = [
     { id: "potent", name: "POTENT", role: "owner", password: "POTENT0421", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash"] },
-    { id: "dispatch1", name: "Dispatch 1", role: "dispatch", password: "DISPATCH1PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch2", name: "Dispatch 2", role: "dispatch", password: "DISPATCH2PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch3", name: "Dispatch 3", role: "dispatch", password: "DISPATCH3PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch4", name: "Dispatch 4", role: "dispatch", password: "DISPATCH4PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch5", name: "Dispatch 5", role: "dispatch", password: "DISPATCH5PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch6", name: "Dispatch 6", role: "dispatch", password: "DISPATCH6PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch7", name: "Dispatch 7", role: "dispatch", password: "DISPATCH7PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch8", name: "Dispatch 8", role: "dispatch", password: "DISPATCH8PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch9", name: "Dispatch 9", role: "dispatch", password: "DISPATCH9PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch10", name: "Dispatch 10", role: "dispatch", password: "DISPATCH10PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch11", name: "Dispatch 11", role: "dispatch", password: "DISPATCH11PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch12", name: "Dispatch 12", role: "dispatch", password: "DISPATCH12PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch13", name: "Dispatch 13", role: "dispatch", password: "DISPATCH13PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch14", name: "Dispatch 14", role: "dispatch", password: "DISPATCH14PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch15", name: "Dispatch 15", role: "dispatch", password: "DISPATCH15PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch16", name: "Dispatch 16", role: "dispatch", password: "DISPATCH16PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch17", name: "Dispatch 17", role: "dispatch", password: "DISPATCH17PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch18", name: "Dispatch 18", role: "dispatch", password: "DISPATCH18PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch19", name: "Dispatch 19", role: "dispatch", password: "DISPATCH19PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch20", name: "Dispatch 20", role: "dispatch", password: "DISPATCH20PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch11", name: "Dispatch 11", role: "dispatch", password: "DISPATCH11PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch12", name: "Dispatch 12", role: "dispatch", password: "DISPATCH12PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch13", name: "Dispatch 13", role: "dispatch", password: "DISPATCH13PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch14", name: "Dispatch 14", role: "dispatch", password: "DISPATCH14PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch15", name: "Dispatch 15", role: "dispatch", password: "DISPATCH15PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch16", name: "Dispatch 16", role: "dispatch", password: "DISPATCH16PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch17", name: "Dispatch 17", role: "dispatch", password: "DISPATCH17PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch18", name: "Dispatch 18", role: "dispatch", password: "DISPATCH18PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch19", name: "Dispatch 19", role: "dispatch", password: "DISPATCH19PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch20", name: "Dispatch 20", role: "dispatch", password: "DISPATCH20PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch1", name: "Dispatch 1", role: "dispatch", password: "LLK3577WV", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch2", name: "Dispatch 2", role: "dispatch", password: "FMD7919SG", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch3", name: "Dispatch 3", role: "dispatch", password: "BOQ5618ZJ", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch4", name: "Dispatch 4", role: "dispatch", password: "GXR0229KD", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch5", name: "Dispatch 5", role: "dispatch", password: "NCK8290MU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch6", name: "Dispatch 6", role: "dispatch", password: "DZI2681YU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch7", name: "Dispatch 7", role: "dispatch", password: "GAA2671GN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch8", name: "Dispatch 8", role: "dispatch", password: "AOW5982ZE", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch9", name: "Dispatch 9", role: "dispatch", password: "MLF0984YQ", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch10", name: "Dispatch 10", role: "dispatch", password: "ZXE1687BE", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch11", name: "Dispatch 11", role: "dispatch", password: "OLM5344LM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch12", name: "Dispatch 12", role: "dispatch", password: "RPM7774BV", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch13", name: "Dispatch 13", role: "dispatch", password: "DJA1950OF", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch14", name: "Dispatch 14", role: "dispatch", password: "UMO1038XB", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch15", name: "Dispatch 15", role: "dispatch", password: "BWC2478IT", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch16", name: "Dispatch 16", role: "dispatch", password: "PNQ1461TS", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch17", name: "Dispatch 17", role: "dispatch", password: "DGU0369PZ", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch18", name: "Dispatch 18", role: "dispatch", password: "RLA8348JY", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch19", name: "Dispatch 19", role: "dispatch", password: "UDU7340AD", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch20", name: "Dispatch 20", role: "dispatch", password: "OYE1461VJ", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch11", name: "Dispatch 11", role: "dispatch", password: "OLM5344LM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch12", name: "Dispatch 12", role: "dispatch", password: "RPM7774BV", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch13", name: "Dispatch 13", role: "dispatch", password: "DJA1950OF", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch14", name: "Dispatch 14", role: "dispatch", password: "UMO1038XB", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch15", name: "Dispatch 15", role: "dispatch", password: "BWC2478IT", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch16", name: "Dispatch 16", role: "dispatch", password: "PNQ1461TS", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch17", name: "Dispatch 17", role: "dispatch", password: "DGU0369PZ", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch18", name: "Dispatch 18", role: "dispatch", password: "RLA8348JY", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch19", name: "Dispatch 19", role: "dispatch", password: "UDU7340AD", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
+    { id: "dispatch20", name: "Dispatch 20", role: "dispatch", password: "OYE1461VJ", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
     { id: "driver", name: "Driver 1", role: "driver", password: "DRIVERPL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll"] },
     { id: "driver2", name: "Driver 2", role: "driver", password: "DRIVER2PL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll"] },
     { id: "driver3", name: "Driver 3", role: "driver", password: "DRIVER3PL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll"] },
@@ -4012,6 +4012,20 @@ function saveAudit(entries) { try {
     localStorage.setItem("pl_audit", JSON.stringify(entries.slice(0, 500)));
 }
 catch (e) { } }
+function logAdminAction(action, details, actorName) {
+    var entries = loadAudit();
+    entries.unshift({
+        id: Date.now() + Math.random(),
+        ts: new Date().toISOString(),
+        action: action,
+        jobId: "ADMIN",
+        role: actorName || "Unknown",
+        field: "Admin Action",
+        before: "",
+        after: details || "",
+    });
+    saveAudit(entries);
+}
 function addAuditEntry(action, jobId, field, before, after, role) {
     var entries = loadAudit();
     entries.unshift({ id: Date.now(), ts: new Date().toISOString(), action: action, jobId: jobId || "", field: field || "", before: String(before || ""), after: String(after || ""), role: role || "unknown" });
@@ -4448,21 +4462,40 @@ function ProfitReport(props) {
 // ── AUDIT TRAIL VIEW ─────────────────────────────────────────────────
 function AuditTrailView() {
     var entries = loadAudit();
+    var [filter, setFilter] = useState("all");
+    var adminEntries = entries.filter(function(e){ return e.jobId === "ADMIN"; });
+    var jobEntries = entries.filter(function(e){ return e.jobId !== "ADMIN"; });
+    var shown = filter === "admin" ? adminEntries : filter === "jobs" ? jobEntries : entries;
+
     return React.createElement("div", { style: { maxWidth: 700, margin: "0 auto" } },
         React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.white, marginBottom: 4 } }, "\uD83D\uDC41 Owner Audit Trail"),
-        React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 20 } }, "Every change made to jobs \u2014 who, what, when."),
-        entries.length === 0 && React.createElement("div", { style: { color: C.dim, textAlign: "center", padding: "40px 0", fontSize: 13 } }, "No audit entries yet. Changes to jobs will appear here."),
-        entries.map(function (e) {
-            return React.createElement("div", { key: e.id, style: { background: C.surface, borderRadius: 9, padding: "12px 14px", marginBottom: 8 } },
+        React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 14 } }, "Every login, admin change, and job update \u2014 who, what, when."),
+        React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 16 } },
+            [["all","All ("+entries.length+")"],["admin","\uD83D\uDD10 Admin ("+adminEntries.length+")"],["jobs","\uD83D\uDCE6 Jobs ("+jobEntries.length+")"]].map(function(f){
+                return React.createElement("button", { key: f[0], onClick: function(){setFilter(f[0]);}, style: {
+                    background: filter===f[0]?C.orange:"transparent", color: filter===f[0]?"#000":C.dim,
+                    border: "1px solid "+(filter===f[0]?C.orange:C.border), borderRadius: 7, padding: "6px 12px",
+                    fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit"
+                }}, f[1]);
+            })
+        ),
+        shown.length === 0 && React.createElement("div", { style: { color: C.dim, textAlign: "center", padding: "40px 0", fontSize: 13 } }, "No entries in this view yet."),
+        shown.map(function (e) {
+            var isAdmin = e.jobId === "ADMIN";
+            return React.createElement("div", { key: e.id, style: { background: C.surface, borderRadius: 9, padding: "12px 14px", marginBottom: 8, borderLeft: isAdmin ? "3px solid "+C.red : "3px solid "+C.border } },
                 React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 4 } },
-                    React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.white } }, e.action),
+                    React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: isAdmin?C.red:C.white } }, (isAdmin?"\uD83D\uDD10 ":"") + e.action),
                     React.createElement("div", { style: { fontSize: 10, color: C.dim } }, e.ts ? e.ts.replace("T", " ").substring(0, 16) : "")),
-                React.createElement("div", { style: { fontSize: 11, color: C.dim } },
-                    "Job: ",
-                    React.createElement("span", { style: { color: C.orange } }, e.jobId),
-                    " \u00B7 By: ",
-                    React.createElement("span", { style: { color: C.green } }, e.role)),
-                e.field && React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 4 } },
+                isAdmin
+                    ? React.createElement("div", { style: { fontSize: 11, color: C.dim } },
+                        React.createElement("span", { style: { color: C.orange, fontWeight: 700 } }, e.role),
+                        " \u2014 ", e.after)
+                    : React.createElement("div", { style: { fontSize: 11, color: C.dim } },
+                        "Job: ",
+                        React.createElement("span", { style: { color: C.orange } }, e.jobId),
+                        " \u00B7 By: ",
+                        React.createElement("span", { style: { color: C.green } }, e.role)),
+                !isAdmin && e.field && React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 4 } },
                     "Field: ",
                     React.createElement("strong", { style: { color: C.white } }, e.field),
                     e.before && React.createElement("span", null,
@@ -4852,6 +4885,7 @@ function AdminLogin(props) {
             return;
         }
         if (user && checkPassword(user.id, pw)) {
+            logAdminAction("Login", "Signed into POTENT OS", getDisplayName(user) + " (" + user.role + ")");
             props.onLogin(Object.assign({}, user, { name: getDisplayName(user) }));
         }
         else {
@@ -4884,6 +4918,9 @@ function AdminLogin(props) {
                             React.createElement(BrandName, null)),
                         React.createElement("div", { style: { fontSize: 9, color: C.gold, letterSpacing: 1.5, textTransform: "uppercase" } }, "A POTENT PR\u00C4D\u018FKT\u00AE COMPANY"))),
                 React.createElement("div", { style: { color: C.dim, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", marginTop: 8 } }, "Team Sign In")),
+            React.createElement("div", { style: { background: "#1a0000", border: "1px solid " + C.red + "66", borderRadius: 9, padding: "12px 14px", marginBottom: 16, textAlign: "center" } },
+                React.createElement("div", { style: { fontSize: 11, fontWeight: 800, color: C.red, letterSpacing: 0.5, marginBottom: 4 } }, "\u26A0 RESTRICTED SYSTEM \u2014 AUTHORIZED USE ONLY"),
+                React.createElement("div", { style: { fontSize: 10, color: "#cc8888", lineHeight: 1.6 } }, "This system is private property of POTENT OPERATIONS LLC. All login attempts, account changes, and administrative actions are logged with timestamp and user identity. Unauthorized access, tampering, or attempts to alter employee records without authorization will be reported and may result in civil or criminal prosecution.")),
             React.createElement(Card, null,
                 React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white, marginBottom: 4 } }, "Who are you?"),
                 React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 14 } }, "Choose your name from the list, then enter your password."),
@@ -4891,9 +4928,9 @@ function AdminLogin(props) {
                     React.createElement("select", { value: selected, onChange: function (e) { setSelected(e.target.value); setPw(""); setErr(false); setRevokedErr(false); setEditingName(false); }, style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 9, color: C.white, padding: "12px 14px", fontSize: 14, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box", cursor: "pointer" } },
                         React.createElement("option", { value: "" }, "\u2014 Select your name \u2014"),
                         USERS.map(function (u) { return React.createElement("option", { key: u.id, value: u.id }, u.emoji + " " + getDisplayName(u) + " (" + u.role + ")"); }))),
-                selectedUser && !editingName && React.createElement("div", { style: { display: "flex", justifyContent: "flex-end", marginBottom: 14 } },
+                false && selectedUser && !editingName && React.createElement("div", { style: { display: "flex", justifyContent: "flex-end", marginBottom: 14 } },
                     React.createElement("button", { onClick: startEdit, style: { background: "none", border: "none", color: C.orange, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" } }, "\u270F Edit my name")),
-                selectedUser && editingName && React.createElement("div", { style: { background: C.surface, border: "1px solid " + C.orange + "44", borderRadius: 9, padding: "12px 14px", marginBottom: 14 } },
+                false && selectedUser && editingName && React.createElement("div", { style: { background: C.surface, border: "1px solid " + C.orange + "44", borderRadius: 9, padding: "12px 14px", marginBottom: 14 } },
                     React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 } }, "Change Display Name"),
                     React.createElement("input", { value: editValue, onChange: function (e) { setEditValue(e.target.value); }, placeholder: "e.g. Marcus", style: { background: C.card, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "9px 12px", fontSize: 13, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box", marginBottom: 10 } }),
                     React.createElement("div", { style: { display: "flex", gap: 8 } },
@@ -6123,7 +6160,17 @@ function Root() {
         showFooterTos && React.createElement(TermsOfServiceModal, { onClose: function () { setShowFooterTos(false); } }),
         React.createElement(PublicApp, { jobs: jobs, onBook: addJob, gasPPG: gasPPG, blockedDates: blockedDates }),
         React.createElement("div", { style: { borderTop: "1px solid " + C.border, textAlign: "center", padding: "12px 0 20px", fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
-            React.createElement("span", { onClick: function () { setShowLogin(true); }, style: { color: C.faint, fontSize: 11, cursor: "pointer", userSelect: "none" } }, "\u00A9 2026 ANTHONY EMMANUEL FIGUEROA MENDES\u00AE \u00B7 POTENT PR\u00C4D\u018FKT\u00AE \u00B7 All Rights Reserved"),
+            React.createElement("span", { onClick: function () {
+                var now = Date.now();
+                var taps = JSON.parse(sessionStorage.getItem("_adminTaps") || "[]");
+                taps = taps.filter(function(t){ return now - t < 3000; });
+                taps.push(now);
+                sessionStorage.setItem("_adminTaps", JSON.stringify(taps));
+                if (taps.length >= 5) {
+                  sessionStorage.removeItem("_adminTaps");
+                  setShowLogin(true);
+                }
+              }, style: { color: C.faint, fontSize: 11, cursor: "default", userSelect: "none" } }, "\u00A9 2026 ANTHONY EMMANUEL FIGUEROA MENDES\u00AE \u00B7 POTENT PR\u00C4D\u018FKT\u00AE \u00B7 All Rights Reserved"),
             React.createElement("span", { style: { color: C.faint, fontSize: 11 } }, " \u00B7 "),
             React.createElement("span", { onClick: function () { setShowFooterTos(true); }, style: { color: C.faint, fontSize: 11, cursor: "pointer", userSelect: "none", textDecoration: "underline" } }, "Terms of Service")));
 }
@@ -10025,27 +10072,31 @@ function OwnerSettings(props){
 
   function removeEmployee(uid){
     if(!confirm("Remove this employee completely? Their slot will show as empty and available for a new hire.")) return;
+    var removedName = (USERS.find(function(u){return u.id===uid;})||{}).name || uid;
     var s=Object.assign({},slots);
     delete s[uid];
     saveSlotNames(s);
     setSlots(s);
-    // Also clear custom pw
     clearCustomPw(uid);
     setCustoms(getCustomPws());
+    logAdminAction("Employee Removed", "Removed " + removedName + " (slot: " + uid + ")", props.currentUser ? props.currentUser.name : "Owner");
   }
 
   function saveMasterPwFn(){
     setMasterPw(masterPw);
     setMasterMsg("✅ Master password saved");
+    logAdminAction("Master Password Changed", "Master password was updated", props.currentUser ? props.currentUser.name : "Owner");
     setTimeout(function(){setMasterMsg("");},2500);
   }
 
   function setSlotPw(){
     if(!selUid){setPwMsg("Select a slot first.");return;}
     if(!newPw||newPw.length<4){setPwMsg("Password must be at least 4 characters.");return;}
+    var targetEmp = USERS.find(function(u){return u.id===selUid;});
     setCustomPw(selUid,newPw);
     setCustoms(getCustomPws());
     setPwMsg("✅ Password changed for "+selUid);
+    logAdminAction("Password Changed", "Changed password for " + (targetEmp?targetEmp.name:selUid), props.currentUser ? props.currentUser.name : "Owner");
     setNewPw(""); setSelUid("");
     setTimeout(function(){setPwMsg("");},3000);
   }
