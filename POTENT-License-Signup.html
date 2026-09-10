@@ -1,956 +1,611 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>POTENT OS — Employee Portal</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>POTENT OS — License Agreement & Purchase</title>
+<script src="https://js.stripe.com/v3/"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:#080808;color:#F2F2F2;font-family:'Segoe UI',Arial,sans-serif;min-height:100vh;}
-
-/* LOGIN */
-#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
-.login-wrap{width:100%;max-width:380px;}
-.login-brand{font-size:11px;font-weight:700;color:#F0E000;letter-spacing:3px;text-align:center;margin-bottom:8px;}
-.login-title{font-size:26px;font-weight:900;color:#F2F2F2;text-align:center;margin-bottom:4px;}
-.login-sub{font-size:12px;color:#555;text-align:center;margin-bottom:28px;}
-.login-label{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
-.login-select{width:100%;background:#111;border:1px solid #222;border-radius:8px;color:#F2F2F2;padding:11px 14px;font-size:13px;outline:none;font-family:inherit;colorScheme:dark;margin-bottom:14px;appearance:none;cursor:pointer;}
-.login-input{width:100%;background:#111;border:1px solid #222;border-radius:8px;color:#F2F2F2;padding:11px 14px;font-size:14px;outline:none;font-family:inherit;margin-bottom:14px;letter-spacing:2px;}
-.login-input:focus,.login-select:focus{border-color:#F0E000;}
-.login-btn{width:100%;background:#F0E000;color:#000;border:none;border-radius:8px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;}
-.login-btn:hover{background:#E8D800;}
-.login-error{background:#E53E3E18;border:1px solid #E53E3E44;border-radius:7px;padding:8px 12px;font-size:12px;color:#E53E3E;margin-bottom:12px;display:none;}
-.login-note{font-size:11px;color:#444;text-align:center;margin-top:16px;}
-
-/* APP */
-#appScreen{display:none;}
-.topbar{background:#000;border-bottom:3px solid #F0E000;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:100;}
-.topbar-brand{font-size:14px;font-weight:900;color:#F2F2F2;}
-.topbar-brand span{color:#F0E000;}
-.topbar-right{display:flex;align-items:center;gap:10px;}
-.topbar-user{font-size:12px;color:#888;}
-.topbar-user strong{color:#F0E000;}
-.signout{background:transparent;border:1px solid #333;color:#666;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;font-family:inherit;}
-.signout:hover{border-color:#F0E000;color:#F0E000;}
-
-.nav-tabs{background:#080808;border-bottom:1px solid #1a1a1a;padding:0 20px;display:flex;gap:4px;overflow-x:auto;}
-.tab-btn{background:transparent;border:none;border-bottom:2px solid transparent;color:#555;padding:12px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
-.tab-btn.active{color:#F0E000;border-bottom-color:#F0E000;}
-.tab-btn:hover:not(.active){color:#888;}
-
-.tab-panel{display:none;max-width:760px;margin:0 auto;padding:24px 20px 80px;}
-.tab-panel.active{display:block;}
-
-h1{font-size:22px;font-weight:900;margin-bottom:4px;}
-h2{font-size:15px;font-weight:800;color:#F0E000;margin:20px 0 8px;}
-h3{font-size:12px;font-weight:700;color:#F2F2F2;margin:14px 0 5px;}
-p{font-size:12px;color:#888;line-height:1.8;margin-bottom:8px;}
-.sub{font-size:10px;color:#444;text-transform:uppercase;letter-spacing:1px;margin-bottom:18px;}
-
-.card{background:#111;border:1px solid #222;border-radius:10px;padding:14px;margin-bottom:10px;}
-.rule{background:#1a1a1a;border-left:3px solid #F0E000;border-radius:0 7px 7px 0;padding:9px 13px;margin-bottom:7px;font-size:12px;color:#888;line-height:1.7;}
-.rule strong{color:#F0E000;}
-.rule.red{border-color:#E53E3E;}
-.rule.red strong{color:#E53E3E;}
-.rule.green{border-color:#1DB954;}
-.rule.green strong{color:#1DB954;}
-.ul{list-style:none;}
-.ul li{font-size:12px;color:#888;padding:5px 0;border-bottom:1px solid #1a1a1a;display:flex;gap:8px;line-height:1.5;}
-.ul li::before{content:“✓”;color:#F0E000;font-weight:700;flex-shrink:0;}
-.ul li:last-child{border-bottom:none;}
-.app-link{display:flex;align-items:center;justify-content:space-between;background:#111;border:1px solid #222;border-radius:10px;padding:12px 14px;margin-bottom:8px;text-decoration:none;}
-.app-link:hover{border-color:#F0E000;}
-.app-name{font-size:13px;font-weight:700;color:#F2F2F2;}
-.app-url{font-size:10px;color:#F0E000;margin-top:1px;}
-.app-desc{font-size:10px;color:#555;margin-top:1px;}
-
-/* ADMIN PANEL */
-.emp-card{background:#111;border:1px solid #222;border-radius:10px;padding:14px;margin-bottom:10px;}
-.emp-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
-.emp-name{font-size:14px;font-weight:700;color:#F2F2F2;}
-.emp-role{font-size:10px;color:#555;margin-top:1px;}
-.status-badge{font-size:10px;font-weight:700;border-radius:20px;padding:3px 10px;display:inline-block;}
-.status-active{background:#1DB95422;color:#1DB954;}
-.status-revoked{background:#E53E3E22;color:#E53E3E;}
-.emp-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
-.action-btn{border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;}
-.btn-revoke{background:transparent;border:1px solid #E53E3E;color:#E53E3E;}
-.btn-revoke:hover{background:#E53E3E22;}
-.btn-restore{background:transparent;border:1px solid #1DB954;color:#1DB954;}
-.btn-restore:hover{background:#1DB95422;}
-.btn-rename{background:transparent;border:1px solid #F0E000;color:#F0E000;}
-.btn-rename:hover{background:#F0E00022;}
-.rename-input{background:#1a1a1a;border:1px solid #333;border-radius:6px;color:#F2F2F2;padding:6px 10px;font-size:12px;outline:none;font-family:inherit;width:160px;}
-.rename-input:focus{border-color:#F0E000;}
-.save-btn{background:#F0E000;color:#000;border:none;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;}
-
-.confirm-modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:999;padding:20px;display:none;}
-.confirm-modal.show{display:flex;}
-.confirm-box{background:#111;border:1px solid #333;border-radius:12px;padding:24px;max-width:380px;width:100%;}
-.confirm-title{font-size:16px;font-weight:800;color:#F2F2F2;margin-bottom:8px;}
-.confirm-msg{font-size:12px;color:#888;line-height:1.7;margin-bottom:16px;}
-.confirm-btns{display:flex;gap:8px;}
-.confirm-yes{background:#E53E3E;color:#fff;border:none;border-radius:7px;padding:10px 18px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;flex:1;}
-.confirm-no{background:transparent;border:1px solid #333;color:#888;border-radius:7px;padding:10px 18px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;flex:1;}
-
-.step{display:flex;gap:12px;margin-bottom:12px;}
-.step-num{width:26px;height:26px;border-radius:50%;background:#F0E00022;border:2px solid #F0E000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#F0E000;flex-shrink:0;}
-.step-title{font-size:12px;font-weight:700;color:#F2F2F2;margin-bottom:1px;}
-.step-desc{font-size:11px;color:#666;line-height:1.6;}
-table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:11px;}
-th{background:#1a1a1a;color:#888;padding:7px 10px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:0.8px;}
-td{padding:8px 10px;border-bottom:1px solid #1a1a1a;color:#888;}
-td strong{color:#F2F2F2;}
-.quote{background:#111;border:1px solid #222;border-radius:8px;padding:13px;margin:10px 0;font-size:12px;color:#F0E000;font-style:italic;line-height:1.8;}
-.sign-box{border:1px solid #333;border-radius:10px;padding:20px;margin-top:14px;}
-.sign-line{border-bottom:1px solid #444;margin-bottom:5px;height:26px;}
-.sign-label{font-size:9px;color:#444;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;}
+.hero{background:linear-gradient(135deg,#0d0d00,#080808);border-bottom:1px solid #1a1a1a;padding:36px 20px 28px;text-align:center;}
+.brand{font-size:11px;font-weight:700;color:#F0E000;letter-spacing:3px;margin-bottom:8px;}
+.hero h1{font-size:26px;font-weight:900;color:#F2F2F2;margin-bottom:6px;}
+.hero p{font-size:12px;color:#666;max-width:480px;margin:0 auto;}
+.container{max-width:800px;margin:0 auto;padding:24px 16px 60px;}
+.step{display:none;}.step.active{display:block;}
+.step-bar{display:flex;margin-bottom:24px;border-radius:10px;overflow:hidden;border:1px solid #1a1a1a;}
+.si{flex:1;padding:10px 4px;text-align:center;font-size:10px;font-weight:700;color:#333;background:#0d0d0d;border-right:1px solid #1a1a1a;transition:.2s;}
+.si:last-child{border-right:none;}
+.si.active{background:#F0E00015;color:#F0E000;}
+.si.done{background:#1DB95412;color:#1DB954;}
+.card{background:#111;border:1px solid #1a1a1a;border-radius:12px;padding:20px;margin-bottom:14px;}
+.card h2{font-size:13px;font-weight:800;color:#F0E000;margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px;}
+.tier{border:1px solid #1e1e1e;border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:.15s;}
+.tier:hover,.tier.sel{border-color:#F0E000;background:#F0E00008;}
+.tier-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px;}
+.tier-name{font-size:13px;font-weight:800;color:#F2F2F2;}
+.tier-price{font-size:20px;font-weight:900;color:#F0E000;white-space:nowrap;}
+.tier-sub{font-size:11px;color:#555;}
+.tier-save{font-size:10px;color:#1DB954;font-weight:700;margin-top:3px;}
+label{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;margin-top:12px;}
+input,select{width:100%;background:#0d0d0d;border:1px solid #1e1e1e;border-radius:7px;color:#F2F2F2;padding:10px 12px;font-size:13px;outline:none;font-family:inherit;transition:.15s;}
+input:focus,select:focus{border-color:#F0E000;}
+select{color-scheme:dark;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.agr{background:#060606;border:1px solid #1a1a1a;border-radius:8px;padding:16px;height:260px;overflow-y:auto;font-size:11px;color:#4a4a4a;line-height:1.8;margin-bottom:12px;}
+.agr h3{color:#F0E000;font-size:11px;margin:12px 0 4px;}
+.agr h3:first-child{margin-top:0;}
+.agr strong{color:#777;}
+.chk{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid #111;}
+.chk input[type=checkbox]{width:18px;height:18px;flex-shrink:0;margin-top:1px;accent-color:#F0E000;cursor:pointer;}
+.chk span{font-size:12px;color:#777;line-height:1.6;}
+.btn{width:100%;background:#F0E000;color:#000;border:none;border-radius:8px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;margin-top:8px;transition:.15s;}
+.btn:hover{background:#e0d000;}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.btn-g{width:100%;background:transparent;color:#666;border:1px solid #1e1e1e;border-radius:8px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px;}
+.btn-g:hover{border-color:#333;color:#888;}
+.pay-method{display:flex;gap:8px;margin-bottom:16px;}
+.pm{flex:1;border:1px solid #1e1e1e;border-radius:8px;padding:12px;cursor:pointer;text-align:center;transition:.15s;}
+.pm:hover,.pm.sel{border-color:#F0E000;background:#F0E00008;}
+.pm-icon{font-size:22px;margin-bottom:4px;}
+.pm-label{font-size:11px;font-weight:700;color:#F2F2F2;}
+.pm-sub{font-size:10px;color:#555;margin-top:2px;}
+#card-element,#payment-element{background:#0d0d0d;border:1px solid #1e1e1e;border-radius:7px;padding:13px;margin-top:4px;}
+.err{color:#E53E3E;font-size:12px;margin-top:6px;display:none;}
+.sum-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #0f0f0f;font-size:12px;}
+.sum-row:last-child{border-bottom:none;}
+.sk{color:#555;} .sv{color:#F2F2F2;font-weight:700;}
+.tot{display:flex;justify-content:space-between;padding:14px 0 4px;font-size:16px;font-weight:900;}
+.tk{color:#F2F2F2;} .tv{color:#F0E000;}
+.note{font-size:10px;color:#333;line-height:1.6;margin-top:6px;}
+.hl{background:#F0E00010;border:1px solid #F0E00030;border-radius:8px;padding:10px 14px;font-size:12px;color:#F0E000;font-weight:700;margin-bottom:12px;}
+.success-wrap{text-align:center;padding:40px 16px;}
+.success-wrap h2{font-size:24px;font-weight:900;margin-bottom:6px;}
+.success-wrap p{font-size:13px;color:#666;margin-bottom:20px;}
+.badge{display:inline-block;background:#F0E00018;color:#F0E000;border:1px solid #F0E00033;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:700;margin:2px;}
+.badge.green{background:#1DB95418;color:#1DB954;border-color:#1DB95433;}
+.bank-notice{background:#0a1a2a;border:1px solid #4299E133;border-radius:8px;padding:12px;margin-top:10px;font-size:11px;color:#4299E1;line-height:1.6;}
+.enterprise-box{background:#1a1400;border:1px solid #F0E00033;border-radius:8px;padding:18px;text-align:center;}
+@media(max-width:500px){.g2{grid-template-columns:1fr;}.tier-price{font-size:16px;}.pay-method{flex-direction:column;}}
 </style>
-
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-
-<script>
-  window.addEventListener('load', function(){
-    if(window.emailjs) emailjs.init("6Qs0HIOLjJ6jfWHtp");
-  });
-  function sendPortalEmail(subject, message, fromName){
-    if(!window.emailjs) return;
-    emailjs.send("service_e3qn0bs","template_nxubdce",{
-      to_email: "potentlogistics@pm.me",
-      from_name: fromName || "Employee Portal",
-      subject: subject,
-      message: message
-    }).catch(function(){});
-  }
-</script>
-
 </head>
 <body>
 
-<!-- CONFIRM MODAL -->
-
-<div class="confirm-modal" id="confirmModal">
-  <div class="confirm-box">
-    <div class="confirm-title" id="confirmTitle">Confirm Action</div>
-    <div class="confirm-msg" id="confirmMsg"></div>
-    <div class="confirm-btns">
-      <button class="confirm-no" onclick="closeConfirm()">Cancel</button>
-      <button class="confirm-yes" id="confirmYes">Confirm</button>
-    </div>
-  </div>
+<div class="hero">
+  <div class="brand">POTENT PRÄDƏKT®</div>
+  <h1>POTENT OS License Purchase</h1>
+  <p>One-time license. Perpetual. No monthly fees. No per-truck fees. No subscriptions.</p>
 </div>
 
-<!-- LOGIN SCREEN -->
+<div class="container">
 
-<div id="loginScreen">
-  <div class="login-wrap">
-    <div class="login-brand">POTENT PRÄDƏKT®</div>
-    <div class="login-title">Employee Portal</div>
-    <div class="login-sub">Select your name and enter your password</div>
-    <div class="login-error" id="loginError">Incorrect password. Try again or contact the Owner.</div>
-    <div class="login-label">Your Name</div>
-    <select class="login-select" id="staffSelect">
-      <option value="">— Select your name —</option>
-    </select>
-    <div class="login-label">Password</div>
-    <input type="password" class="login-input" id="pwInput" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()"/>
-    <button class="login-btn" onclick="doLogin()">Sign In →</button>
-    <div class="login-note">Forgot your password? Contact the Owner at (770) 648-4228</div>
+  <div class="step-bar">
+    <div class="si active" id="b1">1. Tier</div>
+    <div class="si" id="b2">2. Your Info</div>
+    <div class="si" id="b3">3. Agreement</div>
+    <div class="si" id="b4">4. Payment</div>
+    <div class="si" id="b5">5. Done</div>
   </div>
-</div>
 
-<!-- APP SCREEN -->
+  <!-- STEP 1 -->
+  <div class="step active" id="s1">
+    <div class="card">
+      <h2>Select Your License Tier</h2>
+      <div class="hl">Every tier includes: Offline Mode · Voice Quoting · Live GPS · Fleet & Compliance · Payroll · 14 Languages · Unlimited Jobs · Lifetime Updates</div>
 
-<div id="appScreen">
-  <div class="topbar">
-    <div class="topbar-brand">POTENT <span>PRÄDƏKT</span>®</div>
-    <div class="topbar-right">
-      <span class="topbar-user">Signed in as <strong id="topbarName"></strong></span>
-      <button class="signout" onclick="signOut()">Sign Out</button>
+      <div class="tier sel" data-tier="Starter" data-price="14500" data-fleet="1–10 trucks" onclick="pickTier(this)">
+        <div class="tier-top"><div class="tier-name">Starter — 1 to 10 Trucks</div><div class="tier-price">$14,500</div></div>
+        <div class="tier-sub">Up to 10 trucks · 20 dispatchers · Unlimited jobs</div>
+        <div class="tier-save">Saves $75k–$120k/yr vs Motive · Pays back in 2–3 months</div>
+      </div>
+      <div class="tier" data-tier="Growth" data-price="34500" data-fleet="11–50 trucks" onclick="pickTier(this)">
+        <div class="tier-top"><div class="tier-name">Growth — 11 to 50 Trucks</div><div class="tier-price">$34,500</div></div>
+        <div class="tier-sub">Up to 50 trucks · 20 dispatchers · Unlimited jobs</div>
+        <div class="tier-save">Saves $150k–$240k/yr vs Motive · Pays back in 3–4 months</div>
+      </div>
+      <div class="tier" data-tier="Mid Fleet" data-price="69500" data-fleet="51–150 trucks" onclick="pickTier(this)">
+        <div class="tier-top"><div class="tier-name">Mid Fleet — 51 to 150 Trucks</div><div class="tier-price">$69,500</div></div>
+        <div class="tier-sub">Up to 150 trucks · 20 dispatchers · Unlimited jobs</div>
+        <div class="tier-save">Saves $375k–$600k/yr · 5-year savings: $1M+</div>
+      </div>
+      <div class="tier" data-tier="Enterprise" data-price="109500" data-fleet="151–300 trucks" onclick="pickTier(this)">
+        <div class="tier-top"><div class="tier-name">Enterprise — 151 to 300 Trucks</div><div class="tier-price">$109,500</div></div>
+        <div class="tier-sub">Up to 300 trucks · 20 dispatchers · White-glove 24hr setup</div>
+        <div class="tier-save">Saves $800k–$1.2M/yr · 5-year savings: $2.2M+</div>
+      </div>
+      <div class="tier" data-tier="Custom" data-price="0" data-fleet="300+ trucks" onclick="pickTier(this)">
+        <div class="tier-top"><div class="tier-name">Custom — 300+ Trucks</div><div class="tier-price" style="color:#666;font-size:15px;">Custom Pricing</div></div>
+        <div class="tier-sub">300+ trucks · Custom scope · White label available</div>
+        <div class="tier-save">Contact Anthony: (770) 648-4228</div>
+      </div>
+    </div>
+    <button class="btn" onclick="go(2)">Continue →</button>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step" id="s2">
+    <div class="card">
+      <h2>Your Information</h2>
+      <div class="g2">
+        <div><label>Legal Company Name *</label><input id="iCompany" placeholder="ABC Trucking LLC"/></div>
+        <div><label>DBA / Trade Name</label><input id="iDBA" placeholder="If different"/></div>
+      </div>
+      <div class="g2">
+        <div><label>Your Full Legal Name *</label><input id="iName" placeholder="First Last"/></div>
+        <div><label>Title *</label><input id="iTitle" placeholder="Owner / CEO"/></div>
+      </div>
+      <div class="g2">
+        <div><label>Email Address *</label><input id="iEmail" type="email" placeholder="you@company.com"/></div>
+        <div><label>Phone *</label><input id="iPhone" type="tel" placeholder="(555) 000-0000"/></div>
+      </div>
+      <div class="g2">
+        <div><label>City *</label><input id="iCity" placeholder="Atlanta"/></div>
+        <div><label>State *</label><input id="iState" placeholder="GA"/></div>
+      </div>
+      <div class="g2">
+        <div><label>Number of Trucks</label><input id="iFleet" type="number" placeholder="e.g. 25"/></div>
+        <div><label>Current Software</label><input id="iSoftware" placeholder="Motive, Samsara, etc."/></div>
+      </div>
+    </div>
+    <button class="btn" onclick="step2next()">Continue →</button>
+    <button class="btn-g" onclick="go(1)">← Back</button>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step" id="s3">
+    <div class="card">
+      <h2>License Agreement & NDA</h2>
+      <div class="agr">
+        <h3>POTENT OS SOFTWARE LICENSE AGREEMENT</h3>
+        <strong>Effective Date:</strong> <span id="aDate"></span><br/>
+        <strong>Licensor:</strong> Anthony Emmanuel Figueroa Mendes®, POTENT OPERATIONS LLC<br/>
+        <strong>Licensee:</strong> <span id="aLicensee">Your Company</span><br/>
+        <strong>License Tier:</strong> <span id="aTier">—</span> · <strong>Fee:</strong> <span id="aPrice">—</span> (One-Time · Perpetual)<br/><br/>
+
+        <h3>1. LICENSE GRANT</h3>
+        Licensor grants Licensee a non-exclusive, non-transferable, perpetual license to use POTENT OS solely for Licensee's internal business operations for the fleet tier purchased.
+
+        <h3>2. OWNERSHIP</h3>
+        POTENT OS — including all source code, logic, features, UI design, data structures, and intellectual property — is and remains the exclusive property of ANTHONY EMMANUEL FIGUEROA MENDES®. This Agreement grants a license to USE the Software, not ownership of it.
+
+        <h3>3. LICENSE FEE</h3>
+        Licensee agrees to pay the one-time fee of <span id="aPrice2">—</span> for the <span id="aTier2">—</span> tier. No monthly fees, per-truck fees, or subscription fees apply to the base license.
+
+        <h3>4. PERMITTED USE</h3>
+        Licensee may use the Software internally and authorize employees and drivers to access it. Licensee may NOT resell, sublicense, reverse engineer, decompile, or use the Software to build a competing product.
+
+        <h3>5. NON-DISCLOSURE AGREEMENT (NDA)</h3>
+        By signing this Agreement, Licensee agrees that all information disclosed during demos, onboarding, and use — including features, pricing, system architecture, and business methodology — is CONFIDENTIAL and constitutes a trade secret of POTENT OPERATIONS LLC. Licensee will not disclose this information to competitors or use it to build competing technology. This NDA survives termination for five (5) years. Breach entitles Licensor to seek injunctive relief and monetary damages.
+
+        <h3>6. CONFIDENTIALITY</h3>
+        Both parties agree to maintain strict confidentiality of system credentials, pricing, client data, and proprietary processes. Neither party will disclose confidential information to any third party without prior written consent.
+
+        <h3>7. SUPPORT & UPDATES</h3>
+        License includes 30 days onboarding support from purchase date. Software updates are included at Licensor's discretion. Annual support plans available separately for continued priority support.
+
+        <h3>8. NO REFUND POLICY</h3>
+        Due to the nature of software licensing and immediate system access upon purchase, all sales are final. No refunds will be issued after Software access is granted.
+
+        <h3>9. LIMITATION OF LIABILITY</h3>
+        THE SOFTWARE IS PROVIDED "AS IS." LICENSOR'S TOTAL LIABILITY SHALL NOT EXCEED THE LICENSE FEE PAID BY LICENSEE.
+
+        <h3>10. GOVERNING LAW</h3>
+        This Agreement is governed by the laws of the State of Georgia. Disputes resolved in Rockdale County, Georgia courts.
+
+        <br/><br/>
+        <strong>© 2026 ANTHONY EMMANUEL FIGUEROA MENDES® · POTENT PRÄDƏKT® · All Rights Reserved</strong>
+      </div>
+
+      <div class="chk"><input type="checkbox" id="c1" onchange="chkAll()"/><span>I have read and agree to the POTENT OS License Agreement in full.</span></div>
+      <div class="chk"><input type="checkbox" id="c2" onchange="chkAll()"/><span>I agree to the Non-Disclosure Agreement and understand all proprietary information is confidential.</span></div>
+      <div class="chk"><input type="checkbox" id="c3" onchange="chkAll()"/><span>I confirm I am authorized to sign on behalf of <strong id="cCompany">my company</strong>.</span></div>
+      <div class="chk"><input type="checkbox" id="c4" onchange="chkAll()"/><span>I understand this is a one-time fee of <strong id="cPrice">—</strong> with no refunds after access is granted.</span></div>
+
+      <div style="margin-top:14px;">
+        <label>Electronic Signature — Type Your Full Legal Name *</label>
+        <input id="iSig" placeholder="Full legal name as electronic signature" oninput="chkAll()"/>
+        <div class="note">By typing your name, you are signing electronically under the ESIGN Act. This is a legally binding signature.</div>
+      </div>
+
+      <button class="btn" id="agreeBtn" disabled onclick="go(4)" style="margin-top:14px;">I Agree — Proceed to Payment →</button>
+      <button class="btn-g" onclick="go(2)">← Back</button>
+    </div>
+    <button class="btn-g" onclick="dlAgreement()" style="margin-top:0;">📄 Download Agreement PDF</button>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step" id="s4">
+    <div class="card">
+      <h2>Order Summary</h2>
+      <div class="sum-row"><span class="sk">Company</span><span class="sv" id="sumCo">—</span></div>
+      <div class="sum-row"><span class="sk">License Tier</span><span class="sv" id="sumTier">—</span></div>
+      <div class="sum-row"><span class="sk">Fleet</span><span class="sv" id="sumFleet">—</span></div>
+      <div class="sum-row"><span class="sk">License Type</span><span class="sv">One-Time · Perpetual · No Monthly Fees</span></div>
+      <div class="sum-row"><span class="sk">Includes</span><span class="sv">30-Day Onboarding Support</span></div>
+      <div class="tot"><span class="tk">Total Due Today</span><span class="tv" id="sumAmt">$14,500</span></div>
+    </div>
+
+    <!-- ENTERPRISE CUSTOM -->
+    <div id="enterpriseBox" style="display:none;" class="card">
+      <div class="enterprise-box">
+        <div style="font-size:14px;font-weight:800;color:#F0E000;margin-bottom:6px;">Custom Enterprise Pricing</div>
+        <div style="font-size:12px;color:#777;margin-bottom:14px;">Call or text Anthony to finalize your enterprise license and pricing.</div>
+        <a href="tel:7706484228" style="display:inline-block;background:#F0E000;color:#000;text-decoration:none;border-radius:8px;padding:12px 28px;font-weight:800;font-size:14px;">(770) 648-4228</a>
+      </div>
+    </div>
+
+    <!-- PAYMENT FORM -->
+    <div id="payForm" class="card">
+      <h2>Payment Method</h2>
+
+      <div class="pay-method">
+        <div class="pm sel" id="pmCard" onclick="selectPM('card')">
+          <div class="pm-icon">💳</div>
+          <div class="pm-label">Credit / Debit Card</div>
+          <div class="pm-sub">Visa, MC, Amex, Discover</div>
+        </div>
+        <div class="pm" id="pmBank" onclick="selectPM('bank')">
+          <div class="pm-icon">🏦</div>
+          <div class="pm-label">Bank Account (ACH)</div>
+          <div class="pm-sub">Instant verify via Plaid · No fees</div>
+        </div>
+      </div>
+
+      <!-- CARD -->
+      <div id="cardSection">
+        <label>Card Details</label>
+        <div id="card-element"></div>
+        <div class="err" id="cardErr"></div>
+      </div>
+
+      <!-- BANK / PLAID -->
+      <div id="bankSection" style="display:none;">
+        <div class="bank-notice">
+          🏦 <strong>Instant Bank Verification via Plaid</strong><br/>
+          Click the button below to securely connect your bank account through Plaid. Your login credentials go directly to Plaid — POTENT never sees them. ACH payments typically settle in 1–3 business days.
+        </div>
+        <button class="btn" id="bankBtn" onclick="startBankVerify()" style="background:#4299E1;color:#fff;margin-top:10px;">🔗 Connect Bank Account via Plaid</button>
+        <div id="bankConfirmed" style="display:none;background:#0a1a0a;border:1px solid #1DB95433;border-radius:8px;padding:12px;margin-top:10px;font-size:12px;color:#1DB954;font-weight:700;">✅ Bank account verified and connected</div>
+      </div>
+
+      <div class="note" style="margin-top:10px;">🔒 Payments processed securely by Stripe. POTENT never stores your card or bank details.</div>
+
+      <button class="btn" id="payBtn" onclick="submitPay()" style="margin-top:14px;">
+        🔒 Pay <span id="payAmt">$14,500</span> — Complete License Purchase
+      </button>
+      <div id="payLoading" style="display:none;text-align:center;padding:14px;font-size:13px;color:#666;">Processing your payment securely...</div>
+      <div class="err" id="payErr"></div>
+    </div>
+
+    <button class="btn-g" onclick="go(3)">← Back</button>
+  </div>
+
+  <!-- STEP 5 -->
+  <div class="step" id="s5">
+    <div class="success-wrap">
+      <div style="font-size:56px;margin-bottom:14px;">🎉</div>
+      <h2>Welcome to POTENT OS</h2>
+      <p>Your license is confirmed. Anthony will contact you within 24 hours to complete your onboarding.</p>
+      <div style="margin:16px 0;">
+        <span class="badge">✓ License Confirmed</span>
+        <span class="badge green">✓ 24-Hour Setup</span>
+        <span class="badge green">✓ Agreement on File</span>
+      </div>
+      <div class="card" style="text-align:left;max-width:460px;margin:0 auto 16px;">
+        <h2>What Happens Next</h2>
+        <div style="font-size:12px;color:#666;line-height:2.2;">
+          <div>✅ License agreement emailed to you</div>
+          <div>✅ Anthony calls within 24 hours</div>
+          <div>✅ Your team receives access credentials</div>
+          <div>✅ 30-minute onboarding call scheduled</div>
+          <div>✅ System live within 24 hours of onboarding</div>
+        </div>
+      </div>
+      <button class="btn" style="max-width:320px;margin:0 auto 8px;display:block;" onclick="dlSigned()">📄 Download Signed License PDF</button>
+      <div style="font-size:12px;color:#444;margin-top:10px;">Questions? <a href="tel:7706484228" style="color:#F0E000;">(770) 648-4228</a> · <a href="mailto:potentlogistics@pm.me" style="color:#F0E000;">potentlogistics@pm.me</a></div>
     </div>
   </div>
-  <div class="nav-tabs" id="navTabs"></div>
-  <div id="tabPanels"></div>
+
 </div>
 
 <script>
-// ── USER DATABASE (passwords NOT displayed anywhere in UI) ─────────
-var SUPABASE_URL='https://ymvsatlrkzgxwzxybwmk.supabase.co';
-var SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltdnNhdGxya3pneHd6eHlid21rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4NzgwMTQsImV4cCI6MjEwMzQ1NDAxNH0.KbW0enJr5FOzJmDQnT3Thhr5NJdbI4Ehp1vkhVEyPEg';
+// ── STATE ─────────────────────────────────────────────────────────
+var S = { tier:'Starter', price:14500, fleet:'1–10 trucks',
+  company:'', name:'', title:'', email:'', phone:'', city:'', state:'GA',
+  fleet_count:'', software:'', sig:'', payMethod:'card', bankVerified:false,
+  piSecret:null };
 
-var USERS={
-  potent:{name:'POTENT (Owner)',role:'owner',emoji:'👑',pw:'POTENT0421',type:'owner'},
-  dispatch1:{name:'Slot 1',role:'dispatch',emoji:'📞',pw:'DISPATCH1PL',type:'dispatcher'},
-  dispatch2:{name:'Slot 2',role:'dispatch',emoji:'📞',pw:'DISPATCH2PL',type:'dispatcher'},
-  dispatch3:{name:'Slot 3',role:'dispatch',emoji:'📞',pw:'DISPATCH3PL',type:'dispatcher'},
-  dispatch4:{name:'Slot 4',role:'dispatch',emoji:'📞',pw:'DISPATCH4PL',type:'dispatcher'},
-  dispatch5:{name:'Slot 5',role:'dispatch',emoji:'📞',pw:'DISPATCH5PL',type:'dispatcher'},
-  dispatch6:{name:'Slot 6',role:'dispatch',emoji:'📞',pw:'DISPATCH6PL',type:'dispatcher'},
-  dispatch7:{name:'Slot 7',role:'dispatch',emoji:'📞',pw:'DISPATCH7PL',type:'dispatcher'},
-  dispatch8:{name:'Slot 8',role:'dispatch',emoji:'📞',pw:'DISPATCH8PL',type:'dispatcher'},
-  dispatch9:{name:'Slot 9',role:'dispatch',emoji:'📞',pw:'DISPATCH9PL',type:'dispatcher'},
-  dispatch10:{name:'Slot 10',role:'dispatch',emoji:'📞',pw:'DISPATCH10PL',type:'dispatcher'},
-  dispatch11:{name:'Slot 11',role:'dispatch',emoji:'📞',pw:'DISPATCH11PL',type:'dispatcher'},
-  dispatch12:{name:'Slot 12',role:'dispatch',emoji:'📞',pw:'DISPATCH12PL',type:'dispatcher'},
-  dispatch13:{name:'Slot 13',role:'dispatch',emoji:'📞',pw:'DISPATCH13PL',type:'dispatcher'},
-  dispatch14:{name:'Slot 14',role:'dispatch',emoji:'📞',pw:'DISPATCH14PL',type:'dispatcher'},
-  dispatch15:{name:'Slot 15',role:'dispatch',emoji:'📞',pw:'DISPATCH15PL',type:'dispatcher'},
-  dispatch16:{name:'Slot 16',role:'dispatch',emoji:'📞',pw:'DISPATCH16PL',type:'dispatcher'},
-  dispatch17:{name:'Slot 17',role:'dispatch',emoji:'📞',pw:'DISPATCH17PL',type:'dispatcher'},
-  dispatch18:{name:'Slot 18',role:'dispatch',emoji:'📞',pw:'DISPATCH18PL',type:'dispatcher'},
-  dispatch19:{name:'Slot 19',role:'dispatch',emoji:'📞',pw:'DISPATCH19PL',type:'dispatcher'},
-  dispatch20:{name:'Slot 20',role:'dispatch',emoji:'📞',pw:'DISPATCH20PL',type:'dispatcher'},
-  driver:{name:'Driver 1',role:'driver',emoji:'🚐',pw:'DRIVERPL',type:'driver'},
-  driver2:{name:'Driver 2',role:'driver',emoji:'🚐',pw:'DRIVER2PL',type:'driver'},
-  driver3:{name:'Driver 3',role:'driver',emoji:'🚐',pw:'DRIVER3PL',type:'driver'},
-};
+// ── STRIPE ────────────────────────────────────────────────────────
+var stripe = Stripe('pk_live_51RCajhP0u1b9PmFVwgwA7pOBl4R1OqX7VLmLjFsq9blWPYuwlSuznZtC1OBb8Y7OJC3Yb5e3v0gkbcFiQwJNYE600OODhFPaO');
+var elements = stripe.elements();
+var cardEl = null;
 
-var TYPE_EMOJI={owner:'👑',closer:'🤝',dispatcher:'📞',driver:'🚐'};
-var TYPE_LABEL={owner:'Owner',closer:'Closer',dispatcher:'Dispatcher',driver:'Driver'};
-
-function loadSlotData(){
-  try{
-    var saved=JSON.parse(localStorage.getItem('pl_slot_data')||'{}');
-    Object.keys(saved).forEach(function(uid){
-      if(USERS[uid]){
-        if(saved[uid].name) USERS[uid].name=saved[uid].name;
-        if(saved[uid].type){
-          USERS[uid].type=saved[uid].type;
-          if(saved[uid].type==='driver') USERS[uid].role='driver';
-          else USERS[uid].role='dispatch';
-          USERS[uid].emoji=TYPE_EMOJI[saved[uid].type]||'📞';
-        }
-      }
-    });
-  }catch(e){}
-}
-function saveSlotData(){
-  var data={};
-  Object.keys(USERS).filter(function(uid){return uid!=='potent';}).forEach(function(uid){
-    data[uid]={name:USERS[uid].name,type:USERS[uid].type||'dispatcher'};
-  });
-  try{localStorage.setItem('pl_slot_data',JSON.stringify(data));}catch(e){}
-}
-function buildLoginDropdown(){
-  var sel=document.getElementById('staffSelect');
-  if(!sel)return;
-  sel.innerHTML='<option value="">— Select your name —</option>';
-  var og0=document.createElement('optgroup');og0.label='Owner';
-  var o=document.createElement('option');o.value='potent';o.textContent='👑 POTENT (Owner)';
-  og0.appendChild(o);sel.appendChild(og0);
-  var types={closer:[],dispatcher:[],driver:[]};
-  Object.keys(USERS).filter(function(uid){return uid!=='potent';}).forEach(function(uid){
-    var t=USERS[uid].type||'dispatcher';
-    if(types[t]) types[t].push(uid); else types.dispatcher.push(uid);
-  });
-  [['closer','🤝 Closers'],['dispatcher','📞 Dispatch'],['driver','🚐 Drivers']].forEach(function(g){
-    var slots=types[g[0]]||[];
-    if(!slots.length)return;
-    var og=document.createElement('optgroup');og.label=g[1];
-    slots.forEach(function(uid){
-      var u=USERS[uid];
-      var named=u.name&&!u.name.match(/^Slot \d+$/)&&!u.name.match(/^Driver \d+$/);
-      var opt=document.createElement('option');
-      opt.value=uid;
-      opt.textContent=(TYPE_EMOJI[u.type]||'📞')+' '+(named?u.name:'[Open Slot]');
-      if(!named)opt.style.color='#444';
-      og.appendChild(opt);
-    });
-    sel.appendChild(og);
-  });
-}
-
-var currentUser=null;
-var revokedUsers={};
-var displayNames={};
-
-// Load display names from Supabase
-async function loadDisplayNames(){
-  try{
-    var res=await fetch(SUPABASE_URL+'/rest/v1/user_display_names?select=user_id,name',{
-      headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY}
-    });
-    var data=await res.json();
-    if(Array.isArray(data)){
-      data.forEach(function(r){displayNames[r.user_id]=r.name;});
-      // Update dropdown labels
-      Object.keys(displayNames).forEach(function(uid){
-        var opt=document.querySelector('#staffSelect option[value="'+uid+'"]');
-        if(opt)opt.textContent=displayNames[uid];
-      });
-    }
-  }catch(e){}
-}
-
-// Load revoked users from Supabase
-async function loadRevokedUsers(){
-  try{
-    var res=await fetch(SUPABASE_URL+'/rest/v1/revoked_users?select=user_id',{
-      headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY}
-    });
-    var data=await res.json();
-    revokedUsers={};
-    if(Array.isArray(data)){data.forEach(function(r){revokedUsers[r.user_id]=true;});}
-  }catch(e){}
-}
-
-function getDisplayName(uid){return USERS[uid]?.name||uid;}
-
-function buildLoginDropdown(){
-  var sel=document.getElementById('staffSelect');
-  if(!sel)return;
-  sel.innerHTML='<option value="">— Select your name —</option>';
-  // Owner
-  var og0=document.createElement('optgroup');og0.label='Owner';
-  var o=document.createElement('option');o.value='potent';o.textContent='👑 '+getDisplayName('potent');og0.appendChild(o);
-  sel.appendChild(og0);
-  // Group active slots by type
-  var types={closer:[],dispatcher:[],driver:[]};
-  Object.keys(USERS).filter(function(uid){return uid!=='potent';}).forEach(function(uid){
-    var u=USERS[uid];
-    var t=u.type||'dispatcher';
-    if(types[t]) types[t].push(uid);
-    else types.dispatcher.push(uid);
-  });
-  var groups=[['closer','🤝 Closers'],['dispatcher','📞 Dispatch'],['driver','🚐 Drivers']];
-  groups.forEach(function(g){
-    var slots=types[g[0]].filter(function(uid){return USERS[uid].name&&!USERS[uid].name.startsWith('Slot ')&&!USERS[uid].name.startsWith('Driver ');});
-    var unset=types[g[0]].filter(function(uid){return !slots.includes(uid);});
-    // Show named slots first, then unset
-    var all=[...slots,...unset];
-    if(all.length===0)return;
-    var og=document.createElement('optgroup');og.label=g[1];
-    all.forEach(function(uid){
-      var opt=document.createElement('option');
-      opt.value=uid;
-      var u=USERS[uid];
-      var named=u.name&&!u.name.startsWith('Slot ')&&!u.name.startsWith('Driver ');
-      opt.textContent=(TYPE_EMOJI[u.type||'dispatcher']||'📞')+' '+(named?u.name:'[Empty Slot]');
-      opt.style.color=named?'':'#444';
-      og.appendChild(opt);
-    });
-    sel.appendChild(og);
-  });
-}
-
-function doLogin(){
-  var uid=document.getElementById('staffSelect').value;
-  var pw=document.getElementById('pwInput').value.trim();
-  var err=document.getElementById('loginError');
-  err.style.display='none';
-  if(!uid){err.textContent='Please select your name.';err.style.display='block';return;}
-  var user=USERS[uid];
-  if(!user||pw!==user.pw){err.textContent='Incorrect password. Try again or contact the Owner at (770) 648-4228.';err.style.display='block';return;}
-  if(revokedUsers[uid]){err.textContent='Your access has been revoked. Contact the Owner.';err.style.display='block';return;}
-  currentUser={uid:uid,role:user.role,displayName:getDisplayName(uid)};
-  localStorage.setItem('potent_portal_session',JSON.stringify({uid:uid,ts:Date.now()}));
-  launchApp();
-}
-
-function signOut(){
-  localStorage.removeItem('potent_portal_session');
-  currentUser=null;
-  document.getElementById('appScreen').style.display='none';
-  document.getElementById('loginScreen').style.display='flex';
-  document.getElementById('pwInput').value='';
-}
-
-function launchApp(){
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('appScreen').style.display='block';
-  document.getElementById('topbarName').textContent=currentUser.emoji+' '+currentUser.displayName;
-  loadSlotData();buildLoginDropdown();buildTabs();
-}
-
-// ── TAB DEFINITIONS BY ROLE ──────────────────────────────────────
-function getTabs(){
-  var all=[
-    {id:'welcome',label:'Welcome',roles:['owner','dispatch','driver']},
-    {id:'apps',label:'Apps & Links',roles:['owner','dispatch','driver']},
-    {id:'handbook',label:'Handbook',roles:['owner','dispatch','driver']},
-    {id:'sales',label:'Sales',roles:['owner','dispatch']},
-    {id:'leads',label:'Leads',roles:['owner','dispatch']},
-    {id:'dispatch',label:'Dispatch',roles:['owner','dispatch']},
-    {id:'drivers',label:'Drivers',roles:['owner','driver']},
-    {id:'compliance',label:'Compliance',roles:['owner','driver']},
-    {id:'rules',label:'Rules',roles:['owner','dispatch','driver']},
-    {id:'training',label:'🎯 OS Training',roles:['owner','dispatch','driver']},{id:'sign',label:'Sign',roles:['owner','dispatch','driver']},
-    {id:'admin',label:'⚙ Admin',roles:['owner']},
-  ];
-  return all.filter(function(t){return t.roles.indexOf(currentUser.role)>-1;});
-}
-
-window.addEventListener('DOMContentLoaded',function(){
-  loadSlotData();
-  buildLoginDropdown();
+window.addEventListener('load', function(){
+  if(window.emailjs) emailjs.init('6Qs0HIOLjJ6jfWHtp');
+  document.getElementById('aDate').textContent = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  mountCard();
 });
-function buildTabs(){
-  var tabs=getTabs();
-  var navEl=document.getElementById('navTabs');
-  var panelEl=document.getElementById('tabPanels');
-  navEl.innerHTML='';
-  panelEl.innerHTML='';
-  tabs.forEach(function(t,i){
-    var btn=document.createElement('button');
-    btn.className='tab-btn'+(i===0?' active':'');
-    btn.textContent=t.label;
-    btn.onclick=function(){
-      document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
-      document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active');});
-      btn.classList.add('active');
-      document.getElementById('panel-'+t.id).classList.add('active');
-    };
-    navEl.appendChild(btn);
-    var panel=document.createElement('div');
-    panel.className='tab-panel'+(i===0?' active':'');
-    panel.id='panel-'+t.id;
-    panel.innerHTML=getContent(t.id);
-    panelEl.appendChild(panel);
+
+function mountCard(){
+  if(cardEl) return;
+  cardEl = elements.create('card',{style:{base:{color:'#F2F2F2',fontFamily:'Segoe UI,sans-serif',fontSize:'14px','::placeholder':{color:'#333'}},invalid:{color:'#E53E3E'}}});
+  cardEl.mount('#card-element');
+  cardEl.on('change',function(e){
+    var err=document.getElementById('cardErr');
+    if(e.error){err.textContent=e.error.message;err.style.display='block';}
+    else err.style.display='none';
   });
-  // Init admin panel if owner
-  if(currentUser.role==='owner'){renderAdminPanel();}
 }
 
-// ── TAB CONTENT ──────────────────────────────────────────────────
-function getContent(id){
-  switch(id){
-    case 'welcome': return contentWelcome();
-    case 'apps': return contentApps();
-    case 'handbook': return contentHandbook();
-    case 'sales': return contentSales();
-    case 'leads': return contentLeads();
-    case 'dispatch': return contentDispatch();
-    case 'drivers': return contentDrivers();
-    case 'compliance': return contentCompliance();
-    case 'rules': return contentRules();
-    case 'sign': return contentSign();
-    case 'training': return contentTraining();
-    case 'admin': return '<div class="sub">Owner Only</div><h1>Admin Panel</h1><div id="adminPanelContent"><p style="color:#555">Loading...</p></div>';
-    default: return '<p>Coming soon.</p>';
+// ── STEP NAV ──────────────────────────────────────────────────────
+function go(n){
+  for(var i=1;i<=5;i++){
+    document.getElementById('s'+i).classList.toggle('active',i===n);
+    var b=document.getElementById('b'+i);
+    b.classList.remove('active','done');
+    if(i===n) b.classList.add('active');
+    else if(i<n) b.classList.add('done');
   }
+  window.scrollTo(0,0);
+  if(n===4) fillSummary();
 }
 
-function contentWelcome(){return `
-<div class="sub">Employee Portal · Confidential · POTENT PRÄDƏKT®</div>
-<h1>Welcome to POTENT.</h1>
-<p>You are not here to memorize scripts. You are not here to pressure people. You are here to solve problems. Every phone call. Every email. Every relationship.</p>
-<div style="background:#F0E00010;border:1px solid #F0E00033;border-radius:12px;padding:14px;margin:14px 0;">
-  <div style="font-size:11px;font-weight:700;color:#F0E000;margin-bottom:8px;">Company at a glance</div>
-  <table><tr><td><strong>Company</strong></td><td>Potent Logistics LLC / POTENT OPERATIONS LLC</td></tr>
-  <tr><td><strong>Owner</strong></td><td>ANTHONY EMMANUEL FIGUEROA MENDES®</td></tr>
-  <tr><td><strong>Brand</strong></td><td>POTENT PRÄDƏKT®</td></tr>
-  <tr><td><strong>Phone</strong></td><td>(770) 648-4228</td></tr>
-  <tr><td><strong>Email</strong></td><td>potentlogistics@pm.me</td></tr></table>
-</div>
-<h2>Our Mission</h2>
-<p>POTENT OPERATIONS exists to provide fast, dependable transportation and commercial solutions when timing matters. We help businesses stay moving and solve problems when their normal plan fails.</p>
-<h2>What We Do</h2>
-<ul class="ul"><li>Expedited transportation and same-day freight</li><li>Emergency transportation</li><li>Commercial deliveries and last-mile</li><li>Trade show and event transportation</li><li>Commercial curbside cleanouts — $500+ minimum</li></ul>
-<h2>What We Do NOT Do</h2>
-<ul class="ul"><li>Transport hazardous materials</li><li>Move household goods</li><li>Enter homes for junk removal</li><li>Compete to be the cheapest</li></ul>
-<h2>The 3 Business Lines</h2>
-<div class="card"><strong style="color:#F2F2F2">📦 Potent Logistics</strong> — Box truck delivery, junk removal, cleanouts, freight.</div>
-<div class="card"><strong style="color:#F2F2F2">💻 POTENT OS</strong> — We license our dispatch system to other companies. $14,500–$109,500 per fleet.</div>
-<div class="card"><strong style="color:#F2F2F2">🚛 POTENT LOADBOARD</strong> — Marketplace connecting box trucks with loads. potentloadboard.netlify.app</div>
-`;}
-
-function contentApps(){return `
-<div class="sub">All Platforms</div>
-<h1>Your Apps.</h1>
-<p>Bookmark all of these on your phone right now.</p>
-<h2>Operations</h2>
-<a class="app-link" href="https://potentoperations.netlify.app" target="_blank">
-  <div><div class="app-name">⚡ POTENT OS — Main Platform</div><div class="app-url">potentoperations.netlify.app</div><div class="app-desc">Dispatch · Jobs · Driver App · Leads · Payroll</div></div>
-  <div style="color:#F0E000">→</div>
-</a>
-<a class="app-link" href="https://potentloadboard.netlify.app" target="_blank">
-  <div><div class="app-name">🚛 POTENT LOADBOARD</div><div class="app-url">potentloadboard.netlify.app</div><div class="app-desc">Box truck load marketplace</div></div>
-  <div style="color:#F0E000">→</div>
-</a>
-<h2>Your Login</h2>
-<div class="card">
-  <p style="font-size:12px;color:#888;margin-bottom:8px;">To access POTENT OS go to potentoperations.netlify.app and scroll to the very bottom of the page. Tap the copyright text to open the login screen. Use your assigned name and password.</p>
-  <div style="background:#E53E3E18;border:1px solid #E53E3E44;border-radius:7px;padding:10px 12px;font-size:11px;color:#E53E3E;">
-    <strong>Do not share your password with anyone.</strong> Your password is tied to your activity log. Everything done under your login has your name and timestamp on it.
-  </div>
-</div>
-<div class="card">
-  <p style="font-size:12px;color:#888;margin:0;">Need your login credentials? Contact the Owner directly at <strong style="color:#F0E000">(770) 648-4228</strong> or <strong style="color:#F0E000">potentlogistics@pm.me</strong></p>
-</div>
-`;}
-
-function contentHandbook(){return `
-<div class="sub">33 Chapters</div>
-<h1>How We Operate.</h1>
-<p>The full handbook is available at:</p>
-<a class="app-link" href="https://potentoperations.netlify.app/POTENT-Handbook.html" target="_blank">
-  <div><div class="app-name">📖 POTENT Employee Handbook — All 33 Chapters</div><div class="app-url">potentoperations.netlify.app/POTENT-Handbook.html</div><div class="app-desc">Click any chapter to read full content</div></div>
-  <div style="color:#F0E000">→</div>
-</a>
-<h2>The 10 Rules</h2>
-<div class="rule green"><strong>Rule 1</strong> — Problems Before Products. Never begin with what we do. Begin with what the customer needs.</div>
-<div class="rule green"><strong>Rule 2</strong> — Questions Create Sales. The person asking thoughtful questions controls the conversation.</div>
-<div class="rule green"><strong>Rule 3</strong> — Listen More Than You Speak. Listen to understand. Not to respond.</div>
-<div class="rule green"><strong>Rule 4</strong> — Diagnose Before You Recommend. Never offer a solution until you understand the situation.</div>
-<div class="rule green"><strong>Rule 5</strong> — Sell Outcomes. We don't sell trucks. We sell confidence, speed, reliability, and peace of mind.</div>
-<div class="rule green"><strong>Rule 6</strong> — Price Reflects Value. We don't apologize for professional pricing.</div>
-<div class="rule green"><strong>Rule 7</strong> — Never Argue. Ask another question. Curiosity builds trust.</div>
-<div class="rule green"><strong>Rule 8</strong> — Every Conversation Ends With a Next Step. Always move the relationship forward.</div>
-<div class="rule green"><strong>Rule 9</strong> — Relationships Beat Transactions. One satisfied customer is worth 100 cold calls.</div>
-<div class="rule green"><strong>Rule 10</strong> — Represent POTENT With Pride. If we say we will do something, we do it.</div>
-`;}
-
-function contentSales(){return `
-<div class="sub">Sales Playbook</div>
-<h1>Selling the POTENT Way.</h1>
-<h2>Opening Script</h2>
-<div class="rule">"Hey, this is [NAME] with POTENT Operations. How are you doing today?" — Let them answer. Then: "I'll keep this quick — I know you've got a business to run. Did I catch you with about 30 seconds?"</div>
-<div class="rule">"The reason I'm calling — we help businesses when freight needs to move quickly or regular transportation can't cover something. Out of curiosity — how are you currently handling those situations?" <strong>Then STOP. Listen.</strong></div>
-<h2>Objections</h2>
-<div class="rule"><strong>"We already have a carrier."</strong> → "That makes sense. What happens when they're unavailable or something urgent comes up?"</div>
-<div class="rule"><strong>"Send me information."</strong> → "Absolutely. Before I do — what type of transportation challenges does your company usually run into?"</div>
-<div class="rule"><strong>"Your price is too high."</strong> → "Is it higher than what you're currently paying, or higher than you expected?" Then: "How important is the delivery timeline?"</div>
-<div class="rule"><strong>"I need to think about it."</strong> → "Of course. Usually there's something specific they're considering. What would you say is the biggest thing?"</div>
-<h2>Daily Sales Standards</h2>
-<table><tr><th>Activity</th><th>Daily Minimum</th></tr>
-<tr><td>New companies researched</td><td><strong style="color:#F0E000">25</strong></td></tr>
-<tr><td>Outbound calls made</td><td><strong style="color:#F0E000">50</strong></td></tr>
-<tr><td>Personalized emails sent</td><td><strong style="color:#F0E000">25</strong></td></tr>
-<tr><td>Follow-ups completed</td><td><strong style="color:#F0E000">10</strong></td></tr>
-<tr><td>CRM updates</td><td><strong style="color:#F0E000">Every interaction</strong></td></tr></table>
-<h2>Closing</h2>
-<div class="rule"><strong>Problem:</strong> "The biggest challenge is ___, correct?"</div>
-<div class="rule"><strong>Impact:</strong> "When that happens it creates ___ for your team, correct?"</div>
-<div class="rule green"><strong>Direct Close:</strong> "Based on everything we discussed, is there any reason we shouldn't move forward?" — Then be quiet. Silence is a skill.</div>
-<div class="rule red"><strong>Never end a call with "Let me know."</strong> Always set a specific next step.</div>
-`;}
-
-function contentLeads(){return `
-<div class="sub">Leads Board</div>
-<h1>Working the Leads Board.</h1>
-<p>700+ pre-loaded Georgia business prospects in the Leads tab of POTENT OS. Your job: call them, log outcomes, build relationships.</p>
-<h2>How To Work a Lead</h2>
-<div class="step"><div class="step-num">1</div><div><div class="step-title">Log in as your account</div><div class="step-desc">potentoperations.netlify.app → scroll to bottom → tap copyright → enter your login</div></div></div>
-<div class="step"><div class="step-num">2</div><div><div class="step-title">Open 📋 Leads tab → filter Not Contacted</div><div class="step-desc">Work systematically — don't cherry pick.</div></div></div>
-<div class="step"><div class="step-num">3</div><div><div class="step-title">Research the company (30 seconds)</div><div class="step-desc">What do they do? What transportation problem might they have? Don't call blind.</div></div></div>
-<div class="step"><div class="step-num">4</div><div><div class="step-title">Tap phone number → call</div><div class="step-desc">Tap-to-call opens your dialer. Get to the decision maker.</div></div></div>
-<div class="step"><div class="step-num">5</div><div><div class="step-title">Log outcome IMMEDIATELY after the call</div><div class="step-desc">While it's fresh. Add notes on their pain point, objection, interest level.</div></div></div>
-<div class="step"><div class="step-num">6</div><div><div class="step-title">Set follow-up date for warm leads</div><div class="step-desc">Any Follow-Up outcome requires a specific date.</div></div></div>
-<h2>Call Outcomes</h2>
-<table><tr><th>Outcome</th><th>When to Use</th></tr>
-<tr><td>No Answer</td><td>Phone rang, no pickup</td></tr>
-<tr><td>Voicemail</td><td>Left voicemail</td></tr>
-<tr><td><strong style="color:#E53E3E">Not Interested</strong></td><td>Clear no</td></tr>
-<tr><td><strong style="color:#F0E000">Follow Up</strong></td><td>Call back — date required</td></tr>
-<tr><td><strong style="color:#1DB954">Interested</strong></td><td>They want more info</td></tr>
-<tr><td><strong style="color:#1DB954">Booked!</strong></td><td>Job confirmed</td></tr></table>
-<div class="rule red"><strong>Reps with zero activity are highlighted in red automatically. There is no hiding.</strong></div>
-`;}
-
-function contentDispatch(){return `
-<div class="sub">Dispatch Protocol</div>
-<h1>Booking & Dispatch.</h1>
-<h2>Phone Quote — In Order</h2>
-<div class="step"><div class="step-num">1</div><div><div class="step-title">Set Pricing Tier FIRST</div><div class="step-desc">Standard for new customers. Family/Loyalty for repeat. Never start at the floor.</div></div></div>
-<div class="step"><div class="step-num">2</div><div><div class="step-title">Enter customer name, phone, service type</div></div></div>
-<div class="step"><div class="step-num">3</div><div><div class="step-title">Enter addresses — Street, City, State</div><div class="step-desc">All three fields. System geocodes and calculates mileage automatically.</div></div></div>
-<div class="step"><div class="step-num">4</div><div><div class="step-title">Select speed, add-ons, payment method</div><div class="step-desc">Cash = 10% discount automatic. Card = Stripe charge at booking.</div></div></div>
-<div class="step"><div class="step-num">5</div><div><div class="step-title">Read the LIVE QUOTE to the customer</div><div class="step-desc">Tell them the exact number shown.</div></div></div>
-<div class="step"><div class="step-num">6</div><div><div class="step-title">Book It or Save Pending</div><div class="step-desc">✅ Book It for confirmed. 📋 Pending for cleanouts needing Owner review.</div></div></div>
-<h2>Pricing</h2>
-<table><tr><th>Tier</th><th>When</th></tr>
-<tr><td>💛 Standard</td><td>New customers, one-time jobs</td></tr>
-<tr><td>👨‍👩‍👧 Family/Loyalty</td><td>–15% · Repeat customers, referrals only</td></tr>
-<tr><td>🤝 Lowest Floor</td><td>–20% · ONLY to close — notify Owner first</td></tr></table>
-<table><tr><th>Speed</th><th>Multiplier</th></tr>
-<tr><td>Standard</td><td>×1.0</td></tr>
-<tr><td>Urgent</td><td>×1.3</td></tr>
-<tr><td>After-Hours</td><td>×1.6</td></tr>
-<tr><td>Overnight</td><td>×1.8</td></tr>
-<tr><td>Emergency</td><td>×2.0</td></tr></table>
-<h2>End of Day — Before Leaving</h2>
-<ul class="ul"><li>No unanswered customer request</li><li>No unassigned job</li><li>No missing payment status</li><li>No lead without a next action</li></ul>
-`;}
-
-function contentDrivers(){return `
-<div class="sub">Driver Protocol</div>
-<h1>Driver Operations.</h1>
-<p>Everything you need is in the POTENT OS Driver App tab. Open potentoperations.netlify.app on your phone — no download needed.</p>
-<h2>Before Every Job</h2>
-<ul class="ul"><li>Check active jobs in Driver App</li><li>Confirm pickup address and customer phone</li><li>Perform vehicle inspection before driving</li><li>Update status to En Route when you leave</li><li>Call customer when 10 minutes away</li></ul>
-<h2>At Pickup</h2>
-<ul class="ul"><li>Update status to Arrived</li><li>Photograph BOL before loading</li><li>Confirm correct freight, quantity, condition</li><li>Update to In Transit when loaded and leaving</li></ul>
-<h2>At Delivery</h2>
-<ul class="ul"><li>Update status to Delivered</li><li>Photograph Proof of Delivery</li><li>Collect payment if cash job</li><li>Report any damage to Owner BEFORE leaving site</li></ul>
-<h2>Fuel Logging — Every Fill-Up</h2>
-<div class="rule red"><strong>Mandatory — no exceptions.</strong> Every fuel purchase must be logged with the state. Feeds IFTA quarterly tax report.</div>
-<div class="step"><div class="step-num">1</div><div><div class="step-title">Tap ⛽ Log Fuel in Driver App</div></div></div>
-<div class="step"><div class="step-num">2</div><div><div class="step-title">Enter STATE — always (GA, TN, FL...)</div></div></div>
-<div class="step"><div class="step-num">3</div><div><div class="step-title">Enter gallons and price per gallon</div></div></div>
-<div class="step"><div class="step-num">4</div><div><div class="step-title">Tap Log Fuel ✓</div></div></div>
-<h2>Emergencies</h2>
-<div class="rule red"><strong>Breakdown:</strong> Get somewhere safe → notify Owner → notify customer → protect freight.</div>
-<div class="rule red"><strong>Accident:</strong> Stop → check injuries → call 911 if needed → call Owner before moving vehicle → do NOT admit fault.</div>
-<div class="rule red"><strong>Wrong address:</strong> STOP. Verify through Owner before proceeding.</div>
-`;}
-
-function contentCompliance(){return `
-<div class="sub">Safety & Compliance</div>
-<h1>Safety & Compliance.</h1>
-<h2>Zero Impairment Rule</h2>
-<div class="rule red" style="font-size:12px;line-height:2;padding:13px 16px;">
-<strong>No weed. No alcohol. No intoxicating substances before or during driving. EVER.</strong><br><br>
-Once you get behind the wheel representing POTENT, the standard changes. Off the clock = your personal life. Behind the wheel for POTENT = zero impairment. No exceptions.<br><br>
-<strong>If you are not fit to drive: DO NOT DRIVE. Notify management immediately.</strong>
-</div>
-<h2>Escalation Levels</h2>
-<div class="rule"><strong>Level 1 — You handle it:</strong> Normal customer/service issue within your authority.</div>
-<div class="rule"><strong>Level 2 — Manager:</strong> Pricing exceptions, disputes, major delays.</div>
-<div class="rule red"><strong>Level 3 — Owner immediately:</strong> Accident, injury, freight loss, legal threat, insurance issue, compliance issue. When in doubt — escalate.</div>
-<div class="quote">People first. Freight second. Customer informed. Owner informed. Everything documented.</div>
-`;}
-
-function contentRules(){return `
-<div class="sub">Non-Negotiable</div>
-<h1>The Rules.</h1>
-<h2>Zero Tolerance — Immediate Termination</h2>
-<div class="rule red"><strong>No sharing credentials.</strong> Your login = your name on everything.</div>
-<div class="rule red"><strong>No sharing company data.</strong> Customers, pricing, leads — nothing leaves. Ever.</div>
-<div class="rule red"><strong>No discussing other employees' pay.</strong> Your rate is between you and the Owner.</div>
-<div class="rule red"><strong>No side jobs using company equipment or contacts.</strong></div>
-<div class="rule red"><strong>No impaired driving. Ever.</strong></div>
-<h2>Required Every Day</h2>
-<div class="rule green"><strong>Log every interaction</strong> — calls, updates, fuel. If it's not in the app, it didn't happen.</div>
-<div class="rule green"><strong>Keep job statuses current.</strong></div>
-<div class="rule green"><strong>Respond to Owner within 15 minutes</strong> during business hours.</div>
-<div class="rule green"><strong>Flag problems immediately.</strong> A problem reported early is solved. Hidden = doubled.</div>
-<h2>IP Protection</h2>
-<div class="rule red"><strong>POTENT OS, the leads database, pricing system, and all company materials are registered intellectual property of ANTHONY EMMANUEL FIGUEROA MENDES® under POTENT PRÄDƏKT®. Violations are a federal matter.</strong></div>
-<div class="quote">When someone hangs up after speaking with a POTENT representative, they should think: "That was one of the most professional conversations I've had with a transportation company." That is the standard.</div>
-`;}
-
-function contentTraining(){
-  return `
-<div class="sub">POTENT OS Sales Training</div>
-<h1>Sell The System.</h1>
-<p>This is your complete playbook for selling POTENT OS licenses. Study it. Know it cold.</p>
-
-<h2>The SAKE Framework</h2>
-<div class="rule green"><strong>S — Situation:</strong> Ask first. Never pitch first. "How many trucks on Motive? What are you paying per truck per month?" Understand their world before saying a word about POTENT OS.</div>
-<div class="rule red"><strong>A — Amplify Pain:</strong> Make the problem real. "At $400/truck you're paying $80k/year just to see where your trucks are. Motive can cut you off anytime they want."</div>
-<div class="rule green"><strong>K — Key Solution:</strong> One sentence. "POTENT OS. One-time license. Works 100% offline. No per-truck fees. You own it forever. No competitor has offline mode."</div>
-<div class="rule green"><strong>E — End With Question:</strong> Every email and call ends with a question. "What are you paying per truck?" "Reply with a number." "What day works best?" Never end without a next step.</div>
-
-<h2>Version Selection — Fleet Size</h2>
-<table><tr><th>Version</th><th>Fleet Size</th><th>License</th><th>Lead With</th></tr>
-<tr><td style="color:#4299E1;font-weight:700">C</td><td>1-49 trucks</td><td style="color:#1DB954">$14,500</td><td>Per-truck GPS cost math</td></tr>
-<tr><td style="color:#ED8936;font-weight:700">B</td><td>50-150 trucks</td><td style="color:#1DB954">$34,500-$69,500</td><td>$30k-$60k/yr GPS bill</td></tr>
-<tr><td style="color:#9F7AEA;font-weight:700">A</td><td>150-300 trucks</td><td style="color:#1DB954">$109,500</td><td>$2.2M 5-year savings</td></tr></table>
-
-<h2>Email Flow</h2>
-<div class="step"><div class="step-num">1</div><div><div class="step-title">Cold Email 1 — Wedge</div><div class="step-desc">Send version based on fleet size. End with: "What are you currently paying per truck per month? Reply with a number."</div></div></div>
-<div class="step"><div class="step-num">→</div><div><div class="step-title">No reply? Follow-Up Day 3, 7, 14, 21</div><div class="step-desc">All versions use same follow-up sequence. Never skip a touch.</div></div></div>
-<div class="step"><div class="step-num">→</div><div><div class="step-title">They reply? Warm Email 2 — Same Day</div><div class="step-desc">Full value + Zoom pitch. "We only take 3 migrations per month." Book the call.</div></div></div>
-<div class="step"><div class="step-num">→</div><div><div class="step-title">They book Zoom? Hot Email 3 — Immediately</div><div class="step-desc">Confirm + ask who else needs to be on the call.</div></div></div>
-<div class="step"><div class="step-num">→</div><div><div class="step-title">Zoom Call — SAKE Close</div><div class="step-desc">"Based on everything, is there any reason we shouldn't move forward?" Then stop talking.</div></div></div>
-
-<h2>The 5 Features No Competitor Has</h2>
-<ul class="ul">
-<li>📴 Offline Mode — works 100% without internet. Installs like an app. No App Store.</li>
-<li>🎤 Voice Quoting — dispatcher books jobs hands-free while on the phone</li>
-<li>⏱ Auto-Detention Billing — recovers $50k-$100k/yr in unpaid wait time</li>
-<li>🚗 CMMS-Aware Dispatch — won't assign truck with expired maintenance</li>
-<li>📋 HOS FMCSA 2026 — 11/14/60/70 rules built in, warns before violations</li>
-</ul>
-
-<h2>Zoom Close Script</h2>
-<div class="rule"><strong>Open:</strong> "What's the most frustrating thing about your GPS right now?" — Listen.</div>
-<div class="rule"><strong>Amplify:</strong> "So you're paying $[X]/year just to see your trucks. Motive can cut you off tomorrow."</div>
-<div class="rule green"><strong>Close:</strong> "Based on everything — any reason we shouldn't move forward?" — STOP TALKING. Wait.</div>
-
-<h2>Pipeline Tab — Daily Habits</h2>
-<ul class="ul">
-<li>Log every prospect in 🎯 Pipeline tab — if it's not logged it didn't happen</li>
-<li>Set next follow-up date on every single prospect</li>
-<li>Red = overdue — work red first every morning</li>
-<li>One-click Copy button sends the right template for their version and stage</li>
-</ul>
-`;
-}
-function contentSign(){return `
-<div class="sub">Acknowledgment</div>
-<h1>Sign Off.</h1>
-<p>By signing below, you confirm that you have read and understood everything in this portal — the handbook, your role, the apps, the sales playbook, dispatch protocols, compliance rules, and all company policies.</p>
-<div class="card" style="margin-top:14px;">
-  <p>I have read and understood the POTENT PRÄDƏKT® Employee Portal in its entirety. I agree to follow all protocols, maintain strict confidentiality of all company systems and data, and understand my activity is monitored and logged.</p>
-  <p>I understand all systems, data, pricing, customer information, and processes are registered intellectual property of ANTHONY EMMANUEL FIGUEROA MENDES® and may not be shared during or after my employment.</p>
-  <p>I understand and agree to the Zero Impairment driving policy.</p>
-  <div class="sign-box">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
-      <div><div class="sign-line"></div><div class="sign-label">Full Legal Name (Print)</div></div>
-      <div><div class="sign-line"></div><div class="sign-label">Role / Position</div></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
-      <div><div class="sign-line"></div><div class="sign-label">Signature</div></div>
-      <div><div class="sign-line"></div><div class="sign-label">Date</div></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-      <div><div class="sign-line"></div><div class="sign-label">Phone Number</div></div>
-      <div><div class="sign-line"></div><div class="sign-label">Emergency Contact</div></div>
-    </div>
-  </div>
-  <p style="font-size:9px;color:#333;margin-top:10px;text-align:center;">© 2026 ANTHONY EMMANUEL FIGUEROA MENDES® · POTENT PRÄDƏKT® · All Rights Reserved</p>
-  <button onclick="handlePortalSign()" style="width:100%;margin-top:12px;background:#F0E000;color:#000;border:none;border-radius:8px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">✅ Submit Signed Acknowledgment</button>
-  <div id="signConfirm" style="display:none;background:#1DB95420;border:1px solid #1DB95444;border-radius:8px;padding:10px;margin-top:8px;text-align:center;font-size:12px;color:#1DB954;font-weight:700;">✓ Acknowledgment submitted. Anthony has been notified.</div>
-</div>
-`;}
-
-function handlePortalSign(){
-  var name = currentUser ? currentUser.name : "Unknown";
-  sendPortalEmail(
-    "Portal Signed: " + name,
-    name + " has signed and submitted their POTENT Employee Portal acknowledgment. Date: " + new Date().toLocaleString()
-  );
-  document.getElementById('signConfirm').style.display='block';
+// ── TIER ──────────────────────────────────────────────────────────
+function pickTier(el){
+  document.querySelectorAll('.tier').forEach(function(t){t.classList.remove('sel');});
+  el.classList.add('sel');
+  S.tier=el.dataset.tier;
+  S.price=Number(el.dataset.price)||0;
+  S.fleet=el.dataset.fleet;
 }
 
-// ── ADMIN PANEL ──────────────────────────────────────────────────
-async function renderAdminPanel(){
-  var el=document.getElementById('adminPanelContent');
-  if(!el)return;
-  loadSlotData();
-
-  function isDefaultName(name){
-    if(!name)return true;
-    if(/^Slot [0-9]+$/.test(name))return true;
-    if(/^Driver [0-9]+$/.test(name))return true;
-    return false;
-  }
-
-  function buildAdminUI(){
-    el.innerHTML='';
-
-    // Title
-    var title=document.createElement('div');
-    title.style.cssText='font-size:11px;color:#F0E000;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;';
-    title.textContent='Edit Employee Names & Roles';
-    el.appendChild(title);
-    var sub=document.createElement('div');
-    sub.style.cssText='font-size:11px;color:#555;margin-bottom:14px;';
-    sub.textContent='Rename any slot when someone joins or leaves. Change their role type. Saves instantly.';
-    el.appendChild(sub);
-
-    // Slots
-    Object.keys(USERS).filter(function(uid){return uid!=='potent';}).forEach(function(uid){
-      var u=USERS[uid];
-      var row=document.createElement('div');
-      row.style.cssText='display:flex;gap:8px;align-items:center;margin-bottom:8px;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px;padding:8px 10px;';
-
-      var pwLabel=document.createElement('div');
-      pwLabel.style.cssText='font-size:9px;color:#333;width:80px;flex-shrink:0;font-family:monospace;line-height:1.3;';
-      pwLabel.textContent=u.pw;
-      row.appendChild(pwLabel);
-
-      var nameInput=document.createElement('input');
-      nameInput.id='name_'+uid;
-      nameInput.value=isDefaultName(u.name)?'':u.name;
-      nameInput.placeholder='Enter name...';
-      nameInput.style.cssText='flex:1;background:#060606;border:1px solid #222;border-radius:6px;color:#F2F2F2;padding:6px 9px;font-size:12px;outline:none;font-family:inherit;min-width:0;';
-      row.appendChild(nameInput);
-
-      var typeSelect=document.createElement('select');
-      typeSelect.id='type_'+uid;
-      typeSelect.style.cssText='background:#060606;border:1px solid #222;border-radius:6px;color:#F2F2F2;padding:6px 8px;font-size:11px;outline:none;font-family:inherit;color-scheme:dark;flex-shrink:0;';
-      ['dispatcher','closer','driver'].forEach(function(t){
-        var opt=document.createElement('option');
-        opt.value=t; opt.textContent=TYPE_LABEL[t]||t;
-        if(u.type===t||((!u.type)&&t==='dispatcher'))opt.selected=true;
-        typeSelect.appendChild(opt);
-      });
-      row.appendChild(typeSelect);
-
-      var saveBtn=document.createElement('button');
-      saveBtn.textContent='Save';
-      saveBtn.style.cssText='background:#F0E000;color:#000;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;';
-      saveBtn.addEventListener('click',function(){
-        var newName=nameInput.value.trim();
-        var newType=typeSelect.value;
-        if(!newName){alert('Enter a name for this slot.');return;}
-        USERS[uid].name=newName;
-        USERS[uid].type=newType;
-        USERS[uid].role=newType==='driver'?'driver':'dispatch';
-        USERS[uid].emoji=TYPE_EMOJI[newType]||'📞';
-        saveSlotData();
-        buildLoginDropdown();
-        saveBtn.textContent='✓ Saved';
-        saveBtn.style.background='#1DB954';
-        setTimeout(function(){saveBtn.textContent='Save';saveBtn.style.background='#F0E000';},2000);
-      });
-      row.appendChild(saveBtn);
-      el.appendChild(row);
-    });
-
-    var note=document.createElement('div');
-    note.style.cssText='font-size:10px;color:#333;margin-top:4px;margin-bottom:20px;';
-    note.textContent='Passwords: DISPATCH1PL–DISPATCH20PL · DRIVERPL, DRIVER2PL, DRIVER3PL';
-    el.appendChild(note);
-
-    // Revoke section
-    var revokeTitle=document.createElement('div');
-    revokeTitle.style.cssText='font-size:11px;color:#E53E3E;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;border-top:1px solid #1a1a1a;padding-top:16px;';
-    revokeTitle.textContent='Access Control — Revoke / Restore';
-    el.appendChild(revokeTitle);
-
-    Object.keys(USERS).filter(function(uid){return uid!=='potent';}).forEach(function(uid){
-      var u=USERS[uid];
-      if(isDefaultName(u.name))return;
-      var rRow=document.createElement('div');
-      rRow.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #111;';
-      var rName=document.createElement('div');
-      rName.style.cssText='font-size:12px;color:#F2F2F2;';
-      rName.textContent=(TYPE_EMOJI[u.type||'dispatcher']||'📞')+' '+u.name;
-      var rBtn=document.createElement('button');
-      rBtn.id='revoke_'+uid;
-      rBtn.textContent='Revoke';
-      rBtn.style.cssText='background:transparent;border:1px solid #E53E3E;color:#E53E3E;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;';
-      rBtn.addEventListener('click',function(){toggleRevoke(uid,rBtn);});
-      rRow.appendChild(rName); rRow.appendChild(rBtn);
-      el.appendChild(rRow);
-    });
-  }
-
-  buildAdminUI();
-
-  window.saveSlot=function(uid){
-    var nameEl=document.getElementById('name_'+uid);
-    var typeEl=document.getElementById('type_'+uid);
-    if(!nameEl||!typeEl)return;
-    var newName=nameEl.value.trim();
-    var newType=typeEl.value;
-    if(!newName){alert('Enter a name for this slot.');return;}
-    USERS[uid].name=newName;
-    USERS[uid].type=newType;
-    USERS[uid].role=newType==='driver'?'driver':'dispatch';
-    USERS[uid].emoji=TYPE_EMOJI[newType]||'📞';
-    saveSlotData();
-    buildLoginDropdown();
-    // Flash confirm
-    var btn=nameEl.parentElement.querySelector('button');
-    if(btn){btn.textContent='✓ Saved';btn.style.background='#1DB954';setTimeout(function(){btn.textContent='Save';btn.style.background='#F0E000';},2000);}
-  };
-
-  window.toggleRevoke=async function(uid,btn){
-    if(!btn)btn=document.getElementById('revoke_'+uid);
-    if(!btn)return;
-    var isRevoked=btn.textContent==='Restore';
-    var action=isRevoked?'DELETE':'POST';
-    var url=SUPABASE_URL+'/rest/v1/revoked_users';
-    if(action==='DELETE') url+='?user_id=eq.'+uid;
-    try{
-      await fetch(url,{method:action,headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},body:action==='POST'?JSON.stringify({user_id:uid,revoked_by:'Owner',reason:'Admin revoked'}):undefined});
-      btn.textContent=isRevoked?'Revoke':'Restore';
-      btn.style.borderColor=isRevoked?'#E53E3E':'#1DB954';
-      btn.style.color=isRevoked?'#E53E3E':'#1DB954';
-    }catch(e){alert('Error updating access. Check connection.');}
-  };
+// ── STEP 2 ────────────────────────────────────────────────────────
+function step2next(){
+  S.company=document.getElementById('iCompany').value.trim();
+  S.name=document.getElementById('iName').value.trim();
+  S.title=document.getElementById('iTitle').value.trim();
+  S.email=document.getElementById('iEmail').value.trim();
+  S.phone=document.getElementById('iPhone').value.trim();
+  S.city=document.getElementById('iCity').value.trim();
+  S.state=document.getElementById('iState').value.trim();
+  S.fleet_count=document.getElementById('iFleet').value.trim();
+  S.software=document.getElementById('iSoftware').value.trim();
+  if(!S.company||!S.name||!S.title||!S.email||!S.phone||!S.city||!S.state){alert('Please fill in all required fields.');return;}
+  if(!S.email.includes('@')){alert('Please enter a valid email address.');return;}
+  // Fill agreement fields
+  document.getElementById('aLicensee').textContent=S.company+' ('+S.name+', '+S.title+')';
+  document.getElementById('aTier').textContent=S.tier;
+  document.getElementById('aTier2').textContent=S.tier;
+  var pf=S.price>0?'$'+S.price.toLocaleString():'Custom Quote';
+  document.getElementById('aPrice').textContent=pf;
+  document.getElementById('aPrice2').textContent=pf;
+  document.getElementById('cCompany').textContent=S.company;
+  document.getElementById('cPrice').textContent=pf;
+  go(3);
 }
-async function saveName(uid){
-  var input=document.getElementById('rename-'+uid);
-  var newName=input.value.trim();
-  if(!newName)return;
-  try{
-    await fetch(SUPABASE_URL+'/rest/v1/user_display_names',{
+
+// ── AGREEMENT ────────────────────────────────────────────────────
+function chkAll(){
+  S.sig=document.getElementById('iSig').value.trim();
+  var ok=document.getElementById('c1').checked&&document.getElementById('c2').checked&&
+         document.getElementById('c3').checked&&document.getElementById('c4').checked&&S.sig.length>3;
+  document.getElementById('agreeBtn').disabled=!ok;
+}
+
+// ── SUMMARY ───────────────────────────────────────────────────────
+function fillSummary(){
+  document.getElementById('sumCo').textContent=S.company;
+  document.getElementById('sumTier').textContent=S.tier;
+  document.getElementById('sumFleet').textContent=(S.fleet_count?S.fleet_count+' trucks — ':'')+S.fleet;
+  var pf=S.price>0?'$'+S.price.toLocaleString():'Custom';
+  document.getElementById('sumAmt').textContent=pf;
+  document.getElementById('payAmt').textContent=pf;
+  var isCustom=S.tier==='Custom'||S.price===0;
+  document.getElementById('enterpriseBox').style.display=isCustom?'block':'none';
+  document.getElementById('payForm').style.display=isCustom?'none':'block';
+}
+
+// ── PAYMENT METHOD SELECT ─────────────────────────────────────────
+function selectPM(method){
+  S.payMethod=method;
+  document.getElementById('pmCard').classList.toggle('sel',method==='card');
+  document.getElementById('pmBank').classList.toggle('sel',method==='bank');
+  document.getElementById('cardSection').style.display=method==='card'?'block':'none';
+  document.getElementById('bankSection').style.display=method==='bank'?'block':'none';
+}
+
+// ── BANK / PLAID VERIFY ──────────────────────────────────────────
+async function startBankVerify(){
+  document.getElementById('bankBtn').textContent='Connecting...';
+  document.getElementById('bankBtn').disabled=true;
+  try {
+    // Create PaymentIntent for ACH via our Netlify function
+    var res = await fetch('/.netlify/functions/create-license-payment',{
       method:'POST',
-      headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},
-      body:JSON.stringify({user_id:uid,name:newName})
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        amount: S.price,
+        tier: S.tier,
+        company: S.company,
+        name: S.name,
+        email: S.email,
+        phone: S.phone
+      })
     });
-    displayNames[uid]=newName;
-    var nameEl=document.querySelector('#empcard-'+uid+' .emp-name');
-    if(nameEl)nameEl.textContent=USERS[uid].emoji+' '+newName;
-    // Update dropdown
-    var opt=document.querySelector('#staffSelect option[value="'+uid+'"]');
-    if(opt)opt.textContent=newName;
-    alert('Name updated to "'+newName+'"');
-  }catch(e){alert('Failed to save name. Check connection.');}
-}
+    var data = await res.json();
+    if(!data.clientSecret) throw new Error(data.error||'Failed to initialize');
+    S.piSecret = data.clientSecret;
 
-var pendingRevokeUid=null;
-function confirmRevoke(uid,name){
-  pendingRevokeUid=uid;
-  document.getElementById('confirmTitle').textContent='Revoke Access — '+name;
-  document.getElementById('confirmMsg').innerHTML='Are you sure you want to revoke access for <strong style="color:#F2F2F2">'+name+'</strong>?<br><br>This takes effect immediately. They will not be able to log in. You can restore access at any time.';
-  document.getElementById('confirmYes').textContent='Yes, Revoke Access';
-  document.getElementById('confirmYes').onclick=doRevoke;
-  document.getElementById('confirmModal').classList.add('show');
-}
-
-async function doRevoke(){
-  closeConfirm();
-  var uid=pendingRevokeUid;
-  var name=getDisplayName(uid);
-  try{
-    await fetch(SUPABASE_URL+'/rest/v1/revoked_users',{
-      method:'POST',
-      headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},
-      body:JSON.stringify({user_id:uid,revoked_by:'Owner',reason:'Revoked via Employee Portal'})
+    // Launch Stripe Financial Connections (Plaid) for bank account
+    var result = await stripe.collectBankAccountForPayment({
+      clientSecret: S.piSecret,
+      params: {
+        payment_method_type: 'us_bank_account',
+        payment_method_data: {
+          billing_details: {
+            name: S.name,
+            email: S.email,
+          }
+        }
+      },
+      expand: ['payment_method']
     });
-    revokedUsers[uid]=true;
-    var badge=document.getElementById('badge-'+uid);
-    if(badge){badge.textContent='REVOKED';badge.className='status-badge status-revoked';}
-    var actions=document.getElementById('actions-'+uid);
-    if(actions){
-      var revokeBtn=actions.querySelector('.btn-revoke');
-      if(revokeBtn){revokeBtn.textContent='✅ Restore Access';revokeBtn.className='action-btn btn-restore';revokeBtn.onclick=function(){restoreAccess(uid);};}
+
+    if(result.error){
+      document.getElementById('bankBtn').textContent='🔗 Connect Bank Account via Plaid';
+      document.getElementById('bankBtn').disabled=false;
+      showErr('payErr', result.error.message);
+      return;
     }
-    alert(name+' has been revoked. They cannot log in until access is restored.');
-  }catch(e){alert('Failed to revoke. Check connection.');}
+
+    // Bank connected
+    S.bankVerified=true;
+    document.getElementById('bankConfirmed').style.display='block';
+    document.getElementById('bankBtn').style.display='none';
+    document.getElementById('payBtn').textContent='✅ Confirm ACH Payment — '+document.getElementById('payAmt').textContent;
+
+  } catch(e){
+    document.getElementById('bankBtn').textContent='🔗 Connect Bank Account via Plaid';
+    document.getElementById('bankBtn').disabled=false;
+    showErr('payErr','Bank connection failed: '+e.message+'. Please use card or call (770) 648-4228.');
+  }
 }
 
-async function restoreAccess(uid){
-  var name=getDisplayName(uid);
-  if(!confirm('Restore access for '+name+'? They will be able to log in immediately.'))return;
-  try{
-    await fetch(SUPABASE_URL+'/rest/v1/revoked_users?user_id=eq.'+uid,{
-      method:'DELETE',
-      headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY}
-    });
-    delete revokedUsers[uid];
-    var badge=document.getElementById('badge-'+uid);
-    if(badge){badge.textContent='ACTIVE';badge.className='status-badge status-active';}
-    var actions=document.getElementById('actions-'+uid);
-    if(actions){
-      var restoreBtn=actions.querySelector('.btn-restore');
-      if(restoreBtn){restoreBtn.textContent='🚫 Revoke Access';restoreBtn.className='action-btn btn-revoke';restoreBtn.onclick=function(){confirmRevoke(uid,name);};}
-    }
-    alert(name+' can now log in again.');
-  }catch(e){alert('Failed to restore. Check connection.');}
-}
+// ── PAYMENT SUBMIT ────────────────────────────────────────────────
+async function submitPay(){
+  hideErr('payErr');
+  document.getElementById('payBtn').style.display='none';
+  document.getElementById('payLoading').style.display='block';
 
-function closeConfirm(){
-  document.getElementById('confirmModal').classList.remove('show');
-  pendingRevokeUid=null;
-}
-
-// ── INIT ─────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded',async function(){
-  await loadDisplayNames();
-  await loadRevokedUsers();
-  // Check for existing session
-  try{
-    var saved=JSON.parse(localStorage.getItem('potent_portal_session')||'null');
-    if(saved&&saved.uid&&USERS[saved.uid]){
-      if(!revokedUsers[saved.uid]){
-        currentUser={uid:saved.uid,role:USERS[saved.uid].role,displayName:getDisplayName(saved.uid)};
-        launchApp();
+  try {
+    if(S.payMethod==='bank' && S.bankVerified && S.piSecret){
+      // Confirm ACH payment
+      var result = await stripe.confirmUsBankAccountPayment(S.piSecret);
+      if(result.error){
+        showErr('payErr', result.error.message);
+        resetPayBtn();
         return;
       }
+      await notifyAnthony();
+      go(5);
+      return;
     }
-  }catch(e){}
-  document.getElementById('loginScreen').style.display='flex';
-});
-</script>
 
+    // Card payment — create PaymentIntent first
+    var res = await fetch('/.netlify/functions/create-license-payment',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({amount:S.price,tier:S.tier,company:S.company,name:S.name,email:S.email,phone:S.phone})
+    });
+    var data = await res.json();
+    if(!data.clientSecret) throw new Error(data.error||'Payment setup failed');
+
+    var pmResult = await stripe.createPaymentMethod({type:'card',card:cardEl,billing_details:{name:S.name,email:S.email,phone:S.phone,address:{city:S.city,state:S.state,country:'US'}}});
+    if(pmResult.error){showErr('payErr',pmResult.error.message);resetPayBtn();return;}
+
+    var confirmResult = await stripe.confirmCardPayment(data.clientSecret,{payment_method:pmResult.paymentMethod.id});
+    if(confirmResult.error){showErr('payErr',confirmResult.error.message);resetPayBtn();return;}
+
+    await notifyAnthony();
+    go(5);
+
+  } catch(e){
+    showErr('payErr','Payment failed: '+e.message+'. Call (770) 648-4228.');
+    resetPayBtn();
+  }
+}
+
+function resetPayBtn(){
+  document.getElementById('payBtn').style.display='block';
+  document.getElementById('payLoading').style.display='none';
+}
+
+async function notifyAnthony(){
+  if(!window.emailjs) return;
+  try {
+    await emailjs.send('service_e3qn0bs','template_nxubdce',{
+      to_email:'potentlogistics@pm.me',
+      from_name:S.name+' — '+S.company,
+      subject:'🎉 LICENSE SOLD: '+S.company+' — $'+S.price.toLocaleString(),
+      message:'NEW POTENT OS LICENSE PURCHASE\n\nCompany: '+S.company+'\nContact: '+S.name+' ('+S.title+')\nEmail: '+S.email+'\nPhone: '+S.phone+'\nCity: '+S.city+', '+S.state+'\nFleet: '+(S.fleet_count||'—')+' trucks\nCurrent Software: '+(S.software||'None')+'\nTier: '+S.tier+'\nAmount: $'+S.price.toLocaleString()+'\nPayment: '+S.payMethod.toUpperCase()+'\nSigned By: '+S.sig+'\nDate: '+new Date().toLocaleString()
+    });
+  } catch(e){}
+  // Save to Supabase
+  try {
+    fetch('https://ymvsatlrkzgxwzxybwmk.supabase.co/rest/v1/waitlist',{
+      method:'POST',
+      headers:{'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inltd nNhdGxya3pneHd6eHlid21rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxNDk2MzUsImV4cCI6MjA1OTcyNTYzNX0.T3Thhr5NJdbI4Ehp1vkhVEyPEg','Content-Type':'application/json'},
+      body:JSON.stringify({company:S.company,contact:S.name,email:S.email,phone:S.phone,fleet_size:S.fleet_count||null,tier:S.tier,price:S.price,signature:S.sig,status:'paid',created_at:new Date().toISOString()})
+    });
+  } catch(e){}
+}
+
+function showErr(id,msg){var e=document.getElementById(id);e.textContent=msg;e.style.display='block';}
+function hideErr(id){var e=document.getElementById(id);e.style.display='none';}
+
+// ── PDF ───────────────────────────────────────────────────────────
+function dlAgreement(){ buildPDF(false); }
+function dlSigned(){ buildPDF(true); }
+
+function buildPDF(signed){
+  var {jsPDF}=window.jspdf;
+  var doc=new jsPDF();
+  var y=20; var lm=18; var pw=174;
+  function tx(t,sz,bold,col){doc.setFontSize(sz||10);doc.setFont('helvetica',bold?'bold':'normal');doc.setTextColor(col||'#CCCCCC');}
+  function ln(t,sz,bold,col,ind){
+    tx(t,sz,bold,col);
+    var lines=doc.splitTextToSize(t,pw-(ind||0));
+    doc.text(lines,lm+(ind||0),y);
+    y+=lines.length*(sz||10)*0.42+3;
+    if(y>275){doc.addPage();y=18;doc.setFillColor(8,8,8);doc.rect(0,0,210,297,'F');}
+  }
+  doc.setFillColor(8,8,8);doc.rect(0,0,210,297,'F');
+  doc.setFillColor(240,224,0);doc.rect(0,0,210,16,'F');
+  doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor('#000000');
+  doc.text('POTENT OS SOFTWARE LICENSE AGREEMENT',105,10,{align:'center'});
+  y=24;
+  ln('POTENT PRÄDƏKT® · POTENT OPERATIONS LLC',9,true,'#F0E000');
+  y+=3;
+  ln('Effective Date: '+new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}),8,false,'#666666');
+  ln('Licensor: Anthony Emmanuel Figueroa Mendes®, POTENT OPERATIONS LLC',8,false,'#666666');
+  if(S.company) ln('Licensee: '+S.company+' ('+S.name+', '+S.title+')',8,false,'#666666');
+  ln('Tier: '+S.tier+' — '+S.fleet+'  |  License Fee: $'+S.price.toLocaleString()+' (One-Time · Perpetual)',8,false,'#666666');
+  y+=6;
+  var secs=[
+    ['1. LICENSE GRANT','Licensor grants Licensee a non-exclusive, non-transferable, perpetual license to use POTENT OS solely for internal business operations.'],
+    ['2. OWNERSHIP','POTENT OS and all intellectual property remains the exclusive property of ANTHONY EMMANUEL FIGUEROA MENDES®. This is a license to use, not ownership.'],
+    ['3. LICENSE FEE','One-time fee of $'+S.price.toLocaleString()+' for the '+S.tier+' tier. No monthly fees, per-truck fees, or subscriptions.'],
+    ['4. PERMITTED USE','Internal use only. No resale, sublicensing, reverse engineering, or use to build competing products.'],
+    ['5. NDA','All demo, onboarding, and feature information is confidential. Do not disclose to competitors. Survives termination for 5 years.'],
+    ['6. CONFIDENTIALITY','System credentials, pricing, client data, and proprietary processes are confidential.'],
+    ['7. NO REFUNDS','All sales are final. No refunds after software access is granted.'],
+    ['8. LIABILITY','Licensor\'s total liability shall not exceed the license fee paid.'],
+    ['9. GOVERNING LAW','State of Georgia. Rockdale County courts.'],
+  ];
+  secs.forEach(function(s){
+    ln(s[0],9,true,'#F0E000');
+    y+=1;
+    ln(s[1],8,false,'#AAAAAA',6);
+    y+=4;
+  });
+  if(signed&&S.sig){
+    y+=8;
+    doc.setDrawColor(240,224,0);doc.setLineWidth(0.5);doc.line(lm,y,lm+130,y);y+=6;
+    ln('Electronic Signature: '+S.sig,10,true,'#F0E000');
+    ln('Full Name: '+S.name+'  |  Title: '+S.title,9,false,'#888888');
+    if(S.company) ln('Company: '+S.company,9,false,'#888888');
+    if(S.email) ln('Email: '+S.email,9,false,'#888888');
+    ln('Date Signed: '+new Date().toLocaleString(),9,false,'#888888');
+    ln('Payment Method: '+S.payMethod.toUpperCase(),9,false,'#888888');
+  }
+  y+=8;
+  ln('© 2026 ANTHONY EMMANUEL FIGUEROA MENDES® · POTENT PRÄDƏKT® · All Rights Reserved',8,false,'#333333');
+  var fn=signed?'POTENT-OS-License-SIGNED-'+(S.company||'').replace(/[^a-z0-9]/gi,'_')+'.pdf':'POTENT-OS-License-Agreement.pdf';
+  doc.save(fn);
+}
+</script>
 </body>
 </html>
