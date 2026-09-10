@@ -128,6 +128,18 @@ function saveNameOverride(userId, newName) {
         body: JSON.stringify({ user_id: userId, name: newName, updated_at: new Date().toISOString() })
     }).catch(function () { }); // best-effort — local cache already has the change either way
 }
+function resetAllNameOverrides() {
+    // Clears every row from the Supabase user_display_names table (source of truth
+    // for names synced across all devices), plus the local caches on this device.
+    return fetch(SUPABASE_URL + "/rest/v1/user_display_names?user_id=neq.__never__", {
+        method: "DELETE",
+        headers: sbHeaders()
+    }).then(function(){
+        try { localStorage.removeItem(NAME_OVERRIDES_KEY); } catch(e){}
+        try { localStorage.removeItem(NAME_OVERRIDES_CACHE_KEY); } catch(e){}
+        _syncedNameCache = {};
+    });
+}
 function getDisplayName(user) {
     var synced = loadSyncedNameCache();
     if (synced[user.id])
@@ -4112,12 +4124,20 @@ catch (e) { } }
 function ReviewModal(props) {
     var [f, setF] = useState({ name: "", jobId: "", rating: 5, comment: "" });
     var [sent, setSent] = useState(false);
-    function set(k, v) { setF(function (p) { var n = Object.assign({}, p); n[k] = v; return n; }); }
+    var [jobErr, setJobErr] = useState("");
+    function set(k, v) { setF(function (p) { var n = Object.assign({}, p); n[k] = v; return n; }); setJobErr(""); }
     function submit() {
         if (!f.name || !f.comment)
             return;
+        var cleanId = (f.jobId || "").trim().toUpperCase();
+        if (!cleanId) { setJobErr("A valid Job ID is required to leave a review."); return; }
+        var jobs = props.jobs || [];
+        var matchedJob = jobs.find(function(j){ return (j.id||"").toUpperCase() === cleanId; });
+        if (!matchedJob) { setJobErr("We could not find that Job ID. Please check your confirmation email and try again."); return; }
         var reviews = loadReviews();
-        reviews.unshift({ id: Date.now(), name: f.name, jobId: f.jobId, rating: f.rating, comment: f.comment, date: new Date().toISOString().split("T")[0] });
+        var alreadyReviewed = reviews.some(function(r){ return (r.jobId||"").toUpperCase() === cleanId; });
+        if (alreadyReviewed) { setJobErr("A review has already been submitted for this Job ID."); return; }
+        reviews.unshift({ id: Date.now(), name: f.name, jobId: cleanId, rating: f.rating, comment: f.comment, date: new Date().toISOString().split("T")[0] });
         saveReviews(reviews);
         setSent(true);
     }
@@ -4132,7 +4152,8 @@ function ReviewModal(props) {
                 React.createElement("div", { style: { fontSize: 17, fontWeight: 800, color: C.white } }, "Leave a Review"),
                 React.createElement("button", { onClick: props.onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer" } }, "\u2715")),
             React.createElement(TxtIn, { label: "Your Name", value: f.name, onChange: function (v) { set("name", v); }, placeholder: "First name or initials" }),
-            React.createElement(TxtIn, { label: "Job ID (optional)", value: f.jobId, onChange: function (v) { set("jobId", v); }, placeholder: "e.g. PL-260615-A1B2" }),
+            React.createElement(TxtIn, { label: "Job ID (required)", value: f.jobId, onChange: function (v) { set("jobId", v); }, placeholder: "e.g. PL-260615-A1B2" }),
+            jobErr && React.createElement("div", { style: { fontSize: 11, color: C.red, marginTop: -8, marginBottom: 12, fontWeight: 700 } }, jobErr),
             React.createElement(Lbl, null, "Rating"),
             React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 14 } }, [1, 2, 3, 4, 5].map(function (n) {
                 return React.createElement("div", { key: n, onClick: function () { set("rating", n); }, style: { flex: 1, border: "1.5px solid " + (f.rating === n ? C.orange : C.border), borderRadius: 8, padding: "8px 4px", cursor: "pointer", background: f.rating === n ? C.orangeSoft : "transparent", textAlign: "center", fontSize: 18 } }, n <= f.rating ? "⭐" : "☆");
@@ -4709,7 +4730,7 @@ function ReviewsSection(props) {
         return null;
     var avgRating = reviews.length > 0 ? Math.round(reviews.reduce(function (s, r) { return s + r.rating; }, 0) / reviews.length * 10) / 10 : 0;
     return React.createElement("div", { style: { padding: "40px 24px", borderTop: "1px solid " + C.border } },
-        showModal && React.createElement(ReviewModal, { onClose: function () { setShowModal(false); } }),
+        showModal && React.createElement(ReviewModal, { onClose: function () { setShowModal(false); }, jobs: props.jobs || [] }),
         React.createElement("div", { style: { maxWidth: 680, margin: "0 auto" } },
             React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 } },
                 React.createElement("div", null,
@@ -4958,7 +4979,19 @@ function PublicApp(props) {
         showPartnerApp && React.createElement(PartnerApplicationModal, { onClose: function () { setShowPartnerApp(false); } }),
         React.createElement("div", { style: { borderBottom: "1px solid " + C.border, position: "sticky", top: 0, background: C.black, zIndex: 200 } },
             React.createElement("div", { style: { padding: "10px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid " + C.border + "88" } },
-                React.createElement("div", { onClick: function () { setTab("home"); }, style: { cursor: "pointer", display: "flex", alignItems: "center", gap: 8 } },
+                React.createElement("div", { onClick: function () {
+                    var now = Date.now();
+                    var taps = JSON.parse(sessionStorage.getItem("_adminTaps") || "[]");
+                    taps = taps.filter(function(t){ return now - t < 3000; });
+                    taps.push(now);
+                    sessionStorage.setItem("_adminTaps", JSON.stringify(taps));
+                    if (taps.length >= 5) {
+                      sessionStorage.removeItem("_adminTaps");
+                      if (props.onOpenLogin) props.onOpenLogin();
+                      return;
+                    }
+                    setTab("home");
+                  }, style: { cursor: "pointer", display: "flex", alignItems: "center", gap: 8 } },
                     React.createElement(Logo, { size: 20 }),
                     React.createElement("div", null,
                         React.createElement("div", { style: { fontSize: 15, fontWeight: 900, letterSpacing: -0.5 } },
@@ -5044,7 +5077,7 @@ function PublicApp(props) {
                             React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.65, marginBottom: 14 } }, city.desc),
                             React.createElement("div", { style: { display: "inline-flex", alignItems: "center", gap: 6, color: C.orange, border: "1.5px solid " + C.orange, borderRadius: 7, padding: "7px 14px", fontSize: 12, fontWeight: 700 } }, "Book in " + city.name.split(" ")[0] + " →"));
                     })))),
-            React.createElement(ReviewsSection, { showEmpty: true }),
+            React.createElement(ReviewsSection, { showEmpty: true, jobs: props.jobs }),
             React.createElement("div", { style: { padding: "44px 24px", textAlign: "center" } },
                 React.createElement("div", { style: { fontSize: 28, fontWeight: 900, color: C.white, marginBottom: 8 } },
                     "If it needs to move today,",
@@ -6158,19 +6191,9 @@ function Root() {
     return React.createElement("div", null,
         offlineBanner,
         showFooterTos && React.createElement(TermsOfServiceModal, { onClose: function () { setShowFooterTos(false); } }),
-        React.createElement(PublicApp, { jobs: jobs, onBook: addJob, gasPPG: gasPPG, blockedDates: blockedDates }),
+        React.createElement(PublicApp, { jobs: jobs, onBook: addJob, gasPPG: gasPPG, blockedDates: blockedDates, onOpenLogin: function(){ setShowLogin(true); } }),
         React.createElement("div", { style: { borderTop: "1px solid " + C.border, textAlign: "center", padding: "12px 0 20px", fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
-            React.createElement("span", { onClick: function () {
-                var now = Date.now();
-                var taps = JSON.parse(sessionStorage.getItem("_adminTaps") || "[]");
-                taps = taps.filter(function(t){ return now - t < 3000; });
-                taps.push(now);
-                sessionStorage.setItem("_adminTaps", JSON.stringify(taps));
-                if (taps.length >= 5) {
-                  sessionStorage.removeItem("_adminTaps");
-                  setShowLogin(true);
-                }
-              }, style: { color: C.faint, fontSize: 11, cursor: "default", userSelect: "none" } }, "\u00A9 2026 ANTHONY EMMANUEL FIGUEROA MENDES\u00AE \u00B7 POTENT PR\u00C4D\u018FKT\u00AE \u00B7 All Rights Reserved"),
+            React.createElement("span", { style: { color: C.faint, fontSize: 11, userSelect: "none" } }, "\u00A9 2026 ANTHONY EMMANUEL FIGUEROA MENDES\u00AE \u00B7 POTENT PR\u00C4D\u018FKT\u00AE \u00B7 All Rights Reserved"),
             React.createElement("span", { style: { color: C.faint, fontSize: 11 } }, " \u00B7 "),
             React.createElement("span", { onClick: function () { setShowFooterTos(true); }, style: { color: C.faint, fontSize: 11, cursor: "pointer", userSelect: "none", textDecoration: "underline" } }, "Terms of Service")));
 }
@@ -10129,7 +10152,16 @@ function OwnerSettings(props){
     // ── EMPLOYEES ──
     activeSection==="employees"&&React.createElement("div",null,
       React.createElement("div",{style:{background:C.card,border:"1px solid "+C.border,borderRadius:12,padding:"16px",marginBottom:12}},
-        React.createElement("div",{style:{fontSize:12,fontWeight:700,color:C.white,marginBottom:4}},"Active Employees"),
+        React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}},
+          React.createElement("div",{style:{fontSize:12,fontWeight:700,color:C.white}},"Active Employees"),
+          React.createElement("button",{onClick:function(){
+              if(!confirm("This resets ALL employee display names back to defaults (Dispatch 1, Dispatch 2, etc.) across every device. Use this to undo unauthorized name changes. Continue?"))return;
+              resetAllNameOverrides().then(function(){
+                logAdminAction("Names Reset","All employee display names reset to defaults",props.currentUser?props.currentUser.name:"Owner");
+                alert("All names reset. Reload the app to see the change everywhere.");
+                location.reload();
+              });
+            },style:{background:C.red+"18",border:"1px solid "+C.red+"44",color:C.red,borderRadius:7,padding:"6px 12px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},"\u21BA Reset All Names")),
         React.createElement("div",{style:{fontSize:11,color:C.dim,marginBottom:14}},"Remove an employee to free up their slot for a new hire. Their login stops working immediately."),
         activeEmps.length===0&&React.createElement("div",{style:{fontSize:12,color:C.dim,textAlign:"center",padding:"20px 0"}},"No named employees yet. Add names through the Employee Portal admin panel."),
         activeEmps.map(function(u){
