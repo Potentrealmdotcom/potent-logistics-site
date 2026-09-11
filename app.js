@@ -1370,37 +1370,78 @@ function calcFuel(zone, gas, stateAbbr) {
     var gal = rt / TRUCK_MPG;
     return { miles: zn.estMiles, rt: rt, gal: Math.round(gal * 10) / 10, ppg: ppg, cost: Math.round(gal * ppg), state: stateAbbr || "GA" };
 }
+var EIA_API_KEY = "QYc4D6uqgsUFT4nyTwFNlv7PeHeS7xDhl80SHYmX";
+var FUEL_PRICE_STATUS_KEY = "pl_fuel_price_status";
+function saveFuelPriceStatus(status) {
+    try { localStorage.setItem(FUEL_PRICE_STATUS_KEY, JSON.stringify(status)); } catch (e) { }
+}
+function loadFuelPriceStatus() {
+    try {
+        var r = localStorage.getItem(FUEL_PRICE_STATUS_KEY);
+        return r ? JSON.parse(r) : { gas: null, diesel: null };
+    } catch (e) { return { gas: null, diesel: null }; }
+}
 async function fetchGasPrice() {
     // Fetches Georgia regular unleaded from EIA (most recent weekly reading)
     // Other states use GAS_BY_STATE table above
+    var status = loadFuelPriceStatus();
     try {
-        var res = await fetch("https://api.eia.gov/v2/petroleum/pri/gnd/data/?api_key=DEMO_KEY&frequency=weekly&data[0]=value&facets[duoarea][]=SGA&facets[product][]=EPM0&sort[0][column]=period&sort[0][direction]=desc&length=1");
+        var res = await fetch("https://api.eia.gov/v2/petroleum/pri/gnd/data/?api_key=" + EIA_API_KEY + "&frequency=weekly&data[0]=value&facets[duoarea][]=SGA&facets[product][]=EPM0&sort[0][column]=period&sort[0][direction]=desc&length=1");
+        if (!res.ok) {
+            var errText = await res.text();
+            status.gas = { live: false, error: "EIA rejected request (status " + res.status + ")", checkedAt: new Date().toISOString() };
+            saveFuelPriceStatus(status);
+            return FALLBACK_GAS;
+        }
         var json = await res.json();
         var d = json && json.response && json.response.data && json.response.data[0];
         var p = d && d.value;
+        var period = d && d.period;
         if (p && p > 2 && p < 7) {
             // Update GA in the table too
             GAS_BY_STATE["GA"] = parseFloat(p);
+            status.gas = { live: true, period: period, checkedAt: new Date().toISOString() };
+            saveFuelPriceStatus(status);
             return parseFloat(p);
         }
+        status.gas = { live: false, error: "EIA returned no usable data", checkedAt: new Date().toISOString() };
+        saveFuelPriceStatus(status);
     }
-    catch (e) { }
+    catch (e) {
+        status.gas = { live: false, error: "Network error: " + e.message, checkedAt: new Date().toISOString() };
+        saveFuelPriceStatus(status);
+    }
     return FALLBACK_GAS;
 }
 async function fetchDieselPrice() {
     // Fetches Georgia on-highway diesel from EIA (most recent weekly reading)
     // Other states use DIESEL_BY_STATE table above
+    var status = loadFuelPriceStatus();
     try {
-        var res = await fetch("https://api.eia.gov/v2/petroleum/pri/gnd/data/?api_key=DEMO_KEY&frequency=weekly&data[0]=value&facets[duoarea][]=SGA&facets[product][]=EPD2D&sort[0][column]=period&sort[0][direction]=desc&length=1");
+        var res = await fetch("https://api.eia.gov/v2/petroleum/pri/gnd/data/?api_key=" + EIA_API_KEY + "&frequency=weekly&data[0]=value&facets[duoarea][]=SGA&facets[product][]=EPD2D&sort[0][column]=period&sort[0][direction]=desc&length=1");
+        if (!res.ok) {
+            var errText2 = await res.text();
+            status.diesel = { live: false, error: "EIA rejected request (status " + res.status + ")", checkedAt: new Date().toISOString() };
+            saveFuelPriceStatus(status);
+            return FALLBACK_DIESEL;
+        }
         var json = await res.json();
         var d = json && json.response && json.response.data && json.response.data[0];
         var p = d && d.value;
+        var period = d && d.period;
         if (p && p > 2 && p < 8) {
             DIESEL_BY_STATE["GA"] = parseFloat(p);
+            status.diesel = { live: true, period: period, checkedAt: new Date().toISOString() };
+            saveFuelPriceStatus(status);
             return parseFloat(p);
         }
+        status.diesel = { live: false, error: "EIA returned no usable data", checkedAt: new Date().toISOString() };
+        saveFuelPriceStatus(status);
     }
-    catch (e) { }
+    catch (e) {
+        status.diesel = { live: false, error: "Network error: " + e.message, checkedAt: new Date().toISOString() };
+        saveFuelPriceStatus(status);
+    }
     return FALLBACK_DIESEL;
 }
 var WEIGHT_TIERS = [
@@ -2902,7 +2943,9 @@ function BookingView(props) {
                         React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white } }, "Total" + (pay.discount ? " (Cash — Due at Pickup)" : "")),
                         React.createElement("div", { style: { fontSize: 22, fontWeight: 900, color: C.orange } }, "$" + quote.total))),
                 React.createElement("div", { style: { background: C.surface, borderRadius: 9, padding: "10px 14px", marginBottom: 12, fontSize: 12, color: C.dim, lineHeight: 1.8 } },
-                    React.createElement("div", { style: { color: C.white, fontWeight: 700, marginBottom: 4 } }, "\u26FD Fuel Estimate (Your Records)"),
+                    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, marginBottom: 4 } },
+                        React.createElement("span", { style: { color: C.white, fontWeight: 700 } }, "\u26FD Fuel Estimate (Your Records)"),
+                        React.createElement(FuelPriceLiveBadge, null)),
                     React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 } },
                         React.createElement("div", null,
                             React.createElement("span", { style: { color: C.faint } }, "Gas today"),
@@ -4852,81 +4895,107 @@ function ReviewsSection(props) {
                         r.jobId));
             })));
 }
-// ── TAB NAVIGATION — Grouped dropdown design ──────────────────────
+// ── TAB NAVIGATION — Uber-style bottom nav + clean "More" sheet ──
 function getTabGroups() {
     return [
-        { label: "⚡ " + t("ops"), color: "#4299E1", tabs: [["quote", "📞 " + t("quote")], ["jobs", "📋 " + t("jobs")], ["exceptions", "🚨 " + t("alerts")], ["calendar", "📅 " + t("calendar")]] },
-        { label: "📋 " + t("leads"), color: "#1DB954", tabs: [["leads", "📋 " + t("leads")], ["activity", "👥 " + t("activity")], ["leaderboard", "🏆 " + t("board")]] },
-        { label: "🚐 " + t("driver"), color: "#9F7AEA", tabs: [["driver", "🚐 " + t("driver")], ["driverapp", "🚐 " + t("driverApp")]] },
-        { label: "📊 " + t("reports"), color: C.orange, tabs: [["reports", "📊 " + t("reports")], ["advanced", "📈 " + t("analytics")], ["sales", "🏆 " + t("sales")]] },
-        { label: "💼 " + t("biz"), color: "#F6E05E", tabs: [["carriers", "🤝 " + t("carriers")], ["expenses", "💸 " + t("expenses")], ["accounts", "🏢 " + t("accounts")], ["audit", "👁 " + t("audit")], ["loginActivity", "🔐 Login Activity"]] },
-        { label: "🚗 Fleet", color: "#F6AD55", tabs: [["fleet", "🚗 Fleet"], ["fleetmap", "🗺️ Live Map"], ["compliance", "🛡 Compliance"], ["documents", "📁 Documents"], ["safetyscore", "🛡️ Safety Scores"], ["geofence", "📍 Geofencing"]] },
-        { label: "👥 " + t("team"), color: "#FC8181", tabs: [["payroll", "💰 " + t("payroll")], ["ai", "🤖 " + t("aiDocs")], ["ownerSettings", "⚙ Settings"]] },
-        { label: "🎯 OS Sales", color: "#9F7AEA", tabs: [["ospipeline", "🎯 Pipeline"], ["ostraining", "📚 Training"], ["ceodash", "📊 CEO Dashboard"], ["flexpay", "📅 Flex Pay"]] },
-        { label: "🔒 Security", color: "#E53E3E", tabs: [["safety", "🔒 Safety"]] },
-        { label: "🎬 " + t("more"), color: "#888", tabs: [["demo", "🎬 " + t("demo")]] },
+        { id: "jobs", label: "📋 Jobs", icon: "📋", color: "#4299E1", tabs: [["jobs", "📋 " + t("jobs")], ["exceptions", "🚨 " + t("alerts")], ["calendar", "📅 " + t("calendar")], ["driver", "🚐 " + t("driver")], ["driverapp", "🚐 " + t("driverApp")]] },
+        { id: "sales", label: "📞 Sales", icon: "📞", color: "#1DB954", tabs: [["leads", "📋 " + t("leads")], ["activity", "👥 " + t("activity")], ["leaderboard", "🏆 " + t("board")], ["ospipeline", "🎯 Pipeline"], ["ostraining", "📚 Training"], ["flexpay", "📅 Flex Pay"]] },
+        { id: "fleet", label: "🚗 Fleet", icon: "🚗", color: "#F6AD55", tabs: [["fleet", "🚗 Fleet"], ["fleetmap", "🗺️ Live Map"], ["compliance", "🛡 Compliance"], ["documents", "📁 Documents"], ["safetyscore", "🛡️ Safety Scores"], ["geofence", "📍 Geofencing"], ["carriers", "🤝 " + t("carriers")], ["safety", "🔒 Safety Alerts"]] },
+        { id: "money", label: "💰 Money", icon: "💰", color: C.orange, tabs: [["reports", "📊 " + t("reports")], ["advanced", "📈 " + t("analytics")], ["sales", "🏆 " + t("sales")], ["expenses", "💸 " + t("expenses")], ["accounts", "🏢 " + t("accounts")], ["payroll", "💰 " + t("payroll")], ["ceodash", "📊 CEO Dashboard"]] },
+        { id: "team", label: "⚙ Team", icon: "⚙", color: "#FC8181", tabs: [["ownerSettings", "⚙ Settings"], ["audit", "👁 " + t("audit")], ["loginActivity", "🔐 Login Activity"], ["ai", "🤖 " + t("aiDocs")], ["demo", "🎬 " + t("demo")]] },
     ];
 }
-function TabNav({ tab, setTab, currentUser }) {
-    var [openGroup, setOpenGroup] = useState(null);
+
+// Driver/dispatch-only quick tabs — shown as their own bottom icon since
+// they don't need the full 5-category structure (mirrors Samsara's simpler
+// mobile-app view for non-admin roles).
+var SOLO_TABS = [
+    ["quote", "🏠", "Home"],
+    ["driver", "🚐", "My Jobs"],
+    ["driverapp", "🚐", "Driver"],
+    ["payroll", "💰", "Pay"],
+];
+
+// ── SAMSARA-STYLE NAV — persistent category bar + top sub-tab strip ──
+function CategoryNav({ activeGroupId, setActiveGroupId, tab, setTab, currentUser }) {
     var hasAccess = function (id) { return !currentUser || currentUser.access.indexOf(id) > -1; };
-    var activeGroup = getTabGroups().find(function (g) { return g.tabs.some(function (t) { return t[0] === tab; }); }) || null;
-    function handleGroupClick(e, gi) {
-        e.stopPropagation();
-        var g = getTabGroups()[gi];
-        var accessible = g.tabs.filter(function (t) { return hasAccess(t[0]); });
-        if (accessible.length === 1) {
-            setTab(accessible[0][0]);
-            setOpenGroup(null);
-            return;
-        }
-        setOpenGroup(openGroup === gi ? null : gi);
+    var isDriverOnly = currentUser && currentUser.role === "driver";
+
+    var groups = getTabGroups().map(function(g){
+        return Object.assign({}, g, { tabs: g.tabs.filter(function(t2){ return hasAccess(t2[0]); }) });
+    }).filter(function(g){ return g.tabs.length > 0; });
+
+    // Drivers get a flat, simple bar (no categories) — same spirit as
+    // Samsara's driver-facing app, which is deliberately minimal.
+    if (isDriverOnly) {
+        var soloVisible = SOLO_TABS.filter(function(s){ return hasAccess(s[0]); });
+        return React.createElement("div", { style: {
+                position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 300,
+                background: C.black, borderTop: "1px solid " + C.border,
+                display: "flex", alignItems: "stretch",
+                paddingBottom: "env(safe-area-inset-bottom, 0px)",
+                boxShadow: "0 -4px 16px rgba(0,0,0,0.4)",
+            } },
+            soloVisible.map(function(s){
+                var active = tab === s[0];
+                return React.createElement("button", { key: s[0], onClick: function(){ setTab(s[0]); }, style: {
+                        flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+                        background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
+                        padding: "8px 4px 6px", color: active ? C.orange : C.dim,
+                    } },
+                    React.createElement("div", { style: { fontSize: 20, lineHeight: 1 } }, s[1]),
+                    React.createElement("div", { style: { fontSize: 9, fontWeight: active ? 800 : 600 } }, s[2]));
+            }));
     }
-    // Close dropdown on outside click
-    React.useEffect(function () {
-        function close() { setOpenGroup(null); }
-        document.addEventListener("click", close);
-        return function () { document.removeEventListener("click", close); };
-    }, []);
-    return React.createElement("div", { style: { display: "flex", gap: 4, alignItems: "center", flexWrap: "nowrap" } },
-        React.createElement("div", { style: { background: C.orange, borderRadius: 7, padding: "5px 10px", fontSize: 11, fontWeight: 700, color: "#000", whiteSpace: "nowrap", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis" } }, getTabGroups().flatMap(function (g) { return g.tabs; }).find(function (t) { return t[0] === tab; })?.[1] || tab),
-        React.createElement("div", { style: { display: "flex", gap: 3, position: "relative" } }, getTabGroups().map(function (g, gi) {
-            var accessible = g.tabs.filter(function (t) { return hasAccess(t[0]); });
-            if (accessible.length === 0)
-                return null;
-            var isActiveGroup = g.tabs.some(function (t) { return t[0] === tab; });
-            var isOpen = openGroup === gi;
-            return React.createElement("div", { key: gi, style: { position: "relative" } },
-                React.createElement("button", { onClick: function (e) { handleGroupClick(e, gi); }, style: {
-                        border: "1px solid " + (isActiveGroup ? g.color : C.border),
-                        borderRadius: 7, padding: "5px 8px", cursor: "pointer",
-                        background: isActiveGroup ? g.color + "22" : "transparent",
-                        color: isActiveGroup ? g.color : C.dim,
-                        fontSize: 10, fontWeight: 700, fontFamily: "inherit", whiteSpace: "nowrap",
-                        display: "flex", alignItems: "center", gap: 3,
+
+    // Owner/dispatch — full Samsara-style: category bar on bottom, always visible,
+    // sub-tabs for the active category shown as a horizontal strip at the top.
+    var activeGroup = groups.find(function(g){ return g.id === activeGroupId; }) || groups[0];
+
+    return React.createElement(React.Fragment, null,
+        // Top sub-tab strip for the active category
+        activeGroup && React.createElement("div", { style: {
+                display: "flex", gap: 6, overflowX: "auto", padding: "10px 12px",
+                background: C.card, borderBottom: "1px solid " + C.border,
+                position: "fixed", top: 54, left: 0, right: 0, zIndex: 250,
+            } },
+            activeGroup.tabs.map(function(item){
+                var active = tab === item[0];
+                return React.createElement("button", { key: item[0], onClick: function(){ setTab(item[0]); }, style: {
+                        flexShrink: 0, border: "1px solid " + (active ? activeGroup.color : C.border),
+                        borderRadius: 8, padding: "7px 14px", cursor: "pointer",
+                        background: active ? activeGroup.color + "18" : "transparent",
+                        color: active ? activeGroup.color : C.dim,
+                        fontSize: 12, fontWeight: active ? 700 : 500, fontFamily: "inherit", whiteSpace: "nowrap",
+                    } }, item[1]);
+            })),
+
+        // Bottom category bar — every category always visible, one tap to switch
+        React.createElement("div", { style: {
+                position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 300,
+                background: C.black, borderTop: "1px solid " + C.border,
+                display: "flex", alignItems: "stretch",
+                paddingBottom: "env(safe-area-inset-bottom, 0px)",
+                boxShadow: "0 -4px 16px rgba(0,0,0,0.4)",
+            } },
+            groups.map(function(g){
+                var active = g.id === activeGroupId;
+                return React.createElement("button", { key: g.id, onClick: function(){
+                        setActiveGroupId(g.id);
+                        if (g.tabs.length > 0) setTab(g.tabs[0][0]);
+                    }, style: {
+                        flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+                        background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
+                        padding: "8px 4px 6px", color: active ? g.color : C.dim,
                     } },
-                    g.label,
-                    React.createElement("span", { style: { fontSize: 8 } }, accessible.length > 1 ? "▾" : "")),
-                isOpen && React.createElement("div", { onClick: function (e) { e.stopPropagation(); }, style: {
-                        position: "absolute", top: "110%", left: 0,
-                        background: C.card, border: "1px solid " + C.border,
-                        borderRadius: 9, padding: 6, zIndex: 999, minWidth: 150,
-                        boxShadow: "0 8px 24px rgba(0,0,0,0.4)"
-                    } },
-                    React.createElement("div", { style: { fontSize: 9, color: g.color, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, padding: "4px 8px 4px" } }, g.label),
-                    accessible.map(function (item) {
-                        return React.createElement("button", { key: item[0], onClick: function () { setTab(item[0]); setOpenGroup(null); }, style: {
-                                display: "block", width: "100%", textAlign: "left",
-                                border: "none", borderRadius: 6, padding: "7px 10px", cursor: "pointer",
-                                background: tab === item[0] ? C.orange + "22" : "transparent",
-                                color: tab === item[0] ? C.orange : C.white,
-                                fontSize: 12, fontWeight: tab === item[0] ? 700 : 400, fontFamily: "inherit",
-                            } }, item[1]);
-                    })));
-        })));
+                    React.createElement("div", { style: { fontSize: 20, lineHeight: 1 } }, g.icon),
+                    React.createElement("div", { style: { fontSize: 9, fontWeight: active ? 800 : 600 } }, g.label.replace(/^\S+\s/, "")));
+            })));
 }
+
 function AdminDashboard(props) {
     var [tab, setTab] = useState(props.role === ROLES.DRIVER ? "driver" : "quote");
+    var [activeGroupId, setActiveGroupId] = useState("jobs");
     var langObj = useLang();
     var adminLang = langObj.lang;
     var tA = langObj.t;
@@ -4940,12 +5009,11 @@ function AdminDashboard(props) {
                     React.createElement("div", { style: { fontSize: 8, color: C.gold, letterSpacing: 1.5, textTransform: "uppercase" } }, "POTENT OS \u00B7 A POTENT PR\u00C4D\u018FKT\u00AE PRODUCT")),
                 React.createElement(LangSwitcher, { lang: adminLang, changeLang: changeGlobalLang })),
             React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center" } },
-                React.createElement(TabNav, { tab: tab, setTab: setTab, currentUser: props.currentUser }),
                 React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1 } },
                     React.createElement("div", { style: { fontSize: 11, color: C.white, fontWeight: 700 } }, props.currentUser ? props.currentUser.emoji + " " + props.currentUser.name : "Admin"),
                     React.createElement("div", { style: { fontSize: 9, color: props.role === ROLES.OWNER ? C.orange : props.role === ROLES.DRIVER ? C.green : C.blue, fontWeight: 600, textTransform: "capitalize", letterSpacing: 1 } }, props.role),
                     React.createElement(Btn, { variant: "muted", onClick: props.onLogout, style: { padding: "4px 10px", fontSize: 10 } }, tA("signOut"))))),
-        React.createElement("div", { style: { padding: "20px 14px 60px", maxWidth: 740, margin: "0 auto" } },
+        React.createElement("div", { style: { padding: (props.role !== ROLES.DRIVER ? "58px" : "20px") + " 14px 90px", maxWidth: 740, margin: "0 auto" } },
             tab === "quote" && React.createElement(PhoneQuotePanel, { onAddJob: props.onAddJob, gasPPG: props.gasPPG, role: props.role, currentUser: props.currentUser }),
             tab === "jobs" && React.createElement(JobsDashboard, { jobs: props.jobs, onUpdateStatus: props.onUpdateStatus, onAddJob: props.onAddJob, gasPPG: props.gasPPG, dieselPPG: props.dieselPPG, role: props.role }),
             tab === "exceptions" && React.createElement(ExceptionDashboard, { jobs: props.jobs, onApplyAccessorial: props.onApplyAccessorial }),
@@ -4977,7 +5045,8 @@ function AdminDashboard(props) {
             tab === "ceodash" && props.role === ROLES.OWNER && React.createElement(CEODashboard, { jobs: props.jobs, prospects: props.prospects }),
             tab === "flexpay" && props.role === ROLES.OWNER && React.createElement(FlexPayTracker, null),
             tab === "ostraining" && React.createElement(OSTraining, null),
-            tab === "documents" && React.createElement(DocumentLogView, null)));
+            tab === "documents" && React.createElement(DocumentLogView, null)),
+        React.createElement(CategoryNav, { activeGroupId: activeGroupId, setActiveGroupId: setActiveGroupId, tab: tab, setTab: setTab, currentUser: props.currentUser }));
 }
 // ── ADMIN LOGIN ───────────────────────────────────────────────────
 function AdminLogin(props) {
@@ -11134,6 +11203,24 @@ function CarrierSafetyLookup(props){
             )
         )
     );
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ── FUEL PRICE LIVE/FALLBACK INDICATOR ───────────────────────────────
+function FuelPriceLiveBadge(){
+    var [status, setStatus] = useState(function(){ return loadFuelPriceStatus(); });
+    useEffect(function(){
+        var interval = setInterval(function(){ setStatus(loadFuelPriceStatus()); }, 3000);
+        return function(){ clearInterval(interval); };
+    }, []);
+    var gasStatus = status.gas;
+    if(!gasStatus) return React.createElement("span", { style: { fontSize: 9, color: C.dim, fontWeight: 700, background: C.surface, borderRadius: 4, padding: "1px 6px" } }, "checking...");
+    if(gasStatus.live){
+        return React.createElement("span", { style: { fontSize: 9, color: C.green, fontWeight: 700, background: C.green+"18", borderRadius: 4, padding: "1px 6px" }, title: "EIA data period: "+gasStatus.period }, "\u25CF LIVE (EIA)");
+    }
+    return React.createElement("span", { style: { fontSize: 9, color: C.orange, fontWeight: 700, background: C.orange+"18", borderRadius: 4, padding: "1px 6px" }, title: gasStatus.error||"" }, "\u25CF FALLBACK — not live");
 }
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
