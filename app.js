@@ -16,40 +16,30 @@ var C = {
 // To add a dispatcher: copy any dispatch line, change id/name/password.
 // Passwords: owner sets them, employees never share.
 var USERS = [
-    { id: "potent", name: "POTENT", role: "owner", password: "POTENT0421", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash"] },
-    { id: "dispatch1", name: "Dispatch 1", role: "dispatch", password: "DISPATCH1PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch2", name: "Dispatch 2", role: "dispatch", password: "DISPATCH2PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch3", name: "Dispatch 3", role: "dispatch", password: "DISPATCH3PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch4", name: "Dispatch 4", role: "dispatch", password: "DISPATCH4PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch5", name: "Dispatch 5", role: "dispatch", password: "DISPATCH5PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch6", name: "Dispatch 6", role: "dispatch", password: "DISPATCH6PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch7", name: "Dispatch 7", role: "dispatch", password: "DISPATCH7PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch8", name: "Dispatch 8", role: "dispatch", password: "DISPATCH8PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch9", name: "Dispatch 9", role: "dispatch", password: "DISPATCH9PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch10", name: "Dispatch 10", role: "dispatch", password: "DISPATCH10PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch11", name: "Dispatch 11", role: "dispatch", password: "DISPATCH11PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch12", name: "Dispatch 12", role: "dispatch", password: "DISPATCH12PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch13", name: "Dispatch 13", role: "dispatch", password: "DISPATCH13PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch14", name: "Dispatch 14", role: "dispatch", password: "DISPATCH14PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch15", name: "Dispatch 15", role: "dispatch", password: "DISPATCH15PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch16", name: "Dispatch 16", role: "dispatch", password: "DISPATCH16PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch17", name: "Dispatch 17", role: "dispatch", password: "DISPATCH17PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch18", name: "Dispatch 18", role: "dispatch", password: "DISPATCH18PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch19", name: "Dispatch 19", role: "dispatch", password: "DISPATCH19PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch20", name: "Dispatch 20", role: "dispatch", password: "DISPATCH20PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch11", name: "Dispatch 11", role: "dispatch", password: "DISPATCH11PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch12", name: "Dispatch 12", role: "dispatch", password: "DISPATCH12PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch13", name: "Dispatch 13", role: "dispatch", password: "DISPATCH13PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch14", name: "Dispatch 14", role: "dispatch", password: "DISPATCH14PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch15", name: "Dispatch 15", role: "dispatch", password: "DISPATCH15PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch16", name: "Dispatch 16", role: "dispatch", password: "DISPATCH16PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch17", name: "Dispatch 17", role: "dispatch", password: "DISPATCH17PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch18", name: "Dispatch 18", role: "dispatch", password: "DISPATCH18PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch19", name: "Dispatch 19", role: "dispatch", password: "DISPATCH19PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "dispatch20", name: "Dispatch 20", role: "dispatch", password: "DISPATCH20PL", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai"] },
-    { id: "driver", name: "Driver 1", role: "driver", password: "DRIVERPL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll"] },
-    { id: "driver2", name: "Driver 2", role: "driver", password: "DRIVER2PL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll"] },
-    { id: "driver3", name: "Driver 3", role: "driver", password: "DRIVER3PL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll"] },
+    { id: "potent", name: "POTENT", role: "owner", password: "POTENT0421", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash", "geofence", "flexpay"] },
+    { id: "dispatch1", name: "Dispatch 1", role: "dispatch", password: "IRI1202HJ", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
+    { id: "dispatch2", name: "Dispatch 2", role: "dispatch", password: "EVQ9819SS", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
+    { id: "dispatch3", name: "Dispatch 3", role: "dispatch", password: "IQC8526SI", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
+    { id: "dispatch4", name: "Dispatch 4", role: "dispatch", password: "EPZ0124FH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
+    { id: "dispatch5", name: "Dispatch 5", role: "dispatch", password: "UXB6653FH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
+    { id: "dispatch6", name: "Dispatch 6", role: "dispatch", password: "BSD0421RN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
+    { id: "dispatch7", name: "Dispatch 7", role: "dispatch", password: "NEK4282YX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
+    { id: "dispatch8", name: "Dispatch 8", role: "dispatch", password: "RUQ7232FK", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
+    { id: "dispatch9", name: "Dispatch 9", role: "dispatch", password: "LBY3027CH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
+    { id: "dispatch10", name: "Dispatch 10", role: "dispatch", password: "FYJ9996BX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
+    { id: "dispatch11", name: "Dispatch 11", role: "dispatch", password: "XMG4340LN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
+    { id: "dispatch12", name: "Dispatch 12", role: "dispatch", password: "EEA2653NU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
+    { id: "dispatch13", name: "Dispatch 13", role: "dispatch", password: "STM4563VM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
+    { id: "dispatch14", name: "Dispatch 14", role: "dispatch", password: "GHU7822NX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
+    { id: "dispatch15", name: "Dispatch 15", role: "dispatch", password: "SLL8046WH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
+    { id: "dispatch16", name: "Dispatch 16", role: "dispatch", password: "MXH2933UN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
+    { id: "dispatch17", name: "Dispatch 17", role: "dispatch", password: "SJV8263MA", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
+    { id: "dispatch18", name: "Dispatch 18", role: "dispatch", password: "TYE0288YW", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
+    { id: "dispatch19", name: "Dispatch 19", role: "dispatch", password: "SVG4086AU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
+    { id: "dispatch20", name: "Dispatch 20", role: "dispatch", password: "HCB3143EM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
+    { id: "driver", name: "Driver 1", role: "driver", password: "DRIVERPL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
+    { id: "driver2", name: "Driver 2", role: "driver", password: "DRIVER2PL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
+    { id: "driver3", name: "Driver 3", role: "driver", password: "DRIVER3PL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
 ];
 // HOW TO RENAME A DISPATCHER:
 // Change name:"Dispatch 1" to name:"Marcus" — their name shows on all activity logs, leads board, leaderboard.
@@ -464,6 +454,7 @@ function setLang(l) { try {
 catch (e) { } }
 var TX = {
     en: {
+        revenue: "Revenue", netProfit: "Net Profit",
         home: "🏠 Home", book: "📦 Book", track: "📍 Track",
         heroTag: "24/7 LOGISTICS · COURIER · PROPERTY CLEANOUTS · JUNK REMOVAL",
         heroTitle: "Fast. Secure.", heroTitleSpan: "On Demand.",
@@ -528,7 +519,7 @@ var TX = {
         signOut: "Cerrar Sesión", save: "Guardar", cancel: "Cancelar", delete: "Eliminar",
         confirm: "Confirmar", submit: "Enviar", search: "Buscar", filter: "Filtrar",
         status: "Estado", date: "Fecha", amount: "Monto", total: "Total",
-        newJob: "Nuevo Trabajo", bookJob: "Reservar", addExpense: "Agregar Gasto",
+        newJob: "Nuevo Trabajo", revenue: "Ingresos", netProfit: "Ganancia Neta", bookJob: "Reservar", addExpense: "Agregar Gasto",
         paid: "Pagado", unpaid: "No Pagado", pending: "Pendiente", completed: "Completado",
         cancelled: "Cancelado", active: "Activo", inactive: "Inactivo",
         customer: "Cliente", driver2: "Conductor", phone2: "Teléfono", email2: "Correo",
@@ -565,7 +556,7 @@ var TX = {
         aiDocs: "IA Documents", leads: "Prospects", activity: "Activité", board: "Tableau",
         payroll: "Paie", demo: "Démo", more: "Plus", ops: "Ops", biz: "Affaires", team: "Équipe",
         signOut: "Déconnexion", save: "Enregistrer", cancel: "Annuler", delete: "Supprimer",
-        paid: "Payé", unpaid: "Non payé", completed: "Terminé", cancelled: "Annulé",
+        paid: "Payé", revenue: "Revenus", netProfit: "Bénéfice Net", unpaid: "Non payé", completed: "Terminé", cancelled: "Annulé",
         language: "Langue",
     },
     pt: {
@@ -591,7 +582,7 @@ var TX = {
         aiDocs: "IA Documentos", leads: "Leads", activity: "Atividade", board: "Quadro",
         payroll: "Folha de Pagamento", demo: "Demo", more: "Mais", ops: "Ops", biz: "Negócio", team: "Equipe",
         signOut: "Sair", save: "Salvar", cancel: "Cancelar", delete: "Excluir",
-        paid: "Pago", unpaid: "Não Pago", completed: "Concluído", cancelled: "Cancelado",
+        paid: "Pago", revenue: "Receita", netProfit: "Lucro L\u00edquido", unpaid: "Não Pago", completed: "Concluído", cancelled: "Cancelado",
         customer: "Cliente", driver2: "Motorista", phone2: "Telefone", email2: "Email",
         origin: "Coleta", destination: "Entrega", price: "Preço", miles: "Milhas",
         language: "Idioma",
@@ -619,7 +610,7 @@ var TX = {
         aiDocs: "ЖИ Құжаттар", leads: "Перспективалар", activity: "Белсенділік", board: "Тақта",
         payroll: "Жалақы", demo: "Демо", more: "Көбірек", ops: "Опс", biz: "Бизнес", team: "Команда",
         signOut: "Шығу", save: "Сақтау", cancel: "Болдырмау", delete: "Жою",
-        paid: "Төленді", unpaid: "Төленбеді", completed: "Аяқталды", cancelled: "Болдырылмады",
+        paid: "Төленді", revenue: "Кіріс", netProfit: "Таза пайда", unpaid: "Төленбеді", completed: "Аяқталды", cancelled: "Болдырылмады",
         language: "Тіл",
     },
     ru: {
@@ -645,10 +636,11 @@ var TX = {
         aiDocs: "ИИ Документы", leads: "Лиды", activity: "Активность", board: "Доска",
         payroll: "Зарплата", demo: "Демо", more: "Ещё", ops: "Операции", biz: "Бизнес", team: "Команда",
         signOut: "Выйти", save: "Сохранить", cancel: "Отмена", delete: "Удалить",
-        paid: "Оплачено", unpaid: "Не оплачено", completed: "Завершено", cancelled: "Отменено",
+        paid: "Оплачено", revenue: "Доход", netProfit: "Чистая прибыль", unpaid: "Не оплачено", completed: "Завершено", cancelled: "Отменено",
         language: "Язык",
     },
     zh: {
+        revenue: "收入", netProfit: "净利润",
         home: "🏠 首页", book: "📦 预订", track: "📍 追踪",
         heroTag: "24/7 物流 · 快递 · 清洁 · 搬家 · 拆除",
         heroTitle: "快速。可靠。", heroTitleSpan: "按需服务。",
@@ -667,6 +659,7 @@ var TX = {
         readyConfirm: "我确认详细信息正确，并准备好接受联系。",
     },
     ko: {
+        revenue: "수익", netProfit: "순이익",
         home: "🏠 홈", book: "📦 예약", track: "📍 추적",
         heroTag: "24/7 물류 · 택배 · 청소 · 이사 · 철거",
         heroTitle: "빠르게. 안전하게.", heroTitleSpan: "즉시 제공.",
@@ -685,6 +678,7 @@ var TX = {
         readyConfirm: "세부 정보가 정확하며 연락받을 준비가 되었음을 확인합니다.",
     },
     vi: {
+        revenue: "Doanh thu", netProfit: "Lợi nhuận ròng",
         home: "🏠 Trang chủ", book: "📦 Đặt hàng", track: "📍 Theo dõi",
         heroTag: "LOGISTICS 24/7 · CHUYỂN PHÁT · DỌN DẸP · CHUYỂN NHÀ",
         heroTitle: "Nhanh. An toàn.", heroTitleSpan: "Theo yêu cầu.",
@@ -703,6 +697,7 @@ var TX = {
         readyConfirm: "Tôi xác nhận thông tin chính xác và sẵn sàng được liên hệ.",
     },
     ar: {
+        revenue: "الإيرادات", netProfit: "صافي الربح",
         home: "🏠 الرئيسية", book: "📦 احجز", track: "📍 تتبع",
         heroTag: "لوجستيات ٢٤/٧ · توصيل · تنظيف · نقل · هدم",
         heroTitle: "سريع. آمن.", heroTitleSpan: "عند الطلب.",
@@ -721,6 +716,7 @@ var TX = {
         readyConfirm: "أؤكد أن التفاصيل صحيحة وأنا مستعد للتواصل.",
     },
     hi: {
+        revenue: "राजस्व", netProfit: "शुद्ध लाभ",
         home: "🏠 होम", book: "📦 बुक करें", track: "📍 ट्रैक करें",
         heroTag: "24/7 लॉजिस्टिक्स · कूरियर · सफाई · शिफ्टिंग · डेमोलिशन",
         heroTitle: "तेज़। सुरक्षित।", heroTitleSpan: "मांग पर।",
@@ -739,6 +735,7 @@ var TX = {
         readyConfirm: "मैं पुष्टि करता हूं कि विवरण सही है और संपर्क के लिए तैयार हूं।",
     },
     ht: {
+        revenue: "Revni", netProfit: "Pwofi Nèt",
         home: "🏠 Akèy", book: "📦 Rezève", track: "📍 Swiv",
         heroTag: "LOJISTIK 24/7 · KOURYÈ · NETWAYAJ · DEMENAJMAN",
         heroTitle: "Rapid. Sekirize.", heroTitleSpan: "Sou Demann.",
@@ -757,6 +754,7 @@ var TX = {
         readyConfirm: "Mwen konfime detay yo kòrèk epi mwen prè pou yo kontakte m.",
     },
     pl: {
+        revenue: "Przychód", netProfit: "Zysk Netto",
         home: "🏠 Strona główna", book: "📦 Zarezerwuj", track: "📍 Śledź",
         heroTag: "LOGISTYKA 24/7 · KURIER · SPRZĄTANIE · PRZEPROWADZKA · WYBURZANIE",
         heroTitle: "Szybko. Bezpiecznie.", heroTitleSpan: "Na żądanie.",
@@ -775,6 +773,7 @@ var TX = {
         readyConfirm: "Potwierdzam, że dane są poprawne i jestem gotowy na kontakt.",
     },
     de: {
+        revenue: "Umsatz", netProfit: "Nettogewinn",
         home: "🏠 Startseite", book: "📦 Buchen", track: "📍 Verfolgen",
         heroTag: "LOGISTIK 24/7 · KURIER · REINIGUNG · UMZUG · ABRISS",
         heroTitle: "Schnell. Sicher.", heroTitleSpan: "Auf Abruf.",
@@ -1243,48 +1242,88 @@ function JobDocumentsPanel(props){
     var jobId=props.jobId;
     var [docs,setDocs]=useState(function(){return loadJobDocs(jobId);});
     var [showAdd,setShowAdd]=useState(false);
-    var [form,setForm]=useState({type:"BOL",url:"",notes:""});
+    var [mode,setMode]=useState("link");
+    var [form,setForm]=useState({type:"BOL",url:"",notes:"",photoData:""});
+    var [uploading,setUploading]=useState(false);
+    var fileInputRef=React.useRef(null);
+
+    function handlePhotoSelect(e){
+        var file=e.target.files&&e.target.files[0];
+        if(!file)return;
+        setUploading(true);
+        var reader=new FileReader();
+        reader.onload=function(ev){
+            setForm(function(p){return Object.assign({},p,{photoData:ev.target.result});});
+            setUploading(false);
+        };
+        reader.onerror=function(){ alert("Could not read that photo. Try again."); setUploading(false); };
+        reader.readAsDataURL(file);
+    }
+
     function addDoc(){
-        if(!form.url&&!form.notes){alert("Paste a URL or add notes.");return;}
-        var newDocs=[...docs,{id:"doc-"+Date.now(),type:form.type,url:form.url,notes:form.notes,addedAt:new Date().toISOString()}];
+        if(mode==="photo"&&!form.photoData){alert("Choose a photo first.");return;}
+        if(mode==="link"&&!form.url&&!form.notes){alert("Paste a URL or add notes.");return;}
+        var newDocs=[...docs,{
+            id:"doc-"+Date.now(),
+            type:form.type,
+            url:mode==="link"?form.url:"",
+            photoData:mode==="photo"?form.photoData:"",
+            notes:form.notes,
+            addedAt:new Date().toISOString()
+        }];
         saveJobDocs(jobId,newDocs);
         setDocs(newDocs);
-        setForm({type:"BOL",url:"",notes:""});
+        setForm({type:"BOL",url:"",notes:"",photoData:""});
         setShowAdd(false);
+        setMode("link");
     }
     function removeDoc(id){
         var updated=docs.filter(function(d){return d.id!==id;});
         saveJobDocs(jobId,updated);
         setDocs(updated);
     }
-    var DOC_TYPES=[["BOL","📋"],["Rate Con","📄"],["POD","✅"],["Weight Ticket","⚖️"],["Lumper Receipt","🧾"],["Other","📎"]];
+    var DOC_TYPES=[["BOL","📋"],["Rate Con","📄"],["POD","✅"],["Weight Ticket","⚖️"],["Lumper Receipt","🧾"],["Load Photo","📷"],["Other","📎"]];
     return React.createElement("div",{style:{marginTop:12}},
         React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}},
             React.createElement("div",{style:{fontSize:10,color:C.dim,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}},"📎 Documents — Driver Can See These"),
             React.createElement("button",{onClick:function(){setShowAdd(!showAdd);},style:{background:C.orange,color:"#000",border:"none",borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},"+ Send to Driver")
         ),
         showAdd&&React.createElement("div",{style:{background:C.surface,border:"1px solid "+C.orange+"44",borderRadius:8,padding:"10px",marginBottom:8}},
+            React.createElement("div",{style:{display:"flex",gap:6,marginBottom:8}},
+                React.createElement("button",{onClick:function(){setMode("link");},style:{flex:1,background:mode==="link"?C.orange:"transparent",color:mode==="link"?"#000":C.dim,border:"1px solid "+(mode==="link"?C.orange:C.border),borderRadius:6,padding:"6px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},"🔗 Link / URL"),
+                React.createElement("button",{onClick:function(){setMode("photo");},style:{flex:1,background:mode==="photo"?C.orange:"transparent",color:mode==="photo"?"#000":C.dim,border:"1px solid "+(mode==="photo"?C.orange:C.border),borderRadius:6,padding:"6px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},"📷 Photo Upload")
+            ),
             React.createElement("div",{style:{display:"flex",gap:6,marginBottom:6,flexWrap:"wrap"}},
                 DOC_TYPES.map(function(dt){
                     return React.createElement("button",{key:dt[0],onClick:function(){setForm(function(p){return Object.assign({},p,{type:dt[0]});});},style:{background:form.type===dt[0]?C.orange+"22":"transparent",color:form.type===dt[0]?C.orange:C.dim,border:"1px solid "+(form.type===dt[0]?C.orange:C.border),borderRadius:5,padding:"3px 8px",cursor:"pointer",fontSize:10,fontWeight:700,fontFamily:"inherit"}},dt[1]+" "+dt[0]);
                 })
             ),
-            React.createElement("input",{placeholder:"Paste URL (Google Drive, Dropbox, etc.)",value:form.url,onChange:function(e){setForm(function(p){return Object.assign({},p,{url:e.target.value});});},style:{width:"100%",background:C.card,border:"1px solid "+C.border,borderRadius:6,color:C.white,padding:"7px 10px",fontSize:11,outline:"none",fontFamily:"inherit",marginBottom:6,boxSizing:"border-box"}}),
+            mode==="link"&&React.createElement("input",{placeholder:"Paste URL (Google Drive, Dropbox, etc.)",value:form.url,onChange:function(e){setForm(function(p){return Object.assign({},p,{url:e.target.value});});},style:{width:"100%",background:C.card,border:"1px solid "+C.border,borderRadius:6,color:C.white,padding:"7px 10px",fontSize:11,outline:"none",fontFamily:"inherit",marginBottom:6,boxSizing:"border-box"}}),
+            mode==="photo"&&React.createElement("div",{style:{marginBottom:6}},
+                React.createElement("input",{ref:fileInputRef,type:"file",accept:"image/*",capture:"environment",onChange:handlePhotoSelect,style:{display:"none"}}),
+                !form.photoData&&React.createElement("button",{onClick:function(){fileInputRef.current&&fileInputRef.current.click();},style:{width:"100%",background:C.card,border:"1px dashed "+C.orange+"66",borderRadius:6,padding:"16px",fontSize:12,color:C.orange,cursor:"pointer",fontFamily:"inherit",fontWeight:700}},uploading?"Loading photo...":"📷 Take Photo or Choose from Gallery"),
+                form.photoData&&React.createElement("div",{style:{position:"relative"}},
+                    React.createElement("img",{src:form.photoData,style:{width:"100%",maxHeight:200,objectFit:"cover",borderRadius:6,marginBottom:6}}),
+                    React.createElement("button",{onClick:function(){setForm(function(p){return Object.assign({},p,{photoData:""});});},style:{position:"absolute",top:6,right:6,background:"rgba(0,0,0,0.7)",color:"#fff",border:"none",borderRadius:5,padding:"4px 8px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}},"✕ Remove"))),
             React.createElement("input",{placeholder:"Notes or instructions for driver (optional)",value:form.notes,onChange:function(e){setForm(function(p){return Object.assign({},p,{notes:e.target.value});});},style:{width:"100%",background:C.card,border:"1px solid "+C.border,borderRadius:6,color:C.white,padding:"7px 10px",fontSize:11,outline:"none",fontFamily:"inherit",marginBottom:8,boxSizing:"border-box"}}),
             React.createElement("div",{style:{display:"flex",gap:6}},
                 React.createElement("button",{onClick:addDoc,style:{background:C.green,color:"#000",border:"none",borderRadius:6,padding:"7px 14px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",flex:1}},"✅ Send to Driver"),
-                React.createElement("button",{onClick:function(){setShowAdd(false);},style:{background:"transparent",color:C.dim,border:"1px solid "+C.border,borderRadius:6,padding:"7px 10px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}},"Cancel")
+                React.createElement("button",{onClick:function(){setShowAdd(false);setForm({type:"BOL",url:"",notes:"",photoData:""});},style:{background:"transparent",color:C.dim,border:"1px solid "+C.border,borderRadius:6,padding:"7px 10px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}},"Cancel")
             )
         ),
         docs.length===0&&!showAdd&&React.createElement("div",{style:{fontSize:10,color:C.dim,fontStyle:"italic"}},"No documents sent yet"),
         docs.map(function(d){
-            return React.createElement("div",{key:d.id,style:{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.card,border:"1px solid "+C.border,borderRadius:7,padding:"7px 10px",marginBottom:5}},
-                React.createElement("div",{style:{flex:1}},
-                    React.createElement("div",{style:{fontSize:11,fontWeight:700,color:C.white,marginBottom:1}},d.type),
-                    d.url&&React.createElement("a",{href:d.url,target:"_blank",rel:"noopener",style:{fontSize:10,color:C.blue,textDecoration:"none"}},d.url.length>40?d.url.slice(0,40)+"...":d.url),
-                    d.notes&&React.createElement("div",{style:{fontSize:10,color:C.dim,marginTop:1}},d.notes)
+            return React.createElement("div",{key:d.id,style:{background:C.card,border:"1px solid "+C.border,borderRadius:7,padding:"7px 10px",marginBottom:5}},
+                React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}},
+                    React.createElement("div",{style:{flex:1}},
+                        React.createElement("div",{style:{fontSize:11,fontWeight:700,color:C.white,marginBottom:1}},d.type),
+                        d.url&&React.createElement("a",{href:d.url,target:"_blank",rel:"noopener",style:{fontSize:10,color:C.blue,textDecoration:"none"}},d.url.length>40?d.url.slice(0,40)+"...":d.url),
+                        d.photoData&&React.createElement("div",{style:{fontSize:10,color:C.orange}},"📷 Photo attached"),
+                        d.notes&&React.createElement("div",{style:{fontSize:10,color:C.dim,marginTop:1}},d.notes)
+                    ),
+                    React.createElement("button",{onClick:function(){removeDoc(d.id);},style:{background:"none",border:"none",color:C.red,cursor:"pointer",fontSize:14,fontFamily:"inherit",marginLeft:8}},"✕")
                 ),
-                React.createElement("button",{onClick:function(){removeDoc(d.id);},style:{background:"none",border:"none",color:C.red,cursor:"pointer",fontSize:14,fontFamily:"inherit",marginLeft:8}},"✕")
+                d.photoData&&React.createElement("img",{src:d.photoData,style:{width:"100%",maxHeight:160,objectFit:"cover",borderRadius:6,marginTop:6}})
             );
         })
     );
@@ -1299,6 +1338,7 @@ function DriverDocViewer(props){
         docs.map(function(d){
             return React.createElement("div",{key:d.id,style:{background:C.card,border:"1px solid "+C.orange+"44",borderRadius:8,padding:"10px 12px",marginBottom:6}},
                 React.createElement("div",{style:{fontSize:12,fontWeight:700,color:C.orange,marginBottom:3}},d.type),
+                d.photoData&&React.createElement("img",{src:d.photoData,onClick:function(){window.open(d.photoData,"_blank");},style:{width:"100%",maxHeight:280,objectFit:"cover",borderRadius:6,marginBottom:6,cursor:"pointer"}}),
                 d.url&&React.createElement("a",{href:d.url,target:"_blank",rel:"noopener",style:{display:"block",background:C.orange,color:"#000",textDecoration:"none",borderRadius:6,padding:"7px 12px",fontSize:12,fontWeight:700,textAlign:"center",marginBottom:3}},"Open "+d.type+" →"),
                 d.notes&&React.createElement("div",{style:{fontSize:11,color:C.dim,marginTop:3}},d.notes)
             );
@@ -1651,7 +1691,7 @@ function sendEmail(job) {
             service: job.serviceName, origin: job.origin, destination: job.destination,
             total: "$" + job.finalPrice, payment: job.payment, date: job.date, notes: job.notes || "None" };
         fetch("https://api.emailjs.com/api/v1.0/email/send", { method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ service_id: "service_e3qn0bs", template_id: "template_nxubdce", user_id: "6Qs0HIOLjJ6jfWHtp",
+            body: JSON.stringify({ service_id: "service_e3qn0bs", template_id: "template_nxubdce", user_id: "6Qs0HlOLjJ6jfWHtp",
                 template_params: params }) });
     }
     catch (e) { }
@@ -1719,7 +1759,7 @@ function sendLeadEmail(lead, templateKey, senderName) {
     // `params` object above — the fetch call itself never needs to change.
     return fetch("https://api.emailjs.com/api/v1.0/email/send", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ service_id: "service_e3qn0bs", template_id: "template_nxubdce", user_id: "6Qs0HIOLjJ6jfWHtp", template_params: params })
+        body: JSON.stringify({ service_id: "service_e3qn0bs", template_id: "template_nxubdce", user_id: "6Qs0HlOLjJ6jfWHtp", template_params: params })
     }).then(function(res){
         if (res.ok) return res;
         return res.text().then(function(errText){
@@ -1750,7 +1790,7 @@ function sendETAAlert(job) {
     };
     return fetch("https://api.emailjs.com/api/v1.0/email/send", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ service_id: "service_e3qn0bs", template_id: "template_nxubdce", user_id: "6Qs0HIOLjJ6jfWHtp", template_params: params })
+        body: JSON.stringify({ service_id: "service_e3qn0bs", template_id: "template_nxubdce", user_id: "6Qs0HlOLjJ6jfWHtp", template_params: params })
     }).then(function(res){
         if (res.ok) return res;
         return res.text().then(function(errText){
@@ -2486,7 +2526,7 @@ function BookingView(props) {
         }, 900);
         return function () { cancelled = true; clearTimeout(timer); };
     }, [form.origin, form.destination, isMileageSvc]);
-    var miles = isMileageSvc ? (autoMiles != null ? autoMiles : (Number(form.miles) || 0)) : 0;
+    var miles = isMileageSvc ? (form.manualMilesOn ? (Number(form.miles) || 0) : (autoMiles != null ? autoMiles : (Number(form.miles) || 0))) : 0;
     function doQuote() {
         var q;
         if (isLoadSizeSvc)
@@ -2618,12 +2658,18 @@ function BookingView(props) {
                             React.createElement("div", { style: { display: "flex", gap: 6 } },
                                 React.createElement("input", { value: form.destCity || "", onChange: function (e) { var c = e.target.value; set("destCity", c); set("destination", (form.destStreet || "") + ", " + c + ", " + (form.destState || "GA")); }, placeholder: "City (e.g. South Yarmouth)", style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 9, color: C.white, padding: "11px 14px", fontSize: 14, flex: 2, outline: "none", fontFamily: "inherit", boxSizing: "border-box" } }),
                                 React.createElement("input", { value: form.destState || "", onChange: function (e) { var st = e.target.value.toUpperCase().substring(0, 2); set("destState", st); set("destination", (form.destStreet || "") + ", " + (form.destCity || "") + ", " + st); }, placeholder: "State (MA)", maxLength: 2, style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 9, color: C.white, padding: "11px 14px", fontSize: 14, flex: 1, outline: "none", fontFamily: "inherit", boxSizing: "border-box", textTransform: "uppercase" } })))),
-                    geoLoading && React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 14 } }, "\uD83D\uDCCD Calculating distance..."),
-                    !geoLoading && geoFailed && React.createElement("div", null,
+                    geoLoading && !form.manualMilesOn && React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 14 } }, "\uD83D\uDCCD Calculating distance..."),
+                    !form.manualMilesOn && !geoLoading && geoFailed && React.createElement("div", null,
                         React.createElement(Lbl, null, "Estimated Distance (miles)"),
                         React.createElement("div", { style: { marginBottom: 6 } },
                             React.createElement("input", { type: "number", value: form.miles, onChange: function (e) { set("miles", e.target.value); }, placeholder: "e.g. 12", style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 9, color: C.white, padding: "11px 14px", fontSize: 14, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box" } })),
                         React.createElement("div", { style: { fontSize: 11, color: C.faint, marginBottom: 14 } }, "We couldn't find that address \u2014 please double check it or enter the estimated miles yourself.")),
+                    isMileageSvc && React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: form.manualMilesOn ? 6 : 14, cursor: "pointer" }, onClick: function () { set("manualMilesOn", !form.manualMilesOn); } },
+                        React.createElement("div", { style: { width: 18, height: 18, borderRadius: 5, border: "1.5px solid " + (form.manualMilesOn ? C.orange : C.border), background: form.manualMilesOn ? C.orange : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } }, form.manualMilesOn && React.createElement("span", { style: { color: "#000", fontSize: 12, fontWeight: 900 } }, "\u2713")),
+                        React.createElement("span", { style: { fontSize: 12, color: C.dim } }, "Enter exact miles myself (regular / local loads)")),
+                    isMileageSvc && form.manualMilesOn && React.createElement("div", { style: { marginBottom: 14 } },
+                        React.createElement("input", { type: "number", step: "0.1", value: form.miles, onChange: function (e) { set("miles", e.target.value); }, placeholder: "e.g. 2.5", style: { background: C.surface, border: "1px solid " + C.orange + "66", borderRadius: 9, color: C.white, padding: "11px 14px", fontSize: 14, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box" } }),
+                        React.createElement("div", { style: { fontSize: 10, color: C.faint, marginTop: 4 } }, "Overrides auto-detected distance. Good for short local moves, regular scheduled routes, or when you already know the mileage.")),
                     !geoLoading && miles > 0 && React.createElement("div", { style: { background: C.orangeSoft, border: "1px solid " + C.orange + "33", borderRadius: 9, padding: "10px 14px", marginBottom: 14, fontSize: 12 } },
                         React.createElement("span", { style: { color: C.dim } }, autoMiles != null ? "Distance: " : "Estimated price: "),
                         React.createElement("span", { style: { color: C.orange, fontWeight: 800 } }, miles + " miles"),
@@ -3095,7 +3141,7 @@ function NewJobModal(props) {
         }, 900);
         return function () { cancelled = true; clearTimeout(timer); };
     }, [f.origin, f.destination, isMileageSvc]);
-    var miles = isMileageSvc ? (autoMiles != null ? autoMiles : (Number(f.miles) || 0)) : 0;
+    var miles = isMileageSvc ? (f.manualMilesOn ? (Number(f.miles) || 0) : (autoMiles != null ? autoMiles : (Number(f.miles) || 0))) : 0;
     var q;
     if (isLoadSizeSvc)
         q = calcJunkRemovalQuote(f.loadSize, f.payment, []);
@@ -3128,7 +3174,7 @@ function NewJobModal(props) {
             props.onClose(); }, style: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "#000000CC", zIndex: 300, display: "flex", alignItems: "flex-end", justifyContent: "center" } },
         React.createElement("div", { style: { background: C.card, borderRadius: "14px 14px 0 0", padding: "22px 18px 32px", width: "100%", maxWidth: 540, maxHeight: "90vh", overflowY: "auto", fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
             React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 } },
-                React.createElement("div", { style: { fontSize: 16, fontWeight: 800, color: C.white } }, "\u2795 Add New Job"),
+                React.createElement("div", { style: { fontSize: 16, fontWeight: 800, color: C.white } }, "\u2795 " + t("newJob")),
                 React.createElement("button", { onClick: props.onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer" } }, "\u2715")),
             React.createElement(TxtIn, { label: "Customer Name", value: f.customer, onChange: function (v) { set("customer", v); }, placeholder: "Full name" }),
             React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" } },
@@ -3140,8 +3186,12 @@ function NewJobModal(props) {
                 React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" } },
                     React.createElement(TxtIn, { label: "Pickup Address", value: f.origin, onChange: function (v) { set("origin", v); }, placeholder: "Street, City, State (e.g. 123 Main St, Conyers, GA)" }),
                     React.createElement(TxtIn, { label: t("dropoffAddress"), value: f.destination, onChange: function (v) { set("destination", v); }, placeholder: "456 Broad St, City, GA" })),
-                geoLoading && React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 10 } }, "\uD83D\uDCCD Calculating distance..."),
-                !geoLoading && geoFailed && React.createElement(TxtIn, { label: "Estimated Distance (miles)", value: f.miles, onChange: function (v) { set("miles", v); }, type: "number", placeholder: "e.g. 12" }),
+                geoLoading && !f.manualMilesOn && React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 10 } }, "\uD83D\uDCCD Calculating distance..."),
+                !f.manualMilesOn && !geoLoading && geoFailed && React.createElement(TxtIn, { label: "Estimated Distance (miles)", value: f.miles, onChange: function (v) { set("miles", v); }, type: "number", placeholder: "e.g. 12" }),
+                React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginTop: 4, marginBottom: f.manualMilesOn ? 4 : 10, cursor: "pointer" }, onClick: function () { set("manualMilesOn", !f.manualMilesOn); } },
+                    React.createElement("div", { style: { width: 16, height: 16, borderRadius: 4, border: "1.5px solid " + (f.manualMilesOn ? C.orange : C.border), background: f.manualMilesOn ? C.orange : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } }, f.manualMilesOn && React.createElement("span", { style: { color: "#000", fontSize: 10, fontWeight: 900 } }, "\u2713")),
+                    React.createElement("span", { style: { fontSize: 11, color: C.dim } }, "Enter exact miles myself")),
+                f.manualMilesOn && React.createElement(TxtIn, { label: "Miles (manual)", value: f.miles, onChange: function (v) { set("miles", v); }, type: "number", placeholder: "e.g. 2.5" }),
                 !geoLoading && miles > 0 && React.createElement("div", { style: { background: C.orangeSoft, border: "1px solid " + C.orange + "33", borderRadius: 9, padding: "8px 12px", marginBottom: 10, fontSize: 12, color: C.dim } }, (autoMiles != null ? "Auto-detected: " : "") + miles + " miles × $" + INSTATE_RATE_PER_MILE + "/mi = $" + Math.round(miles * INSTATE_RATE_PER_MILE))) : React.createElement("div", null,
                 React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" } },
                     React.createElement(TxtIn, { label: "Pickup", value: f.origin, onChange: function (v) { set("origin", v); }, placeholder: "City, GA" }),
@@ -3366,17 +3416,17 @@ function JobsDashboard(props) {
                     React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: C.white } }, row[1]));
             })),
             React.createElement("div", { style: { fontSize: 10, color: C.faint } }, "16ft · 93\" wide · 4,300 lb max · " + TRUCK_MPG + " MPG · RT · fuel est. below uses Regular")),
-        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, marginBottom: 18 } }, [{ l: "Revenue", v: "$" + rev.toLocaleString(), c: C.orange }, { l: "Net Profit", v: "$" + profit.toLocaleString(), c: profit >= 0 ? C.green : C.red },
-            { l: "Active", v: jobs.filter(function (j) { return j.status !== "Completed" && j.status !== "Paid" && j.status !== "Cancelled"; }).length, c: C.yellow },
-            { l: "Completed", v: jobs.filter(function (j) { return j.status === "Completed" || j.status === "Paid"; }).length, c: C.dim }
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, marginBottom: 18 } }, [{ l: t("revenue"), v: "$" + rev.toLocaleString(), c: C.orange }, { l: t("netProfit"), v: "$" + profit.toLocaleString(), c: profit >= 0 ? C.green : C.red },
+            { l: t("active"), v: jobs.filter(function (j) { return j.status !== "Completed" && j.status !== "Paid" && j.status !== "Cancelled"; }).length, c: C.yellow },
+            { l: t("completed"), v: jobs.filter(function (j) { return j.status === "Completed" || j.status === "Paid"; }).length, c: C.dim }
         ].map(function (k) {
             return React.createElement(Card, { key: k.l, style: { padding: "14px 16px" } },
                 React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 4 } }, k.l),
                 React.createElement("div", { style: { fontSize: 26, fontWeight: 900, color: k.c } }, k.v));
         })),
         React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 10, alignItems: "center", flexWrap: "wrap" } },
-            React.createElement("input", { value: search, onChange: function (e) { setSearch(e.target.value); }, placeholder: "Search by name or Job ID...", style: { flex: 1, minWidth: 160, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, color: C.white, padding: "8px 12px", fontSize: 13, outline: "none", fontFamily: "inherit" } }),
-            React.createElement(Btn, { onClick: function () { setShowNew(true); }, style: { flexShrink: 0, padding: "8px 14px", fontSize: 12 } }, "\u2795 New Job"),
+            React.createElement("input", { value: search, onChange: function (e) { setSearch(e.target.value); }, placeholder: t("search") + "...", style: { flex: 1, minWidth: 160, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, color: C.white, padding: "8px 12px", fontSize: 13, outline: "none", fontFamily: "inherit" } }),
+            React.createElement(Btn, { onClick: function () { setShowNew(true); }, style: { flexShrink: 0, padding: "8px 14px", fontSize: 12 } }, "\u2795 " + t("newJob")),
             React.createElement(Btn, { onClick: function () { setShowLanes(true); }, variant: "ghost", style: { flexShrink: 0, padding: "8px 12px", fontSize: 11 } }, "\uD83D\uDDFA Lanes"),
             React.createElement(Btn, { onClick: function () { setShowDeadhead(true); }, variant: "ghost", style: { flexShrink: 0, padding: "8px 12px", fontSize: 11 } }, "\uD83D\uDE9B Deadhead"),
             selected.length === 0 ? React.createElement(Btn, { onClick: selectAll, variant: "ghost", style: { flexShrink: 0, padding: "8px 12px", fontSize: 11 } }, "\u2611 Select All") : React.createElement(Btn, { onClick: clearSelect, variant: "ghost", style: { flexShrink: 0, padding: "8px 12px", fontSize: 11 } }, "\u2715 Clear")),
@@ -3422,6 +3472,8 @@ function JobsDashboard(props) {
                             var sc = STATUS_COLOR[s] || C.dim;
                             return React.createElement("button", { key: s, onClick: function () { onUpdateStatus(j.id, s); }, style: { border: "1px solid " + (j.status === s ? sc : C.border), borderRadius: 6, padding: "4px 9px", cursor: "pointer", background: j.status === s ? sc + "22" : C.surface, color: j.status === s ? sc : C.dim, fontSize: 11, fontWeight: 600, fontFamily: "inherit" } }, s);
                         })),
+                        React.createElement(JobWeatherCheck, { destination: j.destination, date: j.date }),
+                        React.createElement(JobRouteETA, { origin: j.origin, destination: j.destination }),
                         React.createElement(JobDocumentsPanel, { jobId: j.id })
                     ));
             })));
@@ -4055,7 +4107,7 @@ function getDeviceInfo() {
 function alertLoginEmail(subject, message) {
     try {
         fetch("https://api.emailjs.com/api/v1.0/email/send", { method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ service_id: "service_e3qn0bs", template_id: "template_nxubdce", user_id: "6Qs0HIOLjJ6jfWHtp",
+            body: JSON.stringify({ service_id: "service_e3qn0bs", template_id: "template_nxubdce", user_id: "6Qs0HlOLjJ6jfWHtp",
                 template_params: { to_email: "potentlogistics@pm.me", from_name: "POTENT OS Security", subject: subject, message: message } }) })
             .catch(function(){});
     } catch(e){}
@@ -4808,9 +4860,9 @@ function getTabGroups() {
         { label: "🚐 " + t("driver"), color: "#9F7AEA", tabs: [["driver", "🚐 " + t("driver")], ["driverapp", "🚐 " + t("driverApp")]] },
         { label: "📊 " + t("reports"), color: C.orange, tabs: [["reports", "📊 " + t("reports")], ["advanced", "📈 " + t("analytics")], ["sales", "🏆 " + t("sales")]] },
         { label: "💼 " + t("biz"), color: "#F6E05E", tabs: [["carriers", "🤝 " + t("carriers")], ["expenses", "💸 " + t("expenses")], ["accounts", "🏢 " + t("accounts")], ["audit", "👁 " + t("audit")], ["loginActivity", "🔐 Login Activity"]] },
-        { label: "🚗 Fleet", color: "#F6AD55", tabs: [["fleet", "🚗 Fleet"], ["fleetmap", "🗺️ Live Map"], ["compliance", "🛡 Compliance"], ["documents", "📁 Documents"]] },
+        { label: "🚗 Fleet", color: "#F6AD55", tabs: [["fleet", "🚗 Fleet"], ["fleetmap", "🗺️ Live Map"], ["compliance", "🛡 Compliance"], ["documents", "📁 Documents"], ["safetyscore", "🛡️ Safety Scores"], ["geofence", "📍 Geofencing"]] },
         { label: "👥 " + t("team"), color: "#FC8181", tabs: [["payroll", "💰 " + t("payroll")], ["ai", "🤖 " + t("aiDocs")], ["ownerSettings", "⚙ Settings"]] },
-        { label: "🎯 OS Sales", color: "#9F7AEA", tabs: [["ospipeline", "🎯 Pipeline"], ["ostraining", "📚 Training"]] },
+        { label: "🎯 OS Sales", color: "#9F7AEA", tabs: [["ospipeline", "🎯 Pipeline"], ["ostraining", "📚 Training"], ["ceodash", "📊 CEO Dashboard"], ["flexpay", "📅 Flex Pay"]] },
         { label: "🔒 Security", color: "#E53E3E", tabs: [["safety", "🔒 Safety"]] },
         { label: "🎬 " + t("more"), color: "#888", tabs: [["demo", "🎬 " + t("demo")]] },
     ];
@@ -4917,10 +4969,13 @@ function AdminDashboard(props) {
             tab === "fleet" && React.createElement(FleetMaintenance, null),
             tab === "fleetmap" && React.createElement(FleetMap, null),
             tab === "compliance" && React.createElement(ComplianceTracker, { users: USERS }),
+            tab === "safetyscore" && React.createElement(DriverSafetyScores, { jobs: props.jobs }),
+            tab === "geofence" && React.createElement(GeofenceManager, null),
             tab === "ospipeline" && props.role === ROLES.OWNER && React.createElement(OSPipeline, { currentUser: props.currentUser }),
             tab === "safety" && props.role === ROLES.OWNER && React.createElement(SafetyDashboard, { users: USERS, jobs: props.jobs }),
             tab === "ownerSettings" && props.role === ROLES.OWNER && React.createElement(OwnerSettings, { users: USERS, currentUser: props.currentUser }),
             tab === "ceodash" && props.role === ROLES.OWNER && React.createElement(CEODashboard, { jobs: props.jobs, prospects: props.prospects }),
+            tab === "flexpay" && props.role === ROLES.OWNER && React.createElement(FlexPayTracker, null),
             tab === "ostraining" && React.createElement(OSTraining, null),
             tab === "documents" && React.createElement(DocumentLogView, null)));
 }
@@ -4998,9 +5053,9 @@ function AdminLogin(props) {
                     React.createElement("select", { value: selected, onChange: function (e) { setSelected(e.target.value); setPw(""); setErr(false); setRevokedErr(false); setEditingName(false); }, style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 9, color: C.white, padding: "12px 14px", fontSize: 14, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box", cursor: "pointer" } },
                         React.createElement("option", { value: "" }, "\u2014 Select your name \u2014"),
                         USERS.map(function (u) { return React.createElement("option", { key: u.id, value: u.id }, u.emoji + " " + getDisplayName(u) + " (" + u.role + ")"); }))),
-                selectedUser && !editingName && React.createElement("div", { style: { display: "flex", justifyContent: "flex-end", marginBottom: 14 } },
+                false && selectedUser && !editingName && React.createElement("div", { style: { display: "flex", justifyContent: "flex-end", marginBottom: 14 } },
                     React.createElement("button", { onClick: startEdit, style: { background: "none", border: "none", color: C.orange, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" } }, "\u270F Edit my name")),
-                selectedUser && editingName && React.createElement("div", { style: { background: C.surface, border: "1px solid " + C.orange + "44", borderRadius: 9, padding: "12px 14px", marginBottom: 14 } },
+                false && selectedUser && editingName && React.createElement("div", { style: { background: C.surface, border: "1px solid " + C.orange + "44", borderRadius: 9, padding: "12px 14px", marginBottom: 14 } },
                     React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 } }, "Change Display Name"),
                     React.createElement("input", { value: editValue, onChange: function (e) { setEditValue(e.target.value); }, placeholder: "e.g. Marcus", style: { background: C.card, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "9px 12px", fontSize: 13, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box", marginBottom: 10 } }),
                     React.createElement("div", { style: { display: "flex", gap: 8 } },
@@ -6586,6 +6641,7 @@ function AddCarrierModal(props) {
             React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" } },
                 React.createElement(TxtIn, { label: "MC Number", value: f.mcNumber, onChange: function (v) { set("mcNumber", v); } }),
                 React.createElement(TxtIn, { label: "DOT Number", value: f.dotNumber, onChange: function (v) { set("dotNumber", v); } })),
+            f.dotNumber && React.createElement(CarrierSafetyLookup, { initialDot: f.dotNumber, onResult: function(res){ if(res && res.legalName && !f.name){ set("name", res.legalName); } } }),
             React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" } },
                 React.createElement(TxtIn, { label: "Phone", value: f.phone, onChange: function (v) { set("phone", v); }, type: "tel" }),
                 React.createElement(TxtIn, { label: "Email", value: f.email, onChange: function (v) { set("email", v); }, type: "email" })),
@@ -8182,6 +8238,11 @@ function removeBonus(name){
         var revenuePoints = Math.floor((r.revenue || 0) / 10);
         var score = (r.jobsBooked || 0) * 200 + (r.booked || 0) * 50 + (r.interested || 0) * 20 + (r.followUps || 0) * 5 + (r.calls || 0) * 1 + revenuePoints + (bonusPoints[r.name] || 0);
         return Object.assign({}, r, { leadsContacted: r.leadsContacted ? r.leadsContacted.size : 0, commission, score });
+    }).filter(function(r){
+        // Only show reps whose name matches a CURRENTLY active named employee.
+        // This is what actually removes departed employees from the leaderboard —
+        // their historical activity stays in the data, they just stop appearing here.
+        return USERS.some(function(u){ return u.name === r.name; });
     }).sort(function (a, b) { return b.score - a.score; });
     var totalRevenue = reps.reduce(function (s, r) { return s + (r.revenue || 0); }, 0);
     var totalCalls = reps.reduce(function (s, r) { return s + r.calls; }, 0);
@@ -8626,7 +8687,7 @@ function PayrollDashboard(props) {
                             u.role,
                             " \u00B7 potentoperations.netlify.app"));
                 })),
-                React.createElement("div", { style: { fontSize: 9, color: C.faint, marginTop: 8 } }, "Tap copyright text at bottom of site to open login. Owner only sees this section.")),
+                React.createElement("div", { style: { fontSize: 9, color: C.faint, marginTop: 8 } }, "Tap the POTENT LOGISTICS logo at the top of the site 5 times quickly to open login. Owner only sees this section.")),
             allEmpUsers.map(function (u) {
                 var emp = getEmp(u.id);
                 var terminated = emp.status === "terminated";
@@ -8634,7 +8695,8 @@ function PayrollDashboard(props) {
                     React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 10px", marginBottom: 8 } },
                         React.createElement("div", null,
                             React.createElement("div", { style: { fontSize: 9, color: C.dim, textTransform: "uppercase", marginBottom: 3 } }, "Display Name"),
-                            React.createElement("input", { value: emp.name || u.name, onChange: function (e) { setEmpField(u.id, "name", e.target.value); saveNameOverride(u.id, e.target.value); }, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 6, color: C.white, padding: "6px 8px", fontSize: 12, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box" } })),
+                            React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 6, color: C.dim, padding: "6px 8px", fontSize: 12 } }, emp.name || u.name),
+                            React.createElement("div", { style: { fontSize: 8, color: C.faint, marginTop: 2 } }, "Edit in \u2699 Settings \u2192 Employees")),
                         React.createElement("div", null,
                             React.createElement("div", { style: { fontSize: 9, color: C.dim, textTransform: "uppercase", marginBottom: 3 } }, "Hire Date"),
                             React.createElement("input", { type: "date", value: emp.hireDate || "", onChange: function (e) { setEmpField(u.id, "hireDate", e.target.value); }, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 6, color: C.white, padding: "6px 8px", fontSize: 12, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box", colorScheme: "dark" } }))),
@@ -10141,7 +10203,7 @@ function OwnerSettings(props){
   function saveSlotNames(s){ try{localStorage.setItem("pl_slot_names",JSON.stringify(s));}catch(e){} }
 
   function removeEmployee(uid){
-    if(!confirm("Remove this employee completely? Their slot will show as empty and available for a new hire.")) return;
+    if(!confirm("Remove this employee completely? Their slot will show as empty, available for a new hire, and their leaderboard points will be cleared.")) return;
     var removedName = (USERS.find(function(u){return u.id===uid;})||{}).name || uid;
     var s=Object.assign({},slots);
     delete s[uid];
@@ -10149,7 +10211,13 @@ function OwnerSettings(props){
     setSlots(s);
     clearCustomPw(uid);
     setCustoms(getCustomPws());
-    logAdminAction("Employee Removed", "Removed " + removedName + " (slot: " + uid + ")", props.currentUser ? props.currentUser.name : "Owner");
+    // Sweep their leaderboard bonus points too — not just hidden, actually cleared
+    try{
+      var bp=JSON.parse(localStorage.getItem("pl_bonus_pts")||"{}");
+      delete bp[removedName];
+      localStorage.setItem("pl_bonus_pts",JSON.stringify(bp));
+    }catch(e){}
+    logAdminAction("Employee Removed", "Removed " + removedName + " (slot: " + uid + ") — leaderboard points cleared", props.currentUser ? props.currentUser.name : "Owner");
   }
 
   function saveMasterPwFn(){
@@ -10368,9 +10436,7 @@ function LoginActivityView(){
 }
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
-var rootEl = document.getElementById("root");
-var reactRoot = ReactDOM.createRoot(rootEl);
-reactRoot.render(React.createElement(Root));
+// [render relocated to end of file]
 
 // ── TEST EMAIL TOOL — sends a real email and shows pass/fail ────────
 function TestEmailTool(){
@@ -10384,7 +10450,7 @@ function TestEmailTool(){
     var payload = {
       service_id: "service_e3qn0bs",
       template_id: "template_nxubdce",
-      user_id: "6Qs0HIOLjJ6jfWHtp",
+      user_id: "6Qs0HlOLjJ6jfWHtp",
       template_params: {
         to_email: toEmail,
         job_id: "TEST-" + Date.now(),
@@ -10431,3 +10497,646 @@ function TestEmailTool(){
       "If this fails with a 403 or 'origin not allowed' error: go to dashboard.emailjs.com \\u2192 Account \\u2192 Security \\u2192 add potentoperations.netlify.app to Allowed Origins. EmailJS blocks all sends from domains not on that list, with no error shown to the user \\u2014 only visible here.")
   );
 }
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// 🛡️ DRIVER SAFETY SCORE — built from real data, no hardware needed
+// ═══════════════════════════════════════════════════════════════════
+function calcDriverSafetyScore(driverName, jobs) {
+    var driverJobs = jobs.filter(function(j){
+        var name = j.assignedDriverName || j.salesperson || "";
+        return name === driverName;
+    });
+    if (driverJobs.length === 0) return null;
+
+    var completed = driverJobs.filter(function(j){ return j.status === "Completed" || j.status === "Paid"; });
+    var cancelled = driverJobs.filter(function(j){ return j.status === "Cancelled"; });
+
+    // On-time rate: completed jobs where updatedAt is same day or before scheduled date+1
+    var onTimeCount = 0;
+    completed.forEach(function(j){
+        if(!j.date || !j.updatedAt) { onTimeCount++; return; }
+        var scheduled = new Date(j.date);
+        var completedDate = new Date(j.updatedAt);
+        var diffDays = (completedDate - scheduled) / (1000*60*60*24);
+        if(diffDays <= 1) onTimeCount++;
+    });
+    var onTimeRate = completed.length > 0 ? (onTimeCount / completed.length) : 1;
+
+    // Completion rate: completed vs total (excluding still-in-progress)
+    var finished = completed.length + cancelled.length;
+    var completionRate = finished > 0 ? (completed.length / finished) : 1;
+
+    // HOS compliance: check last 7 days for any overDailyDrive/overWeekly violations
+    var hos = getDriverHOSStatus(driverName, jobs, new Date().toISOString().split("T")[0]);
+    var hosPenalty = (hos.overDailyDrive ? 15 : hos.nearDailyDrive ? 5 : 0) + (hos.overWeekly ? 15 : hos.nearWeekly ? 5 : 0);
+
+    // Volume bonus: more completed jobs = more data confidence, small bonus for consistency
+    var volumeBonus = Math.min(completed.length * 0.5, 10);
+
+    var score = Math.round(
+        (onTimeRate * 40) +
+        (completionRate * 35) +
+        volumeBonus +
+        15 // baseline
+        - hosPenalty
+    );
+    score = Math.max(0, Math.min(100, score));
+
+    return {
+        score: score,
+        onTimeRate: Math.round(onTimeRate*100),
+        completionRate: Math.round(completionRate*100),
+        totalJobs: driverJobs.length,
+        completedJobs: completed.length,
+        cancelledJobs: cancelled.length,
+        hosViolation: hos.overDailyDrive || hos.overWeekly,
+        hosWarning: hos.nearDailyDrive || hos.nearWeekly,
+    };
+}
+
+function scoreColor(score){
+    if(score >= 85) return "#1DB954";
+    if(score >= 70) return "#ED8936";
+    return "#E53E3E";
+}
+function scoreLabel(score){
+    if(score >= 85) return "Excellent";
+    if(score >= 70) return "Good";
+    if(score >= 50) return "Needs Attention";
+    return "At Risk";
+}
+
+function DriverSafetyScores(props){
+    var jobs = props.jobs || [];
+    var drivers = USERS.filter(function(u){ return u.role === "driver"; });
+    var scores = drivers.map(function(d){
+        return { driver: d, data: calcDriverSafetyScore(d.name, jobs) };
+    }).filter(function(s){ return s.data !== null; });
+
+    if(scores.length === 0){
+        return React.createElement("div", { style: { textAlign: "center", padding: "40px 20px", color: C.dim, fontSize: 13 } },
+            "No completed jobs yet to calculate driver safety scores from.");
+    }
+
+    return React.createElement("div", { style: { maxWidth: 780, margin: "0 auto" } },
+        React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "🛡️ Driver Safety Scores"),
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 20 } }, "Calculated from on-time delivery rate, job completion rate, and Hours of Service compliance. No hardware needed."),
+        scores.map(function(s){
+            var d = s.data;
+            var col = scoreColor(d.score);
+            return React.createElement("div", { key: s.driver.id, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "16px", marginBottom: 12 } },
+                React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 } },
+                    React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: C.white } }, s.driver.name),
+                    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
+                        React.createElement("div", { style: { fontSize: 24, fontWeight: 900, color: col } }, d.score),
+                        React.createElement("div", { style: { fontSize: 10, color: col, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 } }, scoreLabel(d.score)))
+                ),
+                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(110px,1fr))", gap: 8, marginBottom: (d.hosViolation||d.hosWarning) ? 10 : 0 } },
+                    React.createElement("div", null,
+                        React.createElement("div", { style: { fontSize: 10, color: C.dim } }, "On-Time Rate"),
+                        React.createElement("div", { style: { fontSize: 15, fontWeight: 700, color: C.white } }, d.onTimeRate + "%")),
+                    React.createElement("div", null,
+                        React.createElement("div", { style: { fontSize: 10, color: C.dim } }, "Completion Rate"),
+                        React.createElement("div", { style: { fontSize: 15, fontWeight: 700, color: C.white } }, d.completionRate + "%")),
+                    React.createElement("div", null,
+                        React.createElement("div", { style: { fontSize: 10, color: C.dim } }, "Jobs Completed"),
+                        React.createElement("div", { style: { fontSize: 15, fontWeight: 700, color: C.white } }, d.completedJobs + " / " + d.totalJobs))
+                ),
+                d.hosViolation && React.createElement("div", { style: { background: C.red+"18", border: "1px solid "+C.red+"44", borderRadius: 7, padding: "8px 12px", fontSize: 11, color: C.red, fontWeight: 700 } }, "⚠ HOS limit exceeded this week — review immediately"),
+                !d.hosViolation && d.hosWarning && React.createElement("div", { style: { background: C.orange+"18", border: "1px solid "+C.orange+"44", borderRadius: 7, padding: "8px 12px", fontSize: 11, color: C.orange, fontWeight: 700 } }, "⚠ Approaching HOS limit — monitor closely")
+            );
+        })
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 📍 GEOFENCING — alert when a truck enters/exits a defined zone
+// ═══════════════════════════════════════════════════════════════════
+var GEOFENCES_KEY = "pl_geofences";
+function loadGeofences(){ try{ return JSON.parse(localStorage.getItem(GEOFENCES_KEY)||"[]"); }catch(e){ return []; } }
+function saveGeofences(list){ try{ localStorage.setItem(GEOFENCES_KEY, JSON.stringify(list)); }catch(e){} }
+
+// Cloud sync so geofences work across all devices, same pattern as fleet/compliance
+async function loadGeofencesFromCloud(){
+    try{
+        var rows = await sbGet("safety_alerts","select=*&type=eq.geofence_config&limit=1");
+        if(rows && rows.length > 0 && rows[0].payload){
+            var parsed = JSON.parse(rows[0].payload);
+            saveGeofences(parsed);
+            return parsed;
+        }
+    }catch(e){}
+    return loadGeofences();
+}
+async function saveGeofencesToCloud(list){
+    saveGeofences(list);
+    try{
+        await fetch(SUPABASE_URL+"/rest/v1/safety_alerts?type=eq.geofence_config",{method:"DELETE",headers:sbHeaders()});
+        await fetch(SUPABASE_URL+"/rest/v1/safety_alerts",{
+            method:"POST", headers:Object.assign({},sbHeaders(),{Prefer:"return=minimal"}),
+            body:JSON.stringify({type:"geofence_config", message:"Geofence zone configuration", payload:JSON.stringify(list), created_at:new Date().toISOString()})
+        });
+    }catch(e){}
+}
+
+// Check all active driver locations against all geofences, return any that
+// just crossed a boundary since last check (tracked in-memory per session)
+var _geofenceLastState = {};
+function checkGeofenceCrossings(driverLocations, fences){
+    var events = [];
+    driverLocations.forEach(function(loc){
+        if(!loc.lat || !loc.lon) return;
+        fences.forEach(function(fence){
+            var dist = haversine([loc.lat, loc.lon], [fence.lat, fence.lng]);
+            var isInside = dist <= fence.radiusMiles;
+            var key = loc.driver_id + "::" + fence.id;
+            var wasInside = _geofenceLastState[key];
+            if(wasInside === undefined){
+                _geofenceLastState[key] = isInside;
+                return; // don't fire on first check, only on actual transitions
+            }
+            if(isInside && !wasInside){
+                events.push({driverId: loc.driver_id, fenceName: fence.name, type: "entered", ts: new Date().toISOString()});
+            } else if(!isInside && wasInside){
+                events.push({driverId: loc.driver_id, fenceName: fence.name, type: "exited", ts: new Date().toISOString()});
+            }
+            _geofenceLastState[key] = isInside;
+        });
+    });
+    return events;
+}
+
+function GeofenceManager(props){
+    var [fences, setFences] = useState([]);
+    var [loading, setLoading] = useState(true);
+    var [showAdd, setShowAdd] = useState(false);
+    var [form, setForm] = useState({name:"", address:"", radiusMiles:"0.5"});
+    var [geocoding, setGeocoding] = useState(false);
+    var [driverLocs, setDriverLocs] = useState([]);
+    var [recentEvents, setRecentEvents] = useState([]);
+
+    useEffect(function(){
+        loadGeofencesFromCloud().then(function(list){ setFences(list); setLoading(false); });
+    }, []);
+
+    useEffect(function(){
+        function poll(){
+            sbGet("driver_locations","select=*").then(function(rows){
+                var locs = Array.isArray(rows) ? rows : [];
+                setDriverLocs(locs);
+                var newEvents = checkGeofenceCrossings(locs, fences);
+                if(newEvents.length > 0){
+                    setRecentEvents(function(prev){ return [...newEvents, ...prev].slice(0, 20); });
+                }
+            }).catch(function(){});
+        }
+        poll();
+        var interval = setInterval(poll, 15000);
+        return function(){ clearInterval(interval); };
+    }, [fences]);
+
+    async function geocodeAndAdd(){
+        if(!form.name || !form.address){ alert("Enter a name and address."); return; }
+        setGeocoding(true);
+        var coords = await geocodeAddress(form.address);
+        setGeocoding(false);
+        if(!coords){ alert("Could not find that address. Try being more specific."); return; }
+        var newFence = {
+            id: "fence-" + Date.now(),
+            name: form.name,
+            address: form.address,
+            lat: coords[0], lng: coords[1],
+            radiusMiles: Number(form.radiusMiles) || 0.5,
+            createdAt: new Date().toISOString()
+        };
+        var updated = [...fences, newFence];
+        setFences(updated);
+        saveGeofencesToCloud(updated);
+        setForm({name:"", address:"", radiusMiles:"0.5"});
+        setShowAdd(false);
+    }
+
+    function removeFence(id){
+        if(!confirm("Delete this geofence zone?")) return;
+        var updated = fences.filter(function(f){ return f.id !== id; });
+        setFences(updated);
+        saveGeofencesToCloud(updated);
+    }
+
+    var activeDriversInZones = {};
+    fences.forEach(function(fence){
+        var inside = driverLocs.filter(function(loc){
+            if(!loc.lat || !loc.lon) return false;
+            return haversine([loc.lat, loc.lon], [fence.lat, fence.lng]) <= fence.radiusMiles;
+        });
+        activeDriversInZones[fence.id] = inside;
+    });
+
+    if(loading) return React.createElement("div", { style: { textAlign: "center", padding: 40, color: C.dim } }, "Loading geofence zones...");
+
+    return React.createElement("div", { style: { maxWidth: 780, margin: "0 auto" } },
+        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 } },
+            React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white } }, "📍 Geofencing"),
+            React.createElement("button", { onClick: function(){ setShowAdd(!showAdd); }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 7, padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "+ Add Zone")
+        ),
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 20 } }, "Get alerted the instant a truck enters or leaves a customer site, yard, or job zone — no hardware, uses your existing GPS."),
+
+        showAdd && React.createElement("div", { style: { background: C.card, border: "1px solid " + C.orange + "44", borderRadius: 12, padding: "16px", marginBottom: 16 } },
+            React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.white, marginBottom: 10 } }, "New Geofence Zone"),
+            React.createElement("input", { value: form.name, onChange: function(e){ setForm(function(p){ return Object.assign({},p,{name:e.target.value}); }); }, placeholder: "Zone name (e.g. Customer Warehouse, Main Yard)", style: { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "9px 12px", fontSize: 13, outline: "none", fontFamily: "inherit", marginBottom: 8, boxSizing: "border-box" } }),
+            React.createElement("input", { value: form.address, onChange: function(e){ setForm(function(p){ return Object.assign({},p,{address:e.target.value}); }); }, placeholder: "Full address (e.g. 123 Main St, Atlanta, GA)", style: { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "9px 12px", fontSize: 13, outline: "none", fontFamily: "inherit", marginBottom: 8, boxSizing: "border-box" } }),
+            React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", marginBottom: 12 } },
+                React.createElement("span", { style: { fontSize: 12, color: C.dim } }, "Radius:"),
+                React.createElement("input", { type: "number", step: "0.1", value: form.radiusMiles, onChange: function(e){ setForm(function(p){ return Object.assign({},p,{radiusMiles:e.target.value}); }); }, style: { width: 80, background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "7px 10px", fontSize: 13, outline: "none", fontFamily: "inherit" } }),
+                React.createElement("span", { style: { fontSize: 12, color: C.dim } }, "miles")
+            ),
+            React.createElement("div", { style: { display: "flex", gap: 8 } },
+                React.createElement("button", { onClick: geocodeAndAdd, disabled: geocoding, style: { flex: 1, background: C.green, color: "#000", border: "none", borderRadius: 7, padding: "9px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, geocoding ? "Finding address..." : "✅ Create Zone"),
+                React.createElement("button", { onClick: function(){ setShowAdd(false); }, style: { background: "transparent", color: C.dim, border: "1px solid " + C.border, borderRadius: 7, padding: "9px 14px", fontSize: 12, cursor: "pointer", fontFamily: "inherit" } }, "Cancel")
+            )
+        ),
+
+        fences.length === 0 && !showAdd && React.createElement("div", { style: { textAlign: "center", padding: "40px 20px", color: C.dim, fontSize: 13 } }, "No geofence zones yet. Add one to start getting entry/exit alerts."),
+
+        fences.map(function(fence){
+            var inside = activeDriversInZones[fence.id] || [];
+            return React.createElement("div", { key: fence.id, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "14px 16px", marginBottom: 10 } },
+                React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" } },
+                    React.createElement("div", null,
+                        React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.white } }, fence.name),
+                        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 2 } }, fence.address),
+                        React.createElement("div", { style: { fontSize: 10, color: C.faint, marginTop: 2 } }, fence.radiusMiles + " mile radius")
+                    ),
+                    React.createElement("button", { onClick: function(){ removeFence(fence.id); }, style: { background: "none", border: "none", color: C.red, cursor: "pointer", fontSize: 16, fontFamily: "inherit" } }, "✕")
+                ),
+                React.createElement("div", { style: { marginTop: 10, paddingTop: 10, borderTop: "1px solid " + C.border } },
+                    inside.length === 0
+                        ? React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "No trucks currently in this zone")
+                        : React.createElement("div", { style: { fontSize: 11, color: C.green, fontWeight: 700 } }, "🟢 " + inside.length + " truck" + (inside.length !== 1 ? "s" : "") + " currently in zone")
+                )
+            );
+        }),
+
+        recentEvents.length > 0 && React.createElement("div", { style: { marginTop: 20 } },
+            React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.white, marginBottom: 10 } }, "Recent Zone Activity"),
+            recentEvents.map(function(ev, i){
+                return React.createElement("div", { key: i, style: { display: "flex", justifyContent: "space-between", padding: "8px 12px", background: C.surface, borderRadius: 7, marginBottom: 5, fontSize: 11 } },
+                    React.createElement("span", { style: { color: ev.type === "entered" ? C.green : C.orange, fontWeight: 700 } }, (ev.type === "entered" ? "🟢 Entered " : "🟠 Exited ") + ev.fenceName),
+                    React.createElement("span", { style: { color: C.dim } }, new Date(ev.ts).toLocaleTimeString())
+                );
+            })
+        )
+    );
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// 📅 FLEX PAY TRACKER — track installment plans, mark payments, enforce suspension
+// ═══════════════════════════════════════════════════════════════════
+function FlexPayTracker(){
+  var [plans, setPlans] = useState([]);
+  var [loading, setLoading] = useState(true);
+  var [expanded, setExpanded] = useState(null);
+
+  function loadPlans(){
+    setLoading(true);
+    fetch(SUPABASE_URL+"/rest/v1/waitlist?status=in.(flex_pay_active,flex_pay_suspended,flex_pay_paid_off)&order=created_at.desc",{
+      headers:{apikey:SUPABASE_ANON_KEY,Authorization:"Bearer "+SUPABASE_ANON_KEY}
+    }).then(function(r){return r.json();}).then(function(data){
+      var parsed = (Array.isArray(data)?data:[]).map(function(row){
+        var planData = {};
+        try{ planData = JSON.parse(row.fleet_size||"{}"); }catch(e){}
+        return Object.assign({}, row, { plan: planData });
+      });
+      setPlans(parsed);
+      setLoading(false);
+    }).catch(function(){setLoading(false);});
+  }
+  useEffect(function(){ loadPlans(); }, []);
+
+  function daysUntil(dateStr){
+    var due = new Date(dateStr);
+    var now = new Date();
+    var diff = Math.ceil((due - now) / (1000*60*60*24));
+    return diff;
+  }
+
+  function missedCount(plan){
+    if(!plan.plan || !plan.plan.schedule) return 0;
+    var today = new Date().toISOString().slice(0,10);
+    return plan.plan.schedule.filter(function(p){
+      return p.status === 'scheduled' && p.due_date < today && daysUntil(p.due_date) < -2; // past 2-day grace
+    }).length;
+  }
+
+  async function markPaid(planId, paymentNumber){
+    var plan = plans.find(function(p){return p.id===planId;});
+    if(!plan) return;
+    var updated = Object.assign({}, plan.plan);
+    updated.schedule = updated.schedule.map(function(p){
+      return p.payment_number === paymentNumber ? Object.assign({},p,{status:'paid', paid_at:new Date().toISOString()}) : p;
+    });
+    await fetch(SUPABASE_URL+"/rest/v1/waitlist?id=eq."+planId,{
+      method:"PATCH", headers:sbHeaders(),
+      body:JSON.stringify({fleet_size:JSON.stringify(updated)})
+    });
+    logAdminAction("Flex Pay Payment Marked Paid", plan.company+" — payment #"+paymentNumber, "Owner");
+    loadPlans();
+  }
+
+  async function suspendAccess(planId){
+    if(!confirm("Suspend this customer's access? They will need to pay the full remaining balance to restore it, and will be permanently ineligible for Flex Pay on future purchases.")) return;
+    var plan = plans.find(function(p){return p.id===planId;});
+    if(!plan) return;
+    var updated = Object.assign({}, plan.plan, { access_status:'suspended', flex_eligible_again:false });
+    await fetch(SUPABASE_URL+"/rest/v1/waitlist?id=eq."+planId,{
+      method:"PATCH", headers:sbHeaders(),
+      body:JSON.stringify({status:'flex_pay_suspended', fleet_size:JSON.stringify(updated)})
+    });
+    logAdminAction("Flex Pay SUSPENDED", plan.company+" — access suspended for missed payments", "Owner");
+    loadPlans();
+  }
+
+  async function restoreAccess(planId){
+    if(!confirm("Restore access? Only do this after the full remaining balance has been collected.")) return;
+    var plan = plans.find(function(p){return p.id===planId;});
+    if(!plan) return;
+    var updated = Object.assign({}, plan.plan, { access_status:'active' });
+    await fetch(SUPABASE_URL+"/rest/v1/waitlist?id=eq."+planId,{
+      method:"PATCH", headers:sbHeaders(),
+      body:JSON.stringify({status:'flex_pay_paid_off', fleet_size:JSON.stringify(updated)})
+    });
+    logAdminAction("Flex Pay Restored", plan.company+" — full balance collected, access restored", "Owner");
+    loadPlans();
+  }
+
+  if(loading) return React.createElement("div",{style:{textAlign:"center",padding:40,color:C.dim}},"Loading Flex Pay plans...");
+
+  var activePlans = plans.filter(function(p){return p.status==='flex_pay_active';});
+  var suspendedPlans = plans.filter(function(p){return p.status==='flex_pay_suspended';});
+  var paidOffPlans = plans.filter(function(p){return p.status==='flex_pay_paid_off';});
+
+  return React.createElement("div",{style:{maxWidth:820,margin:"0 auto"}},
+    React.createElement("div",{style:{fontSize:18,fontWeight:900,color:C.white,marginBottom:4}},"📅 Flex Pay Tracker"),
+    React.createElement("div",{style:{fontSize:11,color:C.dim,marginBottom:20}},"Track installment plans, mark monthly payments, and enforce suspension on missed payments."),
+
+    React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,marginBottom:20}},
+      React.createElement("div",{style:{background:C.card,border:"1px solid "+C.border,borderRadius:10,padding:"12px 14px"}},
+        React.createElement("div",{style:{fontSize:9,color:C.dim,textTransform:"uppercase",marginBottom:3}},"Active Plans"),
+        React.createElement("div",{style:{fontSize:20,fontWeight:900,color:C.green}},activePlans.length)),
+      React.createElement("div",{style:{background:C.card,border:"1px solid "+C.border,borderRadius:10,padding:"12px 14px"}},
+        React.createElement("div",{style:{fontSize:9,color:C.dim,textTransform:"uppercase",marginBottom:3}},"Suspended"),
+        React.createElement("div",{style:{fontSize:20,fontWeight:900,color:C.red}},suspendedPlans.length)),
+      React.createElement("div",{style:{background:C.card,border:"1px solid "+C.border,borderRadius:10,padding:"12px 14px"}},
+        React.createElement("div",{style:{fontSize:9,color:C.dim,textTransform:"uppercase",marginBottom:3}},"Paid Off"),
+        React.createElement("div",{style:{fontSize:20,fontWeight:900,color:C.blue}},paidOffPlans.length))
+    ),
+
+    plans.length===0 && React.createElement("div",{style:{textAlign:"center",padding:"40px 20px",color:C.dim,fontSize:13}},"No Flex Pay plans yet."),
+
+    plans.map(function(row){
+      var plan = row.plan || {};
+      var schedule = plan.schedule || [];
+      var paidCount = schedule.filter(function(p){return p.status==='paid';}).length;
+      var missed = missedCount(row);
+      var isExpanded = expanded === row.id;
+      var isSuspended = row.status === 'flex_pay_suspended';
+      var isPaidOff = row.status === 'flex_pay_paid_off';
+      var remainingBalance = plan.total_price - plan.down_paid - (paidCount * plan.monthly_amount);
+
+      return React.createElement("div",{key:row.id,style:{background:C.card,border:"1px solid "+(isSuspended?C.red+"66":isPaidOff?C.blue+"44":C.border),borderRadius:12,padding:"14px 16px",marginBottom:10}},
+        React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"},onClick:function(){setExpanded(isExpanded?null:row.id);}},
+          React.createElement("div",null,
+            React.createElement("div",{style:{fontSize:13,fontWeight:700,color:C.white}},row.company),
+            React.createElement("div",{style:{fontSize:11,color:C.dim,marginTop:2}},row.tier+" · "+row.contact+" · $"+(plan.total_price||0).toLocaleString())
+          ),
+          React.createElement("div",{style:{display:"flex",alignItems:"center",gap:10}},
+            isSuspended && React.createElement("span",{style:{fontSize:10,fontWeight:700,color:C.red,background:C.red+"18",borderRadius:5,padding:"3px 8px"}},"🔴 SUSPENDED"),
+            isPaidOff && React.createElement("span",{style:{fontSize:10,fontWeight:700,color:C.blue,background:C.blue+"18",borderRadius:5,padding:"3px 8px"}},"✅ PAID OFF"),
+            !isSuspended && !isPaidOff && missed>0 && React.createElement("span",{style:{fontSize:10,fontWeight:700,color:C.red,background:C.red+"18",borderRadius:5,padding:"3px 8px"}},missed+" MISSED"),
+            React.createElement("span",{style:{fontSize:12,color:C.dim}},paidCount+"/12 paid"),
+            React.createElement("span",{style:{color:C.dim}},isExpanded?"▲":"▼")
+          )
+        ),
+
+        isExpanded && React.createElement("div",{style:{marginTop:14,paddingTop:14,borderTop:"1px solid "+C.border}},
+          React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}},
+            React.createElement("div",null,
+              React.createElement("div",{style:{fontSize:9,color:C.dim}},"Down Paid"),
+              React.createElement("div",{style:{fontSize:13,fontWeight:700,color:C.green}},"$"+(plan.down_paid||0).toLocaleString())),
+            React.createElement("div",null,
+              React.createElement("div",{style:{fontSize:9,color:C.dim}},"Monthly"),
+              React.createElement("div",{style:{fontSize:13,fontWeight:700,color:C.white}},"$"+(plan.monthly_amount||0).toLocaleString())),
+            React.createElement("div",null,
+              React.createElement("div",{style:{fontSize:9,color:C.dim}},"Remaining Balance"),
+              React.createElement("div",{style:{fontSize:13,fontWeight:700,color:C.orange}},"$"+Math.max(0,remainingBalance).toLocaleString()))
+          ),
+
+          React.createElement("div",{style:{fontSize:11,fontWeight:700,color:C.white,marginBottom:8}},"Payment Schedule"),
+          schedule.map(function(p){
+            var isPastDue = p.status==='scheduled' && p.due_date < new Date().toISOString().slice(0,10);
+            var daysLate = isPastDue ? Math.abs(daysUntil(p.due_date)) : 0;
+            var inGrace = isPastDue && daysLate <= 2;
+            var isLate = isPastDue && daysLate > 2;
+            return React.createElement("div",{key:p.payment_number,style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:C.surface,borderRadius:7,marginBottom:4}},
+              React.createElement("div",{style:{fontSize:11,color:C.dim}},
+                "#"+p.payment_number+" — "+p.due_date+" — $"+p.amount.toLocaleString(),
+                inGrace && React.createElement("span",{style:{color:C.orange,marginLeft:6,fontWeight:700}},"(grace period)"),
+                isLate && React.createElement("span",{style:{color:C.red,marginLeft:6,fontWeight:700}},"("+daysLate+" days late)")
+              ),
+              p.status==='paid'
+                ? React.createElement("span",{style:{fontSize:10,color:C.green,fontWeight:700}},"✅ Paid")
+                : React.createElement("button",{onClick:function(){markPaid(row.id,p.payment_number);},style:{background:C.green,color:"#000",border:"none",borderRadius:5,padding:"4px 10px",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},"Mark Paid")
+            );
+          }),
+
+          React.createElement("div",{style:{display:"flex",gap:8,marginTop:14}},
+            !isSuspended && !isPaidOff && React.createElement("button",{onClick:function(){suspendAccess(row.id);},style:{flex:1,background:C.red+"18",border:"1px solid "+C.red+"44",color:C.red,borderRadius:7,padding:"8px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},"🔴 Suspend Access (Missed Payment)"),
+            isSuspended && React.createElement("button",{onClick:function(){restoreAccess(row.id);},style:{flex:1,background:C.green+"18",border:"1px solid "+C.green+"44",color:C.green,borderRadius:7,padding:"8px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},"✅ Restore Access (Full Balance Collected)")
+          )
+        )
+      );
+    })
+  );
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// 🌦️ WEATHER — Open-Meteo, 100% free, zero signup, zero API key
+// ═══════════════════════════════════════════════════════════════════
+function getWeatherRisk(lat, lon, dateStr) {
+    if (!lat || !lon) return Promise.resolve(null);
+    var url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon +
+        "&daily=precipitation_probability_max,windspeed_10m_max,weathercode&timezone=auto" +
+        (dateStr ? "&start_date=" + dateStr + "&end_date=" + dateStr : "");
+    return fetch(url).then(function(r){ return r.json(); }).then(function(data){
+        if(!data || !data.daily || !data.daily.time || data.daily.time.length === 0) return null;
+        var precip = data.daily.precipitation_probability_max[0];
+        var wind = data.daily.windspeed_10m_max[0];
+        var code = data.daily.weathercode[0];
+        var risk = "low";
+        var reasons = [];
+        if(precip >= 70){ risk = "high"; reasons.push(precip+"% chance of precipitation"); }
+        else if(precip >= 40){ risk = "medium"; reasons.push(precip+"% chance of precipitation"); }
+        if(wind >= 35){ risk = "high"; reasons.push("winds up to "+Math.round(wind)+" mph"); }
+        else if(wind >= 20 && risk === "low"){ risk = "medium"; reasons.push("winds up to "+Math.round(wind)+" mph"); }
+        // WMO weather codes: 95-99 = thunderstorm, 71-77 = snow, 45-48 = fog
+        if(code >= 95){ risk = "high"; reasons.push("thunderstorms forecast"); }
+        else if(code >= 71 && code <= 77){ risk = "high"; reasons.push("snow forecast"); }
+        return { risk: risk, precip: precip, wind: Math.round(wind), reasons: reasons };
+    }).catch(function(){ return null; });
+}
+
+function WeatherRiskBadge(props){
+    var lat = props.lat, lon = props.lon, date = props.date;
+    var [weather, setWeather] = useState(null);
+    var [loading, setLoading] = useState(true);
+    useEffect(function(){
+        if(!lat || !lon){ setLoading(false); return; }
+        getWeatherRisk(lat, lon, date).then(function(w){ setWeather(w); setLoading(false); });
+    }, [lat, lon, date]);
+    if(loading) return null;
+    if(!weather || weather.risk === "low") return null;
+    var color = weather.risk === "high" ? C.red : C.orange;
+    return React.createElement("div", { style: { background: color+"18", border: "1px solid "+color+"44", borderRadius: 7, padding: "6px 10px", fontSize: 11, color: color, fontWeight: 700, marginTop: 6 } },
+        "🌦️ Weather risk: "+weather.reasons.join(", "));
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 🗺️ ROUTE OPTIMIZATION — OSRM public demo server, free, no key
+// Falls back silently to existing haversine estimate if demo server
+// is unavailable (it has no uptime guarantee — this is expected).
+// ═══════════════════════════════════════════════════════════════════
+function getRealRoute(originCoords, destCoords) {
+    if(!originCoords || !destCoords) return Promise.resolve(null);
+    // OSRM expects lon,lat order (opposite of most APIs)
+    var coords = originCoords[1]+","+originCoords[0]+";"+destCoords[1]+","+destCoords[0];
+    var url = "https://router.project-osrm.org/route/v1/driving/"+coords+"?overview=false&alternatives=false&steps=false";
+    return fetch(url).then(function(r){ return r.json(); }).then(function(data){
+        if(!data || data.code !== "Ok" || !data.routes || !data.routes[0]) return null;
+        var route = data.routes[0];
+        return {
+            miles: Math.round(route.distance / 1609.34),
+            minutes: Math.round(route.duration / 60),
+            source: "osrm"
+        };
+    }).catch(function(){ return null; }); // silent fallback — demo server has no SLA
+}
+
+async function calcRealMilesAndETA(originAddress, destAddress) {
+    var results = await Promise.all([geocodeAddress(originAddress), geocodeAddress(destAddress)]);
+    var a = results[0], b = results[1];
+    if(!a || !b) return null;
+    var realRoute = await getRealRoute(a, b);
+    if(realRoute) return realRoute;
+    // Fallback to existing haversine + road-factor estimate
+    return { miles: Math.round(haversine(a,b) * 1.25), minutes: null, source: "estimate" };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 🛡️ FMCSA SAFER LOOKUP — free official government data, no key
+// Uses the same Socrata dataset pattern already proven to work.
+// ═══════════════════════════════════════════════════════════════════
+function lookupCarrierSafety(dotNumber) {
+    if(!dotNumber) return Promise.resolve(null);
+    var clean = String(dotNumber).replace(/\D/g,"");
+    if(!clean) return Promise.resolve(null);
+    var url = "https://data.transportation.gov/resource/dzwy-vzbf.json?dot_number="+clean;
+    return fetch(url).then(function(r){ return r.json(); }).then(function(data){
+        if(!Array.isArray(data) || data.length === 0) return null;
+        var d = data[0];
+        return {
+            dotNumber: clean,
+            legalName: d.legal_name || d.dba_name || "Unknown",
+            safetyRating: d.safety_rating || "Not Rated",
+            operatingStatus: d.operating_status || d.status || "Unknown",
+            powerUnits: d.power_units || d.nbr_power_unit || "—",
+            drivers: d.drivers || d.nbr_drivers || "—",
+            outOfService: d.out_of_service === "Y" || d.out_of_service === true,
+        };
+    }).catch(function(){ return null; });
+}
+
+function JobWeatherCheck(props){
+    var destination = props.destination, date = props.date;
+    var [coords, setCoords] = useState(null);
+    useEffect(function(){
+        if(!destination) return;
+        geocodeAddress(destination).then(function(c){ setCoords(c); });
+    }, [destination]);
+    if(!coords) return null;
+    return React.createElement(WeatherRiskBadge, { lat: coords[0], lon: coords[1], date: date });
+}
+
+function JobRouteETA(props){
+    var origin = props.origin, destination = props.destination;
+    var [eta, setEta] = useState(null);
+    useEffect(function(){
+        if(!origin || !destination) return;
+        var cancelled = false;
+        calcRealMilesAndETA(origin, destination).then(function(r){
+            if(!cancelled && r && r.minutes) setEta(r);
+        });
+        return function(){ cancelled = true; };
+    }, [origin, destination]);
+    if(!eta || !eta.minutes) return null; // silent — no ETA shown if OSRM unavailable, no error, no risk
+    var hrs = Math.floor(eta.minutes / 60);
+    var mins = eta.minutes % 60;
+    var label = hrs > 0 ? hrs+"h "+mins+"m" : mins+" min";
+    return React.createElement("div", { style: { fontSize: 11, color: C.blue, marginTop: 4 } }, "🗺️ Est. drive time: "+label+" ("+eta.miles+" mi road route)");
+}
+
+function CarrierSafetyLookup(props){
+    var [dot, setDot] = useState(props.initialDot || "");
+    var [result, setResult] = useState(null);
+    var [loading, setLoading] = useState(false);
+    var [searched, setSearched] = useState(false);
+
+    async function doLookup(){
+        if(!dot.trim()) return;
+        setLoading(true);
+        setSearched(true);
+        var res = await lookupCarrierSafety(dot);
+        setResult(res);
+        setLoading(false);
+        if(props.onResult) props.onResult(res);
+    }
+
+    return React.createElement("div", { style: { background: C.card, border: "1px solid "+C.border, borderRadius: 10, padding: "14px 16px", marginBottom: 12 } },
+        React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.white, marginBottom: 8 } }, "🛡️ FMCSA Safety Lookup — Free Official Data"),
+        React.createElement("div", { style: { display: "flex", gap: 8 } },
+            React.createElement("input", { value: dot, onChange: function(e){ setDot(e.target.value); }, placeholder: "Enter DOT Number (e.g. 9166689)", style: { flex: 1, background: C.surface, border: "1px solid "+C.border, borderRadius: 7, color: C.white, padding: "8px 10px", fontSize: 13, outline: "none", fontFamily: "inherit" } }),
+            React.createElement("button", { onClick: doLookup, disabled: loading, style: { background: C.orange, color: "#000", border: "none", borderRadius: 7, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, loading ? "Looking up..." : "Look Up")
+        ),
+        searched && !loading && !result && React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 10 } }, "No record found for that DOT number. Double-check it and try again."),
+        result && React.createElement("div", { style: { marginTop: 12, paddingTop: 12, borderTop: "1px solid "+C.border } },
+            React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white, marginBottom: 6 } }, result.legalName),
+            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(110px,1fr))", gap: 8 } },
+                React.createElement("div", null,
+                    React.createElement("div", { style: { fontSize: 9, color: C.dim } }, "Safety Rating"),
+                    React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: result.safetyRating==="Satisfactory"?C.green:result.safetyRating==="Unsatisfactory"?C.red:C.orange } }, result.safetyRating)),
+                React.createElement("div", null,
+                    React.createElement("div", { style: { fontSize: 9, color: C.dim } }, "Operating Status"),
+                    React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.white } }, result.operatingStatus)),
+                React.createElement("div", null,
+                    React.createElement("div", { style: { fontSize: 9, color: C.dim } }, "Power Units"),
+                    React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.white } }, result.powerUnits)),
+                React.createElement("div", null,
+                    React.createElement("div", { style: { fontSize: 9, color: C.dim } }, "Out of Service"),
+                    React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: result.outOfService?C.red:C.green } }, result.outOfService?"YES ⚠":"No"))
+            )
+        )
+    );
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+var rootEl = document.getElementById("root");
+var reactRoot = ReactDOM.createRoot(rootEl);
+reactRoot.render(React.createElement(Root));
