@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>POTENT Logistics — Carrier / Broker Agreement</title>
+<script src="https://js.stripe.com/v3/"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#080808;color:#F2F2F2;font-family:'Segoe UI',Arial,sans-serif;min-height:100vh;}
+.hero{background:linear-gradient(135deg,#0d0d00,#080808);border-bottom:1px solid #1a1a1a;padding:36px 20px 28px;text-align:center;}
+.brand{font-size:11px;font-weight:700;color:#F0E000;letter-spacing:3px;margin-bottom:8px;}
+.hero h1{font-size:24px;font-weight:900;}
+.hero p{font-size:12px;color:#666;margin-top:6px;max-width:480px;margin-left:auto;margin-right:auto;}
+.container{max-width:800px;margin:0 auto;padding:24px 16px 60px;}
+.step{display:none;}.step.active{display:block;}
+.step-bar{display:flex;margin-bottom:24px;border-radius:10px;overflow:hidden;border:1px solid #1a1a1a;}
+.si{flex:1;padding:10px 4px;text-align:center;font-size:10px;font-weight:700;color:#333;background:#0d0d0d;border-right:1px solid #1a1a1a;}
+.si:last-child{border-right:none;}
+.si.active{background:#F0E00015;color:#F0E000;}
+.si.done{background:#1DB95412;color:#1DB954;}
+.card{background:#111;border:1px solid #1a1a1a;border-radius:12px;padding:20px;margin-bottom:14px;}
+.card h2{font-size:13px;font-weight:800;color:#F0E000;margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px;}
+.path{border:1px solid #1e1e1e;border-radius:10px;padding:18px;margin-bottom:12px;cursor:pointer;transition:.15s;}
+.path:hover,.path.sel{border-color:#F0E000;background:#F0E00008;}
+.path-icon{font-size:26px;margin-bottom:6px;}
+.path-name{font-size:14px;font-weight:800;color:#F2F2F2;margin-bottom:4px;}
+.path-desc{font-size:11px;color:#666;line-height:1.5;}
+label{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;margin-top:12px;}
+input,select{width:100%;background:#0d0d0d;border:1px solid #1e1e1e;border-radius:7px;color:#F2F2F2;padding:10px 12px;font-size:13px;outline:none;font-family:inherit;}
+input:focus,select:focus{border-color:#F0E000;}
+select{color-scheme:dark;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.agr{background:#060606;border:1px solid #1a1a1a;border-radius:8px;padding:16px;height:280px;overflow-y:auto;font-size:11px;color:#4a4a4a;line-height:1.8;margin-bottom:12px;}
+.agr h3{color:#F0E000;font-size:11px;margin:12px 0 4px;}
+.agr h3:first-child{margin-top:0;}
+.agr strong{color:#777;}
+.chk{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid #111;}
+.chk input[type=checkbox]{width:18px;height:18px;flex-shrink:0;margin-top:1px;accent-color:#F0E000;cursor:pointer;}
+.chk span{font-size:12px;color:#777;line-height:1.6;}
+.btn{width:100%;background:#F0E000;color:#000;border:none;border-radius:8px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;margin-top:8px;}
+.btn:hover{background:#e0d000;}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.btn-g{width:100%;background:transparent;color:#666;border:1px solid #1e1e1e;border-radius:8px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px;}
+.note{font-size:10px;color:#333;line-height:1.6;margin-top:6px;}
+.hl{background:#F0E00010;border:1px solid #F0E00030;border-radius:8px;padding:10px 14px;font-size:12px;color:#F0E000;font-weight:700;margin-bottom:12px;}
+.info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #0f0f0f;font-size:12px;}
+.info-row:last-child{border-bottom:none;}
+.ik{color:#555;} .iv{color:#F2F2F2;font-weight:700;}
+.success-wrap{text-align:center;padding:40px 16px;}
+.success-wrap h2{font-size:24px;font-weight:900;margin-bottom:6px;}
+.success-wrap p{font-size:13px;color:#666;margin-bottom:20px;}
+.badge{display:inline-block;background:#F0E00018;color:#F0E000;border:1px solid #F0E00033;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:700;margin:2px;}
+@media(max-width:500px){.g2{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="brand">POTENT PRÄDƏKT®</div>
+  <h1>POTENT Logistics LLC</h1>
+  <p>Carrier & Broker Agreement — for businesses hiring us as a 1099 contract carrier, or brokers tendering freight to us.</p>
+</div>
+
+<div class="container">
+
+  <div class="step-bar">
+    <div class="si active" id="b1">1. Select Path</div>
+    <div class="si" id="b2">2. Your Info</div>
+    <div class="si" id="b3">3. Agreement</div>
+    <div class="si" id="b4">4. Sign & Submit</div>
+    <div class="si" id="b5">5. Done</div>
+  </div>
+
+  <!-- STEP 1: PATH SELECT -->
+
+  <div class="step active" id="s1">
+    <div class="card">
+      <h2>Which describes you?</h2>
+
+```
+  <div class="path sel" data-path="hirer" onclick="pickPath(this)">
+    <div class="path-icon">🏢</div>
+    <div class="path-name">I'm hiring POTENT Logistics as a 1099 Contract Carrier</div>
+    <div class="path-desc">Your business needs freight moved and wants to engage POTENT Logistics LLC directly as an independent contractor carrier — not an employee. This agreement establishes that relationship clearly for tax and liability purposes.</div>
+  </div>
+
+  <div class="path" data-path="broker" onclick="pickPath(this)">
+    <div class="path-icon">📋</div>
+    <div class="path-name">I'm a Broker Tendering Freight to POTENT Logistics</div>
+    <div class="path-desc">You're a licensed freight broker who wants to tender loads to POTENT Logistics as a motor carrier. This agreement establishes broker-carrier terms, indemnification, and payment terms.</div>
+  </div>
+</div>
+<button class="btn" onclick="goToStep2()">Continue →</button>
+```
+
+  </div>
+
+  <!-- STEP 2: INFO -->
+
+  <div class="step" id="s2">
+    <div class="card">
+      <h2>Your Company Information</h2>
+      <div class="g2">
+        <div><label>Legal Company Name *</label><input id="iCompany" placeholder="ABC Logistics LLC"/></div>
+        <div><label>DBA (if different)</label><input id="iDBA" placeholder="Optional"/></div>
+      </div>
+      <div class="g2">
+        <div><label>Your Full Name *</label><input id="iName" placeholder="First Last"/></div>
+        <div><label>Title *</label><input id="iTitle" placeholder="Owner / Dispatcher / Broker Agent"/></div>
+      </div>
+      <div class="g2">
+        <div><label>Email *</label><input id="iEmail" type="email" placeholder="you@company.com"/></div>
+        <div><label>Phone *</label><input id="iPhone" type="tel" placeholder="(555) 000-0000"/></div>
+      </div>
+      <div id="brokerFields" style="display:none;">
+        <div class="g2">
+          <div><label>Broker MC Number *</label><input id="iBrokerMC" placeholder="MC-123456"/></div>
+          <div><label>Broker Bond / Trust (BMC-84 or BMC-85)</label><input id="iBrokerBond" placeholder="Optional but recommended"/></div>
+        </div>
+      </div>
+      <div class="g2">
+        <div><label>City *</label><input id="iCity" placeholder="Atlanta"/></div>
+        <div><label>State *</label><input id="iState" placeholder="GA"/></div>
+      </div>
+    </div>
+    <button class="btn" onclick="goToStep3()">Continue →</button>
+    <button class="btn-g" onclick="go(1)">← Back</button>
+  </div>
+
+  <!-- STEP 3: AGREEMENT -->
+
+  <div class="step" id="s3">
+    <div class="card">
+      <h2 id="agreementHeader">Carrier Agreement</h2>
+
+```
+  <div class="card" style="background:#0d0d00;border-color:#F0E00033;margin-bottom:12px;">
+    <div class="info-row"><span class="ik">Carrier</span><span class="iv">POTENT Logistics LLC</span></div>
+    <div class="info-row"><span class="ik">DOT Number</span><span class="iv">9166689</span></div>
+    <div class="info-row"><span class="ik">Operating Authority</span><span class="iv">Georgia — Intrastate</span></div>
+    <div class="info-row"><span class="ik">General Liability</span><span class="iv">$750,000</span></div>
+    <div class="info-row"><span class="ik">Cargo Insurance</span><span class="iv">$100,000</span></div>
+  </div>
+
+  <div class="agr" id="agreementText">
+    <h3>POTENT LOGISTICS LLC — CARRIER / BROKER AGREEMENT</h3>
+    <strong>Effective Date:</strong> <span id="aDate"></span><br/>
+    <strong>Carrier:</strong> POTENT Logistics LLC · DOT# 9166689 · Georgia Intrastate Authority<br/>
+    <strong>Insurance on File:</strong> $750,000 General Liability · $100,000 Cargo Liability<br/>
+    <strong>Counterparty:</strong> <span id="aCompany">Your Company</span><br/><br/>
+
+    <h3>1. INDEPENDENT CONTRACTOR STATUS</h3>
+    POTENT Logistics LLC operates as an independent contract motor carrier, not as an employee of the Counterparty. POTENT Logistics LLC maintains its own operating authority, equipment, insurance, and control over the manner and means of performing transportation services. Nothing in this Agreement creates an employer-employee relationship, partnership, or joint venture between the parties. POTENT Logistics LLC is solely responsible for its own tax obligations, including self-employment tax, and will receive a Form 1099-NEC for services rendered where applicable, not a W-2.
+
+    <h3>2. SCOPE OF SERVICES</h3>
+    POTENT Logistics LLC agrees to provide transportation services within the State of Georgia, consistent with its DOT registration and operating authority. Services are limited to intrastate transportation unless otherwise agreed in writing. Each load, shipment, or engagement shall be governed by a separate rate confirmation, bill of lading, or work order referencing this Agreement.
+
+    <h3>3. INSURANCE</h3>
+    POTENT Logistics LLC maintains general liability insurance of $750,000 and cargo liability insurance of $100,000, and will provide a Certificate of Insurance (COI) upon request. Counterparty is responsible for verifying that this coverage is adequate for the specific freight, value, or risk profile of goods being transported and may request additional cargo coverage limits be arranged separately if higher-value freight is involved.
+
+    <h3>4. RATES & PAYMENT TERMS</h3>
+    Rates for each shipment shall be agreed upon in writing (rate confirmation, invoice, or work order) prior to the transportation of goods. Payment terms are net 15 days from delivery and receipt of a valid invoice and proof of delivery, unless otherwise agreed in writing. Late payments beyond 30 days may accrue a 1.5% monthly late fee.
+
+    <h3>5. BROKER-SPECIFIC TERMS (if applicable)</h3>
+    If Counterparty is acting as a licensed property broker, Counterparty represents and warrants that it holds valid FMCSA broker authority and, where applicable, an active BMC-84 bond or BMC-85 trust fund. Counterparty agrees to provide accurate load information, including commodity, weight, pickup/delivery windows, and any special handling requirements, prior to dispatch. Double-brokering of loads tendered under this Agreement without POTENT Logistics LLC's prior written consent is strictly prohibited and constitutes a material breach.
+
+    <h3>6. INDEMNIFICATION</h3>
+    Each party agrees to indemnify and hold harmless the other party, its officers, employees, and agents from any claims, damages, losses, or expenses (including reasonable attorney's fees) arising from that party's negligence, willful misconduct, or breach of this Agreement. This provision survives termination of this Agreement.
+
+    <h3>7. CARGO CLAIMS</h3>
+    Any cargo loss or damage claims must be reported in writing within 9 months of delivery, consistent with the Carmack Amendment where applicable to interstate commerce, or applicable Georgia state law for intrastate shipments. POTENT Logistics LLC's liability for cargo loss or damage is limited to the lesser of the actual value of the goods or the cargo insurance limits stated above, except in cases of gross negligence or willful misconduct.
+
+    <h3>8. TERMINATION</h3>
+    Either party may terminate this Agreement with 30 days written notice. Termination does not affect obligations for shipments already tendered, in transit, or completed prior to the termination date.
+
+    <h3>9. CONFIDENTIALITY</h3>
+    Both parties agree to keep confidential any proprietary business information, rates, customer lists, and operational data shared in the course of this relationship, and not disclose such information to third parties without written consent.
+
+    <h3>10. GOVERNING LAW</h3>
+    This Agreement is governed by the laws of the State of Georgia. Any disputes shall be resolved in the courts of Rockdale County, Georgia, or through mediation/arbitration if both parties agree in writing.
+
+    <h3>11. ENTIRE AGREEMENT</h3>
+    This Agreement, together with any rate confirmations or work orders issued under it, constitutes the entire agreement between the parties and supersedes all prior negotiations or agreements, written or oral, relating to the subject matter herein.
+
+    <br/><br/>
+    <strong>POTENT Logistics LLC · DOT# 9166689 · © 2026 · All Rights Reserved</strong>
+  </div>
+
+  <div class="chk"><input type="checkbox" id="c1" onchange="chkAll()"/><span>I have read and agree to the Carrier/Broker Agreement in full.</span></div>
+  <div class="chk"><input type="checkbox" id="c2" onchange="chkAll()"/><span>I confirm the insurance and authority information shown above has been reviewed and is acceptable for our shipments.</span></div>
+  <div class="chk"><input type="checkbox" id="c3" onchange="chkAll()"/><span>I confirm I am authorized to sign this Agreement on behalf of <strong id="cCompany">my company</strong>.</span></div>
+  <div class="chk" id="brokerCheckbox" style="display:none;"><input type="checkbox" id="c4" onchange="chkAll()"/><span>I confirm our company holds valid, active FMCSA broker authority and required bond/trust coverage.</span></div>
+
+  <div style="margin-top:14px;">
+    <label>Electronic Signature — Type Your Full Legal Name *</label>
+    <input id="iSig" placeholder="Full legal name as electronic signature" oninput="chkAll()"/>
+    <div class="note">By typing your name, you are signing electronically under the ESIGN Act. This is a legally binding signature.</div>
+  </div>
+
+  <button class="btn" id="agreeBtn" disabled onclick="submitAgreement()" style="margin-top:14px;">✅ Sign & Submit Agreement</button>
+  <button class="btn-g" onclick="go(2)">← Back</button>
+</div>
+<button class="btn-g" onclick="dlAgreement()" style="margin-top:0;">📄 Download Agreement PDF</button>
+```
+
+  </div>
+
+  <!-- STEP 5: SUCCESS -->
+
+  <div class="step" id="s5">
+    <div class="success-wrap">
+      <div style="font-size:56px;margin-bottom:14px;">🤝</div>
+      <h2>Agreement Received</h2>
+      <p>Your signed agreement has been submitted. Anthony will follow up within 24 hours to confirm details and get you set up.</p>
+      <div style="margin:16px 0;">
+        <span class="badge">✓ Agreement Signed</span>
+        <span class="badge" style="background:#1DB95418;color:#1DB954;border-color:#1DB95433;">✓ On File</span>
+      </div>
+      <button class="btn" style="max-width:320px;margin:0 auto 8px;display:block;" onclick="dlSigned()">📄 Download Your Signed Agreement</button>
+      <div style="font-size:12px;color:#444;margin-top:10px;">Questions? <a href="tel:7706484228" style="color:#F0E000;">(770) 648-4228</a> · <a href="mailto:potentlogistics@pm.me" style="color:#F0E000;">potentlogistics@pm.me</a></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var S = { path:'hirer', company:'', dba:'', name:'', title:'', email:'', phone:'', city:'', state:'GA', brokerMC:'', brokerBond:'', sig:'' };
+
+window.addEventListener('load', function(){
+  if(window.emailjs) emailjs.init('6Qs0HlOLjJ6jfWHtp');
+  document.getElementById('aDate').textContent = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+});
+
+function go(n){
+  for(var i=1;i<=5;i++){
+    document.getElementById('s'+i).classList.toggle('active',i===n);
+    var b=document.getElementById('b'+i);
+    if(b){ b.classList.remove('active','done'); if(i===n)b.classList.add('active'); else if(i<n)b.classList.add('done'); }
+  }
+  window.scrollTo(0,0);
+}
+
+function pickPath(el){
+  document.querySelectorAll('.path').forEach(function(p){p.classList.remove('sel');});
+  el.classList.add('sel');
+  S.path = el.dataset.path;
+}
+
+function goToStep2(){
+  document.getElementById('brokerFields').style.display = S.path==='broker' ? 'block' : 'none';
+  go(2);
+}
+
+function goToStep3(){
+  S.company=document.getElementById('iCompany').value.trim();
+  S.dba=document.getElementById('iDBA').value.trim();
+  S.name=document.getElementById('iName').value.trim();
+  S.title=document.getElementById('iTitle').value.trim();
+  S.email=document.getElementById('iEmail').value.trim();
+  S.phone=document.getElementById('iPhone').value.trim();
+  S.city=document.getElementById('iCity').value.trim();
+  S.state=document.getElementById('iState').value.trim();
+  if(S.path==='broker'){
+    S.brokerMC=document.getElementById('iBrokerMC').value.trim();
+    S.brokerBond=document.getElementById('iBrokerBond').value.trim();
+    if(!S.brokerMC){alert('Broker MC Number is required.');return;}
+  }
+  if(!S.company||!S.name||!S.title||!S.email||!S.phone||!S.city||!S.state){alert('Please fill in all required fields.');return;}
+  if(!S.email.includes('@')){alert('Please enter a valid email address.');return;}
+
+  document.getElementById('agreementHeader').textContent = S.path==='broker' ? 'Broker-Carrier Agreement' : 'Carrier Agreement';
+  document.getElementById('aCompany').textContent = S.company + ' (' + S.name + ', ' + S.title + ')';
+  document.getElementById('cCompany').textContent = S.company;
+  document.getElementById('brokerCheckbox').style.display = S.path==='broker' ? 'flex' : 'none';
+  go(3);
+}
+
+function chkAll(){
+  S.sig = document.getElementById('iSig').value.trim();
+  var c1=document.getElementById('c1').checked;
+  var c2=document.getElementById('c2').checked;
+  var c3=document.getElementById('c3').checked;
+  var c4 = S.path==='broker' ? document.getElementById('c4').checked : true;
+  document.getElementById('agreeBtn').disabled = !(c1&&c2&&c3&&c4&&S.sig.length>3);
+}
+
+async function submitAgreement(){
+  if(window.emailjs){
+    try{
+      await emailjs.send('service_e3qn0bs','template_nxubdce',{
+        to_email:'potentlogistics@pm.me',
+        from_name:S.name+' — '+S.company,
+        subject:'🤝 New '+(S.path==='broker'?'Broker':'Carrier')+' Agreement Signed: '+S.company,
+        message:'NEW CARRIER/BROKER AGREEMENT SIGNED\\n\\nType: '+(S.path==='broker'?'Broker tendering freight':'Company hiring POTENT as 1099 carrier')+'\\nCompany: '+S.company+(S.dba?' (DBA '+S.dba+')':'')+'\\nContact: '+S.name+' ('+S.title+')\\nEmail: '+S.email+'\\nPhone: '+S.phone+'\\nCity: '+S.city+', '+S.state+(S.brokerMC?'\\nBroker MC#: '+S.brokerMC:'')+(S.brokerBond?'\\nBond/Trust: '+S.brokerBond:'')+'\\nSigned By: '+S.sig+'\\nDate: '+new Date().toLocaleString()
+      });
+    }catch(e){}
+  }
+  try{
+    fetch('https://ymvsatlrkzgxwzxybwmk.supabase.co/rest/v1/waitlist',{
+      method:'POST',
+      headers:{'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inltd nNhdGxya3pneHd6eHlid21rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxNDk2MzUsImV4cCI6MjA1OTcyNTYzNX0.T3Thhr5NJdbI4Ehp1vkhVEyPEg','Content-Type':'application/json'},
+      body:JSON.stringify({company:S.company,contact:S.name,email:S.email,phone:S.phone,tier:'Carrier/Broker Agreement - '+S.path,signature:S.sig,status:'signed',created_at:new Date().toISOString()})
+    });
+  }catch(e){}
+  go(5);
+}
+
+function dlAgreement(){ buildPDF(false); }
+function dlSigned(){ buildPDF(true); }
+
+function buildPDF(signed){
+  var {jsPDF}=window.jspdf;
+  var doc=new jsPDF();
+  var y=20; var lm=18; var pw=174;
+  function ln(t,sz,bold,col,ind){
+    doc.setFontSize(sz||10); doc.setFont('helvetica',bold?'bold':'normal'); doc.setTextColor(col||'#CCCCCC');
+    var lines=doc.splitTextToSize(t,pw-(ind||0));
+    doc.text(lines,lm+(ind||0),y);
+    y+=lines.length*(sz||10)*0.42+3;
+    if(y>275){doc.addPage();y=18;doc.setFillColor(8,8,8);doc.rect(0,0,210,297,'F');}
+  }
+  doc.setFillColor(8,8,8);doc.rect(0,0,210,297,'F');
+  doc.setFillColor(240,224,0);doc.rect(0,0,210,16,'F');
+  doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor('#000000');
+  doc.text('POTENT LOGISTICS LLC — CARRIER/BROKER AGREEMENT',105,10,{align:'center'});
+  y=24;
+  ln('POTENT PRÄDƏKT® · POTENT Logistics LLC',9,true,'#F0E000');
+  y+=3;
+  ln('DOT# 9166689 · Georgia Intrastate Authority',8,false,'#666666');
+  ln('$750,000 General Liability · $100,000 Cargo Liability',8,false,'#666666');
+  if(S.company) ln('Counterparty: '+S.company+' ('+S.name+', '+S.title+')',8,false,'#666666');
+  if(S.path==='broker'&&S.brokerMC) ln('Broker MC#: '+S.brokerMC,8,false,'#666666');
+  y+=6;
+  var secs=[
+    ['1. INDEPENDENT CONTRACTOR STATUS','POTENT Logistics LLC operates as an independent contract motor carrier, not an employee. Maintains own authority, equipment, and insurance. Tax obligations belong to POTENT, not W-2.'],
+    ['2. SCOPE OF SERVICES','Transportation services within Georgia, consistent with DOT registration. Each load governed by separate rate confirmation or work order.'],
+    ['3. INSURANCE','$750,000 general liability, $100,000 cargo liability on file. COI available on request. Counterparty responsible for verifying adequacy for their freight value.'],
+    ['4. RATES & PAYMENT','Rates agreed in writing per shipment. Net 15 days from delivery + valid invoice/POD. 1.5% monthly late fee beyond 30 days.'],
+    ['5. BROKER TERMS','If Counterparty is a broker: valid FMCSA authority and bond/trust required. No double-brokering without written consent.'],
+    ['6. INDEMNIFICATION','Each party indemnifies the other for claims arising from their own negligence, misconduct, or breach. Survives termination.'],
+    ['7. CARGO CLAIMS','Must be reported within 9 months of delivery. Liability limited to actual value or insurance limits, except gross negligence.'],
+    ['8. TERMINATION','30 days written notice by either party. Does not affect shipments already in progress.'],
+    ['9. CONFIDENTIALITY','Both parties keep proprietary business information confidential.'],
+    ['10. GOVERNING LAW','State of Georgia. Rockdale County courts.'],
+  ];
+  secs.forEach(function(s){
+    ln(s[0],9,true,'#F0E000'); y+=1; ln(s[1],8,false,'#AAAAAA',6); y+=4;
+  });
+  if(signed&&S.sig){
+    y+=8;
+    doc.setDrawColor(240,224,0);doc.setLineWidth(0.5);doc.line(lm,y,lm+130,y);y+=6;
+    ln('Electronic Signature: '+S.sig,10,true,'#F0E000');
+    ln('Full Name: '+S.name+'  |  Title: '+S.title,9,false,'#888888');
+    if(S.company) ln('Company: '+S.company,9,false,'#888888');
+    ln('Date Signed: '+new Date().toLocaleString(),9,false,'#888888');
+  }
+  y+=8;
+  ln('© 2026 POTENT LOGISTICS LLC · POTENT PRÄDƏKT® · All Rights Reserved',8,false,'#333333');
+  var fn=signed?'POTENT-Carrier-Agreement-SIGNED-'+(S.company||'').replace(/[^a-z0-9]/gi,'_')+'.pdf':'POTENT-Carrier-Agreement.pdf';
+  doc.save(fn);
+}
+</script>
+
+</body>
+</html>
