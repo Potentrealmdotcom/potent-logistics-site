@@ -4928,6 +4928,12 @@ function getTabGroups() {
     ];
 }
 // ── TAB NAVIGATION — dropdown "More" sheet, 5 simplified groups ──
+var PRIMARY_TAB_ORDER = [
+    ["quote", "📞 Quote"],
+    ["jobs", "📋 Jobs"],
+    ["leads", "📋 Leads"],
+    ["driverapp", "🚐 Driver"],
+];
 function CategoryNav({ tab, setTab, currentUser }) {
     var [showMore, setShowMore] = useState(false);
     var hasAccess = function (id) { return !currentUser || currentUser.access.indexOf(id) > -1; };
