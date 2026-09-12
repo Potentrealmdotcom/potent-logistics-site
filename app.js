@@ -16,7 +16,7 @@ var C = {
 // To add a dispatcher: copy any dispatch line, change id/name/password.
 // Passwords: owner sets them, employees never share.
 var USERS = [
-    { id: "potent", name: "POTENT", role: "owner", password: "POTENT0421", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash", "geofence", "flexpay"] },
+    { id: "potent", name: "POTENT", role: "owner", password: "HJWG9099AI", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash", "geofence", "flexpay", "referrals"] },
     { id: "dispatch1", name: "Dispatch 1", role: "dispatch", password: "IRI1202HJ", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
     { id: "dispatch2", name: "Dispatch 2", role: "dispatch", password: "EVQ9819SS", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
     { id: "dispatch3", name: "Dispatch 3", role: "dispatch", password: "IQC8526SI", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
@@ -3794,6 +3794,7 @@ function PhoneQuotePanel(props) {
         isOOS: false, destCity: "", originCity: "Conyers, GA", priceTier: "standard",
         customPriceOn: false, customPrice: "",
         loadSize: "quarter", cleanoutTier: "2br", cleanoutSubtype: "", extraTruckloads: "0", emergencyAddons: [],
+        referralCode: "", referralApplied: null,
     });
     var form = sf[0];
     var setForm = sf[1];
@@ -3856,6 +3857,8 @@ function PhoneQuotePanel(props) {
         ? (q ? (q.total - oosPayDisc) : 0)
         : (q ? q.total : 0);
     var displayTotal = (form.customPriceOn && Number(form.customPrice) > 0) ? Number(form.customPrice) : calculatedTotal;
+    var referralDiscountAmt = form.referralApplied ? Math.round(displayTotal * (form.referralApplied.discountPct / 100)) : 0;
+    displayTotal = Math.max(0, displayTotal - referralDiscountAmt);
     function bookIt() {
         if (!form.name || !displayTotal)
             return;
@@ -3876,6 +3879,8 @@ function PhoneQuotePanel(props) {
                 notes: "OUT-OF-STATE · " + q.miles + " mi · $" + q.rate + "/mi" + customNote + (form.notes ? " — " + form.notes : ""),
                 helperHours: 0, fuel: q.fuelCost, weightTier: form.weightTier, oosJob: true,
                 miles: q.miles, ratePerMile: q.rate, priceTier: form.priceTier,
+                referralCode: form.referralApplied ? form.referralApplied.code : null,
+                referralSource: form.referralApplied ? form.referralApplied.source : null,
             };
         }
         else if (q) {
@@ -3902,6 +3907,8 @@ function PhoneQuotePanel(props) {
                 helperHours: 0, fuel: calcFuel(form.zone, gasPPG).cost,
                 weightTier: form.weightTier, miles: isMileageSvc ? instMiles : null,
                 priceTier: form.priceTier,
+                referralCode: form.referralApplied ? form.referralApplied.code : null,
+                referralSource: form.referralApplied ? form.referralApplied.source : null,
             };
         }
         if (job) {
@@ -4105,10 +4112,24 @@ function PhoneQuotePanel(props) {
                             React.createElement("span", { style: { color: C.dim } }, row[0]),
                             React.createElement("span", { style: { color: C.white, fontWeight: 600 } }, row[1]));
                     }))),
+                displayTotal > 0 && React.createElement("div", { style: { marginBottom: 10 } },
+                    !form.referralApplied
+                        ? React.createElement("div", { style: { display: "flex", gap: 6 } },
+                            React.createElement("input", { value: form.referralCode, onChange: function(e){ set("referralCode", e.target.value.toUpperCase()); }, placeholder: "Referral code (optional)", style: { flex: 1, background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "8px 10px", fontSize: 12, outline: "none", fontFamily: "monospace" } }),
+                            React.createElement("button", { onClick: function(){
+                                    var match = validateReferralCode(form.referralCode);
+                                    if(!match){ alert("That referral code isn't valid or is no longer active."); return; }
+                                    set("referralApplied", match);
+                                    trackReferralCodeUse(match.code);
+                                }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 7, padding: "8px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 } }, "Apply"))
+                        : React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", background: C.green + "18", border: "1px solid " + C.green + "44", borderRadius: 7, padding: "8px 12px" } },
+                            React.createElement("span", { style: { fontSize: 12, color: C.green, fontWeight: 700 } }, "✅ " + form.referralApplied.code + " — " + form.referralApplied.discountPct + "% off applied"),
+                            React.createElement("button", { onClick: function(){ set("referralApplied", null); set("referralCode", ""); }, style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 11, fontFamily: "inherit" } }, "Remove"))),
                 displayTotal > 0 && React.createElement("div", { style: { background: C.orangeSoft, border: "1px solid " + C.orange + "44", borderRadius: 10, padding: "12px 14px", marginBottom: 10, fontSize: 12, textAlign: "center" } },
                     React.createElement("div", { style: { color: C.dim, marginBottom: 4 } }, "Tell the customer:"),
                     React.createElement("div", { style: { color: C.white, fontWeight: 800, fontSize: 15 } }, "Your total is $" + displayTotal.toLocaleString()),
                     isMileageSvc && instMiles > 0 && React.createElement("div", { style: { color: C.dim, fontSize: 11, marginTop: 3 } }, instMiles + " miles × $" + INSTATE_RATE_PER_MILE + "/mi"),
+                    form.referralApplied && referralDiscountAmt > 0 && React.createElement("div", { style: { color: C.green, fontSize: 11, marginTop: 2 } }, "Includes $" + referralDiscountAmt.toLocaleString() + " referral discount"),
                     payObj.discount && React.createElement("div", { style: { color: C.green, fontSize: 11, marginTop: 2 } }, "Cash gets you 10% off")),
                 React.createElement(Btn, { onClick: bookIt, disabled: !form.name || !displayTotal, style: { width: "100%", padding: "13px", fontSize: 14, marginBottom: 8 } }, isCleanoutSvc ? "📋 Save Pending Quote" : "✅ Book It"),
                 React.createElement(Btn, { variant: "ghost", onClick: reset, style: { width: "100%", padding: "10px", fontSize: 12 } }, "\uD83D\uDD04 New Quote"),
@@ -4264,9 +4285,10 @@ function ReviewModal(props) {
         if (!cleanId) { setJobErr("A valid Job ID is required to leave a review."); return; }
         var jobs = props.jobs || [];
         var matchedJob = jobs.find(function(j){ return (j.id||"").toUpperCase() === cleanId; });
-        if (!matchedJob) { setJobErr("We could not find that Job ID. Please check your confirmation email and try again."); return; }
+        var isMasterCode = cleanId === getReviewMasterCode();
+        if (!matchedJob && !isMasterCode) { setJobErr("We could not find that Job ID. Please check your confirmation email and try again."); return; }
         var reviews = loadReviews();
-        var alreadyReviewed = reviews.some(function(r){ return (r.jobId||"").toUpperCase() === cleanId; });
+        var alreadyReviewed = !isMasterCode && reviews.some(function(r){ return (r.jobId||"").toUpperCase() === cleanId; });
         if (alreadyReviewed) { setJobErr("A review has already been submitted for this Job ID."); return; }
         reviews.unshift({ id: Date.now(), name: f.name, jobId: cleanId, rating: f.rating, comment: f.comment, date: new Date().toISOString().split("T")[0] });
         saveReviews(reviews);
@@ -4898,79 +4920,30 @@ function ReviewsSection(props) {
 // ── TAB NAVIGATION — Uber-style bottom nav + clean "More" sheet ──
 function getTabGroups() {
     return [
-        { id: "jobs", label: "📋 Jobs", icon: "📋", color: "#4299E1", tabs: [["jobs", "📋 " + t("jobs")], ["exceptions", "🚨 " + t("alerts")], ["calendar", "📅 " + t("calendar")], ["driver", "🚐 " + t("driver")], ["driverapp", "🚐 " + t("driverApp")]] },
-        { id: "sales", label: "📞 Sales", icon: "📞", color: "#1DB954", tabs: [["leads", "📋 " + t("leads")], ["activity", "👥 " + t("activity")], ["leaderboard", "🏆 " + t("board")], ["ospipeline", "🎯 Pipeline"], ["ostraining", "📚 Training"], ["flexpay", "📅 Flex Pay"]] },
-        { id: "fleet", label: "🚗 Fleet", icon: "🚗", color: "#F6AD55", tabs: [["fleet", "🚗 Fleet"], ["fleetmap", "🗺️ Live Map"], ["compliance", "🛡 Compliance"], ["documents", "📁 Documents"], ["safetyscore", "🛡️ Safety Scores"], ["geofence", "📍 Geofencing"], ["carriers", "🤝 " + t("carriers")], ["safety", "🔒 Safety Alerts"]] },
-        { id: "money", label: "💰 Money", icon: "💰", color: C.orange, tabs: [["reports", "📊 " + t("reports")], ["advanced", "📈 " + t("analytics")], ["sales", "🏆 " + t("sales")], ["expenses", "💸 " + t("expenses")], ["accounts", "🏢 " + t("accounts")], ["payroll", "💰 " + t("payroll")], ["ceodash", "📊 CEO Dashboard"]] },
-        { id: "team", label: "⚙ Team", icon: "⚙", color: "#FC8181", tabs: [["ownerSettings", "⚙ Settings"], ["audit", "👁 " + t("audit")], ["loginActivity", "🔐 Login Activity"], ["ai", "🤖 " + t("aiDocs")], ["demo", "🎬 " + t("demo")]] },
+        { label: "📋 Jobs", color: "#4299E1", tabs: [["jobs", "📋 " + t("jobs")], ["exceptions", "🚨 " + t("alerts")], ["calendar", "📅 " + t("calendar")], ["driver", "🚐 " + t("driver")], ["driverapp", "🚐 " + t("driverApp")]] },
+        { label: "📞 Sales", color: "#1DB954", tabs: [["leads", "📋 " + t("leads")], ["activity", "👥 " + t("activity")], ["leaderboard", "🏆 " + t("board")], ["ospipeline", "🎯 Pipeline"], ["ostraining", "📚 Training"], ["flexpay", "📅 Flex Pay"]] },
+        { label: "🚗 Fleet", color: "#F6AD55", tabs: [["fleet", "🚗 Fleet"], ["fleetmap", "🗺️ Live Map"], ["compliance", "🛡 Compliance"], ["documents", "📁 Documents"], ["safetyscore", "🛡️ Safety Scores"], ["geofence", "📍 Geofencing"], ["carriers", "🤝 " + t("carriers")], ["safety", "🔒 Safety Alerts"]] },
+        { label: "💰 Money", color: C.orange, tabs: [["reports", "📊 " + t("reports")], ["advanced", "📈 " + t("analytics")], ["sales", "🏆 " + t("sales")], ["expenses", "💸 " + t("expenses")], ["accounts", "🏢 " + t("accounts")], ["payroll", "💰 " + t("payroll")], ["ceodash", "📊 CEO Dashboard"], ["referrals", "🎟️ Referral Codes"]] },
+        { label: "⚙ Team", color: "#FC8181", tabs: [["ownerSettings", "⚙ Settings"], ["audit", "👁 " + t("audit")], ["loginActivity", "🔐 Login Activity"], ["ai", "🤖 " + t("aiDocs")], ["demo", "🎬 " + t("demo")]] },
     ];
 }
-
-// Driver/dispatch-only quick tabs — shown as their own bottom icon since
-// they don't need the full 5-category structure (mirrors Samsara's simpler
-// mobile-app view for non-admin roles).
-var SOLO_TABS = [
-    ["quote", "🏠", "Home"],
-    ["driver", "🚐", "My Jobs"],
-    ["driverapp", "🚐", "Driver"],
-    ["payroll", "💰", "Pay"],
-];
-
-// ── SAMSARA-STYLE NAV — persistent category bar + top sub-tab strip ──
-function CategoryNav({ activeGroupId, setActiveGroupId, tab, setTab, currentUser }) {
+// ── TAB NAVIGATION — dropdown "More" sheet, 5 simplified groups ──
+function CategoryNav({ tab, setTab, currentUser }) {
+    var [showMore, setShowMore] = useState(false);
     var hasAccess = function (id) { return !currentUser || currentUser.access.indexOf(id) > -1; };
-    var isDriverOnly = currentUser && currentUser.role === "driver";
 
-    var groups = getTabGroups().map(function(g){
-        return Object.assign({}, g, { tabs: g.tabs.filter(function(t2){ return hasAccess(t2[0]); }) });
-    }).filter(function(g){ return g.tabs.length > 0; });
-
-    // Drivers get a flat, simple bar (no categories) — same spirit as
-    // Samsara's driver-facing app, which is deliberately minimal.
-    if (isDriverOnly) {
-        var soloVisible = SOLO_TABS.filter(function(s){ return hasAccess(s[0]); });
-        return React.createElement("div", { style: {
-                position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 300,
-                background: C.black, borderTop: "1px solid " + C.border,
-                display: "flex", alignItems: "stretch",
-                paddingBottom: "env(safe-area-inset-bottom, 0px)",
-                boxShadow: "0 -4px 16px rgba(0,0,0,0.4)",
-            } },
-            soloVisible.map(function(s){
-                var active = tab === s[0];
-                return React.createElement("button", { key: s[0], onClick: function(){ setTab(s[0]); }, style: {
-                        flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
-                        background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
-                        padding: "8px 4px 6px", color: active ? C.orange : C.dim,
-                    } },
-                    React.createElement("div", { style: { fontSize: 20, lineHeight: 1 } }, s[1]),
-                    React.createElement("div", { style: { fontSize: 9, fontWeight: active ? 800 : 600 } }, s[2]));
-            }));
+    var primary = [];
+    for (var i = 0; i < PRIMARY_TAB_ORDER.length && primary.length < 4; i++) {
+        if (hasAccess(PRIMARY_TAB_ORDER[i][0])) primary.push(PRIMARY_TAB_ORDER[i]);
     }
+    var primaryIds = primary.map(function(p){ return p[0]; });
 
-    // Owner/dispatch — full Samsara-style: category bar on bottom, always visible,
-    // sub-tabs for the active category shown as a horizontal strip at the top.
-    var activeGroup = groups.find(function(g){ return g.id === activeGroupId; }) || groups[0];
+    var moreGroups = getTabGroups().map(function(g){
+        return Object.assign({}, g, { tabs: g.tabs.filter(function(t2){ return hasAccess(t2[0]) && primaryIds.indexOf(t2[0]) === -1; }) });
+    }).filter(function(g){ return g.tabs.length > 0; });
+    var moreCount = moreGroups.reduce(function(sum,g){ return sum + g.tabs.length; }, 0);
 
     return React.createElement(React.Fragment, null,
-        // Top sub-tab strip for the active category
-        activeGroup && React.createElement("div", { style: {
-                display: "flex", gap: 6, overflowX: "auto", padding: "10px 12px",
-                background: C.card, borderBottom: "1px solid " + C.border,
-                position: "fixed", top: 54, left: 0, right: 0, zIndex: 250,
-            } },
-            activeGroup.tabs.map(function(item){
-                var active = tab === item[0];
-                return React.createElement("button", { key: item[0], onClick: function(){ setTab(item[0]); }, style: {
-                        flexShrink: 0, border: "1px solid " + (active ? activeGroup.color : C.border),
-                        borderRadius: 8, padding: "7px 14px", cursor: "pointer",
-                        background: active ? activeGroup.color + "18" : "transparent",
-                        color: active ? activeGroup.color : C.dim,
-                        fontSize: 12, fontWeight: active ? 700 : 500, fontFamily: "inherit", whiteSpace: "nowrap",
-                    } }, item[1]);
-            })),
-
-        // Bottom category bar — every category always visible, one tap to switch
         React.createElement("div", { style: {
                 position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 300,
                 background: C.black, borderTop: "1px solid " + C.border,
@@ -4978,24 +4951,51 @@ function CategoryNav({ activeGroupId, setActiveGroupId, tab, setTab, currentUser
                 paddingBottom: "env(safe-area-inset-bottom, 0px)",
                 boxShadow: "0 -4px 16px rgba(0,0,0,0.4)",
             } },
-            groups.map(function(g){
-                var active = g.id === activeGroupId;
-                return React.createElement("button", { key: g.id, onClick: function(){
-                        setActiveGroupId(g.id);
-                        if (g.tabs.length > 0) setTab(g.tabs[0][0]);
-                    }, style: {
+            primary.map(function(p){
+                var active = tab === p[0];
+                var parts = p[1].split(" ");
+                var icon = parts[0], label = parts.slice(1).join(" ");
+                return React.createElement("button", { key: p[0], onClick: function(){ setShowMore(false); setTab(p[0]); }, style: {
                         flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
                         background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
-                        padding: "8px 4px 6px", color: active ? g.color : C.dim,
+                        padding: "8px 4px 6px", color: active ? C.orange : C.dim,
                     } },
-                    React.createElement("div", { style: { fontSize: 20, lineHeight: 1 } }, g.icon),
-                    React.createElement("div", { style: { fontSize: 9, fontWeight: active ? 800 : 600 } }, g.label.replace(/^\S+\s/, "")));
-            })));
+                    React.createElement("div", { style: { fontSize: 20, lineHeight: 1 } }, icon),
+                    React.createElement("div", { style: { fontSize: 9, fontWeight: active ? 800 : 600 } }, label));
+            }),
+            moreCount > 0 && React.createElement("button", { onClick: function(){ setShowMore(!showMore); }, style: {
+                    flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+                    background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
+                    padding: "8px 4px 6px", color: showMore ? C.orange : C.dim,
+                } },
+                React.createElement("div", { style: { fontSize: 20, lineHeight: 1 } }, "\u2630"),
+                React.createElement("div", { style: { fontSize: 9, fontWeight: showMore ? 800 : 600 } }, "More"))),
+
+        showMore && React.createElement("div", { onClick: function(){ setShowMore(false); }, style: {
+                position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 290,
+            } },
+            React.createElement("div", { onClick: function(e){ e.stopPropagation(); }, style: {
+                    position: "fixed", bottom: 62, left: 0, right: 0, maxHeight: "70vh", overflowY: "auto",
+                    background: C.card, borderTop: "1px solid " + C.border, borderRadius: "14px 14px 0 0",
+                    padding: "16px 14px", zIndex: 295,
+                } },
+                moreGroups.map(function(g){
+                    return React.createElement("div", { key: g.label, style: { marginBottom: 16 } },
+                        React.createElement("div", { style: { fontSize: 11, fontWeight: 800, color: g.color, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 } }, g.label),
+                        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } },
+                            g.tabs.map(function(item){
+                                var active = tab === item[0];
+                                return React.createElement("button", { key: item[0], onClick: function(){ setShowMore(false); setTab(item[0]); }, style: {
+                                        border: "1px solid " + (active ? g.color : C.border), borderRadius: 8, padding: "8px 14px", cursor: "pointer",
+                                        background: active ? g.color + "18" : C.card, color: active ? g.color : C.white,
+                                        fontSize: 12, fontWeight: active ? 700 : 500, fontFamily: "inherit",
+                                    } }, item[1]);
+                            })));
+                }))));
 }
 
 function AdminDashboard(props) {
     var [tab, setTab] = useState(props.role === ROLES.DRIVER ? "driver" : "quote");
-    var [activeGroupId, setActiveGroupId] = useState("jobs");
     var langObj = useLang();
     var adminLang = langObj.lang;
     var tA = langObj.t;
@@ -5013,7 +5013,7 @@ function AdminDashboard(props) {
                     React.createElement("div", { style: { fontSize: 11, color: C.white, fontWeight: 700 } }, props.currentUser ? props.currentUser.emoji + " " + props.currentUser.name : "Admin"),
                     React.createElement("div", { style: { fontSize: 9, color: props.role === ROLES.OWNER ? C.orange : props.role === ROLES.DRIVER ? C.green : C.blue, fontWeight: 600, textTransform: "capitalize", letterSpacing: 1 } }, props.role),
                     React.createElement(Btn, { variant: "muted", onClick: props.onLogout, style: { padding: "4px 10px", fontSize: 10 } }, tA("signOut"))))),
-        React.createElement("div", { style: { padding: (props.role !== ROLES.DRIVER ? "58px" : "20px") + " 14px 90px", maxWidth: 740, margin: "0 auto" } },
+        React.createElement("div", { style: { padding: "20px 14px 90px", maxWidth: 740, margin: "0 auto" } },
             tab === "quote" && React.createElement(PhoneQuotePanel, { onAddJob: props.onAddJob, gasPPG: props.gasPPG, role: props.role, currentUser: props.currentUser }),
             tab === "jobs" && React.createElement(JobsDashboard, { jobs: props.jobs, onUpdateStatus: props.onUpdateStatus, onAddJob: props.onAddJob, gasPPG: props.gasPPG, dieselPPG: props.dieselPPG, role: props.role }),
             tab === "exceptions" && React.createElement(ExceptionDashboard, { jobs: props.jobs, onApplyAccessorial: props.onApplyAccessorial }),
@@ -5043,10 +5043,11 @@ function AdminDashboard(props) {
             tab === "safety" && props.role === ROLES.OWNER && React.createElement(SafetyDashboard, { users: USERS, jobs: props.jobs }),
             tab === "ownerSettings" && props.role === ROLES.OWNER && React.createElement(OwnerSettings, { users: USERS, currentUser: props.currentUser }),
             tab === "ceodash" && props.role === ROLES.OWNER && React.createElement(CEODashboard, { jobs: props.jobs, prospects: props.prospects }),
+            tab === "referrals" && props.role === ROLES.OWNER && React.createElement(ReferralCodeManager, null),
             tab === "flexpay" && props.role === ROLES.OWNER && React.createElement(FlexPayTracker, null),
             tab === "ostraining" && React.createElement(OSTraining, null),
             tab === "documents" && React.createElement(DocumentLogView, null)),
-        React.createElement(CategoryNav, { activeGroupId: activeGroupId, setActiveGroupId: setActiveGroupId, tab: tab, setTab: setTab, currentUser: props.currentUser }));
+        React.createElement(CategoryNav, { tab: tab, setTab: setTab, currentUser: props.currentUser }));
 }
 // ── ADMIN LOGIN ───────────────────────────────────────────────────
 function AdminLogin(props) {
@@ -7714,7 +7715,7 @@ function LeadsBoard(props) {
     }
     useEffect(function () {
         setLoading(true);
-        sbLeads("GET", null, "select=*&order=name&limit=1000").then(function (data) {
+        sbLeads("GET", null, "select=*&order=name&limit=50000").then(function (data) {
             setLeads(Array.isArray(data) ? data : []);
             setLoading(false);
         }).catch(function () { setLoading(false); });
@@ -8039,7 +8040,7 @@ function ActivityDashboard() {
     var [selected, setSelected] = useState(null);
     useEffect(function () {
         setLoading(true);
-        sbLeads("GET", null, "select=*&limit=2000").then(function (data) {
+        sbLeads("GET", null, "select=*&limit=50000").then(function (data) {
             setLeads(Array.isArray(data) ? data : []);
             setLoading(false);
         }).catch(function () { setLoading(false); });
@@ -8238,7 +8239,7 @@ function removeBonus(name){
     useEffect(function () {
         setLoading(true);
         // Load leads from Supabase
-        fetch(SUPABASE_URL + "/rest/v1/leads?select=*&limit=2000", {
+        fetch(SUPABASE_URL + "/rest/v1/leads?select=*&limit=50000", {
             headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
         }).then(function (r) { return r.json(); }).then(function (data) {
             setLeads(Array.isArray(data) ? data : []);
@@ -9622,7 +9623,7 @@ function OSPipeline(props) {
         var url = SUPABASE_URL + "/rest/v1/os_prospects" + (qs ? "?" + qs : "");
         return fetch(url, { method: method || "GET", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=representation" }, body: data ? JSON.stringify(data) : undefined }).then(function (r) { return r.json(); });
     }
-    function load() { setLoading(true); sbOS("GET", null, "select=*&order=created_at.desc&limit=500").then(function (d) { setProspects(Array.isArray(d) ? d : []); setLoading(false); }).catch(function () { setLoading(false); }); }
+    function load() { setLoading(true); sbOS("GET", null, "select=*&order=created_at.desc&limit=50000").then(function (d) { setProspects(Array.isArray(d) ? d : []); setLoading(false); }).catch(function () { setLoading(false); }); }
     useEffect(function () { load(); }, []);
     function setF(k, v) { setForm(function (p) { var n = Object.assign({}, p); n[k] = v; return n; }); }
     async function saveP() {
@@ -10099,7 +10100,7 @@ function CEODashboard(props){
   var today=new Date().toISOString().slice(0,10);
 
   useEffect(function(){
-    sbGet("os_prospects","select=*&order=created_at.desc&limit=200").then(function(d){
+    sbGet("os_prospects","select=*&order=created_at.desc&limit=50000").then(function(d){
       setPipelineData(Array.isArray(d)?d:[]);setLoading(false);
     }).catch(function(){setLoading(false);});
   },[]);
@@ -10319,6 +10320,7 @@ function OwnerSettings(props){
     {id:"testEmail",label:"📧 Test Email"},
     {id:"masterPw",label:"🔑 Master Password"},
     {id:"slotPw",label:"🔐 Change Passwords"},
+    {id:"reviewCode",label:"⭐ Review Master Code"},
   ];
 
   return React.createElement("div",{style:{maxWidth:760,margin:"0 auto"}},
@@ -10358,6 +10360,12 @@ function OwnerSettings(props){
         React.createElement("div",{style:{fontSize:12,fontWeight:700,color:C.white,marginBottom:6}},"Send Test Email"),
         React.createElement("div",{style:{fontSize:11,color:C.dim,marginBottom:14,lineHeight:1.7}},"Sends a real test email through EmailJS to "+BUSINESS_EMAIL+" and shows you exactly whether it succeeded or failed \u2014 and why."),
         React.createElement(TestEmailTool,null)
+      )
+    ),
+    activeSection==="reviewCode"&&React.createElement("div",null,
+      React.createElement("div",{style:{background:C.card,border:"1px solid "+C.border,borderRadius:12,padding:"16px"}},
+        React.createElement("div",{style:{fontSize:12,fontWeight:700,color:C.white,marginBottom:6}},"⭐ Master Review Code"),
+        React.createElement(ReviewMasterCodeEditor,null)
       )
     ),
     activeSection==="masterPw"&&React.createElement("div",null,
@@ -11221,6 +11229,151 @@ function FuelPriceLiveBadge(){
         return React.createElement("span", { style: { fontSize: 9, color: C.green, fontWeight: 700, background: C.green+"18", borderRadius: 4, padding: "1px 6px" }, title: "EIA data period: "+gasStatus.period }, "\u25CF LIVE (EIA)");
     }
     return React.createElement("span", { style: { fontSize: 9, color: C.orange, fontWeight: 700, background: C.orange+"18", borderRadius: 4, padding: "1px 6px" }, title: gasStatus.error||"" }, "\u25CF FALLBACK — not live");
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// 🎟️ REFERRAL CODES — discounts + attribution tracking
+// ═══════════════════════════════════════════════════════════════════
+var REFERRAL_CODES_KEY = "pl_referral_codes";
+function loadReferralCodes(){ try{ return JSON.parse(localStorage.getItem(REFERRAL_CODES_KEY)||"[]"); }catch(e){ return []; } }
+function saveReferralCodesLocal(list){ try{ localStorage.setItem(REFERRAL_CODES_KEY, JSON.stringify(list)); }catch(e){} }
+
+async function loadReferralCodesFromCloud(){
+    try{
+        var rows = await sbGet("safety_alerts","select=*&type=eq.referral_codes&limit=1");
+        if(rows && rows.length > 0 && rows[0].payload){
+            var parsed = JSON.parse(rows[0].payload);
+            saveReferralCodesLocal(parsed);
+            return parsed;
+        }
+    }catch(e){}
+    return loadReferralCodes();
+}
+async function saveReferralCodesToCloud(list){
+    saveReferralCodesLocal(list);
+    try{
+        await fetch(SUPABASE_URL+"/rest/v1/safety_alerts?type=eq.referral_codes",{method:"DELETE",headers:sbHeaders()});
+        await fetch(SUPABASE_URL+"/rest/v1/safety_alerts",{
+            method:"POST", headers:Object.assign({},sbHeaders(),{Prefer:"return=minimal"}),
+            body:JSON.stringify({type:"referral_codes", message:"Referral code configuration", payload:JSON.stringify(list), created_at:new Date().toISOString()})
+        });
+    }catch(e){}
+}
+
+function validateReferralCode(codeInput){
+    var codes = loadReferralCodes();
+    var clean = (codeInput||"").trim().toUpperCase();
+    if(!clean) return null;
+    var found = codes.find(function(c){ return c.code.toUpperCase() === clean && c.active; });
+    return found || null;
+}
+
+function trackReferralCodeUse(code){
+    var codes = loadReferralCodes();
+    var updated = codes.map(function(c){
+        if(c.code.toUpperCase() === code.toUpperCase()) return Object.assign({},c,{uses:(c.uses||0)+1});
+        return c;
+    });
+    saveReferralCodesToCloud(updated);
+}
+
+// ── REFERRAL CODE ADMIN MANAGER ──────────────────────────────────────
+function ReferralCodeManager(){
+    var [codes, setCodes] = useState([]);
+    var [loading, setLoading] = useState(true);
+    var [showAdd, setShowAdd] = useState(false);
+    var [form, setForm] = useState({code:"", discountPct:"10", source:""});
+
+    useEffect(function(){
+        loadReferralCodesFromCloud().then(function(list){ setCodes(list); setLoading(false); });
+    }, []);
+
+    function addCode(){
+        if(!form.code.trim()){ alert("Enter a code."); return; }
+        var clean = form.code.trim().toUpperCase();
+        if(codes.some(function(c){ return c.code.toUpperCase()===clean; })){ alert("That code already exists."); return; }
+        var newCode = { code: clean, discountPct: Number(form.discountPct)||0, source: form.source.trim()||"Unknown", active: true, uses: 0, createdAt: new Date().toISOString() };
+        var updated = [...codes, newCode];
+        setCodes(updated);
+        saveReferralCodesToCloud(updated);
+        setForm({code:"", discountPct:"10", source:""});
+        setShowAdd(false);
+    }
+
+    function toggleActive(code){
+        var updated = codes.map(function(c){ return c.code===code ? Object.assign({},c,{active:!c.active}) : c; });
+        setCodes(updated);
+        saveReferralCodesToCloud(updated);
+    }
+
+    function removeCode(code){
+        if(!confirm("Delete referral code "+code+"? This cannot be undone.")) return;
+        var updated = codes.filter(function(c){ return c.code!==code; });
+        setCodes(updated);
+        saveReferralCodesToCloud(updated);
+    }
+
+    if(loading) return React.createElement("div",{style:{textAlign:"center",padding:40,color:C.dim}},"Loading referral codes...");
+
+    return React.createElement("div",{style:{maxWidth:720,margin:"0 auto"}},
+        React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}},
+            React.createElement("div",{style:{fontSize:18,fontWeight:900,color:C.white}},"🎟️ Referral Codes"),
+            React.createElement("button",{onClick:function(){setShowAdd(!showAdd);},style:{background:C.orange,color:"#000",border:"none",borderRadius:7,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},"+ New Code")
+        ),
+        React.createElement("div",{style:{fontSize:11,color:C.dim,marginBottom:20}},"Discount codes for customers, and a way to track which employee or source brought in the business."),
+
+        showAdd && React.createElement("div",{style:{background:C.card,border:"1px solid "+C.orange+"44",borderRadius:12,padding:"16px",marginBottom:16}},
+            React.createElement("div",{style:{fontSize:12,fontWeight:700,color:C.white,marginBottom:10}},"New Referral Code"),
+            React.createElement("div",{style:{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10}},
+                React.createElement("input",{value:form.code,onChange:function(e){setForm(function(p){return Object.assign({},p,{code:e.target.value.toUpperCase()});});},placeholder:"CODE (e.g. MARCUS10)",style:{flex:1,minWidth:140,background:C.surface,border:"1px solid "+C.border,borderRadius:7,color:C.white,padding:"9px 12px",fontSize:13,outline:"none",fontFamily:"monospace"}}),
+                React.createElement("input",{type:"number",value:form.discountPct,onChange:function(e){setForm(function(p){return Object.assign({},p,{discountPct:e.target.value});});},placeholder:"Discount %",style:{width:100,background:C.surface,border:"1px solid "+C.border,borderRadius:7,color:C.white,padding:"9px 12px",fontSize:13,outline:"none",fontFamily:"inherit"}}),
+                React.createElement("input",{value:form.source,onChange:function(e){setForm(function(p){return Object.assign({},p,{source:e.target.value});});},placeholder:"Employee / Source (e.g. Marcus, Facebook Ad)",style:{flex:1,minWidth:160,background:C.surface,border:"1px solid "+C.border,borderRadius:7,color:C.white,padding:"9px 12px",fontSize:13,outline:"none",fontFamily:"inherit"}})
+            ),
+            React.createElement("button",{onClick:addCode,style:{background:C.green,color:"#000",border:"none",borderRadius:7,padding:"9px 18px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},"✅ Create Code")
+        ),
+
+        codes.length===0 && !showAdd && React.createElement("div",{style:{textAlign:"center",padding:"40px 20px",color:C.dim,fontSize:13}},"No referral codes yet."),
+
+        codes.map(function(c){
+            return React.createElement("div",{key:c.code,style:{background:C.card,border:"1px solid "+(c.active?C.border:C.red+"44"),borderRadius:10,padding:"12px 16px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}},
+                React.createElement("div",null,
+                    React.createElement("div",{style:{fontSize:14,fontWeight:800,color:c.active?C.white:C.dim,fontFamily:"monospace"}},c.code+(c.active?"":" (inactive)")),
+                    React.createElement("div",{style:{fontSize:11,color:C.dim,marginTop:2}},c.discountPct+"% off · Source: "+c.source+" · "+(c.uses||0)+" use"+(c.uses!==1?"s":""))
+                ),
+                React.createElement("div",{style:{display:"flex",gap:6}},
+                    React.createElement("button",{onClick:function(){toggleActive(c.code);},style:{background:"transparent",border:"1px solid "+C.border,color:c.active?C.orange:C.green,borderRadius:6,padding:"5px 10px",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},c.active?"Deactivate":"Activate"),
+                    React.createElement("button",{onClick:function(){removeCode(c.code);},style:{background:"transparent",border:"none",color:C.red,cursor:"pointer",fontSize:14,fontFamily:"inherit"}},"✕")
+                )
+            );
+        })
+    );
+}
+
+// ── MASTER REVIEW CODE — always works to leave a review, no real job needed ──
+var REVIEW_MASTER_CODE_KEY = "pl_review_master_code";
+function getReviewMasterCode(){ try{ return localStorage.getItem(REVIEW_MASTER_CODE_KEY) || "POTENT-REVIEW"; }catch(e){ return "POTENT-REVIEW"; } }
+function setReviewMasterCode(code){ try{ localStorage.setItem(REVIEW_MASTER_CODE_KEY, code); }catch(e){} }
+
+function ReviewMasterCodeEditor(){
+    var [code, setCode] = useState(getReviewMasterCode);
+    var [saved, setSaved] = useState(false);
+    function save(){
+        var clean = code.trim().toUpperCase() || "POTENT-REVIEW";
+        setReviewMasterCode(clean);
+        setCode(clean);
+        setSaved(true);
+        setTimeout(function(){setSaved(false);},2500);
+    }
+    return React.createElement("div",null,
+        React.createElement("div",{style:{display:"flex",gap:8}},
+            React.createElement("input",{value:code,onChange:function(e){setCode(e.target.value.toUpperCase());},style:{flex:1,background:C.surface,border:"1px solid "+C.border,borderRadius:7,color:C.white,padding:"9px 12px",fontSize:13,outline:"none",fontFamily:"monospace"}}),
+            React.createElement("button",{onClick:save,style:{background:saved?C.green:C.orange,color:"#000",border:"none",borderRadius:7,padding:"9px 16px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},saved?"✓ Saved":"Save")
+        ),
+        React.createElement("div",{style:{fontSize:10,color:C.dim,marginTop:6}},"Anyone entering this exact code on the review page can leave a review without a real Job ID. Use for demos, testing, or generic reviews not tied to one job.")
+    );
 }
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
