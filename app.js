@@ -378,6 +378,8 @@ function syncStatusToSupabase(jobId, newStatus) {
     });
 }
 var BUSINESS_EMAIL = "potentlogistics@pm.me";
+var DISPATCH_PHONE_DISPLAY = "(470) 574-6340"; // Dispatch & Sales — customer-facing
+var DISPATCH_EMAIL = "logisticspotent@gmail.com"; // Dispatch & Sales — customer-facing
 var PHONE_NUMBER = "+17706484228";
 var PHONE_DISPLAY = "(770) 648-4228";
 // ═══════════════════════════════════════════════════════════════════
@@ -877,7 +879,7 @@ var GAS_BY_STATE = {
     "CA": 4.89, "OR": 4.12, "WA": 4.18, "AK": 4.35, "HI": 4.72,
 };
 var NATIONAL_AVG_GAS = 4.07; // AAA national average June 15 2026
-var FALLBACK_GAS = 3.76; // Georgia default
+var FALLBACK_GAS = 3.91; // Georgia default (updated Sept 2026)
 function getGasForState(stateAbbr) {
     if (!stateAbbr)
         return FALLBACK_GAS;
@@ -898,7 +900,7 @@ var DIESEL_BY_STATE = {
     "CA": 5.68, "OR": 4.79, "WA": 4.86, "AK": 5.02, "HI": 5.41,
 };
 var NATIONAL_AVG_DIESEL = 4.72; // national average, same baseline date
-var FALLBACK_DIESEL = 4.38; // Georgia default
+var FALLBACK_DIESEL = 5.72; // Georgia default (updated Sept 2026)
 function getDieselForState(stateAbbr) {
     if (!stateAbbr)
         return FALLBACK_DIESEL;
@@ -954,10 +956,10 @@ var SERVICES = [
 ];
 var SPEEDS = [
     { id: "standard", label: "Standard", sub: "Scheduled dispatch", icon: "🟢", mult: 1.0, color: "#1DB954" },
-    { id: "urgent", label: "Urgent", sub: "Priority same-day", icon: "⚡", mult: 1.3, color: "#F0E000" },
+    { id: "urgent", label: "Urgent", sub: "Priority same-day", icon: "⚡", mult: 1.25, color: "#F0E000" },
     { id: "afterhours", label: "After-Hours", sub: "Late night / early morning", icon: "🌙", mult: 1.6, color: "#F0E000" },
     { id: "overnight", label: "Overnight", sub: "Driven through the night — arrives by morning", icon: "🌃", mult: 1.8, color: "#9F7AEA" },
-    { id: "emergency", label: "Emergency", sub: "Urgent + after-hours", icon: "🚨", mult: 2.0, color: "#E53E3E" },
+    { id: "emergency", label: "Emergency", sub: "Urgent + after-hours", icon: "🚨", mult: 1.5, color: "#E53E3E" },
 ];
 var ZONES = [
     { id: "local", label: "Local", sub: "0-50 miles", estMiles: 40 },
@@ -1381,67 +1383,46 @@ function loadFuelPriceStatus() {
         return r ? JSON.parse(r) : { gas: null, diesel: null };
     } catch (e) { return { gas: null, diesel: null }; }
 }
-async function fetchGasPrice() {
-    // Fetches Georgia regular unleaded from EIA (most recent weekly reading)
-    // Other states use GAS_BY_STATE table above
-    var status = loadFuelPriceStatus();
+// Fetches both gas and diesel in one call, via the Netlify serverless function.
+// The EIA API does not reliably support direct browser requests (CORS), which
+// is why this was always silently falling back before. Running the fetch on
+// Netlify's server instead of the browser avoids that entirely.
+var _fuelPriceCache = null;
+async function fetchFuelPricesFromProxy() {
+    if (_fuelPriceCache) return _fuelPriceCache;
     try {
-        var res = await fetch("https://api.eia.gov/v2/petroleum/pri/gnd/data/?api_key=" + EIA_API_KEY + "&frequency=weekly&data[0]=value&facets[duoarea][]=SGA&facets[product][]=EPM0&sort[0][column]=period&sort[0][direction]=desc&length=1");
-        if (!res.ok) {
-            var errText = await res.text();
-            status.gas = { live: false, error: "EIA rejected request (status " + res.status + ")", checkedAt: new Date().toISOString() };
-            saveFuelPriceStatus(status);
-            return FALLBACK_GAS;
-        }
+        var res = await fetch("/.netlify/functions/get-fuel-prices");
         var json = await res.json();
-        var d = json && json.response && json.response.data && json.response.data[0];
-        var p = d && d.value;
-        var period = d && d.period;
-        if (p && p > 2 && p < 7) {
-            // Update GA in the table too
-            GAS_BY_STATE["GA"] = parseFloat(p);
-            status.gas = { live: true, period: period, checkedAt: new Date().toISOString() };
-            saveFuelPriceStatus(status);
-            return parseFloat(p);
-        }
-        status.gas = { live: false, error: "EIA returned no usable data", checkedAt: new Date().toISOString() };
-        saveFuelPriceStatus(status);
+        _fuelPriceCache = json;
+        return json;
+    } catch (e) {
+        return { gas: null, diesel: null, error: "Network error: " + e.message };
     }
-    catch (e) {
-        status.gas = { live: false, error: "Network error: " + e.message, checkedAt: new Date().toISOString() };
+}
+async function fetchGasPrice() {
+    var status = loadFuelPriceStatus();
+    var result = await fetchFuelPricesFromProxy();
+    if (result.gas) {
+        GAS_BY_STATE["GA"] = result.gas;
+        status.gas = { live: true, period: result.gasPeriod, checkedAt: new Date().toISOString() };
         saveFuelPriceStatus(status);
+        return result.gas;
     }
+    status.gas = { live: false, error: result.error || "EIA returned no usable data", checkedAt: new Date().toISOString() };
+    saveFuelPriceStatus(status);
     return FALLBACK_GAS;
 }
 async function fetchDieselPrice() {
-    // Fetches Georgia on-highway diesel from EIA (most recent weekly reading)
-    // Other states use DIESEL_BY_STATE table above
     var status = loadFuelPriceStatus();
-    try {
-        var res = await fetch("https://api.eia.gov/v2/petroleum/pri/gnd/data/?api_key=" + EIA_API_KEY + "&frequency=weekly&data[0]=value&facets[duoarea][]=SGA&facets[product][]=EPD2D&sort[0][column]=period&sort[0][direction]=desc&length=1");
-        if (!res.ok) {
-            var errText2 = await res.text();
-            status.diesel = { live: false, error: "EIA rejected request (status " + res.status + ")", checkedAt: new Date().toISOString() };
-            saveFuelPriceStatus(status);
-            return FALLBACK_DIESEL;
-        }
-        var json = await res.json();
-        var d = json && json.response && json.response.data && json.response.data[0];
-        var p = d && d.value;
-        var period = d && d.period;
-        if (p && p > 2 && p < 8) {
-            DIESEL_BY_STATE["GA"] = parseFloat(p);
-            status.diesel = { live: true, period: period, checkedAt: new Date().toISOString() };
-            saveFuelPriceStatus(status);
-            return parseFloat(p);
-        }
-        status.diesel = { live: false, error: "EIA returned no usable data", checkedAt: new Date().toISOString() };
+    var result = await fetchFuelPricesFromProxy();
+    if (result.diesel) {
+        DIESEL_BY_STATE["GA"] = result.diesel;
+        status.diesel = { live: true, period: result.dieselPeriod, checkedAt: new Date().toISOString() };
         saveFuelPriceStatus(status);
+        return result.diesel;
     }
-    catch (e) {
-        status.diesel = { live: false, error: "Network error: " + e.message, checkedAt: new Date().toISOString() };
-        saveFuelPriceStatus(status);
-    }
+    status.diesel = { live: false, error: result.error || "EIA returned no usable data", checkedAt: new Date().toISOString() };
+    saveFuelPriceStatus(status);
     return FALLBACK_DIESEL;
 }
 var WEIGHT_TIERS = [
@@ -3964,9 +3945,8 @@ function PhoneQuotePanel(props) {
                                 t.badge && React.createElement("span", { style: { background: t.color + "22", color: t.color, borderRadius: 5, padding: "2px 8px", fontSize: 9, fontWeight: 700 } }, t.badge),
                                 form.priceTier === t.id && React.createElement("div", { style: { width: 18, height: 18, borderRadius: "50%", background: t.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#000", fontWeight: 800 } }, "\u2713")));
                     }))),
-                React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 18, background: C.surface, borderRadius: 10, padding: 4 } },
-                    React.createElement("button", { onClick: function () { set("isOOS", false); }, style: { flex: 1, border: "none", borderRadius: 8, padding: "8px", cursor: "pointer", background: !form.isOOS ? C.orange : "transparent", color: !form.isOOS ? "#000" : C.dim, fontWeight: 700, fontFamily: "inherit", fontSize: 12 } }, "\uD83D\uDCE6 In-State / Local"),
-                    React.createElement("button", { onClick: function () { set("isOOS", true); }, style: { flex: 1, border: "none", borderRadius: 8, padding: "8px", cursor: "pointer", background: form.isOOS ? C.orange : "transparent", color: form.isOOS ? "#000" : C.dim, fontWeight: 700, fontFamily: "inherit", fontSize: 12 } }, "\uD83D\uDDFA\uFE0F Out-of-State")),
+                // Out-of-State toggle removed — POTENT holds Georgia intrastate authority only.
+                // isOOS is permanently false here; nothing in the UI can set it to true.
                 React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "14px 16px", marginBottom: 10 } },
                     React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 10 } }, "\uD83D\uDC64 Customer"),
                     React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 10px" } },
@@ -5177,9 +5157,10 @@ function PublicApp(props) {
                         React.createElement("div", { style: { fontSize: 15, fontWeight: 900, letterSpacing: -0.5 } },
                             React.createElement(BrandName, null)),
                         React.createElement("div", { style: { fontSize: 7, color: C.gold, letterSpacing: 1.5, textTransform: "uppercase" } }, "A POTENT PR\u00C4D\u018FKT\u00AE COMPANY"))),
-                React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center" } },
+                React.createElement("div", { style: { display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" } },
                     React.createElement(LangSwitcher, { lang: lang, changeLang: changeLang }),
-                    React.createElement("a", { href: "tel:" + PHONE_NUMBER, style: { textDecoration: "none", background: C.orange, color: "#000", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 800, whiteSpace: "nowrap" } }, "📞 " + PHONE_DISPLAY))),
+                    React.createElement("a", { href: "tel:" + DISPATCH_PHONE_DISPLAY.replace(/\D/g,""), title: "Dispatch & Sales: " + DISPATCH_EMAIL, style: { textDecoration: "none", background: C.orange, color: "#000", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" } }, "📞 " + DISPATCH_PHONE_DISPLAY),
+                    React.createElement("a", { href: "tel:" + PHONE_NUMBER, title: "Owner: " + BUSINESS_EMAIL, style: { textDecoration: "none", background: "transparent", border: "1px solid " + C.orange + "66", color: C.orange, borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" } }, "👑 " + PHONE_DISPLAY))),
             React.createElement("div", { style: { display: "flex", background: C.surface } }, [["home", t("home")], ["book", t("book")], ["track", t("track")]].map(function (item) {
                 return React.createElement("button", { key: item[0], onClick: function () { setTab(item[0]); }, style: { flex: 1, border: "none", borderBottom: "2px solid " + (tab === item[0] ? C.orange : "transparent"), padding: "10px 4px", cursor: "pointer", background: tab === item[0] ? C.orange + "12" : "transparent", color: tab === item[0] ? C.orange : C.dim, fontSize: 11, fontWeight: 700, fontFamily: "inherit", textAlign: "center" } }, item[1]);
             }))),
@@ -7620,26 +7601,46 @@ function LeadEmailPanel(props){
 
     return React.createElement("div",{style:{background:C.card,border:"1px solid "+C.border,borderRadius:10,padding:"14px 16px",marginBottom:14}},
         React.createElement("div",{style:{fontSize:11,fontWeight:700,color:C.dim,textTransform:"uppercase",letterSpacing:1,marginBottom:6}},"📧 Send Email"),
-        lead.email
-            ? React.createElement("div",{style:{fontSize:11,color:C.green,marginBottom:10,fontWeight:700}},lead.email)
-            : React.createElement("div",{style:{marginBottom:10}},
-                !addingEmail
-                    ? React.createElement("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between"}},
+        lead.email && !addingEmail
+            ? React.createElement("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}},
+                React.createElement("div",{style:{fontSize:11,color:C.green,fontWeight:700}},lead.email),
+                React.createElement("div",{style:{display:"flex",gap:6}},
+                    React.createElement("button",{onClick:function(){setTempEmail(lead.email);setAddingEmail(true);},style:{background:"transparent",color:C.orange,border:"1px solid "+C.orange+"44",borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},"Edit"),
+                    React.createElement("button",{onClick:function(){
+                        if(!confirm("Remove this email from the lead?")) return;
+                        setSaving(true);
+                        fetch(SUPABASE_URL+"/rest/v1/leads?id=eq."+lead.id,{
+                            method:"PATCH",
+                            headers:{apikey:SUPABASE_ANON_KEY,Authorization:"Bearer "+SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=representation"},
+                            body:JSON.stringify({email:null})
+                        }).then(function(){
+                            if(props.onSave)props.onSave(Object.assign({},lead,{email:null}));
+                            setSavedMsg("✅ Email removed");
+                            setSaving(false);
+                        }).catch(function(){setSavedMsg("Failed to remove. Try again.");setSaving(false);});
+                    },style:{background:"transparent",color:C.red,border:"1px solid "+C.red+"44",borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},"Remove")
+                )
+            )
+            : (!addingEmail
+                ? React.createElement("div",{style:{marginBottom:10}},
+                    React.createElement("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between"}},
                         React.createElement("div",{style:{fontSize:11,color:C.red}},"⚠ No email on file"),
                         React.createElement("button",{onClick:function(){setAddingEmail(true);},style:{background:C.orange,color:"#000",border:"none",borderRadius:6,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},"+ Add Email")
                     )
-                    : React.createElement("div",{style:{display:"flex",gap:6,flexWrap:"wrap"}},
-                        React.createElement("input",{
-                            value:tempEmail,
-                            onChange:function(e){setTempEmail(e.target.value);},
-                            placeholder:"Enter email address",
-                            type:"email",
-                            style:{flex:1,background:C.surface,border:"1px solid "+C.border,borderRadius:6,color:C.white,padding:"7px 10px",fontSize:12,outline:"none",fontFamily:"inherit",minWidth:180}
-                        }),
-                        React.createElement("button",{onClick:saveEmail,disabled:saving,style:{background:C.green,color:"#000",border:"none",borderRadius:6,padding:"7px 14px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},saving?"Saving...":"Save"),
-                        React.createElement("button",{onClick:function(){setAddingEmail(false);},style:{background:"transparent",color:C.dim,border:"1px solid "+C.border,borderRadius:6,padding:"7px 10px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}},"Cancel")
-                    )
-            ),
+                )
+                : React.createElement("div",{style:{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}},
+                    React.createElement("input",{
+                        value:tempEmail,
+                        onChange:function(e){setTempEmail(e.target.value);},
+                        placeholder:"Enter email address",
+                        type:"email",
+                        style:{flex:1,background:C.surface,border:"1px solid "+C.border,borderRadius:6,color:C.white,padding:"7px 10px",fontSize:12,outline:"none",fontFamily:"inherit",minWidth:180}
+                    }),
+                    React.createElement("button",{onClick:saveEmail,disabled:saving,style:{background:C.green,color:"#000",border:"none",borderRadius:6,padding:"7px 14px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},saving?"Saving...":"Save"),
+                    React.createElement("button",{onClick:function(){setAddingEmail(false);},style:{background:"transparent",color:C.dim,border:"1px solid "+C.border,borderRadius:6,padding:"7px 10px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}},"Cancel")
+                )
+            )
+        ,
         savedMsg&&React.createElement("div",{style:{fontSize:11,color:savedMsg.includes("✅")?C.green:C.red,marginBottom:8}},savedMsg),
         React.createElement("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}},
             Object.keys(LEAD_EMAIL_TEMPLATES).map(function(key){
