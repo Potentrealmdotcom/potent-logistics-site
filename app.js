@@ -16,7 +16,7 @@ var C = {
 // To add a dispatcher: copy any dispatch line, change id/name/password.
 // Passwords: owner sets them, employees never share.
 var USERS = [
-    { id: "potent", name: "POTENT", role: "owner", password: "HJWG9099AI", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash", "geofence", "flexpay", "referrals"] },
+    { id: "potent", name: "POTENT", role: "owner", password: "HJWG9099AI", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash", "geofence", "flexpay", "referrals", "marketrates"] },
     { id: "dispatch1", name: "Dispatch 1", role: "dispatch", password: "IRI1202HJ", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
     { id: "dispatch2", name: "Dispatch 2", role: "dispatch", password: "EVQ9819SS", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
     { id: "dispatch3", name: "Dispatch 3", role: "dispatch", password: "IQC8526SI", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence"] },
@@ -968,13 +968,13 @@ var ZONES = [
 ];
 // ── JUNK REMOVAL — priced by load size, your 16ft box truck holds ~2x a standard junk truck ──
 var LOAD_SIZES = [
-    { id: "minimum", label: "Single Item / Minimum", sub: "One item or a small pile", price: 200 },
-    { id: "quarter", label: "Quarter Load", sub: "A few items — couch, small cleanout", price: 350 },
-    { id: "half", label: "Half Load", sub: "Bedroom set, multiple appliances", price: 600 },
-    { id: "threequarter", label: "Three-Quarter Load", sub: "Garage or large room cleanout", price: 800 },
-    { id: "full", label: "Full Load", sub: "Full 16ft truck — biggest single trip", price: 1000 },
+    { id: "minimum", label: "Single Item / Minimum", sub: "One item or a small pile", price: 149 },
+    { id: "quarter", label: "Quarter Load", sub: "A few items — couch, small cleanout", price: 249 },
+    { id: "half", label: "Half Load", sub: "Bedroom set, multiple appliances", price: 399 },
+    { id: "threequarter", label: "Three-Quarter Load", sub: "Garage or large room cleanout", price: 549 },
+    { id: "full", label: "Full Load", sub: "Full 16ft truck — biggest single trip", price: 699 },
 ];
-var EXTRA_TRUCKLOAD_FEE = 1000; // each additional full truckload beyond the first, on big jobs
+var EXTRA_TRUCKLOAD_FEE = 600; // each additional full truckload beyond the first, on big jobs
 // Real Georgia landfill/transfer station per-item fees, admin-reference only — never shown to customers.
 // 3x markup is the suggested add-on; admin decides whether to apply it to a quote.
 var DUMP_FEES = [
@@ -990,23 +990,23 @@ var DUMP_FEES = [
 var GA_AVG_DUMP_RATE_PER_TON = 50; // Georgia statewide average ~$55.76/ton (EREF 2024); used for job-profit reference only
 // ── PROPERTY CLEANOUTS — starting estimates only, admin confirms final price by phone ──
 var CLEANOUT_TIERS = [
-    { id: "studio", label: "Studio / 1 Bedroom", startPrice: 1200 },
-    { id: "2br", label: "2 Bedroom", startPrice: 2000 },
-    { id: "3br", label: "3 Bedroom", startPrice: 3500 },
-    { id: "4br", label: "4 Bedroom", startPrice: 5000 },
-    { id: "5br", label: "5+ Bedroom", startPrice: 6500 },
-    { id: "hoarder", label: "Hoarder House", startPrice: 8000 },
+    { id: "studio", label: "Studio / 1 Bedroom", startPrice: 499 },
+    { id: "2br", label: "2 Bedroom", startPrice: 799 },
+    { id: "3br", label: "3 Bedroom", startPrice: 1299 },
+    { id: "4br", label: "4 Bedroom", startPrice: 1799 },
+    { id: "5br", label: "5+ Bedroom", startPrice: 2299 },
+    { id: "hoarder", label: "Hoarder House", startPrice: 3500 },
     { id: "commercial", label: "Commercial / School / Warehouse", startPrice: 0 }, // always custom quote
 ];
 var CLEANOUT_SUBTYPES = [
-    { id: "estate", label: "Estate Cleanout", minPrice: 1200 },
-    { id: "foreclosure", label: "Foreclosure Cleanout", minPrice: 1500 },
-    { id: "eviction", label: "Eviction Cleanout", minPrice: 1200 },
-    { id: "realtor", label: "Realtor Property Prep", minPrice: 1200 },
-    { id: "hoarder", label: "Hoarder Cleanout", minPrice: 8000 },
-    { id: "office", label: "Office Cleanout", minPrice: 2500 },
-    { id: "school", label: "School Cleanout", minPrice: 3500 },
-    { id: "warehouse", label: "Warehouse Cleanout", minPrice: 5000 },
+    { id: "estate", label: "Estate Cleanout", minPrice: 499 },
+    { id: "foreclosure", label: "Foreclosure Cleanout", minPrice: 599 },
+    { id: "eviction", label: "Eviction Cleanout", minPrice: 499 },
+    { id: "realtor", label: "Realtor Property Prep", minPrice: 499 },
+    { id: "hoarder", label: "Hoarder Cleanout", minPrice: 3500 },
+    { id: "office", label: "Office Cleanout", minPrice: 1500 },
+    { id: "school", label: "School Cleanout", minPrice: 2000 },
+    { id: "warehouse", label: "Warehouse Cleanout", minPrice: 3000 },
 ];
 // ── INSTITUTIONAL / BULK DEBRIS HAULING — admin reference only, always Custom Price Override ──
 // Post-demo debris hauling for large institutional jobs (you haul, you don't demo).
@@ -2248,9 +2248,35 @@ function loadLeaflet() {
     return _leafletLoadPromise;
 }
 function truckDivIcon(L, color) {
+    var c = color || C.orange;
+    var isLive = c === C.orange;
     return L.divIcon({
-        className: "", html: "<div style=\"width:34px;height:34px;border-radius:50%;background:" + (color || C.orange) + ";border:3px solid #000;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.5)\">\uD83D\uDE9A</div>",
-        iconSize: [34, 34], iconAnchor: [17, 17]
+        className: "",
+        html: `
+            <div style="position:relative;width:46px;height:46px;">
+                <style>
+                    @keyframes potentPulse {
+                        0%   { transform: scale(0.6); opacity: 0.7; }
+                        70%  { transform: scale(1.8); opacity: 0; }
+                        100% { transform: scale(1.8); opacity: 0; }
+                    }
+                    @keyframes potentGlow {
+                        0%, 100% { box-shadow: 0 0 6px 2px ${c}99, 0 2px 10px rgba(0,0,0,.6); }
+                        50%      { box-shadow: 0 0 14px 5px ${c}cc, 0 2px 10px rgba(0,0,0,.6); }
+                    }
+                </style>
+                ${isLive ? `<div style="position:absolute;inset:0;border-radius:50%;background:${c};animation:potentPulse 1.8s ease-out infinite;"></div>` : ""}
+                <div style="position:absolute;top:6px;left:6px;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 30%, #1a1a1a, #000);border:2px solid ${c};display:flex;align-items:center;justify-content:center;${isLive ? `animation:potentGlow 1.8s ease-in-out infinite;` : `box-shadow:0 2px 8px rgba(0,0,0,.5);`}">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M2 7a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v9H3a1 1 0 0 1-1-1V7Z" fill="${c}"/>
+                        <path d="M13 10h4.4a1 1 0 0 1 .8.4l2.5 3.2a1 1 0 0 1 .2.6V15a1 1 0 0 1-1 1H13v-6Z" fill="${c}" fill-opacity="0.85"/>
+                        <circle cx="7" cy="17" r="2" fill="#000" stroke="${c}" stroke-width="1.3"/>
+                        <circle cx="18" cy="17" r="2" fill="#000" stroke="${c}" stroke-width="1.3"/>
+                    </svg>
+                </div>
+                <div style="position:absolute;bottom:-2px;right:-2px;width:15px;height:15px;border-radius:50%;background:#000;border:1.5px solid ${c};display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:900;color:${c};">P</div>
+            </div>`,
+        iconSize: [46, 46], iconAnchor: [23, 23]
     });
 }
 // ── CUSTOMER-FACING: live truck map for a single job ────────────────
@@ -3950,7 +3976,7 @@ function PhoneQuotePanel(props) {
                 React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "14px 16px", marginBottom: 10 } },
                     React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 10 } }, "\uD83D\uDC64 Customer"),
                     React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 10px" } },
-                        React.createElement(TxtIn, { label: "Name", value: form.name, onChange: function (v) { set("name", v); }, placeholder: "First Last" }),
+                        React.createElement(TxtIn, { label: "Name", value: form.name, onChange: function (v) { set("name", v); }, placeholder: "First Last", voice: true }),
                         React.createElement(TxtIn, { label: "Phone", value: form.phone, onChange: function (v) { set("phone", v); }, type: "tel", placeholder: "404-000-0000" })),
                     React.createElement("div", { style: { display: "flex", gap: 8 } },
                         React.createElement(Toggle, { label: "Business account", value: form.isBusiness, onChange: function (v) { set("isBusiness", v); } }))),
@@ -4055,7 +4081,7 @@ function PhoneQuotePanel(props) {
                             React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: form.payment === p.id ? (p.discount ? C.green : C.orange) : C.white } }, p.label),
                             p.discount && React.createElement("div", { style: { fontSize: 10, color: C.green, marginTop: 2 } }, "10% off"));
                     }))),
-                React.createElement(TxtIn, { label: "Notes", value: form.notes, onChange: function (v) { set("notes", v); }, placeholder: "What are they moving? Any special access, fragile items, gate codes...", rows: 2 })),
+                React.createElement(TxtIn, { label: "Notes", value: form.notes, onChange: function (v) { set("notes", v); }, placeholder: "What are they moving? Any special access, fragile items, gate codes...", rows: 2, voice: true })),
             React.createElement("div", { style: { flex: "0 0 220px", position: "sticky", top: 80 } },
                 React.createElement("div", { style: { background: C.card, border: "2px solid " + (displayTotal > 0 ? C.orange : C.border), borderRadius: 14, padding: "20px 16px", textAlign: "center", marginBottom: 10 } },
                     React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 4 } }, "Live Quote"),
@@ -4254,7 +4280,7 @@ function saveLeads(l) { try {
 catch (e) { } }
 // ── REVIEW MODAL (PUBLIC) ─────────────────────────────────────────────
 function ReviewModal(props) {
-    var [f, setF] = useState({ name: "", jobId: "", rating: 5, comment: "" });
+    var [f, setF] = useState({ name: "", jobId: props.initialJobId || "", rating: 5, comment: "" });
     var [sent, setSent] = useState(false);
     var [jobErr, setJobErr] = useState("");
     function set(k, v) { setF(function (p) { var n = Object.assign({}, p); n[k] = v; return n; }); setJobErr(""); }
@@ -4858,12 +4884,16 @@ function SalesScoreboard(props) {
 // ── REVIEW SECTION (PUBLIC HOMEPAGE) ─────────────────────────────────
 function ReviewsSection(props) {
     var reviews = loadReviews();
-    var [showModal, setShowModal] = useState(false);
-    if (reviews.length === 0 && !props.showEmpty)
+    var qrTriggered = (function(){
+        try { return new URLSearchParams(window.location.search).get("leavereview") === "1"; }
+        catch(e) { return false; }
+    })();
+    var [showModal, setShowModal] = useState(qrTriggered);
+    if (reviews.length === 0 && !props.showEmpty && !qrTriggered)
         return null;
     var avgRating = reviews.length > 0 ? Math.round(reviews.reduce(function (s, r) { return s + r.rating; }, 0) / reviews.length * 10) / 10 : 0;
     return React.createElement("div", { style: { padding: "40px 24px", borderTop: "1px solid " + C.border } },
-        showModal && React.createElement(ReviewModal, { onClose: function () { setShowModal(false); }, jobs: props.jobs || [] }),
+        showModal && React.createElement(ReviewModal, { onClose: function () { setShowModal(false); }, jobs: props.jobs || [], initialJobId: qrTriggered ? getReviewMasterCode() : "" }),
         React.createElement("div", { style: { maxWidth: 680, margin: "0 auto" } },
             React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 } },
                 React.createElement("div", null,
@@ -4903,7 +4933,7 @@ function getTabGroups() {
         { label: "📋 Jobs", color: "#4299E1", tabs: [["jobs", "📋 " + t("jobs")], ["exceptions", "🚨 " + t("alerts")], ["calendar", "📅 " + t("calendar")], ["driver", "🚐 " + t("driver")], ["driverapp", "🚐 " + t("driverApp")]] },
         { label: "📞 Sales", color: "#1DB954", tabs: [["leads", "📋 " + t("leads")], ["activity", "👥 " + t("activity")], ["leaderboard", "🏆 " + t("board")], ["ospipeline", "🎯 Pipeline"], ["ostraining", "📚 Training"], ["flexpay", "📅 Flex Pay"]] },
         { label: "🚗 Fleet", color: "#F6AD55", tabs: [["fleet", "🚗 Fleet"], ["fleetmap", "🗺️ Live Map"], ["compliance", "🛡 Compliance"], ["documents", "📁 Documents"], ["safetyscore", "🛡️ Safety Scores"], ["geofence", "📍 Geofencing"], ["carriers", "🤝 " + t("carriers")], ["safety", "🔒 Safety Alerts"]] },
-        { label: "💰 Money", color: C.orange, tabs: [["reports", "📊 " + t("reports")], ["advanced", "📈 " + t("analytics")], ["sales", "🏆 " + t("sales")], ["expenses", "💸 " + t("expenses")], ["accounts", "🏢 " + t("accounts")], ["payroll", "💰 " + t("payroll")], ["ceodash", "📊 CEO Dashboard"], ["referrals", "🎟️ Referral Codes"]] },
+        { label: "💰 Money", color: C.orange, tabs: [["reports", "📊 " + t("reports")], ["advanced", "📈 " + t("analytics")], ["sales", "🏆 " + t("sales")], ["expenses", "💸 " + t("expenses")], ["accounts", "🏢 " + t("accounts")], ["payroll", "💰 " + t("payroll")], ["ceodash", "📊 CEO Dashboard"], ["referrals", "🎟️ Referral Codes"], ["marketrates", "📊 Market Rates"]] },
         { label: "⚙ Team", color: "#FC8181", tabs: [["ownerSettings", "⚙ Settings"], ["audit", "👁 " + t("audit")], ["loginActivity", "🔐 Login Activity"], ["ai", "🤖 " + t("aiDocs")], ["demo", "🎬 " + t("demo")]] },
     ];
 }
@@ -5029,6 +5059,7 @@ function AdminDashboard(props) {
             tab === "safety" && props.role === ROLES.OWNER && React.createElement(SafetyDashboard, { users: USERS, jobs: props.jobs }),
             tab === "ownerSettings" && props.role === ROLES.OWNER && React.createElement(OwnerSettings, { users: USERS, currentUser: props.currentUser }),
             tab === "ceodash" && props.role === ROLES.OWNER && React.createElement(CEODashboard, { jobs: props.jobs, prospects: props.prospects }),
+            tab === "marketrates" && React.createElement(MarketRateReference, null),
             tab === "referrals" && props.role === ROLES.OWNER && React.createElement(ReferralCodeManager, null),
             tab === "flexpay" && props.role === ROLES.OWNER && React.createElement(FlexPayTracker, null),
             tab === "ostraining" && React.createElement(OSTraining, null),
@@ -5166,8 +5197,6 @@ function PublicApp(props) {
             }))),
         tab === "home" && React.createElement("div", null,
             React.createElement("div", { style: { position: "relative", width: "100%", minHeight: 480, overflow: "hidden", background: "#000" } },
-                React.createElement("video", { autoPlay: true, muted: true, loop: true, playsInline: true, style: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.65 } },
-                    React.createElement("source", { src: "/potent-promo.mp4", type: "video/mp4" })),
                 React.createElement("div", { style: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "linear-gradient(to bottom,#00000044 0%,#000000bb 60%,#080808 100%)" } }),
                 React.createElement("div", { style: { position: "relative", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 480, padding: "60px 24px 80px", textAlign: "center" } },
                     React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", marginBottom: 14, background: C.orange + "18", border: "1px solid " + C.orange + "44", borderRadius: 20, padding: "4px 14px" } }, "24/7 LOGISTICS \u00B7 COURIER \u00B7 PROPERTY CLEANOUTS \u00B7 JUNK REMOVAL \u00B7 DEMOLITION"),
@@ -5184,6 +5213,69 @@ function PublicApp(props) {
                         React.createElement("a", { href: "tel:" + PHONE_NUMBER, style: { textDecoration: "none" } },
                             React.createElement("button", { style: { background: "transparent", color: "#fff", border: "1.5px solid rgba(255,255,255,0.5)", borderRadius: 9, padding: "13px 28px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "📞 " + PHONE_DISPLAY)),
                         React.createElement("button", { onClick: function () { setTab("track"); }, style: { background: "transparent", color: "rgba(255,255,255,0.6)", border: "1.5px solid rgba(255,255,255,0.2)", borderRadius: 9, padding: "13px 28px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCCD Track My Job")))),
+            React.createElement("div", { style: { background: "linear-gradient(135deg,#0d0d00,#080808)", borderBottom: "2px solid " + C.orange, padding: "36px 20px" } },
+                React.createElement("div", { style: { maxWidth: 720, margin: "0 auto", textAlign: "center" } },
+                    React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 8 } }, "Conyers \u00B7 Covington \u00B7 Lithonia \u00B7 Surrounding Areas"),
+                    React.createElement("div", { style: { fontSize: 26, fontWeight: 900, color: "#fff", marginBottom: 6 } }, "The Best Price In The City. Guaranteed."),
+                    React.createElement("div", { style: { fontSize: 13, color: "rgba(255,255,255,0.7)", maxWidth: 500, margin: "0 auto 24px", lineHeight: 1.6 } }, "Same crew, same trucks, same-day service \u2014 for less than anyone else in your area. Bring us a written local quote and we'll beat it."),
+                    React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 10, marginBottom: 20 } }, [
+                        ["Single Item Pickup", "$149"],
+                        ["Full Truckload", "$699"],
+                        ["Studio/1BR Cleanout", "$499"],
+                        ["3BR Cleanout", "$1,299"],
+                    ].map(function (row) {
+                        return React.createElement("div", { key: row[0], style: { background: "#111", border: "1px solid " + C.orange + "33", borderRadius: 10, padding: "14px 10px" } },
+                            React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.orange, marginBottom: 4 } }, row[1]),
+                            React.createElement("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.6)" } }, row[0]));
+                    })),
+                    React.createElement("button", { onClick: function () { setTab("book"); }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: "14px 36px", fontSize: 15, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCE6 Get Your Price \u2014 Book In 60 Seconds"))),
+            React.createElement("div", { style: { padding: "40px 20px", borderBottom: "1px solid " + C.border, background: "radial-gradient(circle at 50% 0%,#0d0d0d 0%,#080808 70%)" } },
+                React.createElement("div", { style: { maxWidth: 680, margin: "0 auto", textAlign: "center" } },
+                    React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 8 } }, "Built Different"),
+                    React.createElement("div", { style: { fontSize: 22, fontWeight: 800, color: "#fff", marginBottom: 16 } }, "Real Technology. Not A Guy With A Truck."),
+                    React.createElement("div", { style: { fontSize: 13, color: C.dim, lineHeight: 1.8, maxWidth: 560, margin: "0 auto 28px" } },
+                        "Every job runs on POTENT OS \u2014 the same live-GPS, real-time dispatch software we built ourselves. You get a real-time map of your driver, automatic status updates, and a system that never loses your booking, because we own the technology end to end instead of renting someone else's."),
+                    React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10, textAlign: "left", marginBottom: 28 } }, [
+                        ["\uD83D\uDCE1", "Live GPS, Not \"Call The Driver\"", "The map you saw on the last job wasn't a mockup \u2014 it's the actual truck, updating every 10 seconds, the whole way there."],
+                        ["\u26A1", "Built By The Company That Uses It", "We didn't buy off-the-shelf dispatch software. We built POTENT OS ourselves \u2014 which means when something needs to improve, we fix it same-week, not \"next product cycle.\""],
+                        ["\uD83E\uDDFE", "Upfront Pricing, Locked At Booking", "The system calculates your price the moment you book. No re-quoting, no \"it went up once the driver saw the job.\""],
+                    ].map(function (row) {
+                        return React.createElement("div", { key: row[1], style: { display: "flex", gap: 12, background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "14px 16px" } },
+                            React.createElement("div", { style: { fontSize: 20 } }, row[0]),
+                            React.createElement("div", null,
+                                React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: "#fff", marginBottom: 3 } }, row[1]),
+                                React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.5 } }, row[2])));
+                    })),
+                    React.createElement("div", { style: { background: "#0d0d00", border: "1px solid " + C.orange + "44", borderRadius: 12, padding: "18px 20px", textAlign: "left" } },
+                        React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.orange, marginBottom: 6 } }, "\u26FD On Gas Prices \u2014 The Honest Version"),
+                        React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.7 } }, "We know fuel costs more right now than it did last year, and that's real for us too \u2014 every truck we run feels it. That's exactly why we built our pricing off real local competitor rates instead of padding it: you're getting the lowest honest price we can run at, not a number that quietly assumes you won't check around.")))),
+            React.createElement("div", { style: { padding: "44px 24px", borderBottom: "1px solid " + C.border, background: "linear-gradient(135deg,#0d0d00,#080808)" } },
+                React.createElement("div", { style: { maxWidth: 720, margin: "0 auto", textAlign: "center" } },
+                    React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 8 } }, "Also Built By POTENT"),
+                    React.createElement("div", { style: { fontSize: 24, fontWeight: 900, color: "#fff", marginBottom: 6 } }, "POTENT OS \u2014 The Software Running All Of This"),
+                    React.createElement("div", { style: { fontSize: 13, color: C.dim, maxWidth: 560, margin: "0 auto 24px", lineHeight: 1.7 } }, "One-time license. You own it forever. Dispatch, driver settlements, fleet maintenance, compliance, and CRM \u2014 one system, paid once, no monthly per-truck fees like Motive or Samsara."),
+                    React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 10, marginBottom: 20 } }, [
+                        ["Starter", "$14,500", "1\u201310 trucks"],
+                        ["Growth", "$34,500", "11\u201350 trucks"],
+                        ["Fleet", "$69,500", "51\u2013150 trucks"],
+                        ["Enterprise", "$109,500", "151\u2013300+ trucks"],
+                    ].map(function (row) {
+                        return React.createElement("div", { key: row[0], style: { background: "#111", border: "1px solid " + C.orange + "33", borderRadius: 10, padding: "14px 10px" } },
+                            React.createElement("div", { style: { fontSize: 10, color: C.dim, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 } }, row[0]),
+                            React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.orange } }, row[1]),
+                            React.createElement("div", { style: { fontSize: 9, color: "rgba(255,255,255,0.5)", marginTop: 2 } }, row[2] + " \u00B7 once"));
+                    })),
+                    React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8, textAlign: "left", marginBottom: 24, maxWidth: 500, margin: "0 auto 24px" } }, [
+                        "Offline PWA \u2014 full dispatch with zero internet",
+                        "Voice-activated quoting \u2014 hands-free during live calls",
+                        "Live GPS tracking, driver safety scoring, geofencing",
+                        "Flex Pay financing available on every tier, 0% interest",
+                    ].map(function (line) {
+                        return React.createElement("div", { key: line, style: { fontSize: 12, color: "rgba(255,255,255,0.75)", display: "flex", gap: 8 } },
+                            React.createElement("span", { style: { color: C.orange } }, "\u2713"), line);
+                    })),
+                    React.createElement("a", { href: "/POTENT-License-Signup.html", style: { textDecoration: "none" } },
+                        React.createElement("button", { style: { background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: "13px 32px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCBB See POTENT OS Pricing")))),
             React.createElement("div", { style: { background: C.surface, borderBottom: "1px solid " + C.border, padding: "40px 24px" } },
                 React.createElement("div", { style: { maxWidth: 680, margin: "0 auto" } },
                     React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 12 } }, "Who We Are"),
@@ -11380,6 +11472,76 @@ function ReviewMasterCodeEditor(){
             React.createElement("button",{onClick:save,style:{background:saved?C.green:C.orange,color:"#000",border:"none",borderRadius:7,padding:"9px 16px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},saved?"✓ Saved":"Save")
         ),
         React.createElement("div",{style:{fontSize:10,color:C.dim,marginTop:6}},"Anyone entering this exact code on the review page can leave a review without a real Job ID. Use for demos, testing, or generic reviews not tied to one job.")
+    );
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// 📊 FREIGHT MARKET RATE REFERENCE
+// Honest note: unlike gas prices (EIA has a free live API), real-time
+// freight rate indices (DAT SONAR, DAT Trendlines) are paid industry
+// subscriptions with no free public API. These numbers are real,
+// current published market rates — researched and updated manually,
+// same as how FALLBACK_GAS works, not a live auto-fetch.
+// Last researched: September 2026, based on DAT/industry data.
+// ═══════════════════════════════════════════════════════════════════
+var MARKET_RATES_UPDATED = "September 2026";
+var MARKET_RATES = [
+    { segment: "Dry Van (53' Trailer / 18-Wheeler)", low: 1.80, high: 2.40, note: "Standard enclosed freight, national spot average \u2014 the classic long-haul fleet prospect" },
+    { segment: "Reefer (Refrigerated)", low: 2.20, high: 3.00, note: "Temperature-controlled freight" },
+    { segment: "Flatbed", low: 2.10, high: 2.80, note: "Open/oversized freight, construction materials" },
+    { segment: "Hot Shot / Box Truck", low: 3.00, high: 6.00, note: "Your actual segment \u2014 smaller loads, fixed costs spread over fewer miles" },
+    { segment: "Tanker", low: 2.75, high: 2.75, note: "Liquid/bulk freight" },
+    { segment: "Hazmat", low: 3.25, high: 3.25, note: "Regulated hazardous materials" },
+];
+// Moving companies price completely differently — hourly for local, weight+distance for long-haul.
+// Relevant when POTENT OS is being pitched to a moving/relocation company prospect, not a freight carrier.
+var MOVING_COMPANY_RATES = [
+    { segment: "Local Move (Hourly, 2-Person Crew)", low: 85, high: 210, unit: "/hr", note: "Most common national range for a standard local crew + truck" },
+    { segment: "Local Move (Typical Total Job)", low: 500, high: 2500, unit: " total", note: "Full local move, home-size dependent" },
+    { segment: "Long-Distance Move (500mi Household)", low: 2850, high: 10800, unit: " total", note: "Priced by weight + distance, not hourly" },
+];
+
+function MarketRateReference(){
+    return React.createElement("div",{style:{maxWidth:760,margin:"0 auto"}},
+        React.createElement("div",{style:{fontSize:18,fontWeight:900,color:C.white,marginBottom:4}},"📊 Freight Market Rate Reference"),
+        React.createElement("div",{style:{fontSize:11,color:C.dim,marginBottom:6}},"Real published market rates by segment — for your own pricing context, and for speaking knowledgeably when selling POTENT OS to LTL, moving, and general trucking prospects."),
+        React.createElement("div",{style:{background:C.card,border:"1px solid "+C.orange+"33",borderRadius:9,padding:"10px 14px",marginBottom:20,fontSize:11,color:"#c9a227",lineHeight:1.6}},
+            "\u26A0 Honest limitation: unlike gas prices (EIA has a free live government API), real-time freight rate indices like DAT SONAR are paid industry subscriptions ($1,000s/year) with no free public API. These numbers are real current published rates, researched manually and updated periodically — last updated "+MARKET_RATES_UPDATED+", not auto-fetched every time you open this."
+        ),
+
+        React.createElement("div",{style:{background:"#0d0d00",border:"1px solid "+C.orange+"44",borderRadius:10,padding:"14px 16px",marginBottom:20,textAlign:"center"}},
+            React.createElement("div",{style:{fontSize:10,color:C.dim,textTransform:"uppercase",letterSpacing:1}},"Your Current Rate (In-State)"),
+            React.createElement("div",{style:{fontSize:28,fontWeight:900,color:C.orange}},"$"+INSTATE_RATE_PER_MILE.toFixed(2)+"/mi"),
+            React.createElement("div",{style:{fontSize:11,color:C.dim,marginTop:4}},"Falls within the real Hot Shot/Box Truck market range ($3.00\u2013$6.00/mi) \u2014 your segment, not full 53' trailer rates")
+        ),
+
+        MARKET_RATES.map(function(r){
+            var isYours = r.segment.indexOf("Box Truck") > -1;
+            return React.createElement("div",{key:r.segment,style:{background:isYours?C.orange+"10":C.card,border:"1px solid "+(isYours?C.orange+"66":C.border),borderRadius:10,padding:"12px 16px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}},
+                React.createElement("div",null,
+                    React.createElement("div",{style:{fontSize:13,fontWeight:700,color:isYours?C.orange:C.white}},r.segment+(isYours?" \u2190 YOUR SEGMENT":"")),
+                    React.createElement("div",{style:{fontSize:11,color:C.dim,marginTop:2}},r.note)),
+                React.createElement("div",{style:{fontSize:15,fontWeight:800,color:isYours?C.orange:C.white,whiteSpace:"nowrap"}},
+                    r.low===r.high ? "$"+r.low.toFixed(2)+"/mi" : "$"+r.low.toFixed(2)+"\u2013$"+r.high.toFixed(2)+"/mi")
+            );
+        }),
+
+        React.createElement("div",{style:{fontSize:14,fontWeight:800,color:C.white,marginTop:24,marginBottom:4}},"\uD83D\uDCE6 Moving Company Prospects"),
+        React.createElement("div",{style:{fontSize:11,color:C.dim,marginBottom:12}},"For when POTENT OS is being pitched to a moving/relocation company \u2014 they price by the hour or by weight, not per-mile like freight carriers."),
+        MOVING_COMPANY_RATES.map(function(r){
+            return React.createElement("div",{key:r.segment,style:{background:C.card,border:"1px solid "+C.border,borderRadius:10,padding:"12px 16px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}},
+                React.createElement("div",null,
+                    React.createElement("div",{style:{fontSize:13,fontWeight:700,color:C.white}},r.segment),
+                    React.createElement("div",{style:{fontSize:11,color:C.dim,marginTop:2}},r.note)),
+                React.createElement("div",{style:{fontSize:15,fontWeight:800,color:C.white,whiteSpace:"nowrap"}},
+                    "$"+r.low.toLocaleString()+"\u2013$"+r.high.toLocaleString()+r.unit)
+            );
+        }),
+
+        React.createElement("div",{style:{fontSize:10,color:C.faint,marginTop:16,lineHeight:1.6}},"Source: DAT Trendlines Report and moving industry rate aggregators (Storage Scholars, Bellhop, Moving Place). Rates vary by lane, season, and regional demand \u2014 use as a benchmark, not an exact quote.")
     );
 }
 
