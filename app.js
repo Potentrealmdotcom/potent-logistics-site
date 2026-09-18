@@ -16,27 +16,27 @@ var C = {
 // To add a dispatcher: copy any dispatch line, change id/name/password.
 // Passwords: owner sets them, employees never share.
 var USERS = [
-    { id: "potent", name: "POTENT", role: "owner", password: "HJWG9099AI", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash", "geofence", "flexpay", "referrals", "marketrates", "loginActivity", "safetyscore", "rebuttals"] },
-    { id: "dispatch1", name: "Dispatch 1", role: "dispatch", password: "IRI1202HJ", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals"] },
-    { id: "dispatch2", name: "Dispatch 2", role: "dispatch", password: "EVQ9819SS", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals"] },
-    { id: "dispatch3", name: "Dispatch 3", role: "dispatch", password: "IQC8526SI", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals"] },
-    { id: "dispatch4", name: "Dispatch 4", role: "dispatch", password: "EPZ0124FH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals"] },
-    { id: "dispatch5", name: "Dispatch 5", role: "dispatch", password: "UXB6653FH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals"] },
-    { id: "dispatch6", name: "Dispatch 6", role: "dispatch", password: "BSD0421RN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals"] },
-    { id: "dispatch7", name: "Dispatch 7", role: "dispatch", password: "NEK4282YX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals"] },
-    { id: "dispatch8", name: "Dispatch 8", role: "dispatch", password: "RUQ7232FK", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals"] },
-    { id: "dispatch9", name: "Dispatch 9", role: "dispatch", password: "LBY3027CH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals"] },
-    { id: "dispatch10", name: "Dispatch 10", role: "dispatch", password: "FYJ9996BX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals"] },
-    { id: "dispatch11", name: "Dispatch 11", role: "dispatch", password: "XMG4340LN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals"] },
-    { id: "dispatch12", name: "Dispatch 12", role: "dispatch", password: "EEA2653NU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals"] },
-    { id: "dispatch13", name: "Dispatch 13", role: "dispatch", password: "STM4563VM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals"] },
-    { id: "dispatch14", name: "Dispatch 14", role: "dispatch", password: "GHU7822NX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals"] },
-    { id: "dispatch15", name: "Dispatch 15", role: "dispatch", password: "SLL8046WH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals"] },
-    { id: "dispatch16", name: "Dispatch 16", role: "dispatch", password: "MXH2933UN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals"] },
-    { id: "dispatch17", name: "Dispatch 17", role: "dispatch", password: "SJV8263MA", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals"] },
-    { id: "dispatch18", name: "Dispatch 18", role: "dispatch", password: "TYE0288YW", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals"] },
-    { id: "dispatch19", name: "Dispatch 19", role: "dispatch", password: "SVG4086AU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals"] },
-    { id: "dispatch20", name: "Dispatch 20", role: "dispatch", password: "HCB3143EM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals"] },
+    { id: "potent", name: "POTENT", role: "owner", password: "HJWG9099AI", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash", "geofence", "flexpay", "referrals", "marketrates", "loginActivity", "safetyscore", "rebuttals", "recurring"] },
+    { id: "dispatch1", name: "Dispatch 1", role: "dispatch", password: "IRI1202HJ", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
+    { id: "dispatch2", name: "Dispatch 2", role: "dispatch", password: "EVQ9819SS", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
+    { id: "dispatch3", name: "Dispatch 3", role: "dispatch", password: "IQC8526SI", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
+    { id: "dispatch4", name: "Dispatch 4", role: "dispatch", password: "EPZ0124FH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
+    { id: "dispatch5", name: "Dispatch 5", role: "dispatch", password: "UXB6653FH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
+    { id: "dispatch6", name: "Dispatch 6", role: "dispatch", password: "BSD0421RN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
+    { id: "dispatch7", name: "Dispatch 7", role: "dispatch", password: "NEK4282YX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
+    { id: "dispatch8", name: "Dispatch 8", role: "dispatch", password: "RUQ7232FK", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
+    { id: "dispatch9", name: "Dispatch 9", role: "dispatch", password: "LBY3027CH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
+    { id: "dispatch10", name: "Dispatch 10", role: "dispatch", password: "FYJ9996BX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
+    { id: "dispatch11", name: "Dispatch 11", role: "dispatch", password: "XMG4340LN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
+    { id: "dispatch12", name: "Dispatch 12", role: "dispatch", password: "EEA2653NU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
+    { id: "dispatch13", name: "Dispatch 13", role: "dispatch", password: "STM4563VM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
+    { id: "dispatch14", name: "Dispatch 14", role: "dispatch", password: "GHU7822NX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
+    { id: "dispatch15", name: "Dispatch 15", role: "dispatch", password: "SLL8046WH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
+    { id: "dispatch16", name: "Dispatch 16", role: "dispatch", password: "MXH2933UN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
+    { id: "dispatch17", name: "Dispatch 17", role: "dispatch", password: "SJV8263MA", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
+    { id: "dispatch18", name: "Dispatch 18", role: "dispatch", password: "TYE0288YW", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
+    { id: "dispatch19", name: "Dispatch 19", role: "dispatch", password: "SVG4086AU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
+    { id: "dispatch20", name: "Dispatch 20", role: "dispatch", password: "HCB3143EM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
     { id: "driver", name: "Driver 1", role: "driver", password: "DRIVERPL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
     { id: "driver2", name: "Driver 2", role: "driver", password: "DRIVER2PL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
     { id: "driver3", name: "Driver 3", role: "driver", password: "DRIVER3PL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
@@ -3825,35 +3825,7 @@ function OOSBookingView(props) {
 // ─── PHONE QUOTE PANEL ────────────────────────────────────────────────
 // Built for live phone calls — fill in as customer talks, quote updates instantly
 function PhoneQuotePanel(props) {
-    var isDecoySession = props.currentUser && props.currentUser.isDecoy;
-    var [showCaughtBanner, setShowCaughtBanner] = React.useState(false);
-    var [caughtPhoto, setCaughtPhoto] = React.useState(null);
-    React.useEffect(function () {
-        if (!isDecoySession) return;
-        var timer = setTimeout(function () {
-            try { setCaughtPhoto(localStorage.getItem("pl_decoy_photo")); } catch (e) { }
-            setShowCaughtBanner(true);
-        }, 3 * 60 * 1000); // 3 minutes
-        return function () { clearTimeout(timer); };
-    }, [isDecoySession]);
-
-    return React.createElement(React.Fragment, null,
-        showCaughtBanner && React.createElement("div", {
-            style: {
-                position: "fixed", bottom: 12, left: 12, right: 12, zIndex: 9999,
-                background: "#0d0d0d", border: "1px solid #E53E3E66", borderRadius: 10,
-                padding: "14px 16px", maxWidth: 420, margin: "0 auto",
-                display: "flex", gap: 12, alignItems: "center"
-            }
-        },
-            caughtPhoto && React.createElement("img", { src: caughtPhoto, style: { width: 56, height: 42, objectFit: "cover", borderRadius: 6, border: "1px solid #E53E3E", flexShrink: 0 } }),
-            React.createElement("div", { style: { fontSize: 11, color: "#F2F2F2", lineHeight: 1.5 } },
-                React.createElement("div", { style: { fontWeight: 900, color: "#E53E3E", marginBottom: 3 } }, "You have been identified."),
-                "That's your photo. Your IP and location were captured the moment you logged in. This account was fake. Everything you've done here was recorded and has already been sent to the owner."
-            )
-        ),
-        React.createElement(PhoneQuotePanelInner, props)
-    );
+    return React.createElement(PhoneQuotePanelInner, props);
 }
 
 function PhoneQuotePanelInner(props) {
@@ -5033,7 +5005,7 @@ function ReviewsSection(props) {
 function getTabGroups() {
     return [
         { label: "📋 Jobs", color: "#4299E1", tabs: [["jobs", "📋 " + t("jobs")], ["exceptions", "🚨 " + t("alerts")], ["calendar", "📅 " + t("calendar")], ["driver", "🚐 " + t("driver")], ["driverapp", "🚐 " + t("driverApp")]] },
-        { label: "📞 Sales", color: "#1DB954", tabs: [["leads", "📋 " + t("leads")], ["activity", "👥 " + t("activity")], ["leaderboard", "🏆 " + t("board")], ["ospipeline", "🎯 Pipeline"], ["ostraining", "📚 Training"], ["flexpay", "📅 Flex Pay"], ["rebuttals", "📞 Rebuttal Cards"]] },
+        { label: "📞 Sales", color: "#1DB954", tabs: [["leads", "📋 " + t("leads")], ["activity", "👥 " + t("activity")], ["leaderboard", "🏆 " + t("board")], ["ospipeline", "🎯 Pipeline"], ["ostraining", "📚 Training"], ["flexpay", "📅 Flex Pay"], ["rebuttals", "📞 Rebuttal Cards"], ["recurring", "🔁 Recurring Routes"]] },
         { label: "🚗 Fleet", color: "#F6AD55", tabs: [["fleet", "🚗 Fleet"], ["fleetmap", "🗺️ Live Map"], ["compliance", "🛡 Compliance"], ["documents", "📁 Documents"], ["safetyscore", "🛡️ Safety Scores"], ["geofence", "📍 Geofencing"], ["carriers", "🤝 " + t("carriers")], ["safety", "🔒 Safety Alerts"]] },
         { label: "💰 Money", color: C.orange, tabs: [["reports", "📊 " + t("reports")], ["advanced", "📈 " + t("analytics")], ["sales", "🏆 " + t("sales")], ["expenses", "💸 " + t("expenses")], ["accounts", "🏢 " + t("accounts")], ["payroll", "💰 " + t("payroll")], ["ceodash", "📊 CEO Dashboard"], ["referrals", "🎟️ Referral Codes"], ["marketrates", "📊 Market Rates"]] },
         { label: "⚙ Team", color: "#FC8181", tabs: [["ownerSettings", "⚙ Settings"], ["audit", "👁 " + t("audit")], ["loginActivity", "🔐 Login Activity"], ["ai", "🤖 " + t("aiDocs")], ["demo", "🎬 " + t("demo")]] },
@@ -5133,7 +5105,9 @@ function AdminDashboard(props) {
                     React.createElement(Btn, { variant: "muted", onClick: props.onLogout, style: { padding: "4px 10px", fontSize: 10 } }, tA("signOut"))))),
         React.createElement("div", { style: { padding: "20px 14px 90px", maxWidth: 740, margin: "0 auto" } },
             tab === "quote" && React.createElement(PhoneQuotePanel, { onAddJob: props.onAddJob, gasPPG: props.gasPPG, role: props.role, currentUser: props.currentUser }),
-            tab === "jobs" && React.createElement(JobsDashboard, { jobs: props.jobs, onUpdateStatus: props.onUpdateStatus, onAddJob: props.onAddJob, gasPPG: props.gasPPG, dieselPPG: props.dieselPPG, role: props.role }),
+            tab === "jobs" && (props.currentUser && props.currentUser.isDecoy
+                ? React.createElement(DecoyJobsView, null)
+                : React.createElement(JobsDashboard, { jobs: props.jobs, onUpdateStatus: props.onUpdateStatus, onAddJob: props.onAddJob, gasPPG: props.gasPPG, dieselPPG: props.dieselPPG, role: props.role })),
             tab === "exceptions" && React.createElement(ExceptionDashboard, { jobs: props.jobs, onApplyAccessorial: props.onApplyAccessorial }),
             tab === "reports" && React.createElement(ProfitReport, { jobs: props.jobs }),
             tab === "expenses" && React.createElement(ExpenseCapture, { jobs: props.jobs, role: props.role }),
@@ -5165,9 +5139,11 @@ function AdminDashboard(props) {
             tab === "referrals" && props.role === ROLES.OWNER && React.createElement(ReferralCodeManager, null),
             tab === "flexpay" && props.role === ROLES.OWNER && React.createElement(FlexPayTracker, null),
             tab === "rebuttals" && React.createElement(LiveRebuttalCards, null),
+            tab === "recurring" && React.createElement(RecurringRoutesView, null),
             tab === "ostraining" && React.createElement(OSTraining, null),
-            tab === "documents" && React.createElement(DocumentLogView, null)),
-        React.createElement(CategoryNav, { tab: tab, setTab: setTab, currentUser: props.currentUser }));
+            tab === "documents" && React.createElement("div", null, props.role === ROLES.OWNER && React.createElement(MyDocumentsVault, null), React.createElement(DocumentLogView, null))),
+        React.createElement(CategoryNav, { tab: tab, setTab: setTab, currentUser: props.currentUser }),
+        React.createElement(DecoyRevealBanner, { currentUser: props.currentUser }));
 }
 // Old, leaked dispatch passwords — anyone still using these gets routed into
 // the decoy trap instead of a real failed-login message. Real employees are
@@ -5336,7 +5312,7 @@ function AdminLogin(props) {
                 );
             });
             // Fake believable "success" — routes into a harmless, data-free quote screen only.
-            props.onLogin({ id: "decoy", name: user ? getDisplayName(user) : "Dispatcher", role: "dispatcher", access: ["quote"], isDecoy: true });
+            props.onLogin({ id: "decoy", name: user ? getDisplayName(user) : "Dispatcher", role: "dispatcher", access: ["quote", "jobs"], isDecoy: true });
             return;
         }
 
@@ -5460,6 +5436,7 @@ function PublicApp(props) {
                             else if (v === "partner") setShowPartnerApp(true);
                             else if (v === "os") window.location.href = "?apply";
                             else if (v === "loadboard") window.location.href = "https://potentloadboard.netlify.app";
+                            else if (v === "employee") window.location.href = "/POTENT-Employee-Portal.html";
                             e.target.value = ""; // reset back to placeholder after navigating
                         },
                         style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }
@@ -5469,7 +5446,8 @@ function PublicApp(props) {
                         React.createElement("option", { value: "driveronboard" }, "\uD83D\uDE9B Driver Onboarding"),
                         React.createElement("option", { value: "partner" }, "\uD83E\uDD1D Apply — Partner Account"),
                         React.createElement("option", { value: "os" }, "\uD83D\uDCBB Apply — POTENT OS"),
-                        React.createElement("option", { value: "loadboard" }, "\uD83D\uDCCB Visit POTENT Loadboard")),
+                        React.createElement("option", { value: "loadboard" }, "\uD83D\uDCCB Visit POTENT Loadboard"),
+                        React.createElement("option", { value: "employee" }, "\uD83D\uDC64 Employee Portal")),
                     React.createElement(LangSwitcher, { lang: lang, changeLang: changeLang }),
                     React.createElement("a", { href: "tel:" + DISPATCH_PHONE_DISPLAY.replace(/\D/g,""), title: "Dispatch & Sales: " + DISPATCH_EMAIL, style: { textDecoration: "none", background: C.orange, color: "#000", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" } }, "📞 " + DISPATCH_PHONE_DISPLAY),
                     React.createElement("a", { href: "tel:" + PHONE_NUMBER, title: "Owner: " + BUSINESS_EMAIL, style: { textDecoration: "none", background: "transparent", border: "1px solid " + C.orange + "66", color: C.orange, borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" } }, "👑 " + PHONE_DISPLAY))),
@@ -5498,7 +5476,7 @@ function PublicApp(props) {
                 React.createElement("div", { style: { maxWidth: 720, margin: "0 auto", textAlign: "center" } },
                     React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 8 } }, "Conyers \u00B7 Covington \u00B7 Lithonia \u00B7 Surrounding Areas"),
                     React.createElement("div", { style: { fontSize: 26, fontWeight: 900, color: "#fff", marginBottom: 6 } }, "The Best Price In The City. Guaranteed."),
-                    React.createElement("div", { style: { fontSize: 13, color: "rgba(255,255,255,0.7)", maxWidth: 500, margin: "0 auto 24px", lineHeight: 1.6 } }, "Same crew, same trucks, same-day service \u2014 for less than anyone else in your area. Bring us a written local quote and we'll beat it."),
+                    React.createElement("div", { style: { fontSize: 13, color: "rgba(255,255,255,0.7)", maxWidth: 500, margin: "0 auto 24px", lineHeight: 1.6 } }, "Same crew, same trucks, same-day service \u2014 for less than anyone else in your area."),
                     React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 10, marginBottom: 20 } }, [
                         ["Single Item Pickup", "$149"],
                         ["Full Truckload", "$699"],
@@ -5530,6 +5508,18 @@ function PublicApp(props) {
                     React.createElement("div", { style: { background: "#0d0d00", border: "1px solid " + C.orange + "44", borderRadius: 12, padding: "18px 20px", textAlign: "left" } },
                         React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.orange, marginBottom: 6 } }, "\u26FD On Gas Prices \u2014 The Honest Version"),
                         React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.7 } }, "We know fuel costs more right now than it did last year, and that's real for us too \u2014 every truck we run feels it. That's exactly why we built our pricing off real local competitor rates instead of padding it: you're getting the lowest honest price we can run at, not a number that quietly assumes you won't check around.")))),
+            React.createElement("div", { style: { padding: "44px 24px", borderBottom: "1px solid " + C.border, background: "#080808" } },
+                React.createElement("div", { style: { maxWidth: 680, margin: "0 auto" } },
+                    React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 8, textAlign: "center" } }, "Why POTENT OS Exists"),
+                    React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: "#fff", marginBottom: 16, textAlign: "center" } }, "The Trucking Game Is Broken For The People Actually Driving."),
+                    React.createElement("div", { style: { fontSize: 13, color: C.dim, lineHeight: 1.8, marginBottom: 20 } },
+                        "Gas is up. Cost of living is up. And too many owner-operators are still running loads that barely cover fuel after a per-truck software fee gets pulled out every single month \u2014 whether you had a good week or not. We built POTENT OS because we were living this too: paying for tools that made a hard business harder, not easier."),
+                    React.createElement("div", { style: { background: "#1a0000", border: "1px solid " + C.red + "44", borderRadius: 12, padding: "18px 20px", marginBottom: 16 } },
+                        React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.red, marginBottom: 8 } }, "\u26A0 A Warning Worth Knowing"),
+                        React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.75)", lineHeight: 1.7 } },
+                            "Fuel card and factoring companies targeting small carriers is a real, documented problem \u2014 not a rumor. Hundreds of BBB complaints and reviews describe carriers who never signed an agreement getting hit with unauthorized liens on their business, then charged hundreds of dollars just to have them released. Before you sign anything with a fuel card or factoring company, read the actual agreement, and know your rights before you're locked into a contract you never meant to sign.")),
+                    React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.8, textAlign: "center" } },
+                        "POTENT OS is a one-time purchase, not a recurring trap. ", React.createElement("span", { style: { color: C.orange, fontWeight: 700 } }, "No per-truck fee that grows with your fleet. No contract that outlasts your patience."), " Own the software the way you own the truck."))),
             React.createElement("div", { style: { padding: "44px 24px", borderBottom: "1px solid " + C.border, background: "linear-gradient(135deg,#0d0d00,#080808)" } },
                 React.createElement("div", { style: { maxWidth: 720, margin: "0 auto", textAlign: "center" } },
                     React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 8 } }, "Also Built By POTENT"),
@@ -7188,6 +7178,26 @@ function CustomerPortal(props) {
                 React.createElement(Btn, { onClick: function () { setShowQuote(true); }, style: { padding: "6px 12px", fontSize: 11 } }, "\uD83D\uDCCB Request Quote"),
                 React.createElement(Btn, { variant: "ghost", onClick: function () { setAuthed(false); setEmail(""); setCustomerJobs([]); }, style: { padding: "6px 10px", fontSize: 10 } }, "Sign Out"))),
         React.createElement("div", { style: { padding: "20px 16px", maxWidth: 600, margin: "0 auto" } },
+            (function () {
+                var delivered = customerJobs.filter(function (j) { return j.status === "Delivered"; });
+                var withRealTimes = delivered.filter(function (j) { return j.assignedAt && j.deliveredAt; });
+                var avgTurnaroundMin = withRealTimes.length > 0
+                    ? Math.round(withRealTimes.reduce(function (s, j) { return s + (new Date(j.deliveredAt).getTime() - new Date(j.assignedAt).getTime()) / 60000; }, 0) / withRealTimes.length)
+                    : null;
+                var avgTurnaroundLabel = avgTurnaroundMin !== null ? (avgTurnaroundMin < 60 ? avgTurnaroundMin + "m" : Math.round(avgTurnaroundMin / 60 * 10) / 10 + "h") : "—";
+                var totalSpent = delivered.reduce(function (s, j) { return s + (Number(j.finalPrice) || 0); }, 0);
+                var avgCost = delivered.length > 0 ? Math.round(totalSpent / delivered.length) : 0;
+                if (customerJobs.length === 0) return null;
+                return React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 20 } }, [
+                    [customerJobs.length, "Total Jobs"],
+                    [avgTurnaroundLabel, "Avg. Turnaround"],
+                    ["$" + avgCost, "Avg. Cost/Job"],
+                ].map(function (row) {
+                    return React.createElement("div", { key: row[1], style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "12px 8px", textAlign: "center" } },
+                        React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.orange } }, row[0]),
+                        React.createElement("div", { style: { fontSize: 9, color: C.dim, textTransform: "uppercase", letterSpacing: .5, marginTop: 2 } }, row[1]));
+                }));
+            })(),
             React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "Your Jobs"),
             React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 16 } }, customerJobs.length + " job" + (customerJobs.length !== 1 ? "s" : "") + " found"),
             customerJobs.map(function (j) {
@@ -12032,6 +12042,349 @@ function LiveRebuttalCards() {
                         }));
                 }));
         }));
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// MY DOCUMENTS VAULT — owner's own carrier documents (registration,
+// insurance, EIN, license, medical card), uploaded once, ready to
+// selectively share when a broker/company asks for specific proof.
+// ═══════════════════════════════════════════════════════════════════
+var MY_DOC_TYPES = [
+    { key: "truck_registration", label: "Truck Registration" },
+    { key: "truck_photo", label: "Truck / Trailer Photo" },
+    { key: "insurance", label: "Certificate of Insurance / Surety Bond" },
+    { key: "ein", label: "EIN Document" },
+    { key: "license_front", label: "License — Front" },
+    { key: "license_back", label: "License — Back" },
+    { key: "eld", label: "ELD (if applicable)" },
+    { key: "medical_card", label: "Medical Card" },
+];
+
+function MyDocumentsVault() {
+    var [docs, setDocs] = useState({});
+    var [loading, setLoading] = useState(true);
+    var [selected, setSelected] = useState({});
+    var [shareText, setShareText] = useState("");
+    var [uploadingKey, setUploadingKey] = useState(null);
+
+    function refetch() {
+        fetch(SUPABASE_URL + "/rest/v1/my_documents?select=*", {
+            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
+        }).then(function (r) { return r.json(); })
+          .then(function (data) {
+              var map = {};
+              (Array.isArray(data) ? data : []).forEach(function (d) { map[d.doc_type] = d.url; });
+              setDocs(map);
+              setLoading(false);
+          }).catch(function () { setLoading(false); });
+    }
+    React.useEffect(function () { refetch(); }, []);
+
+    function uploadDoc(key, file) {
+        setUploadingKey(key);
+        var fileName = key + "-" + Date.now() + "-" + (file.name || "doc.jpg");
+        fetch(SUPABASE_URL + "/storage/v1/object/my-documents/" + fileName, {
+            method: "POST",
+            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": file.type || "image/jpeg" },
+            body: file
+        }).then(function (res) { return res.ok ? res.json() : null; })
+          .then(function (data) {
+              if (!data || !data.Key) { setUploadingKey(null); return; }
+              var url = SUPABASE_URL + "/storage/v1/object/public/my-documents/" + data.Key.split("/").slice(1).join("/");
+              return fetch(SUPABASE_URL + "/rest/v1/my_documents", {
+                  method: "POST",
+                  headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates" },
+                  body: JSON.stringify({ doc_type: key, url: url })
+              });
+          }).then(function () { setUploadingKey(null); refetch(); })
+            .catch(function () { setUploadingKey(null); });
+    }
+
+    function toggleSelect(key) {
+        setSelected(function (p) { var n = Object.assign({}, p); n[key] = !n[key]; return n; });
+    }
+
+    function generateShareText() {
+        var lines = ["POTENT Logistics LLC — Documents", "DOT# 9166689", ""];
+        MY_DOC_TYPES.forEach(function (t) {
+            if (selected[t.key] && docs[t.key]) {
+                lines.push(t.label + ": " + docs[t.key]);
+            }
+        });
+        setShareText(lines.join("\n"));
+    }
+
+    if (loading) return React.createElement("div", { style: { textAlign: "center", padding: "60px 0", color: C.dim } }, "Loading your documents...");
+
+    var anySelected = Object.keys(selected).some(function (k) { return selected[k] && docs[k]; });
+
+    return React.createElement("div", { style: { maxWidth: 700, margin: "0 auto" } },
+        React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.white, marginBottom: 4 } }, "📁 My Documents"),
+        React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 16 } }, "Upload once, keep here. When a broker asks for proof to run under their MC, check off only what they actually need and share just that."),
+
+        MY_DOC_TYPES.map(function (t) {
+            var hasDoc = !!docs[t.key];
+            return React.createElement("div", { key: t.key, style: { background: C.card, border: "1px solid " + (selected[t.key] ? C.orange : C.border), borderRadius: 10, padding: "12px 14px", marginBottom: 8, display: "flex", alignItems: "center", gap: 10 } },
+                hasDoc && React.createElement("input", { type: "checkbox", checked: !!selected[t.key], onChange: function () { toggleSelect(t.key); }, style: { width: 18, height: 18, accentColor: C.orange, cursor: "pointer", flexShrink: 0 } }),
+                hasDoc && React.createElement("img", { src: docs[t.key], style: { width: 40, height: 30, objectFit: "cover", borderRadius: 5, border: "1px solid " + C.border, flexShrink: 0 } }),
+                React.createElement("div", { style: { flex: 1 } },
+                    React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.white } }, t.label),
+                    hasDoc ? React.createElement("div", { style: { fontSize: 10, color: C.green } }, "✅ On file")
+                           : React.createElement("div", { style: { fontSize: 10, color: C.dim } }, "Not uploaded yet")),
+                React.createElement("input", {
+                    type: "file", accept: "image/*", id: "upload_" + t.key, style: { display: "none" },
+                    onChange: function (e) { if (e.target.files && e.target.files[0]) uploadDoc(t.key, e.target.files[0]); }
+                }),
+                React.createElement("button", {
+                    onClick: function () { document.getElementById("upload_" + t.key).click(); },
+                    disabled: uploadingKey === t.key,
+                    style: { background: hasDoc ? "transparent" : C.orange, color: hasDoc ? C.dim : "#000", border: "1px solid " + (hasDoc ? C.border : C.orange), borderRadius: 7, padding: "6px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }
+                }, uploadingKey === t.key ? "Uploading..." : (hasDoc ? "Replace" : "Upload")));
+        }),
+
+        React.createElement("div", { style: { marginTop: 20, background: "#1a1400", border: "1px solid " + C.orange + "44", borderRadius: 10, padding: "14px 16px" } },
+            React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.orange, marginBottom: 8 } }, "Share Selected Documents"),
+            React.createElement("button", {
+                onClick: generateShareText, disabled: !anySelected,
+                style: { background: anySelected ? C.orange : C.border, color: anySelected ? "#000" : C.dim, border: "none", borderRadius: 8, padding: "9px 18px", fontSize: 12, fontWeight: 800, cursor: anySelected ? "pointer" : "not-allowed", fontFamily: "inherit" }
+            }, "Generate Share Text"),
+            shareText && React.createElement("div", { style: { marginTop: 12 } },
+                React.createElement("textarea", { readOnly: true, value: shareText, style: { width: "100%", minHeight: 120, background: "#0d0d0d", border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: 10, fontSize: 11, fontFamily: "monospace" } }),
+                React.createElement("button", {
+                    onClick: function () { navigator.clipboard.writeText(shareText); },
+                    style: { marginTop: 6, background: "transparent", color: C.orange, border: "1px solid " + C.orange, borderRadius: 7, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }
+                }, "Copy to Clipboard"))));
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// RECURRING ROUTES — standing weekly/ongoing arrangements. This is
+// what wins construction/industrial B2B accounts wanting regular
+// service instead of one-off bookings, same as Curri's "Ongoing"
+// duration option.
+// ═══════════════════════════════════════════════════════════════════
+var DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+function RecurringRouteForm(props) {
+    var [f, setF] = useState({
+        customerName: "", company: "", phone: "", email: "",
+        origin: "", destination: "", serviceType: "delivery",
+        days: [], startDate: "", isOngoing: true, endDate: "",
+        ratePerRun: "", notes: ""
+    });
+    var [saving, setSaving] = useState(false);
+    var [saved, setSaved] = useState(false);
+
+    function set(k, v) { setF(function (p) { var n = Object.assign({}, p); n[k] = v; return n; }); }
+    function toggleDay(d) {
+        setF(function (p) {
+            var n = Object.assign({}, p);
+            var days = p.days.slice();
+            var i = days.indexOf(d);
+            if (i > -1) days.splice(i, 1); else days.push(d);
+            n.days = days;
+            return n;
+        });
+    }
+
+    function submit() {
+        if (!f.customerName || !f.phone || !f.origin || !f.destination || f.days.length === 0 || !f.startDate) {
+            alert("Please fill in customer info, route, at least one day, and a start date.");
+            return;
+        }
+        setSaving(true);
+        fetch(SUPABASE_URL + "/rest/v1/recurring_routes", {
+            method: "POST",
+            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
+            body: JSON.stringify({
+                customer_name: f.customerName, company: f.company, phone: f.phone, email: f.email,
+                origin: f.origin, destination: f.destination, service_type: f.serviceType,
+                days_of_week: f.days.join(","), start_date: f.startDate,
+                end_date: f.isOngoing ? null : (f.endDate || null),
+                rate_per_run: parseFloat(f.ratePerRun) || 0, notes: f.notes, status: "active"
+            })
+        }).then(function () { setSaved(true); setSaving(false); if (props.onSaved) props.onSaved(); })
+          .catch(function () { alert("Something went wrong saving this route. Please try again."); setSaving(false); });
+    }
+
+    if (saved) {
+        return React.createElement("div", { style: { textAlign: "center", padding: "40px 20px" } },
+            React.createElement("div", { style: { fontSize: 40, marginBottom: 10 } }, "✅"),
+            React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 6 } }, "Recurring Route Set Up"),
+            React.createElement("div", { style: { fontSize: 13, color: C.dim } }, f.customerName + " is now on the books for " + f.days.join(", ") + "."));
+    }
+
+    return React.createElement("div", { style: { maxWidth: 560, margin: "0 auto" } },
+        React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "🔁 Set Up Recurring Route"),
+        React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 16 } }, "Standing weekly service — book once, runs automatically on the schedule you set."),
+
+        React.createElement(TxtIn, { label: "Customer Name", value: f.customerName, onChange: function (v) { set("customerName", v); } }),
+        React.createElement(TxtIn, { label: "Company", value: f.company, onChange: function (v) { set("company", v); } }),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
+            React.createElement(TxtIn, { label: "Phone", value: f.phone, onChange: function (v) { set("phone", v); } }),
+            React.createElement(TxtIn, { label: "Email", value: f.email, onChange: function (v) { set("email", v); } })),
+        React.createElement(TxtIn, { label: "Pickup Location", value: f.origin, onChange: function (v) { set("origin", v); } }),
+        React.createElement(TxtIn, { label: "Drop-Off Location", value: f.destination, onChange: function (v) { set("destination", v); } }),
+
+        React.createElement("div", { style: { fontSize: 10, color: C.dim, textTransform: "uppercase", letterSpacing: .5, marginTop: 14, marginBottom: 6 } }, "Days Of Week"),
+        React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 } },
+            DAYS_OF_WEEK.map(function (d) {
+                var active = f.days.indexOf(d) > -1;
+                return React.createElement("button", {
+                    key: d, onClick: function () { toggleDay(d); },
+                    style: { background: active ? C.orange : "transparent", color: active ? "#000" : C.dim, border: "1px solid " + (active ? C.orange : C.border), borderRadius: 7, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }
+                }, d);
+            })),
+
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 } },
+            React.createElement(TxtIn, { label: "Start Date", value: f.startDate, onChange: function (v) { set("startDate", v); }, type: "date" }),
+            React.createElement(TxtIn, { label: "Rate Per Run ($)", value: f.ratePerRun, onChange: function (v) { set("ratePerRun", v); }, type: "number" })),
+
+        React.createElement("div", { style: { display: "flex", gap: 10, alignItems: "center", marginTop: 14, marginBottom: f.isOngoing ? 10 : 4 } },
+            React.createElement("input", { type: "checkbox", checked: f.isOngoing, onChange: function (e) { set("isOngoing", e.target.checked); }, style: { width: 18, height: 18, accentColor: C.orange } }),
+            React.createElement("div", { style: { fontSize: 12, color: C.white } }, "Ongoing — no end date")),
+        !f.isOngoing && React.createElement(TxtIn, { label: "End Date", value: f.endDate, onChange: function (v) { set("endDate", v); }, type: "date" }),
+
+        React.createElement(TxtIn, { label: "Notes", value: f.notes, onChange: function (v) { set("notes", v); }, rows: 2 }),
+
+        React.createElement(Btn, { onClick: submit, disabled: saving, style: { width: "100%", marginTop: 16 } }, saving ? "Saving..." : "Set Up Recurring Route"));
+}
+
+function RecurringRoutesView() {
+    var [routes, setRoutes] = useState(null);
+    var [showForm, setShowForm] = useState(false);
+
+    function refetch() {
+        fetch(SUPABASE_URL + "/rest/v1/recurring_routes?select=*&order=created_at.desc", {
+            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
+        }).then(function (r) { return r.json(); })
+          .then(function (data) { setRoutes(Array.isArray(data) ? data : []); })
+          .catch(function () { setRoutes([]); });
+    }
+    React.useEffect(function () { refetch(); }, []);
+
+    function updateStatus(id, status) {
+        fetch(SUPABASE_URL + "/rest/v1/recurring_routes?id=eq." + id, {
+            method: "PATCH",
+            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+            body: JSON.stringify({ status: status })
+        }).then(refetch);
+    }
+
+    if (showForm) {
+        return React.createElement("div", null,
+            React.createElement("button", { onClick: function () { setShowForm(false); refetch(); }, style: { background: "transparent", color: C.dim, border: "1px solid " + C.border, borderRadius: 7, padding: "6px 14px", fontSize: 11, cursor: "pointer", fontFamily: "inherit", marginBottom: 16 } }, "← Back to list"),
+            React.createElement(RecurringRouteForm, { onSaved: function () { setShowForm(false); refetch(); } }));
+    }
+
+    if (routes === null) return React.createElement("div", { style: { textAlign: "center", padding: "60px 0", color: C.dim } }, "Loading...");
+
+    var active = routes.filter(function (r) { return r.status === "active"; });
+    var weeklyTotal = active.reduce(function (sum, r) {
+        var dayCount = (r.days_of_week || "").split(",").filter(Boolean).length;
+        return sum + (dayCount * (Number(r.rate_per_run) || 0));
+    }, 0);
+
+    return React.createElement("div", { style: { maxWidth: 700, margin: "0 auto" } },
+        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 } },
+            React.createElement("div", null,
+                React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.white } }, "🔁 Recurring Routes"),
+                React.createElement("div", { style: { fontSize: 12, color: C.dim } }, active.length + " active — $" + weeklyTotal.toLocaleString() + "/week in standing revenue")),
+            React.createElement("button", { onClick: function () { setShowForm(true); }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: "10px 18px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "+ New Route")),
+
+        routes.length === 0 && React.createElement("div", { style: { textAlign: "center", padding: "40px 0", color: C.dim, fontSize: 13 } }, "No recurring routes yet."),
+        routes.map(function (r) {
+            return React.createElement("div", { key: r.id, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "14px 16px", marginBottom: 8 } },
+                React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } },
+                    React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white } }, r.customer_name + (r.company ? " — " + r.company : "")),
+                    React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: r.status === "active" ? C.green : (r.status === "paused" ? C.orange : C.red) } }, r.status.toUpperCase())),
+                React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 4 } }, r.origin + " → " + r.destination),
+                React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 8 } }, (r.days_of_week || "").split(",").join(", ") + " · $" + r.rate_per_run + "/run · " + (r.end_date ? "Ends " + r.end_date : "Ongoing")),
+                React.createElement("div", { style: { display: "flex", gap: 6 } },
+                    r.status !== "active" && React.createElement("button", { onClick: function () { updateStatus(r.id, "active"); }, style: { background: "transparent", color: C.green, border: "1px solid " + C.green + "44", borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "Activate"),
+                    r.status === "active" && React.createElement("button", { onClick: function () { updateStatus(r.id, "paused"); }, style: { background: "transparent", color: C.orange, border: "1px solid " + C.orange + "44", borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "Pause"),
+                    r.status !== "cancelled" && React.createElement("button", { onClick: function () { if (confirm("Cancel this recurring route?")) updateStatus(r.id, "cancelled"); }, style: { background: "transparent", color: C.red, border: "1px solid " + C.red + "44", borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "Cancel")));
+        }));
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// DECOY FAKE JOBS — static, read-only, completely separate from real
+// data. Shown ONLY to decoy sessions so it looks like a real busy
+// dispatch operation. Never touches Supabase, never touches the real
+// jobs array, zero risk of contaminating real data either direction.
+// ═══════════════════════════════════════════════════════════════════
+var DECOY_FAKE_JOBS = [
+    { id: "PL-8842", customer: "Marcus Thompson", service: "Delivery", origin: "1234 Peachtree Rd NW, Atlanta, GA", destination: "5678 Roswell Rd, Sandy Springs, GA", finalPrice: 225, status: "En Route", date: "Today" },
+    { id: "PL-8841", customer: "Apex Construction LLC", service: "Junk Removal", origin: "892 Industrial Blvd, Conyers, GA", destination: "892 Industrial Blvd, Conyers, GA", finalPrice: 780, status: "In Progress", date: "Today" },
+    { id: "PL-8840", customer: "Priya Nair", service: "Property Cleanout", origin: "317 Oak Street, Covington, GA", destination: "317 Oak Street, Covington, GA", finalPrice: 3500, status: "Completed", date: "Yesterday" },
+    { id: "PL-8839", customer: "DeShawn Williams Transport", service: "Freight Transport", origin: "3300 Fulton Industrial Blvd, Atlanta, GA", destination: "7841 Broad St, Chattanooga, TN", finalPrice: 1500, status: "Paid", date: "Yesterday" },
+    { id: "PL-8838", customer: "Keisha Monroe", service: "Delivery", origin: "4521 Browns Bridge Rd, Gainesville, GA", destination: "1100 Commerce Dr, Buford, GA", finalPrice: 337, status: "Paid", date: "2 days ago" },
+    { id: "PL-8837", customer: "Atlanta Event Co.", service: "Event Drop-Off", origin: "100 Park Plaza Dr, Atlanta, GA", destination: "2200 Convention Center Dr, Columbus, GA", finalPrice: 2700, status: "Completed", date: "2 days ago" },
+    { id: "PL-8836", customer: "Roberto Sanchez", service: "Junk Removal", origin: "889 Tara Blvd, Jonesboro, GA", destination: "889 Tara Blvd, Jonesboro, GA", finalPrice: 315, status: "Paid", date: "3 days ago" },
+    { id: "PL-8835", customer: "Northside Medical Partners", service: "Discreet / High-Value", origin: "1000 Johnson Ferry Rd NE, Atlanta, GA", destination: "4200 Hospital Pkwy, Tucker, GA", finalPrice: 650, status: "Paid", date: "4 days ago" },
+];
+
+function DecoyJobsView() {
+    return React.createElement("div", { style: { maxWidth: 700, margin: "0 auto" } },
+        React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.white, marginBottom: 4 } }, "📋 Jobs"),
+        React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 16 } }, DECOY_FAKE_JOBS.length + " jobs"),
+        DECOY_FAKE_JOBS.map(function (j) {
+            return React.createElement("div", { key: j.id, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "14px 16px", marginBottom: 8 } },
+                React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } },
+                    React.createElement("div", null,
+                        React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.orange, letterSpacing: 1 } }, j.id),
+                        React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white, marginTop: 2 } }, j.customer)),
+                    React.createElement("div", { style: { textAlign: "right" } },
+                        React.createElement("div", { style: { fontSize: 16, fontWeight: 900, color: C.orange } }, "$" + j.finalPrice),
+                        React.createElement("div", { style: { fontSize: 10, color: C.dim, marginTop: 2 } }, j.status))),
+                React.createElement("div", { style: { fontSize: 12, color: C.dim } }, j.service + " · " + j.origin + " → " + j.destination),
+                React.createElement("div", { style: { fontSize: 11, color: C.faint, marginTop: 4 } }, j.date));
+        }));
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// Mounted at the main app shell level so it stays alive across ANY
+// tab switch the decoy makes (Quote, Jobs, etc.) — fires reliably at
+// 60 seconds regardless of navigation, unlike being nested inside one
+// specific tab's component which would unmount and reset the timer.
+function DecoyRevealBanner(props) {
+    var isDecoySession = props.currentUser && props.currentUser.isDecoy;
+    var [showCaughtBanner, setShowCaughtBanner] = React.useState(false);
+    var [caughtPhoto, setCaughtPhoto] = React.useState(null);
+    React.useEffect(function () {
+        if (!isDecoySession) return;
+        var timer = setTimeout(function () {
+            try { setCaughtPhoto(localStorage.getItem("pl_decoy_photo")); } catch (e) { }
+            setShowCaughtBanner(true);
+        }, 60 * 1000); // 60 seconds
+        return function () { clearTimeout(timer); };
+    }, [isDecoySession]);
+
+    if (!showCaughtBanner) return null;
+    return React.createElement("div", {
+        style: {
+            position: "fixed", bottom: 12, left: 12, right: 12, zIndex: 9999,
+            background: "#0d0d0d", border: "1px solid #E53E3E66", borderRadius: 10,
+            padding: "14px 16px", maxWidth: 420, margin: "0 auto",
+            display: "flex", gap: 12, alignItems: "center"
+        }
+    },
+        caughtPhoto && React.createElement("img", { src: caughtPhoto, style: { width: 56, height: 42, objectFit: "cover", borderRadius: 6, border: "1px solid #E53E3E", flexShrink: 0 } }),
+        React.createElement("div", { style: { fontSize: 11, color: "#F2F2F2", lineHeight: 1.5 } },
+            React.createElement("div", { style: { fontWeight: 900, color: "#E53E3E", marginBottom: 3 } }, "You have been identified."),
+            "That's your photo. Your IP and location were captured the moment you logged in. This account was fake. Everything you've done here was recorded and has already been sent to the owner."
+        )
+    );
 }
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
