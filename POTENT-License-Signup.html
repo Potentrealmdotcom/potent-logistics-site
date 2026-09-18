@@ -8,69 +8,84 @@
 <script src="https://js.stripe.com/v3/"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:#080808;color:#F2F2F2;font-family:'Segoe UI',Arial,sans-serif;min-height:100vh;}
-.hero{background:linear-gradient(135deg,#0d0d00,#080808);border-bottom:1px solid #1a1a1a;padding:36px 20px 28px;text-align:center;}
-.brand{font-size:11px;font-weight:700;color:#F0E000;letter-spacing:3px;margin-bottom:8px;}
-.hero h1{font-size:26px;font-weight:900;color:#F2F2F2;margin-bottom:6px;}
-.hero p{font-size:12px;color:#666;max-width:480px;margin:0 auto;}
+:root{
+  --bg:#0c0c09; --card:#141410; --line:#2c2c24; --dim:#a9a9a0; --gold:#f0e000;
+  --green:#4ade80; --blue:#34b0e7; --purple:#b87ef2; --red:#f87171;
+  --green-bg:#0d1a10; --blue-bg:#0a1520; --purple-bg:#170f1e; --gold-bg:#1a1408;
+}
+body{background:var(--bg);color:#F2F2F2;font-family:"Inter",-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;}
+h1,h2{font-family:"Oswald",sans-serif;letter-spacing:0.01em;}
+.hero{background:linear-gradient(135deg,#0d0d00,#080808);border-bottom:2px solid var(--gold);padding:36px 20px 28px;text-align:center;}
+.brand{font-size:11px;font-weight:700;color:var(--gold);letter-spacing:3px;margin-bottom:8px;}
+.hero h1{font-size:2.1rem;font-weight:600;color:#F2F2F2;margin-bottom:6px;}
+.hero p{font-size:1rem;color:var(--dim);max-width:480px;margin:0 auto;}
 .container{max-width:800px;margin:0 auto;padding:24px 16px 60px;}
 .step{display:none;}.step.active{display:block;}
-.step-bar{display:flex;margin-bottom:24px;border-radius:10px;overflow:hidden;border:1px solid #1a1a1a;}
-.si{flex:1;padding:10px 4px;text-align:center;font-size:10px;font-weight:700;color:#333;background:#0d0d0d;border-right:1px solid #1a1a1a;transition:.2s;}
+.step-bar{display:flex;margin-bottom:24px;border-radius:2px;overflow:hidden;border:1px solid var(--line);}
+.si{flex:1;padding:10px 4px;text-align:center;font-size:10px;font-weight:700;color:#555;background:var(--card);border-right:1px solid var(--line);font-family:"Oswald",sans-serif;letter-spacing:0.03em;transition:.2s;}
 .si:last-child{border-right:none;}
-.si.active{background:#F0E00015;color:#F0E000;}
-.si.done{background:#1DB95412;color:#1DB954;}
-.card{background:#111;border:1px solid #1a1a1a;border-radius:12px;padding:20px;margin-bottom:14px;}
-.card h2{font-size:13px;font-weight:800;color:#F0E000;margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px;}
-.tier{border:1px solid #1e1e1e;border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:.15s;}
-.tier:hover,.tier.sel{border-color:#F0E000;background:#F0E00008;}
+.si.active{background:#1a1608;color:var(--gold);}
+.si.done{background:var(--green-bg);color:var(--green);}
+.card{background:var(--card);border:1px solid var(--line);border-radius:2px;padding:22px;margin-bottom:14px;}
+.card h2{font-size:1.1rem;font-weight:600;color:var(--gold);margin-bottom:14px;font-family:"Oswald",sans-serif;}
+.tier{border:1px solid var(--line);border-radius:2px;padding:16px 18px;margin-bottom:10px;cursor:pointer;transition:.15s;background:var(--card);}
+.tier:hover{border-color:var(--gold);}
+.tier.sel{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold);}
+.tier.starter{background:var(--green-bg);} .tier.starter .tier-name{color:var(--green);}
+.tier.growth{background:var(--blue-bg);} .tier.growth .tier-name{color:var(--blue);}
+.tier.fleet{background:var(--purple-bg);} .tier.fleet .tier-name{color:var(--purple);}
+.tier.enterprise{background:var(--gold-bg);} .tier.enterprise .tier-name{color:var(--gold);}
+.tier.custom{background:#141410;} .tier.custom .tier-name{color:#999;}
 .tier-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px;}
-.tier-name{font-size:13px;font-weight:800;color:#F2F2F2;}
-.tier-price{font-size:20px;font-weight:900;color:#F0E000;white-space:nowrap;}
-.tier-sub{font-size:11px;color:#555;}
-.tier-save{font-size:10px;color:#1DB954;font-weight:700;margin-top:3px;}
-label{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;margin-top:12px;}
-input,select{width:100%;background:#0d0d0d;border:1px solid #1e1e1e;border-radius:7px;color:#F2F2F2;padding:10px 12px;font-size:13px;outline:none;font-family:inherit;transition:.15s;}
-input:focus,select:focus{border-color:#F0E000;}
+.tier-name{font-size:0.95rem;font-weight:600;font-family:"Oswald",sans-serif;letter-spacing:0.02em;}
+.tier-price{font-size:1.3rem;font-weight:700;color:#fff;white-space:nowrap;font-family:"Oswald",sans-serif;}
+.tier-sub{font-size:11px;color:var(--dim);}
+.tier-save{font-size:10px;color:var(--green);font-weight:700;margin-top:3px;}
+label{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;margin-top:12px;}
+input,select{width:100%;background:#0d0d0d;border:1px solid var(--line);border-radius:2px;color:#F2F2F2;padding:10px 12px;font-size:13px;outline:none;font-family:inherit;transition:.15s;}
+input:focus,select:focus{border-color:var(--gold);}
 select{color-scheme:dark;}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.agr{background:#060606;border:1px solid #1a1a1a;border-radius:8px;padding:16px;height:260px;overflow-y:auto;font-size:11px;color:#4a4a4a;line-height:1.8;margin-bottom:12px;}
-.agr h3{color:#F0E000;font-size:11px;margin:12px 0 4px;}
+.agr{background:#060606;border:1px solid var(--line);border-radius:2px;padding:16px;height:260px;overflow-y:auto;font-size:11px;color:#4a4a4a;line-height:1.8;margin-bottom:12px;}
+.agr h3{color:var(--gold);font-size:11px;margin:12px 0 4px;}
 .agr h3:first-child{margin-top:0;}
 .agr strong{color:#777;}
 .chk{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid #111;}
-.chk input[type=checkbox]{width:18px;height:18px;flex-shrink:0;margin-top:1px;accent-color:#F0E000;cursor:pointer;}
+.chk input[type=checkbox]{width:18px;height:18px;flex-shrink:0;margin-top:1px;accent-color:var(--gold);cursor:pointer;}
 .chk span{font-size:12px;color:#777;line-height:1.6;}
-.btn{width:100%;background:#F0E000;color:#000;border:none;border-radius:8px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;margin-top:8px;transition:.15s;}
+.btn{width:100%;background:var(--gold);color:#000;border:none;border-radius:2px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:"Oswald",sans-serif;letter-spacing:0.02em;margin-top:8px;transition:.15s;}
 .btn:hover{background:#e0d000;}
 .btn:disabled{opacity:.35;cursor:not-allowed;}
-.btn-g{width:100%;background:transparent;color:#666;border:1px solid #1e1e1e;border-radius:8px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px;}
+.btn-g{width:100%;background:transparent;color:#666;border:1px solid var(--line);border-radius:2px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px;}
 .btn-g:hover{border-color:#333;color:#888;}
 .pay-method{display:flex;gap:8px;margin-bottom:16px;}
-.pm{flex:1;border:1px solid #1e1e1e;border-radius:8px;padding:12px;cursor:pointer;text-align:center;transition:.15s;}
-.pm:hover,.pm.sel{border-color:#F0E000;background:#F0E00008;}
+.pm{flex:1;border:1px solid var(--line);border-radius:2px;padding:12px;cursor:pointer;text-align:center;transition:.15s;background:var(--card);}
+.pm:hover,.pm.sel{border-color:var(--gold);background:#1a1608;}
 .pm-icon{font-size:22px;margin-bottom:4px;}
 .pm-label{font-size:11px;font-weight:700;color:#F2F2F2;}
 .pm-sub{font-size:10px;color:#555;margin-top:2px;}
-#card-element,#payment-element{background:#0d0d0d;border:1px solid #1e1e1e;border-radius:7px;padding:13px;margin-top:4px;}
-.err{color:#E53E3E;font-size:12px;margin-top:6px;display:none;}
+#card-element,#payment-element,#card-element-flex{background:#0d0d0d;border:1px solid var(--line);border-radius:2px;padding:13px;margin-top:4px;}
+.err{color:var(--red);font-size:12px;margin-top:6px;display:none;}
 .sum-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #0f0f0f;font-size:12px;}
 .sum-row:last-child{border-bottom:none;}
 .sk{color:#555;} .sv{color:#F2F2F2;font-weight:700;}
-.tot{display:flex;justify-content:space-between;padding:14px 0 4px;font-size:16px;font-weight:900;}
-.tk{color:#F2F2F2;} .tv{color:#F0E000;}
+.tot{display:flex;justify-content:space-between;padding:14px 0 4px;font-size:16px;font-weight:700;font-family:"Oswald",sans-serif;}
+.tk{color:#F2F2F2;} .tv{color:var(--gold);}
 .note{font-size:10px;color:#333;line-height:1.6;margin-top:6px;}
-.hl{background:#F0E00010;border:1px solid #F0E00030;border-radius:8px;padding:10px 14px;font-size:12px;color:#F0E000;font-weight:700;margin-bottom:12px;}
+.hl{background:#1a1608;border:1px solid #3a3410;border-radius:2px;padding:10px 14px;font-size:12px;color:var(--gold);font-weight:600;margin-bottom:12px;}
 .success-wrap{text-align:center;padding:40px 16px;}
-.success-wrap h2{font-size:24px;font-weight:900;margin-bottom:6px;}
-.success-wrap p{font-size:13px;color:#666;margin-bottom:20px;}
-.badge{display:inline-block;background:#F0E00018;color:#F0E000;border:1px solid #F0E00033;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:700;margin:2px;}
-.badge.green{background:#1DB95418;color:#1DB954;border-color:#1DB95433;}
-.bank-notice{background:#0a1a2a;border:1px solid #4299E133;border-radius:8px;padding:12px;margin-top:10px;font-size:11px;color:#4299E1;line-height:1.6;}
-.enterprise-box{background:#1a1400;border:1px solid #F0E00033;border-radius:8px;padding:18px;text-align:center;}
-@media(max-width:500px){.g2{grid-template-columns:1fr;}.tier-price{font-size:16px;}.pay-method{flex-direction:column;}}
+.success-wrap h2{font-size:1.6rem;font-weight:600;margin-bottom:6px;}
+.success-wrap p{font-size:13px;color:var(--dim);margin-bottom:20px;}
+.badge{display:inline-block;background:#1a1608;color:var(--gold);border:1px solid #3a3410;border-radius:2px;padding:3px 10px;font-size:10px;font-weight:700;margin:2px;}
+.badge.green{background:var(--green-bg);color:var(--green);border-color:#1a3a20;}
+.bank-notice{background:var(--blue-bg);border:1px solid #1a3a55;border-radius:2px;padding:12px;margin-top:10px;font-size:11px;color:var(--blue);line-height:1.6;}
+.enterprise-box{background:var(--gold-bg);border:1px solid #3a3410;border-radius:2px;padding:18px;text-align:center;}
+@media(max-width:500px){.g2{grid-template-columns:1fr;}.tier-price{font-size:1.1rem;}.pay-method{flex-direction:column;}}
 </style>
 </head>
 <body>
@@ -99,27 +114,27 @@ select{color-scheme:dark;}
       <div class="hl">Every tier includes: Offline Mode · Voice Quoting · Live GPS · Fleet & Compliance · Payroll · 14 Languages · Unlimited Jobs · Lifetime Updates</div>
 
 ```
-  <div class="tier sel" data-tier="Starter" data-price="14500" data-fleet="1–10 trucks" onclick="pickTier(this)">
+  <div class="tier sel starter" data-tier="Starter" data-price="14500" data-fleet="1–10 trucks" onclick="pickTier(this)">
     <div class="tier-top"><div class="tier-name">Starter — 1 to 10 Trucks</div><div class="tier-price">$14,500</div></div>
     <div class="tier-sub">Up to 10 trucks · 20 dispatchers · Unlimited jobs</div>
     <div class="tier-save">Saves $75k–$120k/yr vs Motive · Pays back in 2–3 months</div>
   </div>
-  <div class="tier" data-tier="Growth" data-price="34500" data-fleet="11–50 trucks" onclick="pickTier(this)">
+  <div class="tier growth" data-tier="Growth" data-price="34500" data-fleet="11–50 trucks" onclick="pickTier(this)">
     <div class="tier-top"><div class="tier-name">Growth — 11 to 50 Trucks</div><div class="tier-price">$34,500</div></div>
     <div class="tier-sub">Up to 50 trucks · 20 dispatchers · Unlimited jobs</div>
     <div class="tier-save">Saves $150k–$240k/yr vs Motive · Pays back in 3–4 months</div>
   </div>
-  <div class="tier" data-tier="Mid Fleet" data-price="69500" data-fleet="51–150 trucks" onclick="pickTier(this)">
+  <div class="tier fleet" data-tier="Mid Fleet" data-price="69500" data-fleet="51–150 trucks" onclick="pickTier(this)">
     <div class="tier-top"><div class="tier-name">Mid Fleet — 51 to 150 Trucks</div><div class="tier-price">$69,500</div></div>
     <div class="tier-sub">Up to 150 trucks · 20 dispatchers · Unlimited jobs</div>
     <div class="tier-save">Saves $375k–$600k/yr · 5-year savings: $1M+</div>
   </div>
-  <div class="tier" data-tier="Enterprise" data-price="109500" data-fleet="151–300 trucks" onclick="pickTier(this)">
+  <div class="tier enterprise" data-tier="Enterprise" data-price="109500" data-fleet="151–300 trucks" onclick="pickTier(this)">
     <div class="tier-top"><div class="tier-name">Enterprise — 151 to 300 Trucks</div><div class="tier-price">$109,500</div></div>
     <div class="tier-sub">Up to 300 trucks · 20 dispatchers · White-glove 24hr setup</div>
     <div class="tier-save">Saves $800k–$1.2M/yr · 5-year savings: $2.2M+</div>
   </div>
-  <div class="tier" data-tier="Custom" data-price="0" data-fleet="300+ trucks" onclick="pickTier(this)">
+  <div class="tier custom" data-tier="Custom" data-price="0" data-fleet="300+ trucks" onclick="pickTier(this)">
     <div class="tier-top"><div class="tier-name">Custom — 300+ Trucks</div><div class="tier-price" style="color:#666;font-size:15px;">Custom Pricing</div></div>
     <div class="tier-sub">300+ trucks · Custom scope · White label available</div>
     <div class="tier-save">Contact Anthony: (770) 648-4228</div>
@@ -197,8 +212,8 @@ select{color-scheme:dark;}
     <h3>7A. THIRD-PARTY SERVICE COSTS</h3>
     The one-time License Fee covers the Software itself, in perpetuity. It does not cover third-party infrastructure services required to run the Software — a database hosting account (e.g. Supabase), a mapping/geocoding API (e.g. Google Maps), and an email delivery service (e.g. EmailJS). Most fleets of Licensee's size operate these services within free or low-cost tiers, typically $0-$25 per month combined, billed directly by those providers to Licensee. Licensee may set these up independently, or elect Licensor's optional Annual Support Plan, under which Licensor configures and manages these accounts on Licensee's behalf as part of ongoing support. Licensor has no control over and is not responsible for pricing changes made by third-party providers.
 
-    <h3>7B. FLEX PAY INSTALLMENT PLAN (MID FLEET & ENTERPRISE TIERS ONLY)</h3>
-    Licensee electing the Flex Pay option agrees to the following fixed terms, available only for the Mid Fleet (51-150 truck) and Enterprise (151-300 truck) tiers: a down payment of 20% of the total License Fee is due at signing, followed by twelve (12) equal monthly installments at 0% interest, due on the same calendar day each month. Continued access to the Software is contingent on timely payment, functioning as ongoing service access rather than a one-time transfer until the plan is paid in full. Each payment carries a two (2) day grace period following its due date. If a second installment payment is missed at any point during the 12-month term — regardless of whether the first missed payment was later cured — Licensee's access to the Software will be immediately suspended. To restore access following suspension for non-payment, the entire remaining balance becomes due in a single payment; partial catch-up payments will not restore access. Any Licensee whose access has been suspended under this section is permanently ineligible for the Flex Pay option on any future License purchase from Licensor, and must use full payment or another financing method. This section does not limit any other remedy available to Licensor for breach of payment terms.
+    <h3>7B. FLEX PAY INSTALLMENT PLAN (ALL LICENSE TIERS)</h3>
+    Licensee electing the Flex Pay option agrees to the following fixed terms: a down payment of 20% of the total License Fee is due at signing, followed by equal monthly installments at 0% interest, due on the same calendar day each month. For the Starter and Growth tiers, the term is six (6) monthly installments. For the Mid Fleet and Enterprise tiers, the term is twelve (12) monthly installments. Continued access to the Software is contingent on timely payment, functioning as ongoing service access rather than a one-time transfer until the plan is paid in full. Each payment carries a two (2) day grace period following its due date. If a second installment payment is missed at any point during the applicable term — regardless of whether the first missed payment was later cured — Licensee's access to the Software will be immediately suspended. To restore access following suspension for non-payment, the entire remaining balance becomes due in a single payment; partial catch-up payments will not restore access. Any Licensee whose access has been suspended under this section is permanently ineligible for the Flex Pay option on any future License purchase from Licensor, and must use full payment or another financing method. This section does not limit any other remedy available to Licensor for breach of payment terms.
 
     <h3>8. NO REFUND POLICY</h3>
     Due to the nature of software licensing and immediate system access upon purchase, all sales are final. No refunds will be issued after Software access is granted.
@@ -410,8 +425,10 @@ function mountCardFlex(){
 // ── FLEX PAY — fixed terms, Mid Fleet & Enterprise only ─────────────
 // 20% down, 12 equal monthly payments, 0% interest. Hardcoded per tier.
 var FLEX_TERMS = {
-  'Mid Fleet':   { down: 13900, monthly: 4633 },
-  'Enterprise':  { down: 21900, monthly: 7300 },
+  'Starter':     { down: 2900, monthly: 1933, term: 6 },
+  'Growth':      { down: 6900, monthly: 4600, term: 6 },
+  'Mid Fleet':   { down: 13900, monthly: 4633, term: 12 },
+  'Enterprise':  { down: 21900, monthly: 7300, term: 12 },
 };
 
 function flexEligible(){
@@ -430,7 +447,7 @@ function renderFlexTerms(){
   if(!terms) return;
   document.getElementById('flexDown').textContent = '$'+terms.down.toLocaleString();
   document.getElementById('flexMonthly').textContent = '$'+terms.monthly.toLocaleString()+' / month';
-  document.getElementById('flexSummary').textContent = '$'+terms.down.toLocaleString()+' due today, then 12 monthly payments of $'+terms.monthly.toLocaleString()+' at 0% interest.';
+  document.getElementById('flexSummary').textContent = '$'+terms.down.toLocaleString()+' due today, then '+terms.term+' monthly payments of $'+terms.monthly.toLocaleString()+' at 0% interest.';
 }
 
 
@@ -605,10 +622,10 @@ async function submitPay(){
       var confirmFlexResult = await stripe.confirmCardPayment(dataFlex.clientSecret,{payment_method:pmFlexResult.paymentMethod.id});
       if(confirmFlexResult.error){showErr('payErr',confirmFlexResult.error.message);resetPayBtn();return;}
 
-      // Build the 12-month due date schedule
+      // Build the payment due-date schedule, using this tier's actual term length
       var schedule = [];
       var today = new Date();
-      for(var i=1;i<=12;i++){
+      for(var i=1;i<=terms.term;i++){
         var due = new Date(today);
         due.setMonth(due.getMonth()+i);
         schedule.push({payment_number:i, amount:terms.monthly, due_date:due.toISOString().slice(0,10), status:'scheduled'});
@@ -680,8 +697,8 @@ async function notifyAnthonyFlex(terms){
     await emailjs.send('service_e3qn0bs','template_nxubdce',{
       to_email:'potentlogistics@pm.me',
       from_name:S.name+' — '+S.company,
-      subject:'📅 FLEX PAY STARTED: '+S.company+' — $'+terms.down.toLocaleString()+' down / $'+terms.monthly.toLocaleString()+'/mo x12',
-      message:'NEW FLEX PAY PLAN\n\nCompany: '+S.company+'\nContact: '+S.name+' ('+S.title+')\nEmail: '+S.email+'\nPhone: '+S.phone+'\nTier: '+S.tier+' (Total: $'+S.price.toLocaleString()+')\n\nDown payment collected: $'+terms.down.toLocaleString()+'\nMonthly payment (x12): $'+terms.monthly.toLocaleString()+'\nRemaining balance: $'+(S.price-terms.down).toLocaleString()+'\n\nSigned By: '+S.sig+'\nDate: '+new Date().toLocaleString()+'\n\nIMPORTANT: You must manually track and charge the 12 monthly installments. Missing a 2nd payment should trigger access suspension per the signed agreement.'
+      subject:'📅 FLEX PAY STARTED: '+S.company+' — $'+terms.down.toLocaleString()+' down / $'+terms.monthly.toLocaleString()+'/mo x'+terms.term,
+      message:'NEW FLEX PAY PLAN\n\nCompany: '+S.company+'\nContact: '+S.name+' ('+S.title+')\nEmail: '+S.email+'\nPhone: '+S.phone+'\nTier: '+S.tier+' (Total: $'+S.price.toLocaleString()+')\n\nDown payment collected: $'+terms.down.toLocaleString()+'\nMonthly payment (x'+terms.term+'): $'+terms.monthly.toLocaleString()+'\nRemaining balance: $'+(S.price-terms.down).toLocaleString()+'\n\nSigned By: '+S.sig+'\nDate: '+new Date().toLocaleString()+'\n\nIMPORTANT: You must manually track and charge the '+terms.term+' monthly installments. Missing a 2nd payment should trigger access suspension per the signed agreement.'
     });
   } catch(e){}
 }
@@ -750,7 +767,7 @@ function buildPDF(signed){
     ['5. NDA','All demo, onboarding, and feature information is confidential. Do not disclose to competitors. Survives termination for 5 years.'],
     ['6. CONFIDENTIALITY','System credentials, pricing, client data, and proprietary processes are confidential.'],
     ['6A. THIRD-PARTY SERVICE COSTS','License fee covers the Software only. Database, mapping API, and email service accounts are typically $0-$25/month, billed directly by those providers. Licensee may set these up independently, or add the optional Annual Support Plan for Licensor to configure and manage them.'],
-    ['6B. FLEX PAY (MID FLEET & ENTERPRISE ONLY)','20% down, then 12 equal monthly payments at 0% interest. 2-day grace period per payment. A second missed payment suspends access immediately; full remaining balance is due to restore it. Licensee becomes permanently ineligible for Flex Pay on future purchases after any suspension.'],
+    ['6B. FLEX PAY (ALL TIERS)','20% down, then equal monthly payments at 0% interest — 6 months for Starter/Growth, 12 months for Mid Fleet/Enterprise. 2-day grace period per payment. A second missed payment suspends access immediately; full remaining balance is due to restore it. Licensee becomes permanently ineligible for Flex Pay on future purchases after any suspension.'],
     ['7. NO REFUNDS','All sales are final. No refunds after software access is granted.'],
     ['8. LIABILITY','Licensor\'s total liability shall not exceed the license fee paid.'],
     ['9. GOVERNING LAW','State of Georgia. Rockdale County courts.'],
