@@ -16,27 +16,27 @@ var C = {
 // To add a dispatcher: copy any dispatch line, change id/name/password.
 // Passwords: owner sets them, employees never share.
 var USERS = [
-    { id: "potent", name: "POTENT", role: "owner", password: "HJWG9099AI", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash", "geofence", "flexpay", "referrals", "marketrates", "loginActivity", "safetyscore", "rebuttals", "recurring"] },
-    { id: "dispatch1", name: "Dispatch 1", role: "dispatch", password: "IRI1202HJ", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
-    { id: "dispatch2", name: "Dispatch 2", role: "dispatch", password: "EVQ9819SS", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
-    { id: "dispatch3", name: "Dispatch 3", role: "dispatch", password: "IQC8526SI", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
-    { id: "dispatch4", name: "Dispatch 4", role: "dispatch", password: "EPZ0124FH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
-    { id: "dispatch5", name: "Dispatch 5", role: "dispatch", password: "UXB6653FH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
-    { id: "dispatch6", name: "Dispatch 6", role: "dispatch", password: "BSD0421RN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
-    { id: "dispatch7", name: "Dispatch 7", role: "dispatch", password: "NEK4282YX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
-    { id: "dispatch8", name: "Dispatch 8", role: "dispatch", password: "RUQ7232FK", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
-    { id: "dispatch9", name: "Dispatch 9", role: "dispatch", password: "LBY3027CH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
-    { id: "dispatch10", name: "Dispatch 10", role: "dispatch", password: "FYJ9996BX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
-    { id: "dispatch11", name: "Dispatch 11", role: "dispatch", password: "XMG4340LN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
-    { id: "dispatch12", name: "Dispatch 12", role: "dispatch", password: "EEA2653NU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
-    { id: "dispatch13", name: "Dispatch 13", role: "dispatch", password: "STM4563VM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
-    { id: "dispatch14", name: "Dispatch 14", role: "dispatch", password: "GHU7822NX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
-    { id: "dispatch15", name: "Dispatch 15", role: "dispatch", password: "SLL8046WH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
-    { id: "dispatch16", name: "Dispatch 16", role: "dispatch", password: "MXH2933UN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
-    { id: "dispatch17", name: "Dispatch 17", role: "dispatch", password: "SJV8263MA", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
-    { id: "dispatch18", name: "Dispatch 18", role: "dispatch", password: "TYE0288YW", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
-    { id: "dispatch19", name: "Dispatch 19", role: "dispatch", password: "SVG4086AU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
-    { id: "dispatch20", name: "Dispatch 20", role: "dispatch", password: "HCB3143EM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring"] },
+    { id: "potent", name: "POTENT", role: "owner", password: "HJWG9099AI", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash", "geofence", "flexpay", "referrals", "marketrates", "loginActivity", "safetyscore", "rebuttals", "recurring", "livecall"] },
+    { id: "dispatch1", name: "Dispatch 1", role: "dispatch", password: "IRI1202HJ", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
+    { id: "dispatch2", name: "Dispatch 2", role: "dispatch", password: "EVQ9819SS", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
+    { id: "dispatch3", name: "Dispatch 3", role: "dispatch", password: "IQC8526SI", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
+    { id: "dispatch4", name: "Dispatch 4", role: "dispatch", password: "EPZ0124FH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
+    { id: "dispatch5", name: "Dispatch 5", role: "dispatch", password: "UXB6653FH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
+    { id: "dispatch6", name: "Dispatch 6", role: "dispatch", password: "BSD0421RN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
+    { id: "dispatch7", name: "Dispatch 7", role: "dispatch", password: "NEK4282YX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
+    { id: "dispatch8", name: "Dispatch 8", role: "dispatch", password: "RUQ7232FK", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
+    { id: "dispatch9", name: "Dispatch 9", role: "dispatch", password: "LBY3027CH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
+    { id: "dispatch10", name: "Dispatch 10", role: "dispatch", password: "FYJ9996BX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
+    { id: "dispatch11", name: "Dispatch 11", role: "dispatch", password: "XMG4340LN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
+    { id: "dispatch12", name: "Dispatch 12", role: "dispatch", password: "EEA2653NU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
+    { id: "dispatch13", name: "Dispatch 13", role: "dispatch", password: "STM4563VM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
+    { id: "dispatch14", name: "Dispatch 14", role: "dispatch", password: "GHU7822NX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
+    { id: "dispatch15", name: "Dispatch 15", role: "dispatch", password: "SLL8046WH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
+    { id: "dispatch16", name: "Dispatch 16", role: "dispatch", password: "MXH2933UN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
+    { id: "dispatch17", name: "Dispatch 17", role: "dispatch", password: "SJV8263MA", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
+    { id: "dispatch18", name: "Dispatch 18", role: "dispatch", password: "TYE0288YW", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
+    { id: "dispatch19", name: "Dispatch 19", role: "dispatch", password: "SVG4086AU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
+    { id: "dispatch20", name: "Dispatch 20", role: "dispatch", password: "HCB3143EM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
     { id: "driver", name: "Driver 1", role: "driver", password: "DRIVERPL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
     { id: "driver2", name: "Driver 2", role: "driver", password: "DRIVER2PL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
     { id: "driver3", name: "Driver 3", role: "driver", password: "DRIVER3PL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
@@ -356,7 +356,8 @@ function syncJobToSupabase(job) {
             salesperson: job.salesperson || "",
             created_by: job.createdBy || "",
             payment_intent_id: job.paymentIntentId || null,
-            paid_online: job.paidOnline || false
+            paid_online: job.paidOnline || false,
+            recurring_route_id: job.recurringRouteId || null
         };
         fetch(SUPABASE_URL + "/rest/v1/jobs", {
             method: "POST",
@@ -366,14 +367,22 @@ function syncJobToSupabase(job) {
     });
 }
 // Sync a status update to Supabase
-function syncStatusToSupabase(jobId, newStatus) {
+function syncStatusToSupabase(jobId, newStatus, timestampPatch) {
     getOrgId().then(function (orgId) {
         if (!orgId)
             return;
+        var body = { status: newStatus };
+        // Real timestamps were being lost on refresh — only local state was updated,
+        // never actually saved to Supabase. Fixed: now persisted for real.
+        if (timestampPatch) {
+            if (timestampPatch.assignedAt) body.assigned_at = timestampPatch.assignedAt;
+            if (timestampPatch.arrivedAt) body.arrived_at = timestampPatch.arrivedAt;
+            if (timestampPatch.deliveredAt) body.delivered_at = timestampPatch.deliveredAt;
+        }
         fetch(SUPABASE_URL + "/rest/v1/jobs?id=eq." + jobId + "&org_id=eq." + orgId, {
             method: "PATCH",
             headers: sbHeaders(),
-            body: JSON.stringify({ status: newStatus })
+            body: JSON.stringify(body)
         }).catch(function () { });
     });
 }
@@ -4972,7 +4981,7 @@ function ReviewsSection(props) {
     if (reviews.length === 0 && !props.showEmpty && !qrTriggered)
         return null;
     var avgRating = reviews.length > 0 ? Math.round(reviews.reduce(function (s, r) { return s + r.rating; }, 0) / reviews.length * 10) / 10 : 0;
-    return React.createElement("div", { style: { padding: "40px 24px", borderTop: "1px solid " + C.border } },
+    return React.createElement("div", { id: "reviews", style: { padding: "40px 24px", borderTop: "1px solid " + C.border, scrollMarginTop: 44 } },
         showModal && React.createElement(ReviewModal, { onClose: function () { setShowModal(false); refetch(); }, jobs: props.jobs || [], initialJobId: qrTriggered ? getReviewMasterCode() : "" }),
         React.createElement("div", { style: { maxWidth: 680, margin: "0 auto" } },
             React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 } },
@@ -5005,7 +5014,7 @@ function ReviewsSection(props) {
 function getTabGroups() {
     return [
         { label: "📋 Jobs", color: "#4299E1", tabs: [["jobs", "📋 " + t("jobs")], ["exceptions", "🚨 " + t("alerts")], ["calendar", "📅 " + t("calendar")], ["driver", "🚐 " + t("driver")], ["driverapp", "🚐 " + t("driverApp")]] },
-        { label: "📞 Sales", color: "#1DB954", tabs: [["leads", "📋 " + t("leads")], ["activity", "👥 " + t("activity")], ["leaderboard", "🏆 " + t("board")], ["ospipeline", "🎯 Pipeline"], ["ostraining", "📚 Training"], ["flexpay", "📅 Flex Pay"], ["rebuttals", "📞 Rebuttal Cards"], ["recurring", "🔁 Recurring Routes"]] },
+        { label: "📞 Sales", color: "#1DB954", tabs: [["leads", "📋 " + t("leads")], ["activity", "👥 " + t("activity")], ["leaderboard", "🏆 " + t("board")], ["ospipeline", "🎯 Pipeline"], ["ostraining", "📚 Training"], ["flexpay", "📅 Flex Pay"], ["rebuttals", "📞 Rebuttal Cards"], ["recurring", "🔁 Recurring Routes"], ["livecall", "📞 Live Call Screen"]] },
         { label: "🚗 Fleet", color: "#F6AD55", tabs: [["fleet", "🚗 Fleet"], ["fleetmap", "🗺️ Live Map"], ["compliance", "🛡 Compliance"], ["documents", "📁 Documents"], ["safetyscore", "🛡️ Safety Scores"], ["geofence", "📍 Geofencing"], ["carriers", "🤝 " + t("carriers")], ["safety", "🔒 Safety Alerts"]] },
         { label: "💰 Money", color: C.orange, tabs: [["reports", "📊 " + t("reports")], ["advanced", "📈 " + t("analytics")], ["sales", "🏆 " + t("sales")], ["expenses", "💸 " + t("expenses")], ["accounts", "🏢 " + t("accounts")], ["payroll", "💰 " + t("payroll")], ["ceodash", "📊 CEO Dashboard"], ["referrals", "🎟️ Referral Codes"], ["marketrates", "📊 Market Rates"]] },
         { label: "⚙ Team", color: "#FC8181", tabs: [["ownerSettings", "⚙ Settings"], ["audit", "👁 " + t("audit")], ["loginActivity", "🔐 Login Activity"], ["ai", "🤖 " + t("aiDocs")], ["demo", "🎬 " + t("demo")]] },
@@ -5139,7 +5148,8 @@ function AdminDashboard(props) {
             tab === "referrals" && props.role === ROLES.OWNER && React.createElement(ReferralCodeManager, null),
             tab === "flexpay" && props.role === ROLES.OWNER && React.createElement(FlexPayTracker, null),
             tab === "rebuttals" && React.createElement(LiveRebuttalCards, null),
-            tab === "recurring" && React.createElement(RecurringRoutesView, null),
+            tab === "recurring" && React.createElement(RecurringRoutesView, { onAddJob: props.onAddJob }),
+            tab === "livecall" && React.createElement(LiveCallScreen, { onAddJob: props.onAddJob, gasPPG: props.gasPPG, role: props.role, currentUser: props.currentUser }),
             tab === "ostraining" && React.createElement(OSTraining, null),
             tab === "documents" && React.createElement("div", null, props.role === ROLES.OWNER && React.createElement(MyDocumentsVault, null), React.createElement(DocumentLogView, null))),
         React.createElement(CategoryNav, { tab: tab, setTab: setTab, currentUser: props.currentUser }),
@@ -5437,6 +5447,7 @@ function PublicApp(props) {
                             else if (v === "os") window.location.href = "?apply";
                             else if (v === "loadboard") window.location.href = "https://potentloadboard.netlify.app";
                             else if (v === "employee") window.location.href = "/POTENT-Employee-Portal.html";
+                            else if (v === "recurringrequest") window.location.href = "?recurring-service";
                             e.target.value = ""; // reset back to placeholder after navigating
                         },
                         style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }
@@ -5447,7 +5458,8 @@ function PublicApp(props) {
                         React.createElement("option", { value: "partner" }, "\uD83E\uDD1D Apply — Partner Account"),
                         React.createElement("option", { value: "os" }, "\uD83D\uDCBB Apply — POTENT OS"),
                         React.createElement("option", { value: "loadboard" }, "\uD83D\uDCCB Visit POTENT Loadboard"),
-                        React.createElement("option", { value: "employee" }, "\uD83D\uDC64 Employee Portal")),
+                        React.createElement("option", { value: "employee" }, "\uD83D\uDC64 Employee Portal"),
+                        React.createElement("option", { value: "recurringrequest" }, "\uD83D\uDD01 Set Up Recurring Service")),
                     React.createElement(LangSwitcher, { lang: lang, changeLang: changeLang }),
                     React.createElement("a", { href: "tel:" + DISPATCH_PHONE_DISPLAY.replace(/\D/g,""), title: "Dispatch & Sales: " + DISPATCH_EMAIL, style: { textDecoration: "none", background: C.orange, color: "#000", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" } }, "📞 " + DISPATCH_PHONE_DISPLAY),
                     React.createElement("a", { href: "tel:" + PHONE_NUMBER, title: "Owner: " + BUSINESS_EMAIL, style: { textDecoration: "none", background: "transparent", border: "1px solid " + C.orange + "66", color: C.orange, borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" } }, "👑 " + PHONE_DISPLAY))),
@@ -5455,6 +5467,13 @@ function PublicApp(props) {
                 return React.createElement("button", { key: item[0], onClick: function () { setTab(item[0]); }, style: { flex: 1, border: "none", borderBottom: "2px solid " + (tab === item[0] ? C.orange : "transparent"), padding: "10px 4px", cursor: "pointer", background: tab === item[0] ? C.orange + "12" : "transparent", color: tab === item[0] ? C.orange : C.dim, fontSize: 11, fontWeight: 700, fontFamily: "inherit", textAlign: "center" } }, item[1]);
             }))),
         tab === "home" && React.createElement("div", null,
+            React.createElement("div", { style: { position: "sticky", top: 0, zIndex: 50, background: "#0a0a0a", borderBottom: "1px solid " + C.border, display: "flex", overflowX: "auto", padding: "0 12px" } },
+                [["services", "Services"], ["technology", "Technology"], ["potent-os", "POTENT OS"], ["loadboard", "Loadboard"], ["about", "About"], ["reviews", "Reviews"]].map(function (s) {
+                    return React.createElement("a", {
+                        key: s[0], href: "#" + s[0],
+                        style: { color: C.dim, textDecoration: "none", fontSize: 12, fontWeight: 700, padding: "12px 14px", whiteSpace: "nowrap", flexShrink: 0 }
+                    }, s[1]);
+                })),
             React.createElement("div", { style: { position: "relative", width: "100%", minHeight: 480, overflow: "hidden", background: "#000" } },
                 React.createElement("div", { style: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "linear-gradient(to bottom,#00000044 0%,#000000bb 60%,#080808 100%)" } }),
                 React.createElement("div", { style: { position: "relative", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 480, padding: "60px 24px 80px", textAlign: "center" } },
@@ -5472,7 +5491,7 @@ function PublicApp(props) {
                         React.createElement("a", { href: "tel:" + PHONE_NUMBER, style: { textDecoration: "none" } },
                             React.createElement("button", { style: { background: "transparent", color: "#fff", border: "1.5px solid rgba(255,255,255,0.5)", borderRadius: 9, padding: "13px 28px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "📞 " + PHONE_DISPLAY)),
                         React.createElement("button", { onClick: function () { setTab("track"); }, style: { background: "transparent", color: "rgba(255,255,255,0.6)", border: "1.5px solid rgba(255,255,255,0.2)", borderRadius: 9, padding: "13px 28px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCCD Track My Job")))),
-            React.createElement("div", { style: { background: "linear-gradient(135deg,#0d0d00,#080808)", borderBottom: "2px solid " + C.orange, padding: "36px 20px" } },
+            React.createElement("div", { id: "services", style: { background: "linear-gradient(135deg,#0d0d00,#080808)", borderBottom: "2px solid " + C.orange, padding: "36px 20px", scrollMarginTop: 44 } },
                 React.createElement("div", { style: { maxWidth: 720, margin: "0 auto", textAlign: "center" } },
                     React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 8 } }, "Conyers \u00B7 Covington \u00B7 Lithonia \u00B7 Surrounding Areas"),
                     React.createElement("div", { style: { fontSize: 26, fontWeight: 900, color: "#fff", marginBottom: 6 } }, "The Best Price In The City. Guaranteed."),
@@ -5488,7 +5507,7 @@ function PublicApp(props) {
                             React.createElement("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.6)" } }, row[0]));
                     })),
                     React.createElement("button", { onClick: function () { setTab("book"); }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: "14px 36px", fontSize: 15, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCE6 Get Your Price \u2014 Book In 60 Seconds"))),
-            React.createElement("div", { style: { padding: "40px 20px", borderBottom: "1px solid " + C.border, background: "radial-gradient(circle at 50% 0%,#0d0d0d 0%,#080808 70%)" } },
+            React.createElement("div", { id: "technology", style: { padding: "40px 20px", borderBottom: "1px solid " + C.border, background: "radial-gradient(circle at 50% 0%,#0d0d0d 0%,#080808 70%)", scrollMarginTop: 44 } },
                 React.createElement("div", { style: { maxWidth: 680, margin: "0 auto", textAlign: "center" } },
                     React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 8 } }, "Built Different"),
                     React.createElement("div", { style: { fontSize: 22, fontWeight: 800, color: "#fff", marginBottom: 16 } }, "Real Technology. Not A Guy With A Truck."),
@@ -5508,7 +5527,7 @@ function PublicApp(props) {
                     React.createElement("div", { style: { background: "#0d0d00", border: "1px solid " + C.orange + "44", borderRadius: 12, padding: "18px 20px", textAlign: "left" } },
                         React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.orange, marginBottom: 6 } }, "\u26FD On Gas Prices \u2014 The Honest Version"),
                         React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.7 } }, "We know fuel costs more right now than it did last year, and that's real for us too \u2014 every truck we run feels it. That's exactly why we built our pricing off real local competitor rates instead of padding it: you're getting the lowest honest price we can run at, not a number that quietly assumes you won't check around.")))),
-            React.createElement("div", { style: { padding: "44px 24px", borderBottom: "1px solid " + C.border, background: "#080808" } },
+            React.createElement("div", { id: "potent-os", style: { padding: "44px 24px", borderBottom: "1px solid " + C.border, background: "#080808", scrollMarginTop: 44 } },
                 React.createElement("div", { style: { maxWidth: 680, margin: "0 auto" } },
                     React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 8, textAlign: "center" } }, "Why POTENT OS Exists"),
                     React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: "#fff", marginBottom: 16, textAlign: "center" } }, "The Trucking Game Is Broken For The People Actually Driving."),
@@ -5553,7 +5572,7 @@ function PublicApp(props) {
                             React.createElement("button", { style: { background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: "13px 32px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCBB See POTENT OS Pricing")),
                         React.createElement("a", { href: "?apply", style: { textDecoration: "none" } },
                             React.createElement("button", { style: { background: "transparent", color: C.orange, border: "1.5px solid " + C.orange, borderRadius: 9, padding: "13px 32px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCCB Apply for Early Access"))))),
-            React.createElement("div", { style: { padding: "44px 24px", borderBottom: "1px solid " + C.border, background: "linear-gradient(135deg,#0a0e0a,#080808)" } },
+            React.createElement("div", { id: "loadboard", style: { padding: "44px 24px", borderBottom: "1px solid " + C.border, background: "linear-gradient(135deg,#0a0e0a,#080808)", scrollMarginTop: 44 } },
                 React.createElement("div", { style: { maxWidth: 720, margin: "0 auto", textAlign: "center" } },
                     React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 8 } }, "Also Built By POTENT"),
                     React.createElement("div", { style: { fontSize: 24, fontWeight: 900, color: "#fff", marginBottom: 6 } }, "POTENT Loadboard \u2014 Connecting Drivers & Companies"),
@@ -5570,7 +5589,7 @@ function PublicApp(props) {
                     })),
                     React.createElement("a", { href: "https://potentloadboard.netlify.app", target: "_blank", style: { textDecoration: "none" } },
                         React.createElement("button", { style: { background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: "13px 32px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCCB Visit POTENT Loadboard")))),
-            React.createElement("div", { style: { background: C.surface, borderBottom: "1px solid " + C.border, padding: "40px 24px" } },
+            React.createElement("div", { id: "about", style: { background: C.surface, borderBottom: "1px solid " + C.border, padding: "40px 24px", scrollMarginTop: 44 } },
                 React.createElement("div", { style: { maxWidth: 680, margin: "0 auto" } },
                     React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 12 } }, "Who We Are"),
                     React.createElement("div", { style: { fontSize: 24, fontWeight: 800, color: C.white, lineHeight: 1.3, marginBottom: 16 } }, "Same-day deliveries, urgent freight, event transport, and high-value cargo across Georgia."),
@@ -6667,6 +6686,35 @@ function Root() {
         }
         if (s === "Delivered") {
             timestampPatch.deliveredAt = now;
+            // If this job is tied to an hourly-priced recurring route, calculate
+            // real overtime owed based on actual elapsed time vs. the base hours,
+            // and SET the final price directly (not add on top of a placeholder).
+            if (oldJob && oldJob.recurringRouteId && oldJob.assignedAt) {
+                fetch(SUPABASE_URL + "/rest/v1/recurring_routes?id=eq." + oldJob.recurringRouteId + "&select=pricing_type,base_hours,base_rate_per_hour,overtime_rate_per_hour", {
+                    headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
+                }).then(function (r) { return r.json(); }).then(function (routes) {
+                    var route = Array.isArray(routes) && routes[0];
+                    if (!route || route.pricing_type !== "hourly") return;
+                    var elapsedHours = (new Date(now).getTime() - new Date(oldJob.assignedAt).getTime()) / 3600000;
+                    var baseHours = Number(route.base_hours) || 0;
+                    var baseRate = Number(route.base_rate_per_hour) || 0;
+                    var otRate = Number(route.overtime_rate_per_hour) || 85;
+                    var baseCost = baseHours * baseRate;
+                    var overtimeHours = elapsedHours > baseHours ? Math.round((elapsedHours - baseHours) * 100) / 100 : 0;
+                    var overtimeCost = Math.round(overtimeHours * otRate);
+                    var totalCost = Math.round(baseCost + overtimeCost);
+                    var breakdown = baseHours + "hr base ($" + baseCost + ")" + (overtimeCost > 0 ? " + " + overtimeHours + "hr overtime ($" + overtimeCost + ")" : "");
+                    addAuditEntry("Hourly Recurring Route Billed", id, "finalPrice", "—", "$" + totalCost + " (" + breakdown + ")", adminRole);
+                    setJobs(function (p) { return p.map(function (j) { return j.id === id ? Object.assign({}, j, { finalPrice: totalCost, notes: (j.notes || "") + " · " + breakdown }) : j; }); });
+                    getOrgId().then(function (orgId) {
+                        if (!orgId) return;
+                        fetch(SUPABASE_URL + "/rest/v1/jobs?id=eq." + id + "&org_id=eq." + orgId, {
+                            method: "PATCH", headers: sbHeaders(),
+                            body: JSON.stringify({ finalPrice: totalCost })
+                        }).catch(function () { });
+                    });
+                }).catch(function () { });
+            }
         }
         // Leaving "Arrived" into any forward-moving status — check for detention
         var leavingArrived = oldJob && oldJob.status === "Arrived" && s !== "Arrived" && oldJob.arrivedAt;
@@ -6683,7 +6731,7 @@ function Root() {
             }
         }
         setJobs(function (p) { return p.map(function (j) { return j.id === id ? Object.assign({}, j, { status: s }, timestampPatch) : j; }); });
-        syncStatusToSupabase(id, s);
+        syncStatusToSupabase(id, s, timestampPatch);
     }
     // Applies an approved accessorial charge (detention, layover, etc.) to
     // a job's final price. Kept as a separate, explicit action rather than
@@ -6716,12 +6764,15 @@ function Root() {
     var isPOSAdmin = _href.indexOf("potent-os-admin") > -1;
     var isWaitlist = _href.indexOf("apply") > -1;
     var isCustomerPortal = _href.indexOf("myjobs") > -1;
+    var isRecurringRequest = _href.indexOf("recurring-service") > -1;
     if (isPOSAdmin)
         return React.createElement(LicenseManager, null);
     if (isWaitlist)
         return React.createElement(WaitlistPage, null);
     if (isCustomerPortal)
         return React.createElement(CustomerPortal, { jobs: jobs });
+    if (isRecurringRequest)
+        return React.createElement(PublicRecurringRequest, null);
     var offlineBanner = React.createElement("div", {style:{
         position:"fixed",top:0,left:0,right:0,zIndex:9999,
         background:!isOnline?"#ED8936":syncing?"#4299E1":"#1DB954",
@@ -7265,6 +7316,9 @@ function EnhancedDriverApp(props) {
     var [showFuel, setShowFuel] = useState(false);
     var [declineNote, setDeclineNote] = useState("");
     var [showDecline, setShowDecline] = useState(null);
+    var [showScopeChange, setShowScopeChange] = useState(false);
+    var [scopeNotes, setScopeNotes] = useState("");
+    var [scopeSubmitting, setScopeSubmitting] = useState(false);
     var [sharingLocation, setSharingLocation] = useState(false);
     var [gpsError, setGpsError] = useState("");
     var [lastPing, setLastPing] = useState(null);
@@ -7291,6 +7345,25 @@ function EnhancedDriverApp(props) {
     }
     var driverId = getDriverId();
     var driverName = (currentUser && currentUser.name) || "Driver";
+    function submitScopeChange() {
+        if (!scopeNotes.trim()) { alert("Please describe what's different from what was quoted."); return; }
+        setScopeSubmitting(true);
+        var jobPhotos = (photos[job.id] || []).join(", ");
+        fetch(SUPABASE_URL + "/rest/v1/job_scope_changes", {
+            method: "POST",
+            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
+            body: JSON.stringify({ job_id: job.id, reported_by: driverName, description: scopeNotes, photo_urls: jobPhotos, status: "pending_review" })
+        }).then(function () {
+            alertLoginEmail(
+                "\u26A0\uFE0F SCOPE CHANGE \u2014 Job " + job.id,
+                driverName + " flagged a difference on job " + job.id + " (" + job.customer + "):\n\n" + scopeNotes + "\n\nReview before continuing \u2014 pricing may need to be revised with the customer first."
+            );
+            setScopeSubmitting(false);
+            setShowScopeChange(false);
+            setScopeNotes("");
+            alert("Reported. The owner has been notified to review before you continue.");
+        }).catch(function () { setScopeSubmitting(false); alert("Something went wrong submitting this. Please try again or call it in."); });
+    }
     // ── GPS broadcast: watch position continuously, but only PUSH to
     // Supabase every 10 seconds (keeps writes cheap; watchPosition itself
     // is cheap on battery since the OS coalesces updates). ──
@@ -7591,6 +7664,7 @@ function EnhancedDriverApp(props) {
                 React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 } },
                     React.createElement(Btn, { onClick: function () { takePhoto(job.id); }, variant: "ghost", style: { padding: "9px", fontSize: 11 } }, "\uD83D\uDCF8 Photo / BOL"),
                     React.createElement(Btn, { onClick: function () { setShowFuel(true); }, variant: "ghost", style: { padding: "9px", fontSize: 11 } }, "\u26FD Log Fuel")),
+                React.createElement(Btn, { onClick: function () { setShowScopeChange(true); }, variant: "ghost", style: { padding: "9px", fontSize: 11, width: "100%", marginTop: 8, borderColor: C.orange + "66", color: C.orange } }, "\u26A0 Report Scope Difference"),
                 photos[job.id] && photos[job.id].length > 0 && React.createElement("div", { style: { marginTop: 12 } },
                     React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 } }, photos[job.id].length + " Photo" + (photos[job.id].length !== 1 ? "s" : "") + " Captured"),
                     React.createElement("div", { style: { display: "flex", gap: 6, overflowX: "auto" } }, photos[job.id].map(function (p, i) {
@@ -7616,7 +7690,19 @@ function EnhancedDriverApp(props) {
                     fuelLog.state),
                 React.createElement("div", { style: { display: "flex", gap: 8 } },
                     React.createElement(Btn, { variant: "ghost", onClick: function () { setShowFuel(false); }, style: { flex: 1 } }, "Cancel"),
-                    React.createElement(Btn, { onClick: logFuel, disabled: !fuelLog.gallons || !fuelLog.state, style: { flex: 2 } }, "Log Fuel \u2713")))));
+                    React.createElement(Btn, { onClick: logFuel, disabled: !fuelLog.gallons || !fuelLog.state, style: { flex: 2 } }, "Log Fuel \u2713")))),
+        showScopeChange && React.createElement("div", { onClick: function (e) { if (e.target === e.currentTarget)
+                setShowScopeChange(false); }, style: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "#000000CC", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 } },
+            React.createElement("div", { style: { background: C.card, borderRadius: 14, width: "100%", maxWidth: 400, padding: "20px" } },
+                React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 } },
+                    React.createElement("div", { style: { fontSize: 16, fontWeight: 800, color: C.orange } }, "\u26A0 Report Scope Difference"),
+                    React.createElement("button", { onClick: function () { setShowScopeChange(false); }, style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer" } }, "\u2715")),
+                React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 12, lineHeight: 1.6 } }, "What's different from what was quoted? More items, more weight, different access \u2014 describe it. If you've already taken a photo on this job, it'll attach automatically."),
+                React.createElement(TxtIn, { label: "What's actually here vs. what was quoted", value: scopeNotes, onChange: function (v) { setScopeNotes(v); }, rows: 4, placeholder: "e.g. Quoted for 5 items, actually 15 items plus a mattress not mentioned..." }),
+                React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 12 } }, (photos[job.id] || []).length > 0 ? ((photos[job.id] || []).length + " photo(s) on this job will attach") : "No photos on this job yet \u2014 consider tapping Photo/BOL first"),
+                React.createElement("div", { style: { display: "flex", gap: 8 } },
+                    React.createElement(Btn, { variant: "ghost", onClick: function () { setShowScopeChange(false); }, style: { flex: 1 } }, "Cancel"),
+                    React.createElement(Btn, { onClick: submitScopeChange, disabled: scopeSubmitting || !scopeNotes.trim(), style: { flex: 2 } }, scopeSubmitting ? "Sending..." : "Report to Owner \u2713")))));
 }
 // ═══════════════════════════════════════════════════════════════════
 // PHASE 14 — AI DOCUMENT EXTRACTION
@@ -12016,6 +12102,15 @@ function LiveRebuttalCards() {
         React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.white, marginBottom: 4 } }, "📞 Live Rebuttal Cards"),
         React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 4 } }, "Tap a tab while you're on your own call — scripts are word-for-word, real to your truck."),
         React.createElement("div", { style: { fontSize: 11, color: C.red, marginBottom: 16, fontWeight: 700 } }, "⚠ 16ft dock-height box truck. Ramp + pallet jack. NO liftgate — ever."),
+        React.createElement("div", { style: { background: "#1a1400", border: "1px solid " + C.orange + "66", borderRadius: 10, padding: "14px 16px", marginBottom: 20 } },
+            React.createElement("div", { style: { fontSize: 13, fontWeight: 900, color: C.orange, marginBottom: 10 } }, "📦 Booking Agent Quick Reference"),
+            React.createElement("div", { style: { fontSize: 12, color: C.white, marginBottom: 6 } },
+                React.createElement("b", null, "Pricing: "), "$200 flat for the first 40 miles, then +$2.25/mile beyond that."),
+            React.createElement("div", { style: { fontSize: 12, color: C.white, marginBottom: 6 } },
+                React.createElement("b", null, "Truck: "), "16ft dock-height, 87\"W x 72\"H door, 190\" interior length, max 4,500 lbs."),
+            React.createElement("div", { style: { fontSize: 12, color: C.white, marginBottom: 10 } },
+                React.createElement("b", null, "Opening: "), "\"Hi, this is [Name] with POTENT Logistics — I run a 16ft dock-height box truck and I'm reaching out directly because I handle one-way freight drop-offs without going through a broker app. Do you have loads that need to move that a box truck could handle?\""),
+            React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "Say it simply: \"It's $200 flat for local, and for anything past about 40 miles, it's $200 plus $2.25 a mile after that.\"")),
         groups.map(function (g) {
             var cards = REBUTTAL_CARDS.filter(function (c) { return c.group === g; });
             return React.createElement("div", { key: g, style: { marginBottom: 20 } },
@@ -12175,7 +12270,9 @@ function RecurringRouteForm(props) {
         customerName: "", company: "", phone: "", email: "",
         origin: "", destination: "", serviceType: "delivery",
         days: [], startDate: "", isOngoing: true, endDate: "",
-        ratePerRun: "", notes: ""
+        pricingType: "per_run", ratePerRun: "",
+        baseHours: "4", baseRatePerHour: "45", overtimeRate: "85",
+        notes: ""
     });
     var [saving, setSaving] = useState(false);
     var [saved, setSaved] = useState(false);
@@ -12197,6 +12294,14 @@ function RecurringRouteForm(props) {
             alert("Please fill in customer info, route, at least one day, and a start date.");
             return;
         }
+        if (f.pricingType === "per_run" && !f.ratePerRun) {
+            alert("Please enter a rate per run.");
+            return;
+        }
+        if (f.pricingType === "hourly" && (!f.baseHours || !f.baseRatePerHour)) {
+            alert("Please enter base hours and base rate per hour.");
+            return;
+        }
         setSaving(true);
         fetch(SUPABASE_URL + "/rest/v1/recurring_routes", {
             method: "POST",
@@ -12206,7 +12311,12 @@ function RecurringRouteForm(props) {
                 origin: f.origin, destination: f.destination, service_type: f.serviceType,
                 days_of_week: f.days.join(","), start_date: f.startDate,
                 end_date: f.isOngoing ? null : (f.endDate || null),
-                rate_per_run: parseFloat(f.ratePerRun) || 0, notes: f.notes, status: "active"
+                pricing_type: f.pricingType,
+                rate_per_run: f.pricingType === "per_run" ? (parseFloat(f.ratePerRun) || 0) : 0,
+                base_hours: f.pricingType === "hourly" ? (parseFloat(f.baseHours) || 0) : null,
+                base_rate_per_hour: f.pricingType === "hourly" ? (parseFloat(f.baseRatePerHour) || 0) : null,
+                overtime_rate_per_hour: f.pricingType === "hourly" ? (parseFloat(f.overtimeRate) || 85) : 85,
+                notes: f.notes, status: "active"
             })
         }).then(function () { setSaved(true); setSaving(false); if (props.onSaved) props.onSaved(); })
           .catch(function () { alert("Something went wrong saving this route. Please try again."); setSaving(false); });
@@ -12241,9 +12351,22 @@ function RecurringRouteForm(props) {
                 }, d);
             })),
 
-        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 } },
-            React.createElement(TxtIn, { label: "Start Date", value: f.startDate, onChange: function (v) { set("startDate", v); }, type: "date" }),
-            React.createElement(TxtIn, { label: "Rate Per Run ($)", value: f.ratePerRun, onChange: function (v) { set("ratePerRun", v); }, type: "number" })),
+        React.createElement("div", { style: { fontSize: 10, color: C.dim, textTransform: "uppercase", letterSpacing: .5, marginTop: 14, marginBottom: 6 } }, "Pricing Model"),
+        React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 10 } },
+            React.createElement("button", { onClick: function () { set("pricingType", "per_run"); }, style: { flex: 1, background: f.pricingType === "per_run" ? C.orange : "transparent", color: f.pricingType === "per_run" ? "#000" : C.dim, border: "1px solid " + (f.pricingType === "per_run" ? C.orange : C.border), borderRadius: 7, padding: "9px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "Flat Per Run"),
+            React.createElement("button", { onClick: function () { set("pricingType", "hourly"); }, style: { flex: 1, background: f.pricingType === "hourly" ? C.orange : "transparent", color: f.pricingType === "hourly" ? "#000" : C.dim, border: "1px solid " + (f.pricingType === "hourly" ? C.orange : C.border), borderRadius: 7, padding: "9px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "Hourly + Overtime")),
+
+        f.pricingType === "per_run"
+            ? React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 } },
+                React.createElement(TxtIn, { label: "Start Date", value: f.startDate, onChange: function (v) { set("startDate", v); }, type: "date" }),
+                React.createElement(TxtIn, { label: "Rate Per Run ($)", value: f.ratePerRun, onChange: function (v) { set("ratePerRun", v); }, type: "number" }))
+            : React.createElement("div", null,
+                React.createElement(TxtIn, { label: "Start Date", value: f.startDate, onChange: function (v) { set("startDate", v); }, type: "date" }),
+                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 } },
+                    React.createElement(TxtIn, { label: "Base Hours/Day", value: f.baseHours, onChange: function (v) { set("baseHours", v); }, type: "number" }),
+                    React.createElement(TxtIn, { label: "Base Rate/Hr ($)", value: f.baseRatePerHour, onChange: function (v) { set("baseRatePerHour", v); }, type: "number" }),
+                    React.createElement(TxtIn, { label: "Overtime Rate/Hr ($)", value: f.overtimeRate, onChange: function (v) { set("overtimeRate", v); }, type: "number" })),
+                React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 4 } }, "They pay for the full reserved block even if it runs short. Every hour past that is billed at the overtime rate.")),
 
         React.createElement("div", { style: { display: "flex", gap: 10, alignItems: "center", marginTop: 14, marginBottom: f.isOngoing ? 10 : 4 } },
             React.createElement("input", { type: "checkbox", checked: f.isOngoing, onChange: function (e) { set("isOngoing", e.target.checked); }, style: { width: 18, height: 18, accentColor: C.orange } }),
@@ -12255,7 +12378,7 @@ function RecurringRouteForm(props) {
         React.createElement(Btn, { onClick: submit, disabled: saving, style: { width: "100%", marginTop: 16 } }, saving ? "Saving..." : "Set Up Recurring Route"));
 }
 
-function RecurringRoutesView() {
+function RecurringRoutesView(props) {
     var [routes, setRoutes] = useState(null);
     var [showForm, setShowForm] = useState(false);
 
@@ -12285,12 +12408,56 @@ function RecurringRoutesView() {
     if (routes === null) return React.createElement("div", { style: { textAlign: "center", padding: "60px 0", color: C.dim } }, "Loading...");
 
     var active = routes.filter(function (r) { return r.status === "active"; });
+    var pending = routes.filter(function (r) { return r.status === "pending"; });
     var weeklyTotal = active.reduce(function (sum, r) {
         var dayCount = (r.days_of_week || "").split(",").filter(Boolean).length;
+        if (r.pricing_type === "hourly") {
+            var baseCost = (Number(r.base_hours) || 0) * (Number(r.base_rate_per_hour) || 0);
+            return sum + (dayCount * baseCost);
+        }
         return sum + (dayCount * (Number(r.rate_per_run) || 0));
     }, 0);
 
+    var todayAbbrev = DAYS_OF_WEEK[(new Date().getDay() + 6) % 7]; // getDay() is Sun=0, DAYS_OF_WEEK starts Mon
+    var dueToday = active.filter(function (r) {
+        return (r.days_of_week || "").split(",").indexOf(todayAbbrev) > -1;
+    });
+
     return React.createElement("div", { style: { maxWidth: 700, margin: "0 auto" } },
+        pending.length > 0 && React.createElement("div", { style: { background: "#0a1a2a", border: "1px solid " + C.blue + "88", borderRadius: 10, padding: "14px 16px", marginBottom: 16 } },
+            React.createElement("div", { style: { fontSize: 13, fontWeight: 900, color: C.blue, marginBottom: 8 } }, "🆕 " + pending.length + " New Customer Request" + (pending.length !== 1 ? "s" : "") + " — Needs Pricing & Approval"),
+            pending.map(function (r) {
+                return React.createElement("div", { key: r.id, style: { fontSize: 12, color: C.white, padding: "8px 0", borderTop: "1px solid " + C.blue + "33" } },
+                    React.createElement("b", null, r.customer_name + (r.company ? " (" + r.company + ")" : "")), " — " + r.origin + " → " + r.destination + " · " + (r.days_of_week || "").split(",").join(", ") + " · starts " + r.start_date + " · " + r.phone,
+                    React.createElement("div", { style: { marginTop: 6, display: "flex", gap: 6 } },
+                        React.createElement("button", { onClick: function () { var rate = prompt("Rate per run for this customer?"); if (rate) { fetch(SUPABASE_URL + "/rest/v1/recurring_routes?id=eq." + r.id, { method: "PATCH", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ status: "active", rate_per_run: parseFloat(rate) || 0 }) }).then(refetch); } }, style: { background: C.green, color: "#000", border: "none", borderRadius: 6, padding: "5px 12px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "Set Price & Activate"),
+                        React.createElement("button", { onClick: function () { if (confirm("Decline this request?")) updateStatus(r.id, "cancelled"); }, style: { background: "transparent", color: C.red, border: "1px solid " + C.red + "44", borderRadius: 6, padding: "5px 12px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "Decline")));
+            })),
+        dueToday.length > 0 && React.createElement("div", { style: { background: "#1a1400", border: "1px solid " + C.orange + "88", borderRadius: 10, padding: "14px 16px", marginBottom: 16 } },
+            React.createElement("div", { style: { fontSize: 13, fontWeight: 900, color: C.orange, marginBottom: 8 } }, "🔔 " + dueToday.length + " Route" + (dueToday.length !== 1 ? "s" : "") + " Due Today (" + todayAbbrev + ") — Don't Forget To Book"),
+            dueToday.map(function (r) {
+                return React.createElement("div", { key: r.id, style: { fontSize: 12, color: C.white, padding: "6px 0", borderTop: "1px solid " + C.orange + "33" } },
+                    React.createElement("b", null, r.customer_name + (r.company ? " (" + r.company + ")" : "")), " — " + r.origin + " → " + r.destination + " · " + (r.pricing_type === "hourly" ? (r.base_hours + "hr @ $" + r.base_rate_per_hour + "/hr") : ("$" + r.rate_per_run)) + " · " + r.phone,
+                    React.createElement("div", { style: { marginTop: 6 } },
+                        React.createElement("button", {
+                            onClick: function () {
+                                if (!props.onAddJob) { alert("Booking isn't available from this screen right now."); return; }
+                                props.onAddJob({
+                                    id: "RR-" + r.id + "-" + Date.now(),
+                                    customer: r.customer_name, phone: r.phone, email: r.email,
+                                    origin: r.origin, destination: r.destination,
+                                    serviceName: r.service_type || "Delivery",
+                                    finalPrice: r.pricing_type === "hourly" ? 0 : (Number(r.rate_per_run) || 0),
+                                    payment: "invoice", status: "Assigned",
+                                    date: new Date().toISOString().split("T")[0],
+                                    notes: "Recurring route — " + r.origin + " to " + r.destination,
+                                    recurringRouteId: r.id
+                                });
+                                alert("Today's run booked — find it in the Jobs tab.");
+                            },
+                            style: { background: C.green, color: "#000", border: "none", borderRadius: 6, padding: "5px 12px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }
+                        }, "Book Today's Run")));
+            })),
         React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 } },
             React.createElement("div", null,
                 React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.white } }, "🔁 Recurring Routes"),
@@ -12304,7 +12471,12 @@ function RecurringRoutesView() {
                     React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white } }, r.customer_name + (r.company ? " — " + r.company : "")),
                     React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: r.status === "active" ? C.green : (r.status === "paused" ? C.orange : C.red) } }, r.status.toUpperCase())),
                 React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 4 } }, r.origin + " → " + r.destination),
-                React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 8 } }, (r.days_of_week || "").split(",").join(", ") + " · $" + r.rate_per_run + "/run · " + (r.end_date ? "Ends " + r.end_date : "Ongoing")),
+                React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 8 } },
+                    (r.days_of_week || "").split(",").join(", ") + " · " +
+                    (r.pricing_type === "hourly"
+                        ? (r.base_hours + "hr base @ $" + r.base_rate_per_hour + "/hr, OT $" + r.overtime_rate_per_hour + "/hr")
+                        : ("$" + r.rate_per_run + "/run")) +
+                    " · " + (r.end_date ? "Ends " + r.end_date : "Ongoing")),
                 React.createElement("div", { style: { display: "flex", gap: 6 } },
                     r.status !== "active" && React.createElement("button", { onClick: function () { updateStatus(r.id, "active"); }, style: { background: "transparent", color: C.green, border: "1px solid " + C.green + "44", borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "Activate"),
                     r.status === "active" && React.createElement("button", { onClick: function () { updateStatus(r.id, "paused"); }, style: { background: "transparent", color: C.orange, border: "1px solid " + C.orange + "44", borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "Pause"),
@@ -12385,6 +12557,198 @@ function DecoyRevealBanner(props) {
             "That's your photo. Your IP and location were captured the moment you logged in. This account was fake. Everything you've done here was recorded and has already been sent to the owner."
         )
     );
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// PUBLIC RECURRING SERVICE REQUEST — customer self-service, no login
+// needed. Submits as "pending" — dispatch reviews and activates it,
+// so nobody can self-activate a billing arrangement without a human
+// actually confirming the details first.
+// ═══════════════════════════════════════════════════════════════════
+function PublicRecurringRequest() {
+    var [f, setF] = useState({
+        customerName: "", company: "", phone: "", email: "",
+        origin: "", destination: "", serviceType: "delivery",
+        days: [], startDate: "", notes: ""
+    });
+    var [saving, setSaving] = useState(false);
+    var [saved, setSaved] = useState(false);
+
+    function set(k, v) { setF(function (p) { var n = Object.assign({}, p); n[k] = v; return n; }); }
+    function toggleDay(d) {
+        setF(function (p) {
+            var n = Object.assign({}, p);
+            var days = p.days.slice();
+            var i = days.indexOf(d);
+            if (i > -1) days.splice(i, 1); else days.push(d);
+            n.days = days;
+            return n;
+        });
+    }
+
+    function submit() {
+        if (!f.customerName || !f.phone || !f.origin || !f.destination || f.days.length === 0 || !f.startDate) {
+            alert("Please fill in your info, route, at least one day, and a preferred start date.");
+            return;
+        }
+        setSaving(true);
+        fetch(SUPABASE_URL + "/rest/v1/recurring_routes", {
+            method: "POST",
+            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
+            body: JSON.stringify({
+                customer_name: f.customerName, company: f.company, phone: f.phone, email: f.email,
+                origin: f.origin, destination: f.destination, service_type: f.serviceType,
+                days_of_week: f.days.join(","), start_date: f.startDate,
+                end_date: null, rate_per_run: 0, notes: f.notes, status: "pending"
+            })
+        }).then(function () { setSaved(true); setSaving(false); })
+          .catch(function () { alert("Something went wrong submitting your request. Please try again or call us directly."); setSaving(false); });
+    }
+
+    if (saved) {
+        return React.createElement("div", { style: { minHeight: "100vh", background: "#080808", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 } },
+            React.createElement("div", { style: { textAlign: "center", maxWidth: 420 } },
+                React.createElement("div", { style: { fontSize: 40, marginBottom: 10 } }, "✅"),
+                React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: "#F2F2F2", marginBottom: 8 } }, "Request Received"),
+                React.createElement("div", { style: { fontSize: 13, color: "#888", lineHeight: 1.7 } }, "We'll call you at " + f.phone + " to confirm pricing and lock in your schedule. Thanks for choosing POTENT.")));
+    }
+
+    return React.createElement("div", { style: { minHeight: "100vh", background: "#080808", padding: "30px 16px 60px" } },
+        React.createElement("div", { style: { maxWidth: 500, margin: "0 auto" } },
+            React.createElement("div", { style: { fontSize: 22, fontWeight: 900, color: "#F2F2F2", marginBottom: 4, textAlign: "center" } }, "🔁 Set Up Recurring Service"),
+            React.createElement("div", { style: { fontSize: 13, color: "#888", marginBottom: 20, textAlign: "center" } }, "Standing weekly pickup/delivery — pick your days, we'll confirm pricing and lock it in."),
+
+            React.createElement(TxtIn, { label: "Your Name", value: f.customerName, onChange: function (v) { set("customerName", v); } }),
+            React.createElement(TxtIn, { label: "Company (if applicable)", value: f.company, onChange: function (v) { set("company", v); } }),
+            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
+                React.createElement(TxtIn, { label: "Phone", value: f.phone, onChange: function (v) { set("phone", v); } }),
+                React.createElement(TxtIn, { label: "Email", value: f.email, onChange: function (v) { set("email", v); } })),
+            React.createElement(TxtIn, { label: "Pickup Location", value: f.origin, onChange: function (v) { set("origin", v); } }),
+            React.createElement(TxtIn, { label: "Drop-Off Location", value: f.destination, onChange: function (v) { set("destination", v); } }),
+
+            React.createElement("div", { style: { fontSize: 10, color: "#888", textTransform: "uppercase", letterSpacing: .5, marginTop: 14, marginBottom: 6 } }, "Which Days Do You Need Us?"),
+            React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 } },
+                DAYS_OF_WEEK.map(function (d) {
+                    var active = f.days.indexOf(d) > -1;
+                    return React.createElement("button", {
+                        key: d, onClick: function () { toggleDay(d); },
+                        style: { background: active ? "#F0E000" : "transparent", color: active ? "#000" : "#888", border: "1px solid " + (active ? "#F0E000" : "#1e1e1e"), borderRadius: 7, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }
+                    }, d);
+                })),
+
+            React.createElement(TxtIn, { label: "Preferred Start Date", value: f.startDate, onChange: function (v) { set("startDate", v); }, type: "date" }),
+            React.createElement(TxtIn, { label: "Anything else we should know?", value: f.notes, onChange: function (v) { set("notes", v); }, rows: 2 }),
+
+            React.createElement("button", { onClick: submit, disabled: saving, style: { width: "100%", background: "#F0E000", color: "#000", border: "none", borderRadius: 10, padding: "14px", fontSize: 15, fontWeight: 900, cursor: "pointer", fontFamily: "inherit", marginTop: 16 } }, saving ? "Submitting..." : "Request My Recurring Schedule")));
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// LIVE CALL SCREEN — one screen, two internal tabs: Quote and
+// Rebuttals. Built so a dispatcher never has to leave the screen
+// during a live call to check a rebuttal script.
+// ═══════════════════════════════════════════════════════════════════
+function LiveCallScreen(props) {
+    var [innerTab, setInnerTab] = React.useState("quote");
+    return React.createElement("div", { style: { maxWidth: 700, margin: "0 auto" } },
+        React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 16, position: "sticky", top: 0, background: C.black, paddingTop: 4, paddingBottom: 8, zIndex: 10 } },
+            React.createElement("button", {
+                onClick: function () { setInnerTab("quote"); },
+                style: { flex: 1, background: innerTab === "quote" ? C.orange : C.card, color: innerTab === "quote" ? "#000" : C.dim, border: "1px solid " + (innerTab === "quote" ? C.orange : C.border), borderRadius: 9, padding: "12px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }
+            }, "\uD83D\uDCE6 Book Load"),
+            React.createElement("button", {
+                onClick: function () { setInnerTab("rebuttals"); },
+                style: { flex: 1, background: innerTab === "rebuttals" ? C.orange : C.card, color: innerTab === "rebuttals" ? "#000" : C.dim, border: "1px solid " + (innerTab === "rebuttals" ? C.orange : C.border), borderRadius: 9, padding: "12px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }
+            }, "\uD83D\uDCAC Rebuttals")),
+        innerTab === "quote" && React.createElement(LoadBookingForm, { onAddJob: props.onAddJob }),
+        innerTab === "rebuttals" && React.createElement(LiveRebuttalCards, null));
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// LOAD BOOKING FORM — the real dedicated booking-agent form, matching
+// exactly what the rebuttal scripts ask for: weight, pallets, pickup/
+// delivery times, liftgate, tarp. Same voice-mic pattern as everywhere
+// else. Real $200+$2.25/mi formula, real liftgate hard-block.
+// ═══════════════════════════════════════════════════════════════════
+function LoadBookingForm(props) {
+    var [f, setF] = useState({
+        brokerCompany: "", brokerContact: "", brokerPhone: "",
+        origin: "", destination: "", miles: "",
+        weight: "", pallets: "", pickupTime: "", deliveryTime: "",
+        liftgate: false, tarp: false, notes: ""
+    });
+    var [saved, setSaved] = useState(null);
+    function set(k, v) { setF(function (p) { var n = Object.assign({}, p); n[k] = v; return n; }); }
+
+    var milesNum = parseFloat(f.miles) || 0;
+    var price = milesNum > 0 ? (milesNum <= 40 ? 200 : 200 + (milesNum - 40) * 2.25) : 0;
+    var priceRounded = Math.round(price * 100) / 100;
+
+    function book() {
+        if (f.liftgate) { alert("This load needs a liftgate — we don't have one. Use the pivot script: ask what else they have, or put them on your overload list."); return; }
+        if (!f.brokerCompany || !f.origin || !f.destination || !milesNum) { alert("Please fill in broker, pickup, drop-off, and miles."); return; }
+        var job = {
+            id: "LOAD-" + Date.now(), customer: f.brokerContact || f.brokerCompany, companyName: f.brokerCompany,
+            phone: f.brokerPhone, origin: f.origin, destination: f.destination, miles: milesNum,
+            service: "freight", serviceName: "Booking Agent Load", finalPrice: priceRounded, payment: "net7",
+            date: new Date().toISOString().split("T")[0], status: "Assigned", isBusiness: true,
+            notes: "Weight: " + (f.weight || "?") + " lbs · Pallets: " + (f.pallets || "?") + " · Pickup: " + f.pickupTime + " · Delivery: " + f.deliveryTime + (f.tarp ? " · Tarp needed" : "") + (f.notes ? " · " + f.notes : "")
+        };
+        if (props.onAddJob) props.onAddJob(job);
+        setSaved(job);
+    }
+
+    if (saved) {
+        return React.createElement("div", { style: { textAlign: "center", padding: "30px 20px" } },
+            React.createElement("div", { style: { fontSize: 36, marginBottom: 8 } }, "✅"),
+            React.createElement("div", { style: { fontSize: 17, fontWeight: 900, color: C.white, marginBottom: 4 } }, "Load Booked — $" + saved.finalPrice.toFixed(2)),
+            React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 16 } }, saved.companyName + " — find it in the Jobs tab."),
+            React.createElement(Btn, { onClick: function () { setSaved(null); setF({ brokerCompany: "", brokerContact: "", brokerPhone: "", origin: "", destination: "", miles: "", weight: "", pallets: "", pickupTime: "", deliveryTime: "", liftgate: false, tarp: false, notes: "" }); } }, "Book Another Load"));
+    }
+
+    return React.createElement("div", { style: { maxWidth: 560, margin: "0 auto" } },
+        React.createElement("div", { style: { fontSize: 16, fontWeight: 900, color: C.white, marginBottom: 4 } }, "\uD83D\uDCE6 Load Booking"),
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 14 } }, "Fill in as the broker talks. Price calculates live."),
+
+        React.createElement(TxtIn, { label: "Broker/Shipper Company", value: f.brokerCompany, onChange: function (v) { set("brokerCompany", v); }, voice: true }),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
+            React.createElement(TxtIn, { label: "Contact Name", value: f.brokerContact, onChange: function (v) { set("brokerContact", v); }, voice: true }),
+            React.createElement(TxtIn, { label: "Phone", value: f.brokerPhone, onChange: function (v) { set("brokerPhone", v); } })),
+
+        React.createElement(TxtIn, { label: "Pickup Location", value: f.origin, onChange: function (v) { set("origin", v); }, voice: true }),
+        React.createElement(TxtIn, { label: "Drop-Off Location", value: f.destination, onChange: function (v) { set("destination", v); }, voice: true }),
+        React.createElement(TxtIn, { label: "Miles", value: f.miles, onChange: function (v) { set("miles", v); }, type: "number" }),
+
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 } },
+            React.createElement(TxtIn, { label: "Weight (lbs)", value: f.weight, onChange: function (v) { set("weight", v); }, type: "number" }),
+            React.createElement(TxtIn, { label: "Pallets", value: f.pallets, onChange: function (v) { set("pallets", v); }, type: "number" })),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
+            React.createElement(TxtIn, { label: "Pickup Time", value: f.pickupTime, onChange: function (v) { set("pickupTime", v); } }),
+            React.createElement(TxtIn, { label: "Delivery Time", value: f.deliveryTime, onChange: function (v) { set("deliveryTime", v); } })),
+
+        React.createElement("div", { style: { display: "flex", gap: 16, marginTop: 12, marginBottom: 12 } },
+            React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: f.liftgate ? C.red : C.white, cursor: "pointer" } },
+                React.createElement("input", { type: "checkbox", checked: f.liftgate, onChange: function (e) { set("liftgate", e.target.checked); }, style: { width: 18, height: 18, accentColor: C.red } }), "Liftgate needed"),
+            React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.white, cursor: "pointer" } },
+                React.createElement("input", { type: "checkbox", checked: f.tarp, onChange: function (e) { set("tarp", e.target.checked); }, style: { width: 18, height: 18, accentColor: C.orange } }), "Tarp needed")),
+
+        f.liftgate && React.createElement("div", { style: { background: "#1a0000", border: "1px solid " + C.red + "66", borderRadius: 9, padding: "10px 14px", marginBottom: 12, fontSize: 12, color: C.red } }, "\u26A0 We don't have a liftgate — this load can't be booked. Use the pivot: ask what else they have, or put them on your overload list."),
+
+        React.createElement(TxtIn, { label: "Notes", value: f.notes, onChange: function (v) { set("notes", v); }, rows: 2, voice: true }),
+
+        milesNum > 0 && React.createElement("div", { style: { background: "#1a1400", border: "1px solid " + C.orange + "66", borderRadius: 9, padding: "12px 16px", marginTop: 10, marginBottom: 14, textAlign: "center" } },
+            React.createElement("div", { style: { fontSize: 10, color: C.dim, textTransform: "uppercase" } }, "Your Ask"),
+            React.createElement("div", { style: { fontSize: 26, fontWeight: 900, color: C.orange } }, "$" + priceRounded.toFixed(2))),
+
+        React.createElement(Btn, { onClick: book, disabled: f.liftgate, style: { width: "100%" } }, "Book This Load"));
 }
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
