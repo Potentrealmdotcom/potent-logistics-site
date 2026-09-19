@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POTENT OS — Transportation Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c0c09;
+    --card:#141410;
+    --line:#2c2c24;
+    --ink:#ffffff;
+    --dim:#a9a9a0;
+    --gold:#f0e000;
+    --green:#4ade80;
+    --blue:#34b0e7;
+    --purple:#b87ef2;
+    --red:#f87171;
+    --green-bg:#0d1a10;
+    --blue-bg:#0a1520;
+    --purple-bg:#170f1e;
+    --gold-bg:#1a1408;
+    --red-bg:#1a0e0e;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding:0 28px;}
+  h1,h2,h3{font-family:"Oswald","Arial Narrow",sans-serif;letter-spacing:0.01em;margin:0;color:#fff;}
+
+header{background:var(–bg);padding:36px 0 30px;border-bottom:2px solid var(–gold);}
+.brandrow{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;}
+.brand-mark{font-family:“Oswald”,sans-serif;font-size:2.1rem;font-weight:600;letter-spacing:0.03em;color:#fff;}
+.brand-mark .os{color:var(–gold);}
+.brand-sub{font-size:0.72rem;color:var(–dim);margin-top:4px;letter-spacing:0.04em;}
+.tagline{max-width:420px;font-size:0.95rem;color:#fff;text-align:right;}
+.tagline .sub2{color:var(–gold);display:block;font-size:0.85rem;margin-top:4px;}
+h1.headline{font-size:2.1rem;color:#fff;font-weight:600;margin-top:22px;line-height:1.15;max-width:680px;}
+.subline{color:var(–dim);margin-top:12px;font-size:1.02rem;max-width:680px;}
+.subline strong{color:var(–gold);font-weight:600;}
+.cta-row{margin-top:24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+.cta{display:inline-block;background:transparent;color:var(–gold);font-family:“Oswald”,sans-serif;font-weight:600;font-size:0.95rem;letter-spacing:0.03em;padding:14px 26px;text-decoration:none;border:1px solid var(–gold);border-radius:2px;}
+.cta:hover{background:var(–gold);color:#000;}
+.cta-url{color:var(–gold);font-size:0.85rem;}
+
+section.pricing{padding:44px 0 8px;}
+.tier-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.tier{background:var(–card);border:1px solid var(–line);padding:20px 18px;}
+.tier .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;}
+.tier h3{font-size:0.85rem;letter-spacing:0.06em;display:inline;}
+.tier .range{font-size:0.78rem;color:var(–dim);margin-top:6px;}
+.tier .price{font-family:“Oswald”,sans-serif;font-size:1.7rem;color:#fff;margin-top:14px;}
+.tier .price span{font-size:0.85rem;color:var(–dim);font-family:“Inter”,sans-serif;}
+.tier .support{font-size:0.82rem;color:var(–dim);margin-top:10px;padding-top:10px;border-top:1px solid var(–line);}
+.tier.starter{background:var(–green-bg);} .tier.starter h3{color:var(–green);} .tier.starter .dot{background:var(–green);}
+.tier.growth{background:var(–blue-bg);} .tier.growth h3{color:var(–blue);} .tier.growth .dot{background:var(–blue);}
+.tier.fleet{background:var(–purple-bg);} .tier.fleet h3{color:var(–purple);} .tier.fleet .dot{background:var(–purple);}
+.tier.enterprise{background:var(–gold-bg);} .tier.enterprise h3{color:var(–gold);} .tier.enterprise .dot{background:var(–gold);}
+
+section.included{padding:52px 0 10px;}
+.section-title{font-size:1.5rem;margin-bottom:6px;color:var(–gold);}
+.section-note{color:var(–dim);font-size:0.92rem;margin-bottom:26px;}
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(–line);border-left:1px solid var(–line);}
+.feat{border-right:1px solid var(–line);border-bottom:1px solid var(–line);padding:20px 22px;background:var(–card);}
+.feat h4{font-family:“Inter”,sans-serif;font-weight:700;font-size:0.98rem;margin:0 0 8px;color:var(–gold);}
+.feat p{margin:0;font-size:0.88rem;color:var(–dim);}
+
+section.diff{padding:52px 0 10px;}
+.diff-list{display:flex;flex-direction:column;gap:0;}
+.diff-item{display:grid;grid-template-columns:220px 1fr;gap:24px;padding:16px 0;border-bottom:1px solid var(–line);align-items:baseline;}
+.diff-item:first-child{border-top:1px solid var(–line);}
+.diff-item h4{font-family:“Oswald”,sans-serif;font-size:1.02rem;color:#fff;font-weight:500;}
+.diff-item h4::before{content:“→ “;color:var(–gold);}
+.diff-item p{margin:0;color:var(–dim);font-size:0.92rem;}
+
+section.flexpay{padding:52px 0 10px;}
+.flex-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:20px;}
+.flex-card{background:var(–card);border:1px solid var(–line);padding:18px;}
+.flex-card .flex-tier{font-size:0.8rem;color:var(–dim);letter-spacing:0.04em;}
+.flex-card .flex-down{font-family:“Oswald”,sans-serif;font-size:1.3rem;color:var(–gold);margin-top:8px;}
+.flex-card .flex-terms{font-size:0.82rem;color:var(–dim);margin-top:6px;}
+
+section.math{padding:56px 0 10px;}
+.math-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px;}
+.math-col{border:1px solid var(–line);}
+.math-col.now{background:var(–red-bg);} .math-col.then{background:var(–green-bg);}
+.math-col .col-head{font-family:“Oswald”,sans-serif;font-size:1rem;padding:16px 20px;color:#fff;border-bottom:1px solid var(–line);}
+.math-col.now .col-head{color:var(–red);} .math-col.then .col-head{color:var(–green);}
+.math-row{display:flex;justify-content:space-between;gap:14px;padding:13px 20px;border-top:1px solid var(–line);font-size:0.88rem;color:var(–dim);}
+.math-row .amt{font-family:“Oswald”,sans-serif;color:#fff;white-space:nowrap;}
+.math-total{display:flex;justify-content:space-between;padding:16px 20px;font-family:“Oswald”,sans-serif;font-weight:600;border-top:2px solid var(–line);color:#fff;}
+.math-col.now .math-total{color:var(–red);} .math-col.then .math-total{color:var(–green);}
+.savings-banner{margin-top:20px;background:var(–green-bg);border:1px solid var(–green);color:var(–green);text-align:center;padding:20px;font-family:“Oswald”,sans-serif;font-size:1.3rem;letter-spacing:0.01em;}
+.savings-banner span{display:block;font-size:0.82rem;font-family:“Inter”,sans-serif;color:var(–dim);margin-top:4px;}
+
+footer{background:var(–bg);color:var(–dim);margin-top:60px;padding:34px 0;text-align:center;border-top:2px solid var(–gold);}
+footer .app-note{font-family:“Oswald”,sans-serif;color:var(–gold);font-size:1.05rem;letter-spacing:0.02em;}
+footer .contact{margin-top:10px;font-size:0.9rem;color:var(–dim);}
+footer a{color:var(–gold);text-decoration:none;}
+
+@media (max-width:820px){
+.tier-grid{grid-template-columns:repeat(2,1fr);}
+.feat-grid{grid-template-columns:repeat(2,1fr);}
+.flex-grid{grid-template-columns:repeat(2,1fr);}
+.diff-item{grid-template-columns:1fr;gap:4px;}
+.math-grid{grid-template-columns:1fr;}
+.brandrow{align-items:flex-start;}
+.tagline{text-align:left;}
+}
+@media (max-width:520px){
+.feat-grid{grid-template-columns:1fr;}
+.flex-grid{grid-template-columns:1fr;}
+h1.headline{font-size:1.6rem;}
+}
+</style>
+
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="brandrow">
+      <div>
+        <div class="brand-mark">★ POTENT <span class="os">OS</span></div>
+        <div class="brand-sub">A POTENT PRÄDƏKT COMPANY</div>
+      </div>
+      <div class="tagline">Transportation Management System<span class="sub2">One-Time License · You Own It Forever</span></div>
+    </div>
+
+```
+<h1 class="headline">One-time license. You own it forever.</h1>
+<p class="subline">Dispatch, settlements, IFTA, fleet maintenance, compliance, and CRM — <strong>one system, one login, paid once.</strong> Offline PWA, voice-activated quoting, and live GPS tracking, with real features no competitor bundles into one platform.</p>
+
+<div class="cta-row">
+  <a class="cta" href="https://potentoperations.netlify.app?apply">Apply for Access</a>
+  <span class="cta-url">potentoperations.netlify.app?apply</span>
+</div>
+```
+
+  </div>
+</header>
+
+<section class="pricing">
+  <div class="wrap">
+    <div class="tier-grid">
+      <div class="tier starter">
+        <span class="dot"></span><h3>STARTER</h3>
+        <div class="range">1–10 trucks</div>
+        <div class="price">$14,500 <span>once</span></div>
+        <div class="support">Flex Pay: 20% down, 6mo</div>
+      </div>
+      <div class="tier growth">
+        <span class="dot"></span><h3>GROWTH</h3>
+        <div class="range">11–50 trucks</div>
+        <div class="price">$34,500 <span>once</span></div>
+        <div class="support">Flex Pay: 20% down, 6mo</div>
+      </div>
+      <div class="tier fleet">
+        <span class="dot"></span><h3>FLEET</h3>
+        <div class="range">51–150 trucks</div>
+        <div class="price">$69,500 <span>once</span></div>
+        <div class="support">Flex Pay: 20% down, 12mo</div>
+      </div>
+      <div class="tier enterprise">
+        <span class="dot"></span><h3>ENTERPRISE</h3>
+        <div class="range">151–300+ trucks</div>
+        <div class="price">$109,500 <span>once</span></div>
+        <div class="support">Flex Pay: 20% down, 12mo</div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:24px;">
+      <a class="cta" href="https://potentoperations.netlify.app?apply">Apply for Access →</a>
+    </div>
+  </div>
+</section>
+
+<section class="included">
+  <div class="wrap">
+    <h2 class="section-title">What's included in every plan</h2>
+    <p class="section-note">No add-on tiers. No feature gates. Every truck gets the full system.</p>
+
+```
+<div class="feat-grid">
+  <div class="feat"><h4>Offline PWA &amp; Dispatch</h4><p>Works 100% offline, installs like an app. Booking site, live job tracking, anti-overbooking calendar.</p></div>
+  <div class="feat"><h4>Voice-Activated Quoting</h4><p>Hands-free dispatch during live calls — fields auto-fill from speech.</p></div>
+  <div class="feat"><h4>Driver Settlements &amp; Payroll</h4><p>Per mile, load, or percentage pay. Commission streams tracked separately.</p></div>
+  <div class="feat"><h4>IFTA Report Generator</h4><p>Fuel and miles by state, quarterly report, CSV export for filing.</p></div>
+  <div class="feat"><h4>CMMS-Aware Fleet Maintenance</h4><p>Won't dispatch a truck with expired maintenance. Color-coded alerts.</p></div>
+  <div class="feat"><h4>Compliance &amp; HOS, FMCSA 2026</h4><p>CDL, medical, and drug test tracking. Hours-of-service rule calculator built in.</p></div>
+  <div class="feat"><h4>CRM &amp; Leads Board</h4><p>Real-time leads pipeline, call logging, auto follow-up emails, rep leaderboard.</p></div>
+  <div class="feat"><h4>Live GPS Tracking</h4><p>10-second driver location updates, customer-facing live map tracker.</p></div>
+  <div class="feat"><h4>Driver Safety Scoring</h4><p>Real scores from on-time rate, completion rate, HOS compliance — no dashcam hardware needed.</p></div>
+  <div class="feat"><h4>Geofencing Alerts</h4><p>Real-time entry/exit alerts for any customer site or yard, built on GPS you already collect.</p></div>
+  <div class="feat"><h4>Advanced Analytics</h4><p>RPM, CPM, lane profitability, driver productivity, AR aging, cash flow.</p></div>
+  <div class="feat"><h4>14 Languages</h4><p>Full admin and public booking translation, including Spanish, Arabic, Chinese, and Vietnamese.</p></div>
+</div>
+```
+
+  </div>
+</section>
+
+<section class="diff">
+  <div class="wrap">
+    <h2 class="section-title">Features nobody else has</h2>
+    <div class="diff-list">
+      <div class="diff-item"><h4>Offline PWA</h4><p>Full dispatch functionality with zero internet. No competing TMS does this.</p></div>
+      <div class="diff-item"><h4>Live gas prices, real EIA data</h4><p>Free federal fuel cost data shown in every quote automatically.</p></div>
+      <div class="diff-item"><h4>Voice dispatch</h4><p>Hands-free quoting during live phone calls — hours saved every week.</p></div>
+      <div class="diff-item"><h4>Own it forever</h4><p>No competitor offers a one-time license. Ever.</p></div>
+      <div class="diff-item"><h4>No per-truck fees</h4><p>$0 per truck per month. Nobody can raise your price by changing a policy.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="flexpay">
+  <div class="wrap">
+    <h2 class="section-title">Can't pay it all today? Flex Pay it.</h2>
+    <p class="section-note">20% down, 0% interest, no credit check. Every tier qualifies.</p>
+    <div class="flex-grid">
+      <div class="flex-card"><div class="flex-tier">STARTER</div><div class="flex-down">$2,900 down</div><div class="flex-terms">then $1,933/mo × 6</div></div>
+      <div class="flex-card"><div class="flex-tier">GROWTH</div><div class="flex-down">$6,900 down</div><div class="flex-terms">then $4,600/mo × 6</div></div>
+      <div class="flex-card"><div class="flex-tier">FLEET</div><div class="flex-down">$13,900 down</div><div class="flex-terms">then $4,633/mo × 12</div></div>
+      <div class="flex-card"><div class="flex-tier">ENTERPRISE</div><div class="flex-down">$21,900 down</div><div class="flex-terms">then $7,300/mo × 12</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="math">
+  <div class="wrap">
+    <h2 class="section-title">The math — 200-truck fleet</h2>
+    <div class="math-grid">
+      <div class="math-col now">
+        <div class="col-head">What you're paying now</div>
+        <div class="math-row"><span>Samsara / Motive — per-truck fees</span><span class="amt">$80,000–$120,000/yr</span></div>
+        <div class="math-row"><span>TMS software subscription</span><span class="amt">$20,000–$50,000/yr</span></div>
+        <div class="math-row"><span>Fleet maintenance / compliance tools</span><span class="amt">$5,000–$15,000/yr</span></div>
+        <div class="math-row"><span>Payroll processing</span><span class="amt">$3,000–$10,000/yr</span></div>
+        <div class="math-total"><span>Forever</span><span>$100,000–$200,000/yr</span></div>
+      </div>
+      <div class="math-col then">
+        <div class="col-head">What POTENT OS costs</div>
+        <div class="math-row"><span>Enterprise license (151–300 trucks)</span><span class="amt">$109,500 once</span></div>
+        <div class="math-row"><span>Everything above — included</span><span class="amt">$0 extra</span></div>
+        <div class="math-row"><span>Ongoing monthly cost</span><span class="amt">$0/yr</span></div>
+        <div class="math-total"><span>5-year total</span><span>$109,500</span></div>
+      </div>
+    </div>
+    <div class="savings-banner">
+      $109,500 once — about $2.4M saved over 5 years
+      <span>Based on the 200-truck comparison above, enterprise tier</span>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="app-note">POTENT LOGISTICS LLC · DOT# 9166689</div>
+    <div class="contact">
+      Private access, by application only. Applications reviewed personally.<br>
+      <a href="https://potentoperations.netlify.app?apply">potentoperations.netlify.app?apply</a> ·
+      (770) 648-4228 · <a href="mailto:potentlogistics@pm.me">potentlogistics@pm.me</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
