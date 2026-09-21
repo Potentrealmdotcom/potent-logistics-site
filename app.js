@@ -1967,11 +1967,12 @@ function PartnerApplicationModal(props) {
     var [bondUploading, setBondUploading] = useState(false);
     function uploadBondPhoto(file) {
         setBondUploading(true);
+        compressImage(file).then(function (compressed) {
         var fileName = Date.now() + "-" + Math.random().toString(36).slice(2) + "-" + (file.name || "bond.jpg");
         fetch(SUPABASE_URL + "/storage/v1/object/partner-documents/" + fileName, {
             method: "POST",
-            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": file.type || "image/jpeg" },
-            body: file
+            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "image/jpeg" },
+            body: compressed
         }).then(function (res) { return res.ok ? res.json() : null; })
           .then(function (data) {
               if (data && data.Key) {
@@ -1979,6 +1980,7 @@ function PartnerApplicationModal(props) {
               }
               setBondUploading(false);
           }).catch(function () { setBondUploading(false); });
+        });
     }
     function set(k, v) { setF(function (p) { var n = Object.assign({}, p); n[k] = v; return n; }); }
     function toggleService(s) { setF(function (p) { var n = Object.assign({}, p); var list = p.services.slice(); var i = list.indexOf(s); if (i > -1)
@@ -3568,7 +3570,8 @@ function JobsDashboard(props) {
                         })),
                         React.createElement(JobWeatherCheck, { destination: j.destination, date: j.date }),
                         React.createElement(JobRouteETA, { origin: j.origin, destination: j.destination }),
-                        React.createElement(JobDocumentsPanel, { jobId: j.id })
+                        React.createElement(JobDocumentsPanel, { jobId: j.id }),
+                        React.createElement(RealJobPhotosPanel, { jobId: j.id })
                     ));
             })));
 }
@@ -5444,10 +5447,12 @@ function PublicApp(props) {
                             if (v === "myjobs") window.location.href = "?myjobs";
                             else if (v === "driveronboard") window.location.href = "/POTENT-Driver-Onboarding.html";
                             else if (v === "partner") setShowPartnerApp(true);
-                            else if (v === "os") window.location.href = "?apply";
+                            else if (v === "os") window.location.href = "/POTENT-OS-Landing-Page.html";
                             else if (v === "loadboard") window.location.href = "https://potentloadboard.netlify.app";
                             else if (v === "employee") window.location.href = "/POTENT-Employee-Portal.html";
                             else if (v === "recurringrequest") window.location.href = "?recurring-service";
+                            else if (v === "haveloads") window.location.href = "?have-loads";
+                            else if (v === "uploadbol") window.location.href = "?upload-bol";
                             e.target.value = ""; // reset back to placeholder after navigating
                         },
                         style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }
@@ -5459,7 +5464,9 @@ function PublicApp(props) {
                         React.createElement("option", { value: "os" }, "\uD83D\uDCBB Apply — POTENT OS"),
                         React.createElement("option", { value: "loadboard" }, "\uD83D\uDCCB Visit POTENT Loadboard"),
                         React.createElement("option", { value: "employee" }, "\uD83D\uDC64 Employee Portal"),
-                        React.createElement("option", { value: "recurringrequest" }, "\uD83D\uDD01 Set Up Recurring Service")),
+                        React.createElement("option", { value: "recurringrequest" }, "\uD83D\uDD01 Set Up Recurring Service"),
+                        React.createElement("option", { value: "haveloads" }, "\uD83D\uDCE6 Have Loads For Us To Run?"),
+                        React.createElement("option", { value: "uploadbol" }, "\uD83D\uDCCB Upload My BOL")),
                     React.createElement(LangSwitcher, { lang: lang, changeLang: changeLang }),
                     React.createElement("a", { href: "tel:" + DISPATCH_PHONE_DISPLAY.replace(/\D/g,""), title: "Dispatch & Sales: " + DISPATCH_EMAIL, style: { textDecoration: "none", background: C.orange, color: "#000", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" } }, "📞 " + DISPATCH_PHONE_DISPLAY),
                     React.createElement("a", { href: "tel:" + PHONE_NUMBER, title: "Owner: " + BUSINESS_EMAIL, style: { textDecoration: "none", background: "transparent", border: "1px solid " + C.orange + "66", color: C.orange, borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" } }, "👑 " + PHONE_DISPLAY))),
@@ -6765,6 +6772,8 @@ function Root() {
     var isWaitlist = _href.indexOf("apply") > -1;
     var isCustomerPortal = _href.indexOf("myjobs") > -1;
     var isRecurringRequest = _href.indexOf("recurring-service") > -1;
+    var isCompanyLoadsIntake = _href.indexOf("have-loads") > -1;
+    var isCustomerBOLUpload = _href.indexOf("upload-bol") > -1;
     if (isPOSAdmin)
         return React.createElement(LicenseManager, null);
     if (isWaitlist)
@@ -6773,6 +6782,10 @@ function Root() {
         return React.createElement(CustomerPortal, { jobs: jobs });
     if (isRecurringRequest)
         return React.createElement(PublicRecurringRequest, null);
+    if (isCompanyLoadsIntake)
+        return React.createElement(CompanyLoadsIntake, null);
+    if (isCustomerBOLUpload)
+        return React.createElement(CustomerBOLUpload, null);
     var offlineBanner = React.createElement("div", {style:{
         position:"fixed",top:0,left:0,right:0,zIndex:9999,
         background:!isOnline?"#ED8936":syncing?"#4299E1":"#1DB954",
@@ -7328,6 +7341,19 @@ function EnhancedDriverApp(props) {
     var latestCoordsRef = useRef(null);
     var myJobs = jobs.filter(function (j) { return j.status !== "Completed" && j.status !== "Paid" && j.status !== "Cancelled"; });
     var job = myJobs.find(function (j) { return j.id === sel; });
+    // Real cross-device photo fetch — whenever a job is opened, pull every
+    // photo actually saved to Supabase for it (driver's own, other drivers',
+    // and any customer-uploaded BOLs), not just what this browser captured.
+    React.useEffect(function () {
+        if (!sel) return;
+        fetch(SUPABASE_URL + "/rest/v1/job_photos?job_id=eq." + encodeURIComponent(sel) + "&select=url,created_at&order=created_at.asc", {
+            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
+        }).then(function (r) { return r.json(); })
+          .then(function (data) {
+              if (!Array.isArray(data)) return;
+              setPhotos(function (p) { var n = Object.assign({}, p); n[sel] = data.map(function (d) { return { url: d.url, time: d.created_at }; }); return n; });
+          }).catch(function () { });
+    }, [sel]);
     // Stable driver id for this device: prefer the logged-in user, fall back to a
     // persisted per-device id so tracking still works if no login is wired up.
     function getDriverId() {
@@ -7438,12 +7464,27 @@ function EnhancedDriverApp(props) {
             var file = e.target.files[0];
             if (!file)
                 return;
-            var reader = new FileReader();
-            reader.onload = function (ev) {
-                setPhotos(function (p) { var n = Object.assign({}, p); n[jobId] = (n[jobId] || []).concat([{ url: ev.target.result, time: new Date().toISOString() }]); return n; });
-                setShowCamera(false);
-            };
-            reader.readAsDataURL(file);
+            compressImage(file).then(function (compressed) {
+                var fileName = jobId + "-" + Date.now() + "-" + Math.random().toString(36).slice(2) + ".jpg";
+                fetch(SUPABASE_URL + "/storage/v1/object/job-photos/" + fileName, {
+                    method: "POST",
+                    headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "image/jpeg" },
+                    body: compressed
+                }).then(function (res) { return res.ok ? res.json() : null; })
+                  .then(function (data) {
+                      if (!data || !data.Key) return;
+                      var url = SUPABASE_URL + "/storage/v1/object/public/job-photos/" + data.Key.split("/").slice(1).join("/");
+                      // Real, cross-device: save to Supabase so admin/driver/customer all see the same photo
+                      fetch(SUPABASE_URL + "/rest/v1/job_photos", {
+                          method: "POST",
+                          headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
+                          body: JSON.stringify({ job_id: jobId, url: url, photo_type: "general", uploaded_by: (currentUser && currentUser.name) || "Driver" })
+                      });
+                      // Also update local state immediately so the UI responds without waiting on a refetch
+                      setPhotos(function (p) { var n = Object.assign({}, p); n[jobId] = (n[jobId] || []).concat([{ url: url, time: new Date().toISOString() }]); return n; });
+                      setShowCamera(false);
+                  }).catch(function () { alert("Photo upload failed. Please check your connection and try again."); });
+            });
         };
         input.click();
     }
@@ -8477,6 +8518,13 @@ function LeadsBoard(props) {
                     React.createElement(TxtIn, { label: "State", value: newLead.state, onChange: function (v) { setNewLeadField("state", v.toUpperCase().substring(0, 2)); }, placeholder: "GA" })),
                 React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" } },
                     React.createElement(TxtIn, { label: "Category", value: newLead.category, onChange: function (v) { setNewLeadField("category", v); }, placeholder: "e.g. Property Management" }),
+                    React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", marginTop: -6, marginBottom: 10 } },
+                        ["Medical Courier", "FFE", "Property Management", "Construction", "Realtor"].map(function (cat) {
+                            return React.createElement("button", {
+                                key: cat, onClick: function () { setNewLeadField("category", cat); },
+                                style: { background: newLead.category === cat ? C.orange : "transparent", color: newLead.category === cat ? "#000" : C.dim, border: "1px solid " + (newLead.category === cat ? C.orange : C.border), borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }
+                            }, cat);
+                        })),
                     React.createElement(TxtIn, { label: "Source", value: newLead.source, onChange: function (v) { setNewLeadField("source", v); }, placeholder: "Referral, cold call, web..." })),
                 React.createElement(Lbl, null, "Priority"),
                 React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 14 } }, ["Low", "Medium", "High"].map(function (p) {
@@ -12180,11 +12228,12 @@ function MyDocumentsVault() {
 
     function uploadDoc(key, file) {
         setUploadingKey(key);
+        compressImage(file).then(function (compressed) {
         var fileName = key + "-" + Date.now() + "-" + (file.name || "doc.jpg");
         fetch(SUPABASE_URL + "/storage/v1/object/my-documents/" + fileName, {
             method: "POST",
-            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": file.type || "image/jpeg" },
-            body: file
+            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "image/jpeg" },
+            body: compressed
         }).then(function (res) { return res.ok ? res.json() : null; })
           .then(function (data) {
               if (!data || !data.Key) { setUploadingKey(null); return; }
@@ -12196,6 +12245,7 @@ function MyDocumentsVault() {
               });
           }).then(function () { setUploadingKey(null); refetch(); })
             .catch(function () { setUploadingKey(null); });
+        });
     }
 
     function toggleSelect(key) {
@@ -12569,13 +12619,26 @@ function DecoyRevealBanner(props) {
 // actually confirming the details first.
 // ═══════════════════════════════════════════════════════════════════
 function PublicRecurringRequest() {
+    // Time-block dedicated pricing — 16' dock-height box truck (only vehicle exposed today).
+    var BLOCKS = [
+        { hours: 2, price: 200, label: "2-Hour Block" },
+        { hours: 4, price: 350, label: "4-Hour Block" },
+        { hours: 8, price: 550, label: "8-Hour Block" },
+    ];
+    var OVERTIME_RATE_PER_HOUR = 110; // must beat every block's own effective hourly rate (2hr block = $100/hr) or overtime becomes cheaper than the block itself
+    var MAX_STACKED_DISCOUNT = 0.20; // 15% recurring + 5% flex = 20% real ceiling now
+    var DAILY_CAPACITY_HOURS = 10; // one truck, real ceiling — leaves buffer for drive time between clients
+
     var [f, setF] = useState({
         customerName: "", company: "", phone: "", email: "",
         origin: "", destination: "", serviceType: "delivery",
-        days: [], startDate: "", notes: ""
+        days: [], startDate: "", blockHours: "4", flexWindow: false, notes: ""
     });
     var [saving, setSaving] = useState(false);
     var [saved, setSaved] = useState(false);
+    var [savedPrice, setSavedPrice] = useState(0);
+    var [capacityError, setCapacityError] = useState("");
+    var [checkingCapacity, setCheckingCapacity] = useState(false);
 
     function set(k, v) { setF(function (p) { var n = Object.assign({}, p); n[k] = v; return n; }); }
     function toggleDay(d) {
@@ -12587,13 +12650,48 @@ function PublicRecurringRequest() {
             n.days = days;
             return n;
         });
+        setCapacityError("");
     }
 
-    function submit() {
+    var block = BLOCKS.find(function (b) { return String(b.hours) === f.blockHours; }) || BLOCKS[1];
+    var baseBlockPrice = block.price;
+    var recurringDiscount = f.days.length >= 5 ? 0.15 : f.days.length >= 3 ? 0.08 : 0; // capped at 15% max, was 25%
+    var flexDiscount = f.flexWindow ? 0.05 : 0;
+    var totalDiscount = Math.min(recurringDiscount + flexDiscount, MAX_STACKED_DISCOUNT);
+    var pricePerDay = Math.round(baseBlockPrice * (1 - totalDiscount));
+    var weeklyTotal = pricePerDay * f.days.length;
+
+    // Real capacity check — one truck, so we sum already-committed hours per day
+    // of week across ALL active recurring routes before allowing a new booking.
+    function checkCapacityThenSubmit() {
         if (!f.customerName || !f.phone || !f.origin || !f.destination || f.days.length === 0 || !f.startDate) {
             alert("Please fill in your info, route, at least one day, and a preferred start date.");
             return;
         }
+        setCheckingCapacity(true);
+        setCapacityError("");
+        fetch(SUPABASE_URL + "/rest/v1/recurring_routes?status=eq.active&select=days_of_week,base_hours", {
+            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
+        }).then(function (r) { return r.json(); }).then(function (existing) {
+            var byDay = {};
+            (Array.isArray(existing) ? existing : []).forEach(function (r) {
+                (r.days_of_week || "").split(",").filter(Boolean).forEach(function (d) {
+                    byDay[d] = (byDay[d] || 0) + (Number(r.base_hours) || 0);
+                });
+            });
+            var overCapacityDay = f.days.find(function (d) {
+                return (byDay[d] || 0) + block.hours > DAILY_CAPACITY_HOURS;
+            });
+            setCheckingCapacity(false);
+            if (overCapacityDay) {
+                setCapacityError("The truck is already fully booked on " + overCapacityDay + "s at that block length. Try a shorter block, a different day, or call us directly at (770) 648-4228 to check other options.");
+                return;
+            }
+            submit();
+        }).catch(function () { setCheckingCapacity(false); submit(); }); // if the check itself fails, don't block a real customer — fail open, not closed
+    }
+
+    function submit() {
         setSaving(true);
         fetch(SUPABASE_URL + "/rest/v1/recurring_routes", {
             method: "POST",
@@ -12602,24 +12700,36 @@ function PublicRecurringRequest() {
                 customer_name: f.customerName, company: f.company, phone: f.phone, email: f.email,
                 origin: f.origin, destination: f.destination, service_type: f.serviceType,
                 days_of_week: f.days.join(","), start_date: f.startDate,
-                end_date: null, rate_per_run: 0, notes: f.notes, status: "pending"
+                end_date: null, pricing_type: "hourly",
+                base_hours: block.hours, base_rate_per_hour: Math.round(pricePerDay / block.hours), overtime_rate_per_hour: OVERTIME_RATE_PER_HOUR,
+                rate_per_run: pricePerDay, notes: f.notes + (f.flexWindow ? " · Flex pickup window" : ""), status: "active"
             })
-        }).then(function () { setSaved(true); setSaving(false); })
-          .catch(function () { alert("Something went wrong submitting your request. Please try again or call us directly."); setSaving(false); });
+        }).then(function () {
+            alertLoginEmail(
+                "\uD83D\uDD01 New Recurring Account \u2014 Auto-Activated",
+                f.customerName + (f.company ? " (" + f.company + ")" : "") + " booked a recurring dedicated route.\n\n" +
+                f.origin + " \u2192 " + f.destination + "\n" +
+                f.days.join(", ") + " \u00b7 " + block.hours + "hr block \u00b7 $" + pricePerDay + "/day ($" + weeklyTotal + "/week)\n" +
+                "Discount applied: " + Math.round(totalDiscount * 100) + "% \u00b7 Overtime billed at $" + OVERTIME_RATE_PER_HOUR + "/hr past the block.\n\n" +
+                "Phone: " + f.phone + " \u00b7 " + f.email
+            );
+            setSavedPrice(pricePerDay);
+            setSaved(true); setSaving(false);
+        }).catch(function () { alert("Something went wrong submitting your request. Please try again or call us directly."); setSaving(false); });
     }
 
     if (saved) {
         return React.createElement("div", { style: { minHeight: "100vh", background: "#080808", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 } },
             React.createElement("div", { style: { textAlign: "center", maxWidth: 420 } },
-                React.createElement("div", { style: { fontSize: 40, marginBottom: 10 } }, "✅"),
-                React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: "#F2F2F2", marginBottom: 8 } }, "Request Received"),
-                React.createElement("div", { style: { fontSize: 13, color: "#888", lineHeight: 1.7 } }, "We'll call you at " + f.phone + " to confirm pricing and lock in your schedule. Thanks for choosing POTENT.")));
+                React.createElement("div", { style: { fontSize: 40, marginBottom: 10 } }, "\u2705"),
+                React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: "#F2F2F2", marginBottom: 8 } }, "You're Booked \u2014 $" + savedPrice + "/day"),
+                React.createElement("div", { style: { fontSize: 13, color: "#888", lineHeight: 1.7 } }, "Your rate is locked for the commitment period, starting " + f.startDate + ". We'll text you at " + f.phone + " to confirm.")));
     }
 
     return React.createElement("div", { style: { minHeight: "100vh", background: "#080808", padding: "30px 16px 60px" } },
         React.createElement("div", { style: { maxWidth: 500, margin: "0 auto" } },
-            React.createElement("div", { style: { fontSize: 22, fontWeight: 900, color: "#F2F2F2", marginBottom: 4, textAlign: "center" } }, "🔁 Set Up Recurring Service"),
-            React.createElement("div", { style: { fontSize: 13, color: "#888", marginBottom: 20, textAlign: "center" } }, "Standing weekly pickup/delivery — pick your days, we'll confirm pricing and lock it in."),
+            React.createElement("div", { style: { fontSize: 22, fontWeight: 900, color: "#F2F2F2", marginBottom: 4, textAlign: "center" } }, "\uD83D\uDD01 Dedicated Recurring Service"),
+            React.createElement("div", { style: { fontSize: 13, color: "#888", marginBottom: 20, textAlign: "center" } }, "16' dock-height box truck, dedicated to your route. Commit more days, save more."),
 
             React.createElement(TxtIn, { label: "Your Name", value: f.customerName, onChange: function (v) { set("customerName", v); } }),
             React.createElement(TxtIn, { label: "Company (if applicable)", value: f.company, onChange: function (v) { set("company", v); } }),
@@ -12629,7 +12739,17 @@ function PublicRecurringRequest() {
             React.createElement(TxtIn, { label: "Pickup Location", value: f.origin, onChange: function (v) { set("origin", v); } }),
             React.createElement(TxtIn, { label: "Drop-Off Location", value: f.destination, onChange: function (v) { set("destination", v); } }),
 
-            React.createElement("div", { style: { fontSize: 10, color: "#888", textTransform: "uppercase", letterSpacing: .5, marginTop: 14, marginBottom: 6 } }, "Which Days Do You Need Us?"),
+            React.createElement("div", { style: { fontSize: 10, color: "#888", textTransform: "uppercase", letterSpacing: .5, marginTop: 14, marginBottom: 6 } }, "Time Block Needed"),
+            React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 10 } },
+                BLOCKS.map(function (b) {
+                    var active = f.blockHours === String(b.hours);
+                    return React.createElement("button", {
+                        key: b.hours, onClick: function () { set("blockHours", String(b.hours)); setCapacityError(""); },
+                        style: { flex: 1, background: active ? "#F0E000" : "transparent", color: active ? "#000" : "#888", border: "1px solid " + (active ? "#F0E000" : "#1e1e1e"), borderRadius: 7, padding: "10px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }
+                    }, b.label + " \u2014 $" + b.price);
+                })),
+
+            React.createElement("div", { style: { fontSize: 10, color: "#888", textTransform: "uppercase", letterSpacing: .5, marginTop: 10, marginBottom: 6 } }, "Which Days Do You Need Us?"),
             React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 } },
                 DAYS_OF_WEEK.map(function (d) {
                     var active = f.days.indexOf(d) > -1;
@@ -12639,10 +12759,23 @@ function PublicRecurringRequest() {
                     }, d);
                 })),
 
-            React.createElement(TxtIn, { label: "Preferred Start Date", value: f.startDate, onChange: function (v) { set("startDate", v); }, type: "date" }),
+            React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#F2F2F2", cursor: "pointer", marginBottom: 10 } },
+                React.createElement("input", { type: "checkbox", checked: f.flexWindow, onChange: function (e) { set("flexWindow", e.target.checked); }, style: { width: 18, height: 18, accentColor: "#F0E000" } }),
+                "Flexible pickup window (extra 5% off)"),
+
+            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
+                React.createElement(TxtIn, { label: "Preferred Start Date", value: f.startDate, onChange: function (v) { set("startDate", v); }, type: "date" })),
             React.createElement(TxtIn, { label: "Anything else we should know?", value: f.notes, onChange: function (v) { set("notes", v); }, rows: 2 }),
 
-            React.createElement("button", { onClick: submit, disabled: saving, style: { width: "100%", background: "#F0E000", color: "#000", border: "none", borderRadius: 10, padding: "14px", fontSize: 15, fontWeight: 900, cursor: "pointer", fontFamily: "inherit", marginTop: 16 } }, saving ? "Submitting..." : "Request My Recurring Schedule")));
+            f.days.length > 0 && React.createElement("div", { style: { background: "#1a1400", border: "1px solid #F0E00066", borderRadius: 10, padding: "14px 16px", marginTop: 14, textAlign: "center" } },
+                React.createElement("div", { style: { fontSize: 10, color: "#888", textTransform: "uppercase" } }, "Your Locked Rate"),
+                React.createElement("div", { style: { fontSize: 24, fontWeight: 900, color: "#F0E000" } }, "$" + pricePerDay + "/day"),
+                React.createElement("div", { style: { fontSize: 11, color: "#888", marginTop: 4 } }, "$" + weeklyTotal + "/week \u00b7 " + f.days.length + " day(s)" + (totalDiscount > 0 ? " \u00b7 " + Math.round(totalDiscount * 100) + "% commitment discount applied" : "")),
+                React.createElement("div", { style: { fontSize: 10, color: "#cc8844", marginTop: 8 } }, "Locked for your commitment period. Time past the " + block.hours + "-hour block is billed at $" + OVERTIME_RATE_PER_HOUR + "/hr.")),
+
+            capacityError && React.createElement("div", { style: { background: "#1a0000", border: "1px solid #E53E3E66", borderRadius: 9, padding: "10px 14px", marginTop: 12, fontSize: 12, color: "#E53E3E" } }, "\u26A0 " + capacityError),
+
+            React.createElement("button", { onClick: checkCapacityThenSubmit, disabled: saving || checkingCapacity, style: { width: "100%", background: "#F0E000", color: "#000", border: "none", borderRadius: 10, padding: "14px", fontSize: 15, fontWeight: 900, cursor: "pointer", fontFamily: "inherit", marginTop: 16 } }, checkingCapacity ? "Checking availability..." : saving ? "Booking..." : "Book My Dedicated Route")));
 }
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
@@ -12749,6 +12882,261 @@ function LoadBookingForm(props) {
             React.createElement("div", { style: { fontSize: 26, fontWeight: 900, color: C.orange } }, "$" + priceRounded.toFixed(2))),
 
         React.createElement(Btn, { onClick: book, disabled: f.liftgate, style: { width: "100%" } }, "Book This Load"));
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// COMPRESS IMAGE — resizes to a max 1200px dimension and re-encodes as
+// JPEG at 80% quality before upload. Same approach Craigslist and most
+// real apps use: a full-size phone photo (often 3-8MB) becomes a few
+// hundred KB, uploads faster, loads faster, costs less storage —
+// with no visible quality loss at the sizes these photos get viewed at.
+// ═══════════════════════════════════════════════════════════════════
+function compressImage(file) {
+    return new Promise(function (resolve) {
+        if (!file || !file.type || file.type.indexOf("image/") !== 0) { resolve(file); return; }
+        var img = new Image();
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            img.onload = function () {
+                var maxDim = 1200;
+                var w = img.width, h = img.height;
+                if (w > maxDim || h > maxDim) {
+                    if (w > h) { h = Math.round(h * (maxDim / w)); w = maxDim; }
+                    else { w = Math.round(w * (maxDim / h)); h = maxDim; }
+                }
+                var canvas = document.createElement("canvas");
+                canvas.width = w; canvas.height = h;
+                canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+                canvas.toBlob(function (blob) {
+                    resolve(blob || file); // fall back to original if compression somehow fails
+                }, "image/jpeg", 0.8);
+            };
+            img.onerror = function () { resolve(file); }; // fall back to original, never block the upload
+            img.src = e.target.result;
+        };
+        reader.onerror = function () { resolve(file); };
+        reader.readAsDataURL(file);
+    });
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// COMPANIES WITH LOADS — public intake for companies/brokers who want
+// POTENT to run loads FOR them (the opposite direction from the
+// Partner Account application, which is customers wanting service
+// FROM POTENT). Captures their info, notifies the owner immediately.
+// ═══════════════════════════════════════════════════════════════════
+function CompanyLoadsIntake() {
+    var [f, setF] = useState({
+        companyName: "", contactName: "", phone: "", email: "",
+        loadTypes: "", frequency: "weekly", notes: ""
+    });
+    var [saving, setSaving] = useState(false);
+    var [saved, setSaved] = useState(false);
+    var [bondUrl, setBondUrl] = useState(null);
+    var [bondUploading, setBondUploading] = useState(false);
+    function set(k, v) { setF(function (p) { var n = Object.assign({}, p); n[k] = v; return n; }); }
+
+    function uploadBond(file) {
+        setBondUploading(true);
+        compressImage(file).then(function (compressed) {
+            var fileName = "companyintake-" + Date.now() + "-bond.jpg";
+            fetch(SUPABASE_URL + "/storage/v1/object/partner-documents/" + fileName, {
+                method: "POST",
+                headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "image/jpeg" },
+                body: compressed
+            }).then(function (res) { return res.ok ? res.json() : null; })
+              .then(function (data) {
+                  if (data && data.Key) setBondUrl(SUPABASE_URL + "/storage/v1/object/public/partner-documents/" + data.Key.split("/").slice(1).join("/"));
+                  setBondUploading(false);
+              }).catch(function () { setBondUploading(false); });
+        });
+    }
+
+    function submit() {
+        if (!f.companyName || !f.contactName || !f.phone || !f.email) {
+            alert("Please fill in company name, contact name, phone, and email.");
+            return;
+        }
+        if (!bondUrl) {
+            alert("Please upload a photo of your surety bond before submitting \u2014 required before we'll run loads for a new company.");
+            return;
+        }
+        setSaving(true);
+        alertLoginEmail(
+            "\uD83D\uDCE6 Company Wants To Send Me Loads",
+            f.companyName + " (" + f.contactName + ") wants to send loads for you to run.\n\n" +
+            "Load types: " + (f.loadTypes || "not specified") + "\n" +
+            "Frequency: " + f.frequency + "\n" +
+            "Notes: " + (f.notes || "none") + "\n\n" +
+            "Phone: " + f.phone + " \u00b7 Email: " + f.email + "\n" +
+            "Surety Bond: " + bondUrl + "\n\n" +
+            "Next step: use My Documents Vault to send them your registration/insurance/EIN as needed."
+        );
+        setSaving(false);
+        setSaved(true);
+    }
+
+    if (saved) {
+        return React.createElement("div", { style: { minHeight: "100vh", background: "#080808", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 } },
+            React.createElement("div", { style: { textAlign: "center", maxWidth: 420 } },
+                React.createElement("div", { style: { fontSize: 40, marginBottom: 10 } }, "\u2705"),
+                React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: "#F2F2F2", marginBottom: 8 } }, "Thanks \u2014 We'll Be In Touch"),
+                React.createElement("div", { style: { fontSize: 13, color: "#888", lineHeight: 1.7 } }, "We'll reach out at " + f.phone + " to discuss your loads and send over our carrier documents.")));
+    }
+
+    return React.createElement("div", { style: { minHeight: "100vh", background: "#080808", padding: "30px 16px 60px" } },
+        React.createElement("div", { style: { maxWidth: 500, margin: "0 auto" } },
+            React.createElement("div", { style: { fontSize: 22, fontWeight: 900, color: "#F2F2F2", marginBottom: 4, textAlign: "center" } }, "\uD83D\uDCE6 Have Loads For Us To Run?"),
+            React.createElement("div", { style: { fontSize: 13, color: "#888", marginBottom: 20, textAlign: "center" } }, "Tell us about your loads \u2014 we'll follow up and send our carrier documents (insurance, registration, EIN)."),
+
+            React.createElement(TxtIn, { label: "Company Name", value: f.companyName, onChange: function (v) { set("companyName", v); } }),
+            React.createElement(TxtIn, { label: "Your Name", value: f.contactName, onChange: function (v) { set("contactName", v); } }),
+            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
+                React.createElement(TxtIn, { label: "Phone", value: f.phone, onChange: function (v) { set("phone", v); } }),
+                React.createElement(TxtIn, { label: "Email", value: f.email, onChange: function (v) { set("email", v); } })),
+            React.createElement(TxtIn, { label: "What kind of loads?", value: f.loadTypes, onChange: function (v) { set("loadTypes", v); }, placeholder: "e.g. FFE, medical courier, general freight" }),
+
+            React.createElement("div", { style: { fontSize: 10, color: "#888", textTransform: "uppercase", letterSpacing: .5, marginTop: 14, marginBottom: 6 } }, "How Often?"),
+            React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 10 } },
+                ["one-time", "weekly", "ongoing"].map(function (opt) {
+                    var active = f.frequency === opt;
+                    return React.createElement("button", {
+                        key: opt, onClick: function () { set("frequency", opt); },
+                        style: { flex: 1, background: active ? "#F0E000" : "transparent", color: active ? "#000" : "#888", border: "1px solid " + (active ? "#F0E000" : "#1e1e1e"), borderRadius: 7, padding: "9px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", textTransform: "capitalize" }
+                    }, opt);
+                })),
+
+            React.createElement(TxtIn, { label: "Anything else we should know?", value: f.notes, onChange: function (v) { set("notes", v); }, rows: 3 }),
+
+            React.createElement("div", { style: { background: "#1a1400", border: "1px solid #F0E00044", borderRadius: 9, padding: "12px 14px", marginTop: 14, marginBottom: 10 } },
+                React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: "#F0E000", marginBottom: 6 } }, "\uD83D\uDCCB Surety Bond \u2014 Required"),
+                React.createElement("div", { style: { fontSize: 11, color: "#999", lineHeight: 1.6, marginBottom: 10 } }, "We don't run loads for new companies without proof of a surety bond on file. Upload a photo before submitting."),
+                React.createElement("input", { type: "file", accept: "image/*", onChange: function (e) { if (e.target.files && e.target.files[0]) uploadBond(e.target.files[0]); }, style: { fontSize: 11, color: "#999", marginBottom: 6 } }),
+                bondUploading && React.createElement("div", { style: { fontSize: 11, color: "#F0E000" } }, "Uploading..."),
+                bondUrl && React.createElement("div", { style: { fontSize: 11, color: "#1DB954", fontWeight: 700 } }, "\u2705 Surety bond uploaded")),
+
+            React.createElement("button", { onClick: submit, disabled: saving, style: { width: "100%", background: "#F0E000", color: "#000", border: "none", borderRadius: 10, padding: "14px", fontSize: 15, fontWeight: 900, cursor: "pointer", fontFamily: "inherit", marginTop: 6 } }, saving ? "Sending..." : "Submit \u2014 We'll Follow Up")));
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// REAL JOB PHOTOS PANEL — reads directly from the job_photos Supabase
+// table. Used in BOTH admin and driver views so everyone genuinely
+// sees the same photos, regardless of who uploaded them or what
+// device they're on.
+// ═══════════════════════════════════════════════════════════════════
+function RealJobPhotosPanel(props) {
+    var jobId = props.jobId;
+    var [photoList, setPhotoList] = React.useState(null);
+
+    function refetch() {
+        fetch(SUPABASE_URL + "/rest/v1/job_photos?job_id=eq." + encodeURIComponent(jobId) + "&select=*&order=created_at.desc", {
+            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
+        }).then(function (r) { return r.json(); })
+          .then(function (data) { setPhotoList(Array.isArray(data) ? data : []); })
+          .catch(function () { setPhotoList([]); });
+    }
+    React.useEffect(function () { refetch(); }, [jobId]);
+
+    if (photoList === null) return React.createElement("div", { style: { fontSize: 10, color: C.dim, marginTop: 8 } }, "Loading photos...");
+    if (photoList.length === 0) return React.createElement("div", { style: { fontSize: 10, color: C.dim, fontStyle: "italic", marginTop: 8 } }, "No photos or BOLs uploaded yet for this job.");
+
+    return React.createElement("div", { style: { marginTop: 10 } },
+        React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 } }, photoList.length + " Photo" + (photoList.length !== 1 ? "s" : "") + " \u2014 Live, Everyone Sees These"),
+        React.createElement("div", { style: { display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4 } },
+            photoList.map(function (p) {
+                return React.createElement("a", { key: p.id, href: p.url, target: "_blank", rel: "noopener", style: { flexShrink: 0 } },
+                    React.createElement("img", { src: p.url, style: { width: 80, height: 60, objectFit: "cover", borderRadius: 6, border: "1px solid " + C.border } }),
+                    React.createElement("div", { style: { fontSize: 8, color: C.dim, marginTop: 2, textAlign: "center" } }, p.photo_type === "customer_bol" ? "\uD83D\uDCE6 Customer" : (p.uploaded_by || "Driver")));
+            })));
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CUSTOMER BOL UPLOAD — public page, Job ID lookup, lets a customer
+// upload their own BOL for a specific job. Writes to the same
+// job_photos table admin/driver already read from.
+// ═══════════════════════════════════════════════════════════════════
+function CustomerBOLUpload() {
+    var [jobIdInput, setJobIdInput] = React.useState("");
+    var [verified, setVerified] = React.useState(false);
+    var [checking, setChecking] = React.useState(false);
+    var [err, setErr] = React.useState("");
+    var [uploading, setUploading] = React.useState(false);
+    var [uploaded, setUploaded] = React.useState(false);
+
+    function verifyJob() {
+        var clean = jobIdInput.trim().toUpperCase();
+        if (!clean) { setErr("Please enter your Job ID."); return; }
+        setChecking(true); setErr("");
+        fetch(SUPABASE_URL + "/rest/v1/jobs?id=eq." + encodeURIComponent(clean) + "&select=id", {
+            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
+        }).then(function (r) { return r.json(); }).then(function (data) {
+            setChecking(false);
+            if (Array.isArray(data) && data.length > 0) { setVerified(true); }
+            else { setErr("We couldn't find that Job ID. Double check it and try again, or call (770) 648-4228."); }
+        }).catch(function () { setChecking(false); setErr("Something went wrong. Please try again."); });
+    }
+
+    function uploadBOL(file) {
+        setUploading(true);
+        compressImage(file).then(function (compressed) {
+            var clean = jobIdInput.trim().toUpperCase();
+            var fileName = clean + "-bol-" + Date.now() + ".jpg";
+            fetch(SUPABASE_URL + "/storage/v1/object/job-photos/" + fileName, {
+                method: "POST",
+                headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "image/jpeg" },
+                body: compressed
+            }).then(function (res) { return res.ok ? res.json() : null; })
+              .then(function (data) {
+                  if (!data || !data.Key) { setUploading(false); alert("Upload failed. Please try again."); return; }
+                  var url = SUPABASE_URL + "/storage/v1/object/public/job-photos/" + data.Key.split("/").slice(1).join("/");
+                  return fetch(SUPABASE_URL + "/rest/v1/job_photos", {
+                      method: "POST",
+                      headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
+                      body: JSON.stringify({ job_id: clean, url: url, photo_type: "customer_bol", uploaded_by: "Customer" })
+                  });
+              }).then(function () { setUploading(false); setUploaded(true); })
+                .catch(function () { setUploading(false); alert("Upload failed. Please try again."); });
+        });
+    }
+
+    if (uploaded) {
+        return React.createElement("div", { style: { minHeight: "100vh", background: "#080808", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 } },
+            React.createElement("div", { style: { textAlign: "center", maxWidth: 400 } },
+                React.createElement("div", { style: { fontSize: 40, marginBottom: 10 } }, "\u2705"),
+                React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: "#F2F2F2", marginBottom: 8 } }, "BOL Uploaded"),
+                React.createElement("div", { style: { fontSize: 13, color: "#888" } }, "We can see it now \u2014 thank you.")));
+    }
+
+    return React.createElement("div", { style: { minHeight: "100vh", background: "#080808", padding: "30px 16px 60px", display: "flex", alignItems: "center", justifyContent: "center" } },
+        React.createElement("div", { style: { maxWidth: 420, width: "100%" } },
+            React.createElement("div", { style: { fontSize: 22, fontWeight: 900, color: "#F2F2F2", marginBottom: 4, textAlign: "center" } }, "\uD83D\uDCCB Upload Your BOL"),
+            React.createElement("div", { style: { fontSize: 13, color: "#888", marginBottom: 20, textAlign: "center" } }, "Enter your Job ID to upload a Bill of Lading for that job."),
+
+            !verified && React.createElement("div", null,
+                React.createElement(TxtIn, { label: "Job ID", value: jobIdInput, onChange: setJobIdInput, placeholder: "e.g. PL-12345" }),
+                err && React.createElement("div", { style: { fontSize: 12, color: "#E53E3E", marginTop: 6, marginBottom: 6 } }, err),
+                React.createElement("button", { onClick: verifyJob, disabled: checking, style: { width: "100%", background: "#F0E000", color: "#000", border: "none", borderRadius: 10, padding: "14px", fontSize: 15, fontWeight: 900, cursor: "pointer", fontFamily: "inherit", marginTop: 10 } }, checking ? "Checking..." : "Continue")),
+
+            verified && React.createElement("div", null,
+                React.createElement("div", { style: { background: "#0d1a10", border: "1px solid #1DB95466", borderRadius: 8, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "#1DB954" } }, "\u2705 Job " + jobIdInput.toUpperCase() + " found"),
+                React.createElement("input", {
+                    type: "file", accept: "image/*", id: "bolUploadInput", style: { display: "none" },
+                    onChange: function (e) { if (e.target.files && e.target.files[0]) uploadBOL(e.target.files[0]); }
+                }),
+                React.createElement("button", {
+                    onClick: function () { document.getElementById("bolUploadInput").click(); },
+                    disabled: uploading,
+                    style: { width: "100%", background: "#F0E000", color: "#000", border: "none", borderRadius: 10, padding: "16px", fontSize: 15, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" }
+                }, uploading ? "Uploading..." : "\uD83D\uDCF8 Take Photo / Upload BOL"))));
 }
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
