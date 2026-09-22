@@ -16,27 +16,27 @@ var C = {
 // To add a dispatcher: copy any dispatch line, change id/name/password.
 // Passwords: owner sets them, employees never share.
 var USERS = [
-    { id: "potent", name: "POTENT", role: "owner", password: "HJWG9099AI", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash", "geofence", "flexpay", "referrals", "marketrates", "loginActivity", "safetyscore", "rebuttals", "recurring", "livecall"] },
-    { id: "dispatch1", name: "Dispatch 1", role: "dispatch", password: "IRI1202HJ", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
-    { id: "dispatch2", name: "Dispatch 2", role: "dispatch", password: "EVQ9819SS", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
-    { id: "dispatch3", name: "Dispatch 3", role: "dispatch", password: "IQC8526SI", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
-    { id: "dispatch4", name: "Dispatch 4", role: "dispatch", password: "EPZ0124FH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
-    { id: "dispatch5", name: "Dispatch 5", role: "dispatch", password: "UXB6653FH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
-    { id: "dispatch6", name: "Dispatch 6", role: "dispatch", password: "BSD0421RN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
-    { id: "dispatch7", name: "Dispatch 7", role: "dispatch", password: "NEK4282YX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
-    { id: "dispatch8", name: "Dispatch 8", role: "dispatch", password: "RUQ7232FK", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
-    { id: "dispatch9", name: "Dispatch 9", role: "dispatch", password: "LBY3027CH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
-    { id: "dispatch10", name: "Dispatch 10", role: "dispatch", password: "FYJ9996BX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
-    { id: "dispatch11", name: "Dispatch 11", role: "dispatch", password: "XMG4340LN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
-    { id: "dispatch12", name: "Dispatch 12", role: "dispatch", password: "EEA2653NU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
-    { id: "dispatch13", name: "Dispatch 13", role: "dispatch", password: "STM4563VM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
-    { id: "dispatch14", name: "Dispatch 14", role: "dispatch", password: "GHU7822NX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
-    { id: "dispatch15", name: "Dispatch 15", role: "dispatch", password: "SLL8046WH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
-    { id: "dispatch16", name: "Dispatch 16", role: "dispatch", password: "MXH2933UN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
-    { id: "dispatch17", name: "Dispatch 17", role: "dispatch", password: "SJV8263MA", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
-    { id: "dispatch18", name: "Dispatch 18", role: "dispatch", password: "TYE0288YW", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
-    { id: "dispatch19", name: "Dispatch 19", role: "dispatch", password: "SVG4086AU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
-    { id: "dispatch20", name: "Dispatch 20", role: "dispatch", password: "HCB3143EM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall"] },
+    { id: "potent", name: "POTENT", role: "owner", password: "HJWG9099AI", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash", "geofence", "flexpay", "referrals", "marketrates", "loginActivity", "safetyscore", "rebuttals", "recurring", "livecall", "companyonboard"] },
+    { id: "dispatch1", name: "Dispatch 1", role: "dispatch", password: "IRI1202HJ", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard"] },
+    { id: "dispatch2", name: "Dispatch 2", role: "dispatch", password: "EVQ9819SS", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard"] },
+    { id: "dispatch3", name: "Dispatch 3", role: "dispatch", password: "IQC8526SI", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard"] },
+    { id: "dispatch4", name: "Dispatch 4", role: "dispatch", password: "EPZ0124FH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard"] },
+    { id: "dispatch5", name: "Dispatch 5", role: "dispatch", password: "UXB6653FH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard"] },
+    { id: "dispatch6", name: "Dispatch 6", role: "dispatch", password: "BSD0421RN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard"] },
+    { id: "dispatch7", name: "Dispatch 7", role: "dispatch", password: "NEK4282YX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard"] },
+    { id: "dispatch8", name: "Dispatch 8", role: "dispatch", password: "RUQ7232FK", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard"] },
+    { id: "dispatch9", name: "Dispatch 9", role: "dispatch", password: "LBY3027CH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard"] },
+    { id: "dispatch10", name: "Dispatch 10", role: "dispatch", password: "FYJ9996BX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard"] },
+    { id: "dispatch11", name: "Dispatch 11", role: "dispatch", password: "XMG4340LN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard"] },
+    { id: "dispatch12", name: "Dispatch 12", role: "dispatch", password: "EEA2653NU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard"] },
+    { id: "dispatch13", name: "Dispatch 13", role: "dispatch", password: "STM4563VM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard"] },
+    { id: "dispatch14", name: "Dispatch 14", role: "dispatch", password: "GHU7822NX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard"] },
+    { id: "dispatch15", name: "Dispatch 15", role: "dispatch", password: "SLL8046WH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard"] },
+    { id: "dispatch16", name: "Dispatch 16", role: "dispatch", password: "MXH2933UN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard"] },
+    { id: "dispatch17", name: "Dispatch 17", role: "dispatch", password: "SJV8263MA", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard"] },
+    { id: "dispatch18", name: "Dispatch 18", role: "dispatch", password: "TYE0288YW", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard"] },
+    { id: "dispatch19", name: "Dispatch 19", role: "dispatch", password: "SVG4086AU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard"] },
+    { id: "dispatch20", name: "Dispatch 20", role: "dispatch", password: "HCB3143EM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard"] },
     { id: "driver", name: "Driver 1", role: "driver", password: "DRIVERPL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
     { id: "driver2", name: "Driver 2", role: "driver", password: "DRIVER2PL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
     { id: "driver3", name: "Driver 3", role: "driver", password: "DRIVER3PL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
@@ -5017,7 +5017,7 @@ function ReviewsSection(props) {
 function getTabGroups() {
     return [
         { label: "📋 Jobs", color: "#4299E1", tabs: [["jobs", "📋 " + t("jobs")], ["exceptions", "🚨 " + t("alerts")], ["calendar", "📅 " + t("calendar")], ["driver", "🚐 " + t("driver")], ["driverapp", "🚐 " + t("driverApp")]] },
-        { label: "📞 Sales", color: "#1DB954", tabs: [["leads", "📋 " + t("leads")], ["activity", "👥 " + t("activity")], ["leaderboard", "🏆 " + t("board")], ["ospipeline", "🎯 Pipeline"], ["ostraining", "📚 Training"], ["flexpay", "📅 Flex Pay"], ["rebuttals", "📞 Rebuttal Cards"], ["recurring", "🔁 Recurring Routes"], ["livecall", "📞 Live Call Screen"]] },
+        { label: "📞 Sales", color: "#1DB954", tabs: [["leads", "📋 " + t("leads")], ["activity", "👥 " + t("activity")], ["leaderboard", "🏆 " + t("board")], ["ospipeline", "🎯 Pipeline"], ["ostraining", "📚 Training"], ["flexpay", "📅 Flex Pay"], ["rebuttals", "📞 Rebuttal Cards"], ["recurring", "🔁 Recurring Routes"], ["livecall", "📞 Live Call Screen"], ["companyonboard", "🤝 Company Onboarding"]] },
         { label: "🚗 Fleet", color: "#F6AD55", tabs: [["fleet", "🚗 Fleet"], ["fleetmap", "🗺️ Live Map"], ["compliance", "🛡 Compliance"], ["documents", "📁 Documents"], ["safetyscore", "🛡️ Safety Scores"], ["geofence", "📍 Geofencing"], ["carriers", "🤝 " + t("carriers")], ["safety", "🔒 Safety Alerts"]] },
         { label: "💰 Money", color: C.orange, tabs: [["reports", "📊 " + t("reports")], ["advanced", "📈 " + t("analytics")], ["sales", "🏆 " + t("sales")], ["expenses", "💸 " + t("expenses")], ["accounts", "🏢 " + t("accounts")], ["payroll", "💰 " + t("payroll")], ["ceodash", "📊 CEO Dashboard"], ["referrals", "🎟️ Referral Codes"], ["marketrates", "📊 Market Rates"]] },
         { label: "⚙ Team", color: "#FC8181", tabs: [["ownerSettings", "⚙ Settings"], ["audit", "👁 " + t("audit")], ["loginActivity", "🔐 Login Activity"], ["ai", "🤖 " + t("aiDocs")], ["demo", "🎬 " + t("demo")]] },
@@ -5153,6 +5153,7 @@ function AdminDashboard(props) {
             tab === "rebuttals" && React.createElement(LiveRebuttalCards, null),
             tab === "recurring" && React.createElement(RecurringRoutesView, { onAddJob: props.onAddJob }),
             tab === "livecall" && React.createElement(LiveCallScreen, { onAddJob: props.onAddJob, gasPPG: props.gasPPG, role: props.role, currentUser: props.currentUser }),
+            tab === "companyonboard" && React.createElement(CompanyOnboarding, null),
             tab === "ostraining" && React.createElement(OSTraining, null),
             tab === "documents" && React.createElement("div", null, props.role === ROLES.OWNER && React.createElement(MyDocumentsVault, null), React.createElement(DocumentLogView, null))),
         React.createElement(CategoryNav, { tab: tab, setTab: setTab, currentUser: props.currentUser }),
@@ -5449,7 +5450,6 @@ function PublicApp(props) {
                             else if (v === "partner") setShowPartnerApp(true);
                             else if (v === "os") window.location.href = "/POTENT-OS-Landing-Page.html";
                             else if (v === "loadboard") window.location.href = "https://potentloadboard.netlify.app";
-                            else if (v === "employee") window.location.href = "/POTENT-Employee-Portal.html";
                             else if (v === "recurringrequest") window.location.href = "?recurring-service";
                             else if (v === "haveloads") window.location.href = "?have-loads";
                             else if (v === "uploadbol") window.location.href = "?upload-bol";
@@ -5463,7 +5463,6 @@ function PublicApp(props) {
                         React.createElement("option", { value: "partner" }, "\uD83E\uDD1D Apply — Partner Account"),
                         React.createElement("option", { value: "os" }, "\uD83D\uDCBB Apply — POTENT OS"),
                         React.createElement("option", { value: "loadboard" }, "\uD83D\uDCCB Visit POTENT Loadboard"),
-                        React.createElement("option", { value: "employee" }, "\uD83D\uDC64 Employee Portal"),
                         React.createElement("option", { value: "recurringrequest" }, "\uD83D\uDD01 Set Up Recurring Service"),
                         React.createElement("option", { value: "haveloads" }, "\uD83D\uDCE6 Have Loads For Us To Run?"),
                         React.createElement("option", { value: "uploadbol" }, "\uD83D\uDCCB Upload My BOL")),
@@ -12623,7 +12622,6 @@ function PublicRecurringRequest() {
     var BLOCKS = [
         { hours: 2, price: 200, label: "2-Hour Block" },
         { hours: 4, price: 350, label: "4-Hour Block" },
-        { hours: 8, price: 550, label: "8-Hour Block" },
     ];
     var OVERTIME_RATE_PER_HOUR = 110; // must beat every block's own effective hourly rate (2hr block = $100/hr) or overtime becomes cheaper than the block itself
     var MAX_STACKED_DISCOUNT = 0.20; // 15% recurring + 5% flex = 20% real ceiling now
@@ -13137,6 +13135,379 @@ function CustomerBOLUpload() {
                     disabled: uploading,
                     style: { width: "100%", background: "#F0E000", color: "#000", border: "none", borderRadius: 10, padding: "16px", fontSize: 15, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" }
                 }, uploading ? "Uploading..." : "\uD83D\uDCF8 Take Photo / Upload BOL"))));
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// COMPANY/DISPATCH PARTNER ONBOARDING — real Curri-style flow.
+// DOT lookup via FMCSA, simple ID upload (no face-matching complexity),
+// exact fields as specified: their info, POTENT's info (auto-filled,
+// real), business role classification, and per-load documentation.
+// ═══════════════════════════════════════════════════════════════════
+var FMCSA_WEBKEY = "532f079d64d86d65a5f71d3f97ee0c5967ad86e4";
+
+// POTENT's own real, confirmed carrier info — same for every company,
+// shown automatically, never re-typed.
+var POTENT_CARRIER_INFO = {
+    legalName: "POTENT OPERATIONS LLC",
+    dba: "POTENT Logistics",
+    ein: "42-2446741",
+    dotNumber: "9166689",
+    mcNumber: "Applying — Intrastate GA currently",
+    address: "2089 Christian Cir SE, Conyers, GA 30013",
+    vehicle: "16ft dock-height box truck, 2022 Ford E350",
+    capacity: "4,500 lbs max, 190\"L x 95\"W x 80\"H interior",
+    equipment: "Ramp, pallet jack, E-track, load bars — NO liftgate",
+    serviceArea: "Georgia statewide, Atlanta metro primary",
+    contact: "(770) 648-4228 \u00b7 potentlogistics@pm.me",
+    bankName: "Middlesex Federal Savings (Novo)",
+    routingNumber: "211370150",
+    accountNumber: "103687060"
+};
+
+function CompanyOnboarding() {
+    var [step, setStep] = useState(1);
+    var [f, setF] = useState({
+        // Company / Dispatch Partner
+        legalName: "", dba: "", businessAddress: "", contactName: "", phone: "", email: "",
+        ein: "", dotNumber: "", mcNumber: "", authorityStatus: "",
+        businessRole: "dispatch_only",
+        paymentTerms: "net7", paymentContact: "", remitAddress: "", achInfo: "",
+        factoringCompany: "", factoringNOA: "",
+        // Real FMCSA financial security — required for brokers per FMCSA rules
+        bmcType: "bmc84", financialSecurityProvider: "", financialSecurityVerified: false,
+        // Quick Pay
+        quickPayOffered: false, quickPayFee: "",
+        apContact: "", apEmail: "",
+        // Dispatcher vs actual broker — never let a dispatcher be the mystery middleman
+        actualBrokerName: "", actualBrokerMC: "", actualBrokerAP: "",
+        ssn: "", termsAgreed: false
+    });
+    var [dotLookupData, setDotLookupData] = useState(null);
+    var [dotLookupError, setDotLookupError] = useState("");
+    var [lookingUp, setLookingUp] = useState(false);
+    var [docs, setDocs] = useState({});
+    var [uploadingDoc, setUploadingDoc] = useState(null);
+    var [idPhotoUrl, setIdPhotoUrl] = useState(null);
+    var [idUploading, setIdUploading] = useState(false);
+    var [submitted, setSubmitted] = useState(false);
+
+    function set(k, v) { setF(function (p) { var n = Object.assign({}, p); n[k] = v; return n; }); }
+
+    var [verifyMode, setVerifyMode] = useState("dot"); // "dot" or "mc"
+    var [verifyInput, setVerifyInput] = useState("");
+
+    function verifyCarrier() {
+        if (!verifyInput.trim()) { setDotLookupError("Enter a " + (verifyMode === "dot" ? "DOT" : "MC") + " number first."); return; }
+        setLookingUp(true); setDotLookupError("");
+        var url = verifyMode === "dot"
+            ? "https://mobile.fmcsa.dot.gov/qc/services/carriers/" + verifyInput.trim() + "?webKey=" + FMCSA_WEBKEY
+            : "https://mobile.fmcsa.dot.gov/qc/services/carriers/docket-number/" + verifyInput.trim() + "?webKey=" + FMCSA_WEBKEY;
+        fetch(url)
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                setLookingUp(false);
+                // DOT endpoint returns data.content.carrier (single object).
+                // MC/docket endpoint returns data.content as an array of matches.
+                var c = null;
+                if (data && data.content) {
+                    if (Array.isArray(data.content) && data.content.length > 0) {
+                        c = data.content[0].carrier || data.content[0];
+                    } else if (data.content.carrier) {
+                        c = data.content.carrier;
+                    }
+                }
+                if (!c) {
+                    setDotLookupError("No carrier found for that " + (verifyMode === "dot" ? "DOT" : "MC") + " number. Double check it and try again.");
+                    return;
+                }
+                setDotLookupData(c);
+                setF(function (p) { return Object.assign({}, p, {
+                    legalName: c.legalName || p.legalName,
+                    businessAddress: (c.phyStreet || "") + ", " + (c.phyCity || "") + ", " + (c.phyState || "") + " " + (c.phyZipcode || ""),
+                    ein: c.ein ? String(c.ein) : p.ein,
+                    dotNumber: c.dotNumber ? String(c.dotNumber) : (verifyMode === "dot" ? verifyInput.trim() : p.dotNumber),
+                    mcNumber: verifyMode === "mc" ? verifyInput.trim() : p.mcNumber,
+                    authorityStatus: c.allowedToOperate === "Y" ? "Active" : "Not Active"
+                }); });
+                setStep(2);
+            }).catch(function () { setLookingUp(false); setDotLookupError("Couldn't reach FMCSA right now. Check your connection and try again."); });
+    }
+
+    function uploadDoc(docKey, file) {
+        setUploadingDoc(docKey);
+        compressImage(file).then(function (compressed) {
+            var fileName = docKey + "-" + Date.now() + ".jpg";
+            fetch(SUPABASE_URL + "/storage/v1/object/carrier-verification/" + fileName, {
+                method: "POST",
+                headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "image/jpeg" },
+                body: compressed
+            }).then(function (res) { return res.ok ? res.json() : null; })
+              .then(function (data) {
+                  setUploadingDoc(null);
+                  if (data && data.Key) {
+                      var url = SUPABASE_URL + "/storage/v1/object/public/carrier-verification/" + data.Key.split("/").slice(1).join("/");
+                      setDocs(function (p) { var n = Object.assign({}, p); n[docKey] = url; return n; });
+                  }
+              }).catch(function () { setUploadingDoc(null); });
+        });
+    }
+
+    function uploadID(file) {
+        setIdUploading(true);
+        compressImage(file).then(function (compressed) {
+            var fileName = "id-" + Date.now() + ".jpg";
+            fetch(SUPABASE_URL + "/storage/v1/object/carrier-verification/" + fileName, {
+                method: "POST",
+                headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "image/jpeg" },
+                body: compressed
+            }).then(function (res) { return res.ok ? res.json() : null; })
+              .then(function (data) {
+                  setIdUploading(false);
+                  if (data && data.Key) setIdPhotoUrl(SUPABASE_URL + "/storage/v1/object/public/carrier-verification/" + data.Key.split("/").slice(1).join("/"));
+              }).catch(function () { setIdUploading(false); });
+        });
+    }
+
+    function submit() {
+        if (!f.legalName || !f.contactName || !f.phone || !f.email) {
+            alert("Please fill in company legal name, contact name, phone, and email.");
+            return;
+        }
+        if (!idPhotoUrl) {
+            alert("Please upload a photo ID before submitting.");
+            return;
+        }
+        if (!docs.coi) {
+            alert("A Certificate of Insurance (COI) is required before submitting.");
+            return;
+        }
+        if (!f.termsAgreed) {
+            alert("Please read and agree to the Terms of Service before submitting.");
+            return;
+        }
+        fetch(SUPABASE_URL + "/rest/v1/carrier_profiles", {
+            method: "POST",
+            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
+            body: JSON.stringify({
+                dot_number: f.dotNumber, mc_number: f.mcNumber, company_name: f.legalName,
+                ein: f.ein, phone_number: f.phone, verification_status: "pending",
+                fmcsa_data: dotLookupData, id_image_url: idPhotoUrl,
+                payment_method: f.factoringCompany ? "factoring" : "direct",
+                factoring_company_name: f.factoringCompany, noa_url: f.factoringNOA
+            })
+        });
+        alertLoginEmail(
+            "\uD83D\uDCCB New Company Onboarding \u2014 " + f.legalName,
+            "Business Role: " + f.businessRole + "\n" +
+            "DOT: " + f.dotNumber + " \u00b7 MC: " + f.mcNumber + " \u00b7 Authority: " + f.authorityStatus + "\n" +
+            "Contact: " + f.contactName + " \u00b7 " + f.phone + " \u00b7 " + f.email + "\n" +
+            "Payment Terms: " + f.paymentTerms + " (max Net 7)\n" +
+            "Documents uploaded: " + Object.keys(docs).join(", ") + "\n" +
+            "ID uploaded: " + idPhotoUrl
+        );
+        setSubmitted(true);
+    }
+
+    function downloadPDF() {
+        var w = window.open("", "_blank");
+        var rows = [
+            ["Legal Name", f.legalName], ["DBA", f.dba], ["DOT #", f.dotNumber], ["MC #", f.mcNumber],
+            ["Authority Status", f.authorityStatus], ["Contact", f.contactName + " \u00b7 " + f.phone + " \u00b7 " + f.email],
+            ["Business Role", f.businessRole], ["Payment Terms", "Net 7 (maximum)"],
+        ];
+        var potentRows = [
+            ["Legal Name", POTENT_CARRIER_INFO.legalName], ["DBA", POTENT_CARRIER_INFO.dba], ["EIN", POTENT_CARRIER_INFO.ein],
+            ["DOT #", POTENT_CARRIER_INFO.dotNumber], ["MC #", POTENT_CARRIER_INFO.mcNumber], ["Address", POTENT_CARRIER_INFO.address],
+            ["Vehicle", POTENT_CARRIER_INFO.vehicle], ["Capacity", POTENT_CARRIER_INFO.capacity], ["Equipment", POTENT_CARRIER_INFO.equipment],
+            ["Service Area", POTENT_CARRIER_INFO.serviceArea], ["Contact", POTENT_CARRIER_INFO.contact],
+            ["Bank", POTENT_CARRIER_INFO.bankName], ["Routing #", POTENT_CARRIER_INFO.routingNumber], ["Account #", POTENT_CARRIER_INFO.accountNumber],
+        ];
+        var rowsHtml = rows.map(function (r) { return "<tr><td style='color:#888;padding:6px 12px;'>" + r[0] + "</td><td style='font-weight:700;padding:6px 12px;'>" + (r[1] || "\u2014") + "</td></tr>"; }).join("");
+        var potentRowsHtml = potentRows.map(function (r) { return "<tr><td style='color:#888;padding:6px 12px;'>" + r[0] + "</td><td style='font-weight:700;padding:6px 12px;'>" + (r[1] || "\u2014") + "</td></tr>"; }).join("");
+        w.document.write(
+            "<html><head><title>POTENT Onboarding Packet \u2014 " + f.legalName + "</title>" +
+            "<style>body{font-family:Arial,sans-serif;padding:40px;color:#111;} h1{color:#C9A800;} table{border-collapse:collapse;width:100%;margin-bottom:30px;} td{border-bottom:1px solid #eee;}</style></head><body>" +
+            "<h1>POTENT Logistics \u2014 Onboarding Packet</h1>" +
+            "<h3>Company / Dispatch Partner</h3><table>" + rowsHtml + "</table>" +
+            "<h3>POTENT Carrier Information</h3><table>" + potentRowsHtml + "</table>" +
+            "<p style='color:#888;font-size:11px;'>Generated " + new Date().toLocaleDateString() + " \u00b7 POTENT Logistics LLC \u00b7 DOT# 9166689 \u00b7 (770) 648-4228</p>" +
+            "</body></html>"
+        );
+        w.document.close();
+        setTimeout(function () { w.print(); }, 400);
+    }
+
+    if (submitted) {
+        return React.createElement("div", { style: { textAlign: "center", padding: "60px 20px" } },
+            React.createElement("div", { style: { fontSize: 40, marginBottom: 10 } }, "\u2705"),
+            React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.white, marginBottom: 8 } }, "Onboarding Submitted"),
+            React.createElement("div", { style: { fontSize: 13, color: C.dim, marginBottom: 20 } }, f.legalName + " has been submitted for review."),
+            React.createElement("button", { onClick: downloadPDF, style: { background: C.orange, color: "#000", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCC4 Download Full Packet (PDF)"));
+    }
+
+    var docList = [
+        { key: "w9", label: "W-9" },
+        { key: "coi", label: "COI / Insurance Certificate", required: true },
+        { key: "dispatchAgreement", label: "Dispatch Agreement" },
+        { key: "brokerAgreement", label: "Broker/Carrier Agreement (if applicable)" },
+    ];
+
+    // ── STEP 1: REAL GATE — nothing else shows until DOT or MC verifies ──
+    if (step === 1) {
+        return React.createElement("div", { style: { maxWidth: 480, margin: "60px auto" } },
+            React.createElement("div", { style: { fontSize: 22, fontWeight: 900, color: C.white, marginBottom: 4, textAlign: "center" } }, "\uD83E\uDD1D Company / Dispatch Partner Onboarding"),
+            React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 24, textAlign: "center" } }, "Enter your DOT or MC number to get started \u2014 we verify you're real before anything else."),
+            React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 14, justifyContent: "center" } },
+                ["dot", "mc"].map(function (m) {
+                    var active = verifyMode === m;
+                    return React.createElement("button", {
+                        key: m, onClick: function () { setVerifyMode(m); setDotLookupError(""); },
+                        style: { background: active ? C.orange : "transparent", color: active ? "#000" : C.dim, border: "1px solid " + (active ? C.orange : C.border), borderRadius: 7, padding: "8px 20px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }
+                    }, m.toUpperCase() + " Number");
+                })),
+            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "2fr 1fr", gap: 8 } },
+                React.createElement(TxtIn, { label: (verifyMode === "dot" ? "DOT" : "MC") + " Number", value: verifyInput, onChange: setVerifyInput }),
+                React.createElement("button", { onClick: verifyCarrier, disabled: lookingUp, style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "11px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", height: 42 } }, lookingUp ? "Verifying..." : "Verify")),
+            dotLookupError && React.createElement("div", { style: { fontSize: 12, color: C.red, marginTop: 10, textAlign: "center" } }, dotLookupError));
+    }
+
+    // ── FINAL STATUS — real calculation, matches your exact 3-tier system ──
+    var authorityOK = f.authorityStatus === "Active";
+    var securityOK = f.quickPayOffered || f.financialSecurityVerified;
+    var docsOK = !!docs.coi && (!!docs.dispatchAgreement || !!docs.brokerAgreement);
+    var idOK = !!idPhotoUrl;
+    var finalStatus = (authorityOK && securityOK && docsOK && idOK) ? "verified"
+        : (!authorityOK || (f.businessRole !== "dispatch_only" && !securityOK && !docsOK)) ? "reject"
+        : "review";
+    var statusInfo = {
+        verified: { color: C.green, label: "\uD83D\uDFE2 VERIFIED \u2014 ACCEPT LOAD", bg: "#0d1a10" },
+        review: { color: C.orange, label: "\uD83D\uDFE1 REVIEW \u2014 MISSING INFORMATION", bg: "#1a1400" },
+        reject: { color: C.red, label: "\uD83D\uDD34 DO NOT ACCEPT \u2014 FAILED VERIFICATION", bg: "#1a0000" }
+    }[finalStatus];
+
+    // ── STEP 2+: the rest, only reachable after real verification ──
+    return React.createElement("div", { style: { maxWidth: 700, margin: "0 auto" } },
+        React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.white, marginBottom: 4 } }, "\uD83E\uDD1D Company / Dispatch Partner Onboarding"),
+        dotLookupData && React.createElement("div", { style: { background: dotLookupData.allowedToOperate === "Y" ? "#0d1a10" : "#1a0000", border: "1px solid " + (dotLookupData.allowedToOperate === "Y" ? C.green : C.red) + "66", borderRadius: 8, padding: "10px 14px", marginBottom: 16, fontSize: 12, color: dotLookupData.allowedToOperate === "Y" ? C.green : C.red } },
+            (dotLookupData.allowedToOperate === "Y" ? "\u2705 Verified Active \u2014 " : "\u26A0 Not Active \u2014 ") + dotLookupData.legalName + " \u00b7 " + dotLookupData.phyCity + ", " + dotLookupData.phyState),
+
+        // ── CURRENT BUSINESS ROLE ──
+        React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, textTransform: "uppercase", marginBottom: 8 } }, "Current Business Role"),
+        React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6, marginBottom: 20 } },
+            [["dispatch_only", "Dispatch Only"], ["broker_active", "Broker \u2014 Authority Active"], ["broker_pending", "Broker \u2014 Authority Pending"], ["direct_customer", "Direct Customer"], ["other", "Other"]].map(function (opt) {
+                return React.createElement("label", { key: opt[0], style: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.white, cursor: "pointer" } },
+                    React.createElement("input", { type: "radio", name: "businessRole", checked: f.businessRole === opt[0], onChange: function () { set("businessRole", opt[0]); }, style: { width: 16, height: 16, accentColor: C.orange } }),
+                    opt[1]);
+            })),
+        f.businessRole === "broker_pending" && React.createElement("div", { style: { background: "#1a1400", border: "1px solid " + C.orange + "66", borderRadius: 8, padding: "10px 14px", marginBottom: 16, fontSize: 12, color: C.orange } }, "\u26A0 Authority pending \u2014 treated differently than an active broker. We'll confirm status before running recurring loads."),
+
+        // ── COMPANY / DISPATCH PARTNER ──
+        React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, textTransform: "uppercase", marginTop: 10, marginBottom: 8 } }, "Company / Dispatch Partner Info"),
+        React.createElement(TxtIn, { label: "Legal Business Name", value: f.legalName, onChange: function (v) { set("legalName", v); } }),
+        React.createElement(TxtIn, { label: "DBA (if any)", value: f.dba, onChange: function (v) { set("dba", v); } }),
+        React.createElement(TxtIn, { label: "Business Address", value: f.businessAddress, onChange: function (v) { set("businessAddress", v); } }),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
+            React.createElement(TxtIn, { label: "Contact Name", value: f.contactName, onChange: function (v) { set("contactName", v); } }),
+            React.createElement(TxtIn, { label: "Phone", value: f.phone, onChange: function (v) { set("phone", v); } })),
+        React.createElement(TxtIn, { label: "Email", value: f.email, onChange: function (v) { set("email", v); } }),
+        React.createElement(TxtIn, { label: "EIN", value: f.ein, onChange: function (v) { set("ein", v); } }),
+        !f.ein && React.createElement(TxtIn, { label: "SSN (if no EIN/business number)", value: f.ssn, onChange: function (v) { set("ssn", v); } }),
+
+        // ── DOT/MC — already verified in Step 1, shown here as confirmed record ──
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
+            React.createElement(TxtIn, { label: "DOT #", value: f.dotNumber, onChange: function (v) { set("dotNumber", v); } }),
+            React.createElement(TxtIn, { label: "MC # (if applicable)", value: f.mcNumber, onChange: function (v) { set("mcNumber", v); } })),
+
+        // ── PAYMENT ──
+        React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, textTransform: "uppercase", marginTop: 16, marginBottom: 8 } }, "Payment Terms"),
+        React.createElement("div", { style: { background: "#1a1400", border: "1px solid " + C.orange + "44", borderRadius: 8, padding: "10px 14px", marginBottom: 10, fontSize: 11, color: C.dim } }, "Maximum Net 7 \u2014 no exceptions."),
+        React.createElement(TxtIn, { label: "Payment Contact", value: f.paymentContact, onChange: function (v) { set("paymentContact", v); } }),
+        React.createElement(TxtIn, { label: "Remittance/Payment Address", value: f.remitAddress, onChange: function (v) { set("remitAddress", v); } }),
+        React.createElement(TxtIn, { label: "ACH/Payment Information", value: f.achInfo, onChange: function (v) { set("achInfo", v); } }),
+        React.createElement(TxtIn, { label: "Factoring Company (if applicable)", value: f.factoringCompany, onChange: function (v) { set("factoringCompany", v); } }),
+
+        // ── QUICK PAY ──
+        React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, textTransform: "uppercase", marginTop: 16, marginBottom: 8 } }, "Quick Pay"),
+        React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.white, cursor: "pointer", marginBottom: 10 } },
+            React.createElement("input", { type: "checkbox", checked: f.quickPayOffered, onChange: function (e) { set("quickPayOffered", e.target.checked); }, style: { width: 18, height: 18, accentColor: C.orange } }),
+            "Quick Pay offered"),
+        f.quickPayOffered && React.createElement(TxtIn, { label: "Quick Pay Fee (%)", value: f.quickPayFee, onChange: function (v) { set("quickPayFee", v); } }),
+        !f.quickPayOffered && React.createElement("div", { style: { background: "#1a0d00", border: "1px solid " + C.orange + "44", borderRadius: 8, padding: "10px 14px", marginBottom: 10, fontSize: 11, color: C.orange } }, "No Quick Pay \u2014 acceptable only if this broker passes full verification below: active authority, verified financial security, signed agreement, written terms."),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
+            React.createElement(TxtIn, { label: "AP Contact", value: f.apContact, onChange: function (v) { set("apContact", v); } }),
+            React.createElement(TxtIn, { label: "AP Email", value: f.apEmail, onChange: function (v) { set("apEmail", v); } })),
+
+        // ── FMCSA FINANCIAL SECURITY — real requirement, not the same as guaranteed payment ──
+        React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, textTransform: "uppercase", marginTop: 16, marginBottom: 8 } }, "FMCSA Financial Security (Brokers Only)"),
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 10, lineHeight: 1.6 } }, "FMCSA requires brokers to carry $75,000 in financial security (BMC-84 surety bond or BMC-85 trust). This protects against non-payment \u2014 it is NOT a guarantee, but it's a real layer we verify before accepting a load without Quick Pay."),
+        React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 10 } },
+            [["bmc84", "BMC-84 (Surety Bond)"], ["bmc85", "BMC-85 (Trust Fund)"]].map(function (opt) {
+                var active = f.bmcType === opt[0];
+                return React.createElement("button", { key: opt[0], onClick: function () { set("bmcType", opt[0]); }, style: { flex: 1, background: active ? C.orange : "transparent", color: active ? "#000" : C.dim, border: "1px solid " + (active ? C.orange : C.border), borderRadius: 7, padding: "9px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, opt[1]);
+            })),
+        React.createElement(TxtIn, { label: "Security Provider", value: f.financialSecurityProvider, onChange: function (v) { set("financialSecurityProvider", v); } }),
+        React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.white, cursor: "pointer", marginTop: 6, marginBottom: 16 } },
+            React.createElement("input", { type: "checkbox", checked: f.financialSecurityVerified, onChange: function (e) { set("financialSecurityVerified", e.target.checked); }, style: { width: 18, height: 18, accentColor: C.green } }),
+            "Verified directly through FMCSA (not just a screenshot they sent)"),
+
+        // ── DISPATCHER vs ACTUAL BROKER — never let a dispatcher be the mystery middleman ──
+        f.businessRole === "dispatch_only" && React.createElement("div", null,
+            React.createElement("div", { style: { fontSize: 11, color: C.red, fontWeight: 800, textTransform: "uppercase", marginTop: 16, marginBottom: 8 } }, "\u26A0 Who Actually Has The Freight"),
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 10 } }, "A dispatcher is not automatically the broker. Get the real broker's info \u2014 who actually pays you."),
+            React.createElement(TxtIn, { label: "Actual Broker Legal Name", value: f.actualBrokerName, onChange: function (v) { set("actualBrokerName", v); } }),
+            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 } },
+                React.createElement(TxtIn, { label: "Actual Broker MC #", value: f.actualBrokerMC, onChange: function (v) { set("actualBrokerMC", v); } }),
+                React.createElement(TxtIn, { label: "Actual Broker AP Contact", value: f.actualBrokerAP, onChange: function (v) { set("actualBrokerAP", v); } }))),
+
+        // ── DOCUMENTS ──
+        React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, textTransform: "uppercase", marginTop: 16, marginBottom: 8 } }, "Documents"),
+        docList.map(function (d) {
+            return React.createElement("div", { key: d.key, style: { display: "flex", alignItems: "center", gap: 10, background: C.card, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", marginBottom: 6 } },
+                React.createElement("div", { style: { flex: 1, fontSize: 12, color: C.white } }, d.label + (d.required ? " *" : "") + (docs[d.key] ? " \u2705" : "")),
+                React.createElement("input", { type: "file", accept: "image/*,.pdf", id: "doc_" + d.key, style: { display: "none" }, onChange: function (e) { if (e.target.files && e.target.files[0]) uploadDoc(d.key, e.target.files[0]); } }),
+                React.createElement("button", { onClick: function () { document.getElementById("doc_" + d.key).click(); }, disabled: uploadingDoc === d.key, style: { background: "transparent", color: C.orange, border: "1px solid " + C.orange, borderRadius: 6, padding: "5px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, uploadingDoc === d.key ? "..." : "Upload"));
+        }),
+
+        // ── SIMPLE ID VERIFICATION (no face-matching complexity) ──
+        React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, textTransform: "uppercase", marginTop: 16, marginBottom: 8 } }, "ID Verification"),
+        React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 8, padding: "12px 14px", marginBottom: 20 } },
+            React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 8 } }, "Upload a photo of the contact's ID \u2014 simple on-file verification, no face-match required."),
+            React.createElement("input", { type: "file", accept: "image/*", id: "idUpload", style: { display: "none" }, onChange: function (e) { if (e.target.files && e.target.files[0]) uploadID(e.target.files[0]); } }),
+            React.createElement("button", { onClick: function () { document.getElementById("idUpload").click(); }, disabled: idUploading, style: { background: idPhotoUrl ? "transparent" : C.orange, color: idPhotoUrl ? C.green : "#000", border: "1px solid " + (idPhotoUrl ? C.green : C.orange), borderRadius: 8, padding: "9px 16px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, idUploading ? "Uploading..." : idPhotoUrl ? "\u2705 ID Uploaded" : "Upload ID Photo")),
+
+        // ── POTENT'S OWN INFO, REAL, AUTO-FILLED ──
+        React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, textTransform: "uppercase", marginTop: 10, marginBottom: 8 } }, "POTENT Carrier Information (What You Need From Us)"),
+        React.createElement("div", { style: { background: "#0d1a10", border: "1px solid " + C.green + "44", borderRadius: 10, padding: "14px 16px", marginBottom: 20 } },
+            [["Legal Name", POTENT_CARRIER_INFO.legalName], ["DBA", POTENT_CARRIER_INFO.dba], ["EIN", POTENT_CARRIER_INFO.ein],
+             ["DOT #", POTENT_CARRIER_INFO.dotNumber], ["MC #", POTENT_CARRIER_INFO.mcNumber], ["Address", POTENT_CARRIER_INFO.address],
+             ["Vehicle", POTENT_CARRIER_INFO.vehicle], ["Capacity", POTENT_CARRIER_INFO.capacity], ["Equipment", POTENT_CARRIER_INFO.equipment],
+             ["Service Area", POTENT_CARRIER_INFO.serviceArea], ["Contact", POTENT_CARRIER_INFO.contact]].map(function (row) {
+                return React.createElement("div", { key: row[0], style: { display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid " + C.border, fontSize: 11 } },
+                    React.createElement("span", { style: { color: C.dim } }, row[0]),
+                    React.createElement("span", { style: { color: C.white, fontWeight: 700 } }, row[1]));
+            }),
+            React.createElement("div", { style: { fontSize: 10, color: C.dim, marginTop: 10, fontStyle: "italic" } }, "Banking/COI available on request via My Documents Vault \u2014 not shown publicly here.")),
+
+        // ── TERMS OF SERVICE — real, sourced language, fair but protective ──
+        React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, textTransform: "uppercase", marginTop: 16, marginBottom: 8 } }, "Terms of Service"),
+        React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "14px 16px", marginBottom: 12, maxHeight: 200, overflowY: "auto", fontSize: 11, color: C.dim, lineHeight: 1.7 } },
+            React.createElement("b", { style: { color: C.white } }, "Payment Responsibility. "), "If this account fails to pay an invoice within the agreed terms (maximum Net 7), the responsible party is liable for the full amount owed, plus any collection costs and legal fees POTENT Logistics LLC incurs recovering payment. Unpaid balances accrue interest at 1.5% per month after the due date.", React.createElement("br", null), React.createElement("br", null),
+            React.createElement("b", { style: { color: C.white } }, "Limitation of Liability. "), "POTENT Logistics LLC's liability for any loss, damage, or delay to freight is limited to the lesser of $0.50 per pound or $100,000 per shipment, unless a higher value is declared in writing and agreed to before pickup. POTENT is not liable for indirect, incidental, or consequential damages, including lost profits or business opportunity.", React.createElement("br", null), React.createElement("br", null),
+            React.createElement("b", { style: { color: C.white } }, "Claims. "), "Any claim for loss or damage must be submitted in writing within 9 months of the delivery date, or the claim is waived.", React.createElement("br", null), React.createElement("br", null),
+            React.createElement("b", { style: { color: C.white } }, "Indemnification. "), "This account agrees to indemnify and hold POTENT Logistics LLC harmless from claims arising out of inaccurate information provided, breach of this agreement, or the account's own negligence.", React.createElement("br", null), React.createElement("br", null),
+            React.createElement("b", { style: { color: C.white } }, "Billing Disputes. "), "A billing dispute does not excuse or delay payment of the undisputed portion of any invoice."),
+        React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.white, cursor: "pointer", marginBottom: 16 } },
+            React.createElement("input", { type: "checkbox", checked: f.termsAgreed, onChange: function (e) { set("termsAgreed", e.target.checked); }, style: { width: 18, height: 18, accentColor: C.orange } }),
+            "I have read and agree to these Terms of Service"),
+
+        React.createElement("div", { style: { background: statusInfo.bg, border: "2px solid " + statusInfo.color, borderRadius: 10, padding: "14px 16px", marginTop: 16, marginBottom: 14, textAlign: "center" } },
+            React.createElement("div", { style: { fontSize: 15, fontWeight: 900, color: statusInfo.color } }, statusInfo.label)),
+        finalStatus === "reject" && React.createElement("div", { style: { fontSize: 11, color: C.red, textAlign: "center", marginBottom: 10 } }, "No verified authority + no signed agreement + no written rate/payment terms = no load."),
+
+        React.createElement("button", { onClick: submit, disabled: finalStatus === "reject" || !f.termsAgreed, style: { width: "100%", background: (finalStatus === "reject" || !f.termsAgreed) ? C.border : C.orange, color: (finalStatus === "reject" || !f.termsAgreed) ? C.dim : "#000", border: "none", borderRadius: 10, padding: "14px", fontSize: 15, fontWeight: 900, cursor: (finalStatus === "reject" || !f.termsAgreed) ? "not-allowed" : "pointer", fontFamily: "inherit" } }, finalStatus === "reject" ? "Cannot Submit \u2014 Failed Verification" : !f.termsAgreed ? "Agree To Terms To Continue" : "Submit Onboarding"));
 }
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
