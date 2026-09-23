@@ -16,27 +16,27 @@ var C = {
 // To add a dispatcher: copy any dispatch line, change id/name/password.
 // Passwords: owner sets them, employees never share.
 var USERS = [
-    { id: "potent", name: "POTENT", role: "owner", password: "HJWG9099AI", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash", "geofence", "flexpay", "referrals", "marketrates", "loginActivity", "safetyscore", "rebuttals", "recurring", "livecall", "companyonboard", "claims"] },
-    { id: "dispatch1", name: "Dispatch 1", role: "dispatch", password: "IRI1202HJ", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims"] },
-    { id: "dispatch2", name: "Dispatch 2", role: "dispatch", password: "EVQ9819SS", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims"] },
-    { id: "dispatch3", name: "Dispatch 3", role: "dispatch", password: "IQC8526SI", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims"] },
-    { id: "dispatch4", name: "Dispatch 4", role: "dispatch", password: "EPZ0124FH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims"] },
-    { id: "dispatch5", name: "Dispatch 5", role: "dispatch", password: "UXB6653FH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims"] },
-    { id: "dispatch6", name: "Dispatch 6", role: "dispatch", password: "BSD0421RN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims"] },
-    { id: "dispatch7", name: "Dispatch 7", role: "dispatch", password: "NEK4282YX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims"] },
-    { id: "dispatch8", name: "Dispatch 8", role: "dispatch", password: "RUQ7232FK", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims"] },
-    { id: "dispatch9", name: "Dispatch 9", role: "dispatch", password: "LBY3027CH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims"] },
-    { id: "dispatch10", name: "Dispatch 10", role: "dispatch", password: "FYJ9996BX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims"] },
-    { id: "dispatch11", name: "Dispatch 11", role: "dispatch", password: "XMG4340LN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims"] },
-    { id: "dispatch12", name: "Dispatch 12", role: "dispatch", password: "EEA2653NU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims"] },
-    { id: "dispatch13", name: "Dispatch 13", role: "dispatch", password: "STM4563VM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims"] },
-    { id: "dispatch14", name: "Dispatch 14", role: "dispatch", password: "GHU7822NX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims"] },
-    { id: "dispatch15", name: "Dispatch 15", role: "dispatch", password: "SLL8046WH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims"] },
-    { id: "dispatch16", name: "Dispatch 16", role: "dispatch", password: "MXH2933UN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims"] },
-    { id: "dispatch17", name: "Dispatch 17", role: "dispatch", password: "SJV8263MA", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims"] },
-    { id: "dispatch18", name: "Dispatch 18", role: "dispatch", password: "TYE0288YW", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims"] },
-    { id: "dispatch19", name: "Dispatch 19", role: "dispatch", password: "SVG4086AU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims"] },
-    { id: "dispatch20", name: "Dispatch 20", role: "dispatch", password: "HCB3143EM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims"] },
+    { id: "potent", name: "POTENT", role: "owner", password: "HJWG9099AI", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash", "geofence", "flexpay", "referrals", "marketrates", "loginActivity", "safetyscore", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads"] },
+    { id: "dispatch1", name: "Dispatch 1", role: "dispatch", password: "IRI1202HJ", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads"] },
+    { id: "dispatch2", name: "Dispatch 2", role: "dispatch", password: "EVQ9819SS", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads"] },
+    { id: "dispatch3", name: "Dispatch 3", role: "dispatch", password: "IQC8526SI", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads"] },
+    { id: "dispatch4", name: "Dispatch 4", role: "dispatch", password: "EPZ0124FH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads"] },
+    { id: "dispatch5", name: "Dispatch 5", role: "dispatch", password: "UXB6653FH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads"] },
+    { id: "dispatch6", name: "Dispatch 6", role: "dispatch", password: "BSD0421RN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads"] },
+    { id: "dispatch7", name: "Dispatch 7", role: "dispatch", password: "NEK4282YX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads"] },
+    { id: "dispatch8", name: "Dispatch 8", role: "dispatch", password: "RUQ7232FK", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads"] },
+    { id: "dispatch9", name: "Dispatch 9", role: "dispatch", password: "LBY3027CH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads"] },
+    { id: "dispatch10", name: "Dispatch 10", role: "dispatch", password: "FYJ9996BX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads"] },
+    { id: "dispatch11", name: "Dispatch 11", role: "dispatch", password: "XMG4340LN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads"] },
+    { id: "dispatch12", name: "Dispatch 12", role: "dispatch", password: "EEA2653NU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads"] },
+    { id: "dispatch13", name: "Dispatch 13", role: "dispatch", password: "STM4563VM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads"] },
+    { id: "dispatch14", name: "Dispatch 14", role: "dispatch", password: "GHU7822NX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads"] },
+    { id: "dispatch15", name: "Dispatch 15", role: "dispatch", password: "SLL8046WH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads"] },
+    { id: "dispatch16", name: "Dispatch 16", role: "dispatch", password: "MXH2933UN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads"] },
+    { id: "dispatch17", name: "Dispatch 17", role: "dispatch", password: "SJV8263MA", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads"] },
+    { id: "dispatch18", name: "Dispatch 18", role: "dispatch", password: "TYE0288YW", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads"] },
+    { id: "dispatch19", name: "Dispatch 19", role: "dispatch", password: "SVG4086AU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads"] },
+    { id: "dispatch20", name: "Dispatch 20", role: "dispatch", password: "HCB3143EM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads"] },
     { id: "driver", name: "Driver 1", role: "driver", password: "DRIVERPL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
     { id: "driver2", name: "Driver 2", role: "driver", password: "DRIVER2PL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
     { id: "driver3", name: "Driver 3", role: "driver", password: "DRIVER3PL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
@@ -1749,10 +1749,10 @@ function sendEmail(job) {
         var message = "New booking:\n\nJob ID: " + job.id + "\nCustomer: " + job.customer + "\nPhone: " + job.phone +
             "\nService: " + job.serviceName + "\nOrigin: " + job.origin + "\nDestination: " + job.destination +
             "\nTotal: $" + job.finalPrice + "\nPayment: " + job.payment + "\nDate: " + job.date + "\nNotes: " + (job.notes || "None");
-        fetch("/.netlify/functions/send-email", { method: "POST", headers: { "Content-Type": "application/json" },
+        return fetch("/.netlify/functions/send-email", { method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ to: BUSINESS_EMAIL, subject: "New Job Booked — " + job.id, message: message }) });
     }
-    catch (e) { }
+    catch (e) { return Promise.reject(e); }
 }
 // ── LEAD EMAIL AUTOMATION — Mailjet ─────────────────────────────────
 // Reuses the same Mailjet function already wired for booking
@@ -1976,6 +1976,7 @@ var MONTHLY_VOLUME_OPTIONS = [
 function PartnerApplicationModal(props) {
     var [f, setF] = useState({ companyName: "", contactPerson: "", title: "", phone: "", email: "", businessAddress: "", businessType: "property_mgmt", monthlyVolume: "1_5k", services: [], paymentTerms: "net7", billingEmail: "", notes: "", agreeToTerms: false });
     var [sent, setSent] = useState(false);
+    var [submitting, setSubmitting] = useState(false);
     var [step, setStep] = useState(0);
     var [applicantPhotoUrl, setApplicantPhotoUrl] = useState(null);
     var [bondPhotoUrl, setBondPhotoUrl] = useState(null);
@@ -2009,13 +2010,20 @@ function PartnerApplicationModal(props) {
             alert("Please upload a photo of your surety bond before submitting — required for all Net account applications.");
             return;
         }
+        setSubmitting(true);
         sendEmail({ id: "PARTNER-" + Date.now(), customer: f.contactPerson, phone: f.phone,
             serviceName: "NET 7 PARTNER ACCOUNT APPLICATION",
             origin: f.businessAddress, destination: "", finalPrice: 0, payment: "net7",
             date: new Date().toISOString().split("T")[0],
             notes: "Company: " + f.companyName + " | Type: " + f.businessType + " | Volume: " + f.monthlyVolume + " | Services: " + f.services.join(", ") + " | Billing Email: " + f.billingEmail + " | Notes: " + f.notes + " | Email: " + f.email + " | Surety Bond Photo: " + bondPhotoUrl + " | Applicant Photo: " + applicantPhotoUrl
+        }).then(function (res) {
+            setSubmitting(false);
+            if (!res.ok) { alert("Submission failed to send (server error). Please try again or call (770) 648-4228."); return; }
+            setSent(true);
+        }).catch(function () {
+            setSubmitting(false);
+            alert("Something went wrong submitting \u2014 network error. Please check your connection and try again.");
         });
-        setSent(true);
     }
     return React.createElement("div", { onClick: function (e) { if (e.target === e.currentTarget)
             props.onClose(); }, style: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "#000000DD", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 } },
@@ -2099,14 +2107,23 @@ function TrustSection() {
 function CustomQuoteModal(props) {
     var [f, setF] = useState({ name: "", phone: "", email: "", description: "", jobType: "large_commercial" });
     var [sent, setSent] = useState(false);
+    var [submitting, setSubmitting] = useState(false);
     function set(k, v) { setF(function (p) { var n = Object.assign({}, p); n[k] = v; return n; }); }
     function submit() {
         if (!f.name || !f.phone || !f.description)
             return;
+        setSubmitting(true);
         sendEmail({ id: "CQ-" + Date.now(), customer: f.name, phone: f.phone, serviceName: "CUSTOM QUOTE REQUEST",
             origin: f.description, destination: "", finalPrice: 0, payment: "tbd", date: new Date().toISOString().split("T")[0],
-            notes: "Email: " + f.email + " | Type: " + f.jobType + " | Details: " + f.description });
-        setSent(true);
+            notes: "Email: " + f.email + " | Type: " + f.jobType + " | Details: " + f.description })
+        .then(function (res) {
+            setSubmitting(false);
+            if (!res.ok) { alert("Submission failed to send (server error). Please try again or call (770) 648-4228."); return; }
+            setSent(true);
+        }).catch(function () {
+            setSubmitting(false);
+            alert("Something went wrong submitting \u2014 network error. Please check your connection and try again.");
+        });
     }
     return React.createElement("div", { onClick: function (e) { if (e.target === e.currentTarget)
             props.onClose(); }, style: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "#000000CC", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 } },
@@ -4408,7 +4425,11 @@ function ReviewModal(props) {
                 method: "POST",
                 headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
                 body: JSON.stringify({ name: f.name, job_id: cleanId, rating: f.rating, comment: f.comment })
-            }).then(function () { setSent(true); setSubmitting(false); });
+            }).then(function (res) {
+                setSubmitting(false);
+                if (!res.ok) { setJobErr("Your review could not be saved (server error). Please try again."); return; }
+                setSent(true);
+            });
         }).catch(function () { setJobErr("Something went wrong submitting your review. Please try again."); setSubmitting(false); });
     }
     return React.createElement("div", { onClick: function (e) { if (e.target === e.currentTarget)
@@ -5048,7 +5069,7 @@ function ReviewsSection(props) {
 function getTabGroups() {
     return [
         { label: "📋 Jobs", color: "#4299E1", tabs: [["jobs", "📋 " + t("jobs")], ["exceptions", "🚨 " + t("alerts")], ["calendar", "📅 " + t("calendar")], ["driver", "🚐 " + t("driver")], ["driverapp", "🚐 " + t("driverApp")]] },
-        { label: "📞 Sales", color: "#1DB954", tabs: [["leads", "📋 " + t("leads")], ["activity", "👥 " + t("activity")], ["leaderboard", "🏆 " + t("board")], ["ospipeline", "🎯 Pipeline"], ["ostraining", "📚 Training"], ["flexpay", "📅 Flex Pay"], ["rebuttals", "📞 Rebuttal Cards"], ["recurring", "🔁 Recurring Routes"], ["livecall", "📞 Live Call Screen"], ["companyonboard", "🤝 Company Onboarding"]] },
+        { label: "📞 Sales", color: "#1DB954", tabs: [["leads", "📋 " + t("leads")], ["activity", "👥 " + t("activity")], ["leaderboard", "🏆 " + t("board")], ["ospipeline", "🎯 Pipeline"], ["ostraining", "📚 Training"], ["flexpay", "📅 Flex Pay"], ["rebuttals", "📞 Rebuttal Cards"], ["recurring", "🔁 Recurring Routes"], ["livecall", "📞 Live Call Screen"], ["companyonboard", "🤝 Company Onboarding"], ["incomingloads", "📦 Incoming Loads"]] },
         { label: "🚗 Fleet", color: "#F6AD55", tabs: [["fleet", "🚗 Fleet"], ["fleetmap", "🗺️ Live Map"], ["compliance", "🛡 Compliance"], ["documents", "📁 Documents"], ["safetyscore", "🛡️ Safety Scores"], ["geofence", "📍 Geofencing"], ["carriers", "🤝 " + t("carriers")], ["safety", "🔒 Safety Alerts"]] },
         { label: "💰 Money", color: C.orange, tabs: [["reports", "📊 " + t("reports")], ["advanced", "📈 " + t("analytics")], ["sales", "🏆 " + t("sales")], ["expenses", "💸 " + t("expenses")], ["accounts", "🏢 " + t("accounts")], ["payroll", "💰 " + t("payroll")], ["ceodash", "📊 CEO Dashboard"], ["referrals", "🎟️ Referral Codes"], ["marketrates", "📊 Market Rates"], ["claims", "⚠ Claims & Recovery"]] },
         { label: "⚙ Team", color: "#FC8181", tabs: [["ownerSettings", "⚙ Settings"], ["audit", "👁 " + t("audit")], ["loginActivity", "🔐 Login Activity"], ["ai", "🤖 " + t("aiDocs")], ["demo", "🎬 " + t("demo")]] },
@@ -5186,6 +5207,7 @@ function AdminDashboard(props) {
             tab === "livecall" && React.createElement(LiveCallScreen, { onAddJob: props.onAddJob, gasPPG: props.gasPPG, role: props.role, currentUser: props.currentUser }),
             tab === "companyonboard" && React.createElement(CompanyOnboarding, null),
             tab === "claims" && React.createElement(ClaimsView, null),
+            tab === "incomingloads" && React.createElement(IncomingLoadsView, null),
             tab === "ostraining" && React.createElement(OSTraining, null),
             tab === "documents" && React.createElement("div", null, props.role === ROLES.OWNER && React.createElement(MyDocumentsVault, null), React.createElement(DocumentLogView, null))),
         React.createElement(CategoryNav, { tab: tab, setTab: setTab, currentUser: props.currentUser }),
@@ -12462,8 +12484,12 @@ function RecurringRouteForm(props) {
                 overtime_rate_per_hour: f.pricingType === "hourly" ? (parseFloat(f.overtimeRate) || 85) : 85,
                 notes: f.notes, status: "active"
             })
-        }).then(function () { setSaved(true); setSaving(false); if (props.onSaved) props.onSaved(); })
-          .catch(function () { alert("Something went wrong saving this route. Please try again."); setSaving(false); });
+        }).then(function (res) {
+            setSaving(false);
+            if (!res.ok) { alert("Saving this route failed (server error). Nothing was saved. Please try again."); return; }
+            setSaved(true);
+            if (props.onSaved) props.onSaved();
+        }).catch(function () { alert("Something went wrong saving this route. Please try again."); setSaving(false); });
     }
 
     if (saved) {
@@ -12797,7 +12823,14 @@ function PublicRecurringRequest() {
                 base_hours: block.hours, base_rate_per_hour: Math.round(pricePerDay / block.hours), overtime_rate_per_hour: OVERTIME_RATE_PER_HOUR,
                 rate_per_run: pricePerDay, notes: f.notes + (f.flexWindow ? " · Flex pickup window" : ""), status: "active"
             })
-        }).then(function () {
+        }).then(function (res) {
+            if (!res.ok) {
+                return res.text().then(function (errText) {
+                    alert("Booking failed \u2014 nothing was saved (server error). Please try again or call (770) 648-4228. Details: " + errText);
+                    setSaving(false);
+                    throw new Error("failed");
+                });
+            }
             alertLoginEmail(
                 "\uD83D\uDD01 New Recurring Account \u2014 Auto-Activated",
                 f.customerName + (f.company ? " (" + f.company + ")" : "") + " booked a recurring dedicated route.\n\n" +
@@ -12808,7 +12841,12 @@ function PublicRecurringRequest() {
             );
             setSavedPrice(pricePerDay);
             setSaved(true); setSaving(false);
-        }).catch(function () { alert("Something went wrong submitting your request. Please try again or call us directly."); setSaving(false); });
+        }).catch(function (err) {
+            if (!err.message || err.message !== "failed") {
+                alert("Something went wrong submitting your request. Please try again or call us directly.");
+            }
+            setSaving(false);
+        });
     }
 
     if (saved) {
@@ -13033,7 +13071,7 @@ function compressImage(file) {
 function CompanyLoadsIntake() {
     var [f, setF] = useState({
         companyName: "", contactName: "", phone: "", email: "",
-        loadTypes: "", frequency: "weekly", notes: ""
+        pickup: "", delivery: "", loadTypes: "", offeredRate: "", heavyLifting: false, frequency: "weekly", notes: ""
     });
     var [saving, setSaving] = useState(false);
     var [saved, setSaved] = useState(false);
@@ -13067,41 +13105,70 @@ function CompanyLoadsIntake() {
             return;
         }
         setSaving(true);
-        alertLoginEmail(
-            "\uD83D\uDCE6 Company Wants To Send Me Loads",
-            f.companyName + " (" + f.contactName + ") wants to send loads for you to run.\n\n" +
-            "Load types: " + (f.loadTypes || "not specified") + "\n" +
-            "Frequency: " + f.frequency + "\n" +
-            "Notes: " + (f.notes || "none") + "\n\n" +
-            "Phone: " + f.phone + " \u00b7 Email: " + f.email + "\n" +
-            "Surety Bond: " + bondUrl + "\n\n" +
-            "Next step: use My Documents Vault to send them your registration/insurance/EIN as needed."
-        );
-        setSaving(false);
-        setSaved(true);
+        // Real, persisted record — was email-only before, meaning a failed
+        // send left zero trace anywhere. Now it's a real database row first,
+        // with the email as a secondary notification.
+        fetch(SUPABASE_URL + "/rest/v1/incoming_loads", {
+            method: "POST",
+            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
+            body: JSON.stringify({
+                company_name: f.companyName, contact_name: f.contactName, phone: f.phone, email: f.email,
+                pickup: f.pickup, delivery: f.delivery, load_type: f.loadTypes, heavy_lifting: f.heavyLifting,
+                offered_rate: parseFloat(f.offeredRate) || null, frequency: f.frequency, notes: f.notes,
+                status: "pending", surety_bond_url: bondUrl
+            })
+        }).then(function (res) {
+            setSaving(false);
+            if (!res.ok) {
+                return res.text().then(function (errText) {
+                    alert("Submission failed \u2014 nothing was saved (status " + res.status + "). Please try again or call (770) 648-4228. Details: " + errText);
+                    throw new Error("failed");
+                });
+            }
+            alertLoginEmail(
+                "\uD83D\uDCE6 Company Wants To Send Me Loads",
+                f.companyName + " (" + f.contactName + ") wants to send loads for you to run.\n\n" +
+                "Pickup: " + f.pickup + " \u2192 Delivery: " + f.delivery + "\n" +
+                "Load types: " + (f.loadTypes || "not specified") + (f.heavyLifting ? " \u2014 HEAVY LIFTING NEEDED" : "") + "\n" +
+                "Offered rate: " + (f.offeredRate ? "$" + f.offeredRate : "not specified, open to bid") + "\n" +
+                "Frequency: " + f.frequency + "\n" +
+                "Notes: " + (f.notes || "none") + "\n\n" +
+                "Phone: " + f.phone + " \u00b7 Email: " + f.email + "\n" +
+                "Surety Bond: " + bondUrl + "\n\n" +
+                "Review in Sales \u2192 Incoming Loads to Accept or Bid."
+            );
+            setSaved(true);
+        }).catch(function () { setSaving(false); });
     }
 
     if (saved) {
         return React.createElement("div", { style: { minHeight: "100vh", background: "#080808", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 } },
             React.createElement("div", { style: { textAlign: "center", maxWidth: 420 } },
                 React.createElement("div", { style: { fontSize: 40, marginBottom: 10 } }, "\u2705"),
-                React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: "#F2F2F2", marginBottom: 8 } }, "Thanks \u2014 We'll Be In Touch"),
-                React.createElement("div", { style: { fontSize: 13, color: "#888", lineHeight: 1.7 } }, "We'll reach out at " + f.phone + " to discuss your loads and send over our carrier documents.")));
+                React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: "#F2F2F2", marginBottom: 8 } }, "Load Submitted"),
+                React.createElement("div", { style: { fontSize: 13, color: "#888", lineHeight: 1.7 } }, "We'll review and either accept your rate or send a bid back to " + f.phone + ".")));
     }
 
     return React.createElement("div", { style: { minHeight: "100vh", background: "#080808", padding: "30px 16px 60px" } },
         React.createElement("div", { style: { maxWidth: 500, margin: "0 auto" } },
             React.createElement("div", { style: { fontSize: 22, fontWeight: 900, color: "#F2F2F2", marginBottom: 4, textAlign: "center" } }, "\uD83D\uDCE6 Have Loads For Us To Run?"),
-            React.createElement("div", { style: { fontSize: 13, color: "#888", marginBottom: 20, textAlign: "center" } }, "Tell us about your loads \u2014 we'll follow up and send our carrier documents (insurance, registration, EIN)."),
+            React.createElement("div", { style: { fontSize: 13, color: "#888", marginBottom: 20, textAlign: "center" } }, "Post a real load \u2014 we'll accept your rate or send a bid back."),
 
             React.createElement(TxtIn, { label: "Company Name", value: f.companyName, onChange: function (v) { set("companyName", v); } }),
             React.createElement(TxtIn, { label: "Your Name", value: f.contactName, onChange: function (v) { set("contactName", v); } }),
             React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
                 React.createElement(TxtIn, { label: "Phone", value: f.phone, onChange: function (v) { set("phone", v); } }),
                 React.createElement(TxtIn, { label: "Email", value: f.email, onChange: function (v) { set("email", v); } })),
-            React.createElement(TxtIn, { label: "What kind of loads?", value: f.loadTypes, onChange: function (v) { set("loadTypes", v); }, placeholder: "e.g. FFE, medical courier, general freight" }),
+            React.createElement(TxtIn, { label: "Pickup Location", value: f.pickup, onChange: function (v) { set("pickup", v); } }),
+            React.createElement(TxtIn, { label: "Delivery Location", value: f.delivery, onChange: function (v) { set("delivery", v); } }),
+            React.createElement(TxtIn, { label: "What kind of load?", value: f.loadTypes, onChange: function (v) { set("loadTypes", v); }, placeholder: "e.g. FFE, medical courier, general freight" }),
+            React.createElement(TxtIn, { label: "Your Offered Rate ($, optional \u2014 leave blank for us to bid)", value: f.offeredRate, onChange: function (v) { set("offeredRate", v); } }),
 
-            React.createElement("div", { style: { fontSize: 10, color: "#888", textTransform: "uppercase", letterSpacing: .5, marginTop: 14, marginBottom: 6 } }, "How Often?"),
+            React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#F2F2F2", cursor: "pointer", marginTop: 4, marginBottom: 10 } },
+                React.createElement("input", { type: "checkbox", checked: f.heavyLifting, onChange: function (e) { set("heavyLifting", e.target.checked); }, style: { width: 18, height: 18, accentColor: "#F0E000" } }),
+                "\uD83D\uDCAA Heavy lifting needed"),
+
+            React.createElement("div", { style: { fontSize: 10, color: "#888", textTransform: "uppercase", letterSpacing: .5, marginTop: 10, marginBottom: 6 } }, "How Often?"),
             React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 10 } },
                 ["one-time", "weekly", "ongoing"].map(function (opt) {
                     var active = f.frequency === opt;
@@ -13120,7 +13187,65 @@ function CompanyLoadsIntake() {
                 bondUploading && React.createElement("div", { style: { fontSize: 11, color: "#F0E000" } }, "Uploading..."),
                 bondUrl && React.createElement("div", { style: { fontSize: 11, color: "#1DB954", fontWeight: 700 } }, "\u2705 Surety bond uploaded")),
 
-            React.createElement("button", { onClick: submit, disabled: saving, style: { width: "100%", background: "#F0E000", color: "#000", border: "none", borderRadius: 10, padding: "14px", fontSize: 15, fontWeight: 900, cursor: "pointer", fontFamily: "inherit", marginTop: 6 } }, saving ? "Sending..." : "Submit \u2014 We'll Follow Up")));
+            React.createElement("button", { onClick: submit, disabled: saving, style: { width: "100%", background: "#F0E000", color: "#000", border: "none", borderRadius: 10, padding: "14px", fontSize: 15, fontWeight: 900, cursor: "pointer", fontFamily: "inherit", marginTop: 6 } }, saving ? "Submitting..." : "Submit Load")));
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INCOMING LOADS — admin view. Accept a load at the rate offered, or
+// send back a bid. Real Curri-style, but you're the one deciding.
+// ═══════════════════════════════════════════════════════════════════
+function IncomingLoadsView() {
+    var [loads, setLoads] = React.useState(null);
+    var [bidInputs, setBidInputs] = React.useState({});
+
+    function refetch() {
+        fetch(SUPABASE_URL + "/rest/v1/incoming_loads?select=*&order=created_at.desc", {
+            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
+        }).then(function (r) { return r.json(); }).then(function (data) { setLoads(Array.isArray(data) ? data : []); }).catch(function () { setLoads([]); });
+    }
+    React.useEffect(function () { refetch(); }, []);
+
+    function accept(load) {
+        fetch(SUPABASE_URL + "/rest/v1/incoming_loads?id=eq." + load.id, {
+            method: "PATCH", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
+            body: JSON.stringify({ status: "accepted" })
+        }).then(refetch);
+    }
+    function sendBid(load) {
+        var amount = bidInputs[load.id];
+        if (!amount) { alert("Enter a bid amount first."); return; }
+        fetch(SUPABASE_URL + "/rest/v1/incoming_loads?id=eq." + load.id, {
+            method: "PATCH", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
+            body: JSON.stringify({ status: "bid_sent", bid_amount: parseFloat(amount) })
+        }).then(refetch);
+    }
+    function decline(load) {
+        fetch(SUPABASE_URL + "/rest/v1/incoming_loads?id=eq." + load.id, {
+            method: "PATCH", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
+            body: JSON.stringify({ status: "declined" })
+        }).then(refetch);
+    }
+
+    if (loads === null) return React.createElement("div", { style: { color: C.dim, fontSize: 12 } }, "Loading...");
+
+    var STATUS_COLORS = { pending: C.orange, accepted: C.green, bid_sent: "#F0E000", declined: C.dim };
+
+    return React.createElement("div", { style: { maxWidth: 700, margin: "0 auto" } },
+        React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.white, marginBottom: 16 } }, "\uD83D\uDCE6 Incoming Loads \u2014 Pick What You Want To Run"),
+        loads.length === 0 && React.createElement("div", { style: { color: C.dim, fontSize: 12, textAlign: "center", padding: 30 } }, "No loads submitted yet."),
+        loads.map(function (l) {
+            return React.createElement("div", { key: l.id, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: 14, marginBottom: 10 } },
+                React.createElement("div", { style: { display: "flex", justifyContent: "space-between" } },
+                    React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.white } }, l.company_name + (l.heavy_lifting ? " \uD83D\uDCAA Heavy Lifting" : "")),
+                    React.createElement("div", { style: { fontSize: 11, fontWeight: 800, color: STATUS_COLORS[l.status], textTransform: "uppercase" } }, l.status.replace("_", " "))),
+                React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 4 } }, l.pickup + " \u2192 " + l.delivery + " \u00b7 " + l.load_type),
+                React.createElement("div", { style: { fontSize: 11, color: C.dim } }, l.offered_rate ? "Offered: $" + l.offered_rate : "Open to bid" + (l.bid_amount ? " \u2014 you bid $" + l.bid_amount : "")),
+                l.status === "pending" && React.createElement("div", { style: { display: "flex", gap: 6, marginTop: 10, alignItems: "center", flexWrap: "wrap" } },
+                    React.createElement("button", { onClick: function () { accept(l); }, style: { background: C.green, color: "#000", border: "none", borderRadius: 6, padding: "6px 14px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "\u2705 Accept"),
+                    React.createElement("input", { placeholder: "Bid $", value: bidInputs[l.id] || "", onChange: function (e) { setBidInputs(Object.assign({}, bidInputs, { [l.id]: e.target.value })); }, style: { width: 70, background: C.surface, border: "1px solid " + C.border, borderRadius: 6, color: C.white, padding: "6px 8px", fontSize: 11 } }),
+                    React.createElement("button", { onClick: function () { sendBid(l); }, style: { background: "#F0E000", color: "#000", border: "none", borderRadius: 6, padding: "6px 14px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Send Bid"),
+                    React.createElement("button", { onClick: function () { decline(l); }, style: { background: "transparent", color: C.red, border: "1px solid " + C.red, borderRadius: 6, padding: "6px 14px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Decline")));
+        }));
 }
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
@@ -13294,6 +13419,7 @@ function CompanyOnboarding() {
     var [idPhotoUrl, setIdPhotoUrl] = useState(null);
     var [idUploading, setIdUploading] = useState(false);
     var [submitted, setSubmitted] = useState(false);
+    var [submitting, setSubmitting] = useState(false);
     var [applicantPhotoUrl, setApplicantPhotoUrl] = useState(null);
 
     function set(k, v) { setF(function (p) { var n = Object.assign({}, p); n[k] = v; return n; }); }
@@ -13394,6 +13520,7 @@ function CompanyOnboarding() {
             alert("Please create a password (at least 6 characters) so you can log back in.");
             return;
         }
+        setSubmitting(true);
         fetch(SUPABASE_URL + "/rest/v1/carrier_profiles", {
             method: "POST",
             headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
@@ -13405,17 +13532,30 @@ function CompanyOnboarding() {
                 payment_method: f.factoringCompany ? "factoring" : "direct",
                 factoring_company_name: f.factoringCompany, noa_url: f.factoringNOA
             })
+        }).then(function (res) {
+            setSubmitting(false);
+            if (!res.ok) {
+                return res.text().then(function (errText) {
+                    alert("Submission failed \u2014 the server rejected it (status " + res.status + "). Nothing was saved. Details: " + errText + "\n\nPlease try again or call (770) 648-4228.");
+                    throw new Error("Submit failed: " + res.status);
+                });
+            }
+            alertLoginEmail(
+                "\uD83D\uDCCB New Company Onboarding \u2014 " + f.legalName,
+                "Business Role: " + f.businessRole + "\n" +
+                "DOT: " + f.dotNumber + " \u00b7 MC: " + f.mcNumber + " \u00b7 Authority: " + f.authorityStatus + "\n" +
+                "Contact: " + f.contactName + " \u00b7 " + f.phone + " \u00b7 " + f.email + "\n" +
+                "Payment Terms: " + f.paymentTerms + " (max Net 7)\n" +
+                "Documents uploaded: " + Object.keys(docs).join(", ") + "\n" +
+                "ID uploaded: " + idPhotoUrl
+            );
+            setSubmitted(true);
+        }).catch(function (err) {
+            setSubmitting(false);
+            if (!err.message || err.message.indexOf("Submit failed") === -1) {
+                alert("Something went wrong submitting \u2014 network error, nothing was saved. Please check your connection and try again, or call (770) 648-4228.");
+            }
         });
-        alertLoginEmail(
-            "\uD83D\uDCCB New Company Onboarding \u2014 " + f.legalName,
-            "Business Role: " + f.businessRole + "\n" +
-            "DOT: " + f.dotNumber + " \u00b7 MC: " + f.mcNumber + " \u00b7 Authority: " + f.authorityStatus + "\n" +
-            "Contact: " + f.contactName + " \u00b7 " + f.phone + " \u00b7 " + f.email + "\n" +
-            "Payment Terms: " + f.paymentTerms + " (max Net 7)\n" +
-            "Documents uploaded: " + Object.keys(docs).join(", ") + "\n" +
-            "ID uploaded: " + idPhotoUrl
-        );
-        setSubmitted(true);
     }
 
     function downloadPDF() {
@@ -13625,7 +13765,7 @@ function CompanyOnboarding() {
             React.createElement("div", { style: { fontSize: 15, fontWeight: 900, color: statusInfo.color } }, statusInfo.label)),
         finalStatus === "reject" && React.createElement("div", { style: { fontSize: 11, color: C.red, textAlign: "center", marginBottom: 10 } }, "No verified authority + no signed agreement + no written rate/payment terms = no load."),
 
-        React.createElement("button", { onClick: submit, disabled: finalStatus === "reject" || !f.termsAgreed, style: { width: "100%", background: (finalStatus === "reject" || !f.termsAgreed) ? C.border : C.orange, color: (finalStatus === "reject" || !f.termsAgreed) ? C.dim : "#000", border: "none", borderRadius: 10, padding: "14px", fontSize: 15, fontWeight: 900, cursor: (finalStatus === "reject" || !f.termsAgreed) ? "not-allowed" : "pointer", fontFamily: "inherit" } }, finalStatus === "reject" ? "Cannot Submit \u2014 Failed Verification" : !f.termsAgreed ? "Agree To Terms To Continue" : "Submit Onboarding"));
+        React.createElement("button", { onClick: submit, disabled: finalStatus === "reject" || !f.termsAgreed || submitting, style: { width: "100%", background: (finalStatus === "reject" || !f.termsAgreed || submitting) ? C.border : C.orange, color: (finalStatus === "reject" || !f.termsAgreed || submitting) ? C.dim : "#000", border: "none", borderRadius: 10, padding: "14px", fontSize: 15, fontWeight: 900, cursor: (finalStatus === "reject" || !f.termsAgreed || submitting) ? "not-allowed" : "pointer", fontFamily: "inherit" } }, submitting ? "Submitting..." : finalStatus === "reject" ? "Cannot Submit \u2014 Failed Verification" : !f.termsAgreed ? "Agree To Terms To Continue" : "Submit Onboarding"));
 }
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
@@ -13952,6 +14092,9 @@ function ClaimsView(props) {
                     React.createElement("button", { onClick: function () { downloadClaimPacket(c); }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 5, padding: "3px 10px", fontSize: 9, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCC4 Claim Packet")));
         }));
 }
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
 var rootEl = document.getElementById("root");
