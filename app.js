@@ -1962,7 +1962,8 @@ var MONTHLY_VOLUME_OPTIONS = [
 function PartnerApplicationModal(props) {
     var [f, setF] = useState({ companyName: "", contactPerson: "", title: "", phone: "", email: "", businessAddress: "", businessType: "property_mgmt", monthlyVolume: "1_5k", services: [], paymentTerms: "net7", billingEmail: "", notes: "", agreeToTerms: false });
     var [sent, setSent] = useState(false);
-    var [step, setStep] = useState(1);
+    var [step, setStep] = useState(0);
+    var [applicantPhotoUrl, setApplicantPhotoUrl] = useState(null);
     var [bondPhotoUrl, setBondPhotoUrl] = useState(null);
     var [bondUploading, setBondUploading] = useState(false);
     function uploadBondPhoto(file) {
@@ -1998,7 +1999,7 @@ function PartnerApplicationModal(props) {
             serviceName: "NET 7 PARTNER ACCOUNT APPLICATION",
             origin: f.businessAddress, destination: "", finalPrice: 0, payment: "net7",
             date: new Date().toISOString().split("T")[0],
-            notes: "Company: " + f.companyName + " | Type: " + f.businessType + " | Volume: " + f.monthlyVolume + " | Services: " + f.services.join(", ") + " | Billing Email: " + f.billingEmail + " | Notes: " + f.notes + " | Email: " + f.email + " | Surety Bond Photo: " + bondPhotoUrl
+            notes: "Company: " + f.companyName + " | Type: " + f.businessType + " | Volume: " + f.monthlyVolume + " | Services: " + f.services.join(", ") + " | Billing Email: " + f.billingEmail + " | Notes: " + f.notes + " | Email: " + f.email + " | Surety Bond Photo: " + bondPhotoUrl + " | Applicant Photo: " + applicantPhotoUrl
         });
         setSent(true);
     }
@@ -2011,6 +2012,7 @@ function PartnerApplicationModal(props) {
                         React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white } }, "\uD83E\uDD1D Partner Account Application"),
                         React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 2 } }, "Net 7 billing \u2014 pay 7 days after service")),
                     React.createElement("button", { onClick: props.onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer" } }, "\u2715"))),
+            step === 0 ? React.createElement(MandatoryFaceCapture, { onCaptured: function (url) { setApplicantPhotoUrl(url); setStep(1); } }) :
             sent ? React.createElement("div", { style: { padding: "32px 24px", textAlign: "center" } },
                 React.createElement("div", { style: { fontSize: 48, marginBottom: 16 } }, "\uD83C\uDF89"),
                 React.createElement("div", { style: { fontSize: 22, fontWeight: 900, color: C.white, marginBottom: 8 } }, "Application Submitted!"),
@@ -4251,12 +4253,30 @@ function getDeviceInfo() {
     } catch(e) { return "Unknown device"; }
 }
 function alertLoginEmail(subject, message) {
-    try {
-        fetch("https://api.emailjs.com/api/v1.0/email/send", { method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ service_id: "service_e3qn0bs", template_id: "template_nxubdce", user_id: "6Qs0HlOLjJ6jfWHtp",
-                template_params: { to_email: "potentlogistics@pm.me", from_name: "POTENT OS Security", subject: subject, message: message } }) })
-            .catch(function(){});
-    } catch(e){}
+    // Primary: real Mailjet REST API via server-side Netlify function
+    fetch("/.netlify/functions/send-email", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: "potentlogistics@pm.me", subject: subject, message: message })
+    }).then(function (r) { return r.json(); })
+      .then(function (data) {
+          if (!data || !data.sent) {
+              // Fallback: EmailJS, only if Mailjet failed
+              try {
+                  fetch("https://api.emailjs.com/api/v1.0/email/send", { method: "POST", headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ service_id: "service_e3qn0bs", template_id: "template_nxubdce", user_id: "6Qs0HlOLjJ6jfWHtp",
+                          template_params: { to_email: "potentlogistics@pm.me", from_name: "POTENT OS Security", subject: subject, message: message } }) })
+                      .catch(function(){});
+              } catch(e){}
+          }
+      }).catch(function () {
+          // Netlify function itself unreachable — fall back to EmailJS
+          try {
+              fetch("https://api.emailjs.com/api/v1.0/email/send", { method: "POST", headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ service_id: "service_e3qn0bs", template_id: "template_nxubdce", user_id: "6Qs0HlOLjJ6jfWHtp",
+                      template_params: { to_email: "potentlogistics@pm.me", from_name: "POTENT OS Security", subject: subject, message: message } }) })
+                  .catch(function(){});
+          } catch(e){}
+      });
 }
 function logAdminAction(action, details, actorName) {
     var entries = loadAudit();
@@ -5465,12 +5485,8 @@ function PublicApp(props) {
                         React.createElement("option", { value: "", disabled: true }, "\uD83D\uDD11 Sign In / Get Started"),
                         React.createElement("option", { value: "myjobs" }, "\uD83D\uDCE6 Track My Jobs"),
                         React.createElement("option", { value: "driveronboard" }, "\uD83D\uDE9B Driver Onboarding"),
-                        React.createElement("option", { value: "partner" }, "\uD83E\uDD1D Apply — Partner Account"),
                         React.createElement("option", { value: "os" }, "\uD83D\uDCBB Apply — POTENT OS"),
                         React.createElement("option", { value: "loadboard" }, "\uD83D\uDCCB Visit POTENT Loadboard"),
-                        React.createElement("option", { value: "recurringrequest" }, "\uD83D\uDD01 Set Up Recurring Service"),
-                        React.createElement("option", { value: "haveloads" }, "\uD83D\uDCE6 Have Loads For Us To Run?"),
-                        React.createElement("option", { value: "uploadbol" }, "\uD83D\uDCCB Upload My BOL"),
                         React.createElement("option", { value: "partnersignup" }, "\uD83E\uDD1D Company/Dispatch Partner Signup"),
                         React.createElement("option", { value: "partnerlogin" }, "\uD83D\uDD11 Partner Login")),
                     React.createElement(LangSwitcher, { lang: lang, changeLang: changeLang }),
@@ -5579,7 +5595,8 @@ function PublicApp(props) {
                     })),
                     React.createElement("div", { style: { background: "#111", border: "1px solid " + C.border, borderRadius: 10, padding: "14px 16px", maxWidth: 500, margin: "0 auto 24px", textAlign: "left" } },
                         React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.orange, marginBottom: 4 } }, "\uD83D\uDC7B What Ghost Mode Actually Means"),
-                        React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.65)", lineHeight: 1.6 } }, "Installs like a real app \u2014 Android, iPhone, or any desktop. No app store needed. Once installed, dispatch keeps working with zero signal: dead zones, warehouses, basements, anywhere. Every job saves locally and syncs automatically the second you're back online.")),
+                        React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.65)", lineHeight: 1.6, marginBottom: 12 } }, "Installs like a real app \u2014 Android, iPhone, or any desktop. No app store needed. Once installed, dispatch keeps working with zero signal: dead zones, warehouses, basements, anywhere. Every job saves locally and syncs automatically the second you're back online."),
+                        React.createElement("img", { src: "/app-mockup.jpg", alt: "POTENT OS Ghost Mode offline dispatch screen", style: { width: "100%", borderRadius: 8, border: "1px solid " + C.border } })),
                     React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" } },
                         React.createElement("a", { href: "/POTENT-License-Signup.html", style: { textDecoration: "none" } },
                             React.createElement("button", { style: { background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: "13px 32px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCBB See POTENT OS Pricing")),
@@ -12051,7 +12068,7 @@ function MarketRateReference(){
 // Uses your own phone/dialer — this is just the script library, no
 // calling infrastructure, zero outside cost. Scripts are word-for-word
 // as provided, tailored to your real truck (16ft dock-height, ramp,
-// pallet jack, NO liftgate — ever).
+// E-tracks, load bars, NO liftgate — ever).
 // ═══════════════════════════════════════════════════════════════════
 var REBUTTAL_CARDS = [
     { id: "R1", group: "They Ask First", trigger: "\"What's your rate?\"", lines: [
@@ -12093,7 +12110,7 @@ var REBUTTAL_CARDS = [
         "\"Okay. All-in, I'm at $____.\"",
     ]},
     { id: "R9", group: "They Ask First", trigger: "\"Do you have a truck?\"", lines: [
-        "Yes. I'm running a 16-foot dock-height box truck with ramp, pallet jack and E-track. Before I commit, let me qualify the load. What's the weight, pallets, pickup and delivery times, and any liftgate or tarp?",
+        "Yes. I'm running a 16-foot dock-height box truck with ramp, E-tracks, moving blankets and load bars. Before I commit, let me qualify the load. What's the weight, pallets, pickup and delivery times, and any liftgate or tarp?",
     ]},
     { id: "R10", group: "They Ask First", trigger: "\"Send your MC and insurance.\"", lines: [
         "Will do. Before I send it, let me make sure this is a fit. What's the weight, pallets, pickup and delivery times, and any liftgate or tarp?",
@@ -12142,7 +12159,7 @@ var REBUTTAL_CARDS = [
         "You're talking to the owner. I only commit to freight my truck can actually do. I don't promise equipment I don't have. If that's what you want, let's make the numbers work.",
     ]},
     { id: "11", group: "Pushback", trigger: "LIFTGATE — HARD BLOCK", hardBlock: true, lines: [
-        "Understood. My truck is dock-height with a ramp and pallet jack, but no liftgate. I won't tell you I have one when I don't.",
+        "Understood. My truck is dock-height with a ramp, E-tracks, and load bars, but no liftgate. I won't tell you I have one when I don't.",
         "Is the receiver absolutely requiring a liftgate, or do they simply need ground-level unloading?",
         "Mandatory: \"Then we're not the right truck for that shipment. I'd rather tell you now than create a problem at delivery.\"",
         "Pivot: \"Before I let you go — what else are you trying to cover today?\"",
@@ -12161,7 +12178,7 @@ function LiveRebuttalCards() {
     return React.createElement("div", { style: { maxWidth: 700, margin: "0 auto" } },
         React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.white, marginBottom: 4 } }, "📞 Live Rebuttal Cards"),
         React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 4 } }, "Tap a tab while you're on your own call — scripts are word-for-word, real to your truck."),
-        React.createElement("div", { style: { fontSize: 11, color: C.red, marginBottom: 16, fontWeight: 700 } }, "⚠ 16ft dock-height box truck. Ramp + pallet jack. NO liftgate — ever."),
+        React.createElement("div", { style: { fontSize: 11, color: C.red, marginBottom: 16, fontWeight: 700 } }, "⚠ 16ft dock-height box truck. Ramp + E-tracks + load bars. NO liftgate — ever."),
         React.createElement("div", { style: { background: "#1a1400", border: "1px solid " + C.orange + "66", borderRadius: 10, padding: "14px 16px", marginBottom: 20 } },
             React.createElement("div", { style: { fontSize: 13, fontWeight: 900, color: C.orange, marginBottom: 10 } }, "📦 Booking Agent Quick Reference"),
             React.createElement("div", { style: { fontSize: 12, color: C.white, marginBottom: 6 } },
@@ -13178,7 +13195,7 @@ var POTENT_CARRIER_INFO = {
     address: "2089 Christian Cir SE, Conyers, GA 30013",
     vehicle: "16ft dock-height box truck, 2022 Ford E350",
     capacity: "4,500 lbs max, 190\"L x 95\"W x 80\"H interior",
-    equipment: "Ramp, pallet jack, E-track, load bars — NO liftgate",
+    equipment: "Ramp, E-tracks, moving blankets, load bars — NO liftgate",
     serviceArea: "Georgia statewide, Atlanta metro primary",
     contact: "(770) 648-4228 \u00b7 potentlogistics@pm.me",
     bankName: "Middlesex Federal Savings (Novo)",
@@ -13532,7 +13549,7 @@ function CompanyOnboarding() {
         React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "14px 16px", marginBottom: 12, maxHeight: 200, overflowY: "auto", fontSize: 11, color: C.dim, lineHeight: 1.7 } },
             React.createElement("b", { style: { color: C.white } }, "Payment Responsibility. "), "If this account fails to pay an invoice within the agreed terms (maximum Net 7), the responsible party is liable for the full amount owed, plus any collection costs and legal fees POTENT Logistics LLC incurs recovering payment. Unpaid balances accrue interest at 1.5% per month after the due date.", React.createElement("br", null), React.createElement("br", null),
             React.createElement("b", { style: { color: C.white } }, "Limitation of Liability. "), "POTENT Logistics LLC's liability for any loss, damage, or delay to freight is limited to the lesser of $0.50 per pound or $100,000 per shipment, unless a higher value is declared in writing and agreed to before pickup. POTENT is not liable for indirect, incidental, or consequential damages, including lost profits or business opportunity.", React.createElement("br", null), React.createElement("br", null),
-            React.createElement("b", { style: { color: C.white } }, "Claims. "), "Any claim for loss or damage must be submitted in writing within 9 months of the delivery date, or the claim is waived.", React.createElement("br", null), React.createElement("br", null),
+            React.createElement("b", { style: { color: C.white } }, "Claims. "), "Any claim for loss or damage must be submitted in writing within 48 hours of the delivery date, or the claim is waived.", React.createElement("br", null), React.createElement("br", null),
             React.createElement("b", { style: { color: C.white } }, "Indemnification. "), "This account agrees to indemnify and hold POTENT Logistics LLC harmless from claims arising out of inaccurate information provided, breach of this agreement, or the account's own negligence.", React.createElement("br", null), React.createElement("br", null),
             React.createElement("b", { style: { color: C.white } }, "Billing Disputes. "), "A billing dispute does not excuse or delay payment of the undisputed portion of any invoice."),
         React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.white, cursor: "pointer", marginBottom: 16 } },
@@ -13663,9 +13680,14 @@ function PartnerLogin() {
                             React.createElement("span", { style: { color: "#888" } }, r[0]), React.createElement("span", { style: { color: "#fff", fontWeight: 700 } }, r[1] || "\u2014"));
                     })),
                 React.createElement("div", { style: { background: "#1a1400", border: "1px solid #F0E00044", borderRadius: 10, padding: "16px", textAlign: "center" } },
-                    React.createElement("div", { style: { fontSize: 12, color: "#888", marginBottom: 8 } }, "Have a load for us to run?"),
-                    React.createElement("a", { href: "?have-loads", style: { textDecoration: "none" } },
-                        React.createElement("button", { style: { background: "#F0E000", color: "#000", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Submit A Load")))));
+                    React.createElement("div", { style: { fontSize: 12, color: "#888", marginBottom: 12 } }, "Everything in one place"),
+                    React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
+                        React.createElement("a", { href: "?have-loads", style: { textDecoration: "none" } },
+                            React.createElement("button", { style: { width: "100%", background: "#F0E000", color: "#000", border: "none", borderRadius: 8, padding: "12px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCE6 Submit A Load")),
+                        React.createElement("a", { href: "?recurring-service", style: { textDecoration: "none" } },
+                            React.createElement("button", { style: { width: "100%", background: "transparent", color: "#F0E000", border: "1px solid #F0E000", borderRadius: 8, padding: "12px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDD01 Set Up Recurring Service")),
+                        React.createElement("a", { href: "?upload-bol", style: { textDecoration: "none" } },
+                            React.createElement("button", { style: { width: "100%", background: "transparent", color: "#F0E000", border: "1px solid #F0E000", borderRadius: 8, padding: "12px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCCB Upload A BOL"))))));
     }
 
     return React.createElement("div", { style: { minHeight: "100vh", background: "#080808", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 } },
