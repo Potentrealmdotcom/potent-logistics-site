@@ -3571,7 +3571,10 @@ function JobsDashboard(props) {
                         React.createElement(JobWeatherCheck, { destination: j.destination, date: j.date }),
                         React.createElement(JobRouteETA, { origin: j.origin, destination: j.destination }),
                         React.createElement(JobDocumentsPanel, { jobId: j.id }),
-                        React.createElement(RealJobPhotosPanel, { jobId: j.id })
+                        React.createElement(RealJobPhotosPanel, { jobId: j.id }),
+                        React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10 } },
+                            React.createElement("button", { onClick: function () { downloadBOL(j); }, style: { flex: 1, background: "transparent", color: C.orange, border: "1px solid " + C.orange, borderRadius: 7, padding: "8px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCC4 Download BOL"),
+                            React.createElement("button", { onClick: function () { downloadInvoice(j); }, style: { flex: 1, background: "transparent", color: C.green, border: "1px solid " + C.green, borderRadius: 7, padding: "8px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCB0 Download Invoice"))
                     ));
             })));
 }
@@ -5453,6 +5456,8 @@ function PublicApp(props) {
                             else if (v === "recurringrequest") window.location.href = "?recurring-service";
                             else if (v === "haveloads") window.location.href = "?have-loads";
                             else if (v === "uploadbol") window.location.href = "?upload-bol";
+                            else if (v === "partnersignup") window.location.href = "?partner-signup";
+                            else if (v === "partnerlogin") window.location.href = "?partner-login";
                             e.target.value = ""; // reset back to placeholder after navigating
                         },
                         style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }
@@ -5465,7 +5470,9 @@ function PublicApp(props) {
                         React.createElement("option", { value: "loadboard" }, "\uD83D\uDCCB Visit POTENT Loadboard"),
                         React.createElement("option", { value: "recurringrequest" }, "\uD83D\uDD01 Set Up Recurring Service"),
                         React.createElement("option", { value: "haveloads" }, "\uD83D\uDCE6 Have Loads For Us To Run?"),
-                        React.createElement("option", { value: "uploadbol" }, "\uD83D\uDCCB Upload My BOL")),
+                        React.createElement("option", { value: "uploadbol" }, "\uD83D\uDCCB Upload My BOL"),
+                        React.createElement("option", { value: "partnersignup" }, "\uD83E\uDD1D Company/Dispatch Partner Signup"),
+                        React.createElement("option", { value: "partnerlogin" }, "\uD83D\uDD11 Partner Login")),
                     React.createElement(LangSwitcher, { lang: lang, changeLang: changeLang }),
                     React.createElement("a", { href: "tel:" + DISPATCH_PHONE_DISPLAY.replace(/\D/g,""), title: "Dispatch & Sales: " + DISPATCH_EMAIL, style: { textDecoration: "none", background: C.orange, color: "#000", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" } }, "📞 " + DISPATCH_PHONE_DISPLAY),
                     React.createElement("a", { href: "tel:" + PHONE_NUMBER, title: "Owner: " + BUSINESS_EMAIL, style: { textDecoration: "none", background: "transparent", border: "1px solid " + C.orange + "66", color: C.orange, borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" } }, "👑 " + PHONE_DISPLAY))),
@@ -6772,6 +6779,8 @@ function Root() {
     var isCustomerPortal = _href.indexOf("myjobs") > -1;
     var isRecurringRequest = _href.indexOf("recurring-service") > -1;
     var isCompanyLoadsIntake = _href.indexOf("have-loads") > -1;
+    var isPartnerSignup = _href.indexOf("partner-signup") > -1;
+    var isPartnerLogin = _href.indexOf("partner-login") > -1;
     var isCustomerBOLUpload = _href.indexOf("upload-bol") > -1;
     if (isPOSAdmin)
         return React.createElement(LicenseManager, null);
@@ -6783,6 +6792,10 @@ function Root() {
         return React.createElement(PublicRecurringRequest, null);
     if (isCompanyLoadsIntake)
         return React.createElement(CompanyLoadsIntake, null);
+    if (isPartnerSignup)
+        return React.createElement(CompanyOnboarding, null);
+    if (isPartnerLogin)
+        return React.createElement(PartnerLogin, null);
     if (isCustomerBOLUpload)
         return React.createElement(CustomerBOLUpload, null);
     var offlineBanner = React.createElement("div", {style:{
@@ -12630,7 +12643,7 @@ function PublicRecurringRequest() {
     var [f, setF] = useState({
         customerName: "", company: "", phone: "", email: "",
         origin: "", destination: "", serviceType: "delivery",
-        days: [], startDate: "", blockHours: "4", flexWindow: false, notes: ""
+        days: [], startDate: "", startTime: "08:00", blockHours: "4", flexWindow: false, notes: ""
     });
     var [saving, setSaving] = useState(false);
     var [saved, setSaved] = useState(false);
@@ -12762,7 +12775,8 @@ function PublicRecurringRequest() {
                 "Flexible pickup window (extra 5% off)"),
 
             React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
-                React.createElement(TxtIn, { label: "Preferred Start Date", value: f.startDate, onChange: function (v) { set("startDate", v); }, type: "date" })),
+                React.createElement(TxtIn, { label: "Preferred Start Date", value: f.startDate, onChange: function (v) { set("startDate", v); }, type: "date" }),
+                React.createElement(TxtIn, { label: "Start Time", value: f.startTime, onChange: function (v) { set("startTime", v); }, type: "time" })),
             React.createElement(TxtIn, { label: "Anything else we should know?", value: f.notes, onChange: function (v) { set("notes", v); }, rows: 2 }),
 
             f.days.length > 0 && React.createElement("div", { style: { background: "#1a1400", border: "1px solid #F0E00066", borderRadius: 10, padding: "14px 16px", marginTop: 14, textAlign: "center" } },
@@ -12785,18 +12799,23 @@ function PublicRecurringRequest() {
 // during a live call to check a rebuttal script.
 // ═══════════════════════════════════════════════════════════════════
 function LiveCallScreen(props) {
-    var [innerTab, setInnerTab] = React.useState("quote");
+    var [innerTab, setInnerTab] = React.useState("logistics");
+    var tabs = [
+        ["logistics", "\uD83D\uDCE6 Logistics"],
+        ["loadbooking", "\uD83D\uDE9B Book Load"],
+        ["rebuttals", "\uD83D\uDCAC Rebuttals"],
+    ];
     return React.createElement("div", { style: { maxWidth: 700, margin: "0 auto" } },
         React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 16, position: "sticky", top: 0, background: C.black, paddingTop: 4, paddingBottom: 8, zIndex: 10 } },
-            React.createElement("button", {
-                onClick: function () { setInnerTab("quote"); },
-                style: { flex: 1, background: innerTab === "quote" ? C.orange : C.card, color: innerTab === "quote" ? "#000" : C.dim, border: "1px solid " + (innerTab === "quote" ? C.orange : C.border), borderRadius: 9, padding: "12px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }
-            }, "\uD83D\uDCE6 Book Load"),
-            React.createElement("button", {
-                onClick: function () { setInnerTab("rebuttals"); },
-                style: { flex: 1, background: innerTab === "rebuttals" ? C.orange : C.card, color: innerTab === "rebuttals" ? "#000" : C.dim, border: "1px solid " + (innerTab === "rebuttals" ? C.orange : C.border), borderRadius: 9, padding: "12px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }
-            }, "\uD83D\uDCAC Rebuttals")),
-        innerTab === "quote" && React.createElement(LoadBookingForm, { onAddJob: props.onAddJob }),
+            tabs.map(function (t) {
+                var active = innerTab === t[0];
+                return React.createElement("button", {
+                    key: t[0], onClick: function () { setInnerTab(t[0]); },
+                    style: { flex: 1, background: active ? C.orange : C.card, color: active ? "#000" : C.dim, border: "1px solid " + (active ? C.orange : C.border), borderRadius: 9, padding: "12px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }
+                }, t[1]);
+            })),
+        innerTab === "logistics" && React.createElement(PhoneQuotePanel, { onAddJob: props.onAddJob, gasPPG: props.gasPPG, role: props.role, currentUser: props.currentUser }),
+        innerTab === "loadbooking" && React.createElement(LoadBookingForm, { onAddJob: props.onAddJob }),
         innerTab === "rebuttals" && React.createElement(LiveRebuttalCards, null));
 }
 
@@ -13183,7 +13202,7 @@ function CompanyOnboarding() {
         apContact: "", apEmail: "",
         // Dispatcher vs actual broker — never let a dispatcher be the mystery middleman
         actualBrokerName: "", actualBrokerMC: "", actualBrokerAP: "",
-        ssn: "", termsAgreed: false
+        ssn: "", termsAgreed: false, accountPassword: ""
     });
     var [dotLookupData, setDotLookupData] = useState(null);
     var [dotLookupError, setDotLookupError] = useState("");
@@ -13193,6 +13212,7 @@ function CompanyOnboarding() {
     var [idPhotoUrl, setIdPhotoUrl] = useState(null);
     var [idUploading, setIdUploading] = useState(false);
     var [submitted, setSubmitted] = useState(false);
+    var [applicantPhotoUrl, setApplicantPhotoUrl] = useState(null);
 
     function set(k, v) { setF(function (p) { var n = Object.assign({}, p); n[k] = v; return n; }); }
 
@@ -13232,7 +13252,7 @@ function CompanyOnboarding() {
                     mcNumber: verifyMode === "mc" ? verifyInput.trim() : p.mcNumber,
                     authorityStatus: c.allowedToOperate === "Y" ? "Active" : "Not Active"
                 }); });
-                setStep(2);
+                setStep(1.5);
             }).catch(function () { setLookingUp(false); setDotLookupError("Couldn't reach FMCSA right now. Check your connection and try again."); });
     }
 
@@ -13288,13 +13308,18 @@ function CompanyOnboarding() {
             alert("Please read and agree to the Terms of Service before submitting.");
             return;
         }
+        if (!f.accountPassword || f.accountPassword.length < 6) {
+            alert("Please create a password (at least 6 characters) so you can log back in.");
+            return;
+        }
         fetch(SUPABASE_URL + "/rest/v1/carrier_profiles", {
             method: "POST",
             headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
             body: JSON.stringify({
                 dot_number: f.dotNumber, mc_number: f.mcNumber, company_name: f.legalName,
                 ein: f.ein, phone_number: f.phone, verification_status: "pending",
-                fmcsa_data: dotLookupData, id_image_url: idPhotoUrl,
+                account_password: f.accountPassword,
+                fmcsa_data: dotLookupData, id_image_url: idPhotoUrl, selfie_url: applicantPhotoUrl,
                 payment_method: f.factoringCompany ? "factoring" : "direct",
                 factoring_company_name: f.factoringCompany, noa_url: f.factoringNOA
             })
@@ -13371,12 +13396,20 @@ function CompanyOnboarding() {
             React.createElement("div", { style: { display: "grid", gridTemplateColumns: "2fr 1fr", gap: 8 } },
                 React.createElement(TxtIn, { label: (verifyMode === "dot" ? "DOT" : "MC") + " Number", value: verifyInput, onChange: setVerifyInput }),
                 React.createElement("button", { onClick: verifyCarrier, disabled: lookingUp, style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "11px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", height: 42 } }, lookingUp ? "Verifying..." : "Verify")),
-            dotLookupError && React.createElement("div", { style: { fontSize: 12, color: C.red, marginTop: 10, textAlign: "center" } }, dotLookupError));
+            dotLookupError && React.createElement("div", { style: { fontSize: 12, color: C.red, marginTop: 10, textAlign: "center" } }, dotLookupError),
+            React.createElement("div", { style: { textAlign: "center", marginTop: 16 } },
+                React.createElement("button", { onClick: function () { set("businessRole", "dispatch_only"); setStep(1.5); }, style: { background: "transparent", color: C.dim, border: "none", fontSize: 12, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" } }, "I'm a dispatcher \u2014 no DOT/MC of my own, skip this")));
+    }
+
+    // ── STEP 1.5: MANDATORY FACE CAPTURE — real hard gate, no file upload option ──
+    if (step === 1.5) {
+        return React.createElement("div", { style: { maxWidth: 480, margin: "40px auto" } },
+            React.createElement(MandatoryFaceCapture, { onCaptured: function (url) { setApplicantPhotoUrl(url); setStep(2); } }));
     }
 
     // ── FINAL STATUS — real calculation, matches your exact 3-tier system ──
     var authorityOK = f.authorityStatus === "Active";
-    var securityOK = f.quickPayOffered || f.financialSecurityVerified;
+    var securityOK = f.businessRole === "dispatch_only" || f.quickPayOffered || f.financialSecurityVerified;
     var docsOK = !!docs.coi && (!!docs.dispatchAgreement || !!docs.brokerAgreement);
     var idOK = !!idPhotoUrl;
     var finalStatus = (authorityOK && securityOK && docsOK && idOK) ? "verified"
@@ -13413,6 +13446,7 @@ function CompanyOnboarding() {
             React.createElement(TxtIn, { label: "Contact Name", value: f.contactName, onChange: function (v) { set("contactName", v); } }),
             React.createElement(TxtIn, { label: "Phone", value: f.phone, onChange: function (v) { set("phone", v); } })),
         React.createElement(TxtIn, { label: "Email", value: f.email, onChange: function (v) { set("email", v); } }),
+        React.createElement(TxtIn, { label: "Create a Password (to log back in and check status/upload loads)", value: f.accountPassword, onChange: function (v) { set("accountPassword", v); }, type: "password" }),
         React.createElement(TxtIn, { label: "EIN", value: f.ein, onChange: function (v) { set("ein", v); } }),
         !f.ein && React.createElement(TxtIn, { label: "SSN (if no EIN/business number)", value: f.ssn, onChange: function (v) { set("ssn", v); } }),
 
@@ -13440,18 +13474,20 @@ function CompanyOnboarding() {
             React.createElement(TxtIn, { label: "AP Contact", value: f.apContact, onChange: function (v) { set("apContact", v); } }),
             React.createElement(TxtIn, { label: "AP Email", value: f.apEmail, onChange: function (v) { set("apEmail", v); } })),
 
-        // ── FMCSA FINANCIAL SECURITY — real requirement, not the same as guaranteed payment ──
-        React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, textTransform: "uppercase", marginTop: 16, marginBottom: 8 } }, "FMCSA Financial Security (Brokers Only)"),
-        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 10, lineHeight: 1.6 } }, "FMCSA requires brokers to carry $75,000 in financial security (BMC-84 surety bond or BMC-85 trust). This protects against non-payment \u2014 it is NOT a guarantee, but it's a real layer we verify before accepting a load without Quick Pay."),
-        React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 10 } },
-            [["bmc84", "BMC-84 (Surety Bond)"], ["bmc85", "BMC-85 (Trust Fund)"]].map(function (opt) {
-                var active = f.bmcType === opt[0];
-                return React.createElement("button", { key: opt[0], onClick: function () { set("bmcType", opt[0]); }, style: { flex: 1, background: active ? C.orange : "transparent", color: active ? "#000" : C.dim, border: "1px solid " + (active ? C.orange : C.border), borderRadius: 7, padding: "9px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, opt[1]);
-            })),
-        React.createElement(TxtIn, { label: "Security Provider", value: f.financialSecurityProvider, onChange: function (v) { set("financialSecurityProvider", v); } }),
-        React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.white, cursor: "pointer", marginTop: 6, marginBottom: 16 } },
-            React.createElement("input", { type: "checkbox", checked: f.financialSecurityVerified, onChange: function (e) { set("financialSecurityVerified", e.target.checked); }, style: { width: 18, height: 18, accentColor: C.green } }),
-            "Verified directly through FMCSA (not just a screenshot they sent)"),
+        // ── FMCSA FINANCIAL SECURITY — brokers only, dispatchers don't carry this ──
+        f.businessRole !== "dispatch_only" && React.createElement("div", null,
+            React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, textTransform: "uppercase", marginTop: 16, marginBottom: 8 } }, "FMCSA Financial Security (Brokers Only)"),
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 10, lineHeight: 1.6 } }, "FMCSA requires brokers to carry $75,000 in financial security (BMC-84 surety bond or BMC-85 trust). This protects against non-payment \u2014 it is NOT a guarantee, but it's a real layer we verify before accepting a load without Quick Pay."),
+            React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 10 } },
+                [["bmc84", "BMC-84 (Surety Bond)"], ["bmc85", "BMC-85 (Trust Fund)"]].map(function (opt) {
+                    var active = f.bmcType === opt[0];
+                    return React.createElement("button", { key: opt[0], onClick: function () { set("bmcType", opt[0]); }, style: { flex: 1, background: active ? C.orange : "transparent", color: active ? "#000" : C.dim, border: "1px solid " + (active ? C.orange : C.border), borderRadius: 7, padding: "9px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, opt[1]);
+                })),
+            React.createElement(TxtIn, { label: "Security Provider", value: f.financialSecurityProvider, onChange: function (v) { set("financialSecurityProvider", v); } }),
+            React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.white, cursor: "pointer", marginTop: 6, marginBottom: 16 } },
+                React.createElement("input", { type: "checkbox", checked: f.financialSecurityVerified, onChange: function (e) { set("financialSecurityVerified", e.target.checked); }, style: { width: 18, height: 18, accentColor: C.green } }),
+                "Verified directly through FMCSA (not just a screenshot they sent)")),
+        f.businessRole === "dispatch_only" && React.createElement("div", { style: { background: "#0d1a10", border: "1px solid " + C.green + "44", borderRadius: 8, padding: "10px 14px", marginTop: 16, marginBottom: 16, fontSize: 11, color: C.green } }, "\u2705 Dispatch-only accounts aren't required to carry the $75,000 broker financial security \u2014 that's an FMCSA broker-specific requirement."),
 
         // ── DISPATCHER vs ACTUAL BROKER — never let a dispatcher be the mystery middleman ──
         f.businessRole === "dispatch_only" && React.createElement("div", null,
@@ -13508,6 +13544,210 @@ function CompanyOnboarding() {
         finalStatus === "reject" && React.createElement("div", { style: { fontSize: 11, color: C.red, textAlign: "center", marginBottom: 10 } }, "No verified authority + no signed agreement + no written rate/payment terms = no load."),
 
         React.createElement("button", { onClick: submit, disabled: finalStatus === "reject" || !f.termsAgreed, style: { width: "100%", background: (finalStatus === "reject" || !f.termsAgreed) ? C.border : C.orange, color: (finalStatus === "reject" || !f.termsAgreed) ? C.dim : "#000", border: "none", borderRadius: 10, padding: "14px", fontSize: 15, fontWeight: 900, cursor: (finalStatus === "reject" || !f.termsAgreed) ? "not-allowed" : "pointer", fontFamily: "inherit" } }, finalStatus === "reject" ? "Cannot Submit \u2014 Failed Verification" : !f.termsAgreed ? "Agree To Terms To Continue" : "Submit Onboarding"));
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// MANDATORY FACE CAPTURE — live camera only, no file upload allowed.
+// Blocks progression until a real photo is taken. Reuses the exact
+// proven camera pattern from the login security system.
+// ═══════════════════════════════════════════════════════════════════
+function MandatoryFaceCapture(props) {
+    var videoRef = React.useRef(null);
+    var [camConsent, setCamConsent] = React.useState(false);
+    var [camStream, setCamStream] = React.useState(null);
+    var [camError, setCamError] = React.useState(false);
+    var [capturing, setCapturing] = React.useState(false);
+    var [capturedUrl, setCapturedUrl] = React.useState(null);
+
+    React.useEffect(function () {
+        if (camConsent && !camStream && !camError && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } })
+                .then(function (stream) { setCamStream(stream); })
+                .catch(function () { setCamError(true); });
+        }
+    }, [camConsent]);
+
+    React.useEffect(function () {
+        if (videoRef.current && camStream) videoRef.current.srcObject = camStream;
+    }, [camStream]);
+
+    function takePhoto() {
+        if (!camStream || !videoRef.current) return;
+        setCapturing(true);
+        var canvas = document.createElement("canvas");
+        canvas.width = 320; canvas.height = 240;
+        canvas.getContext("2d").drawImage(videoRef.current, 0, 0, 320, 240);
+        canvas.toBlob(function (blob) {
+            if (!blob) { setCapturing(false); return; }
+            var fileName = "applicant-" + Date.now() + ".jpg";
+            fetch(SUPABASE_URL + "/storage/v1/object/carrier-verification/" + fileName, {
+                method: "POST",
+                headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "image/jpeg" },
+                body: blob
+            }).then(function (res) { return res.ok ? res.json() : null; })
+              .then(function (data) {
+                  setCapturing(false);
+                  if (data && data.Key) {
+                      var url = SUPABASE_URL + "/storage/v1/object/public/carrier-verification/" + data.Key.split("/").slice(1).join("/");
+                      setCapturedUrl(url);
+                      if (camStream) camStream.getTracks().forEach(function (t) { t.stop(); });
+                      if (props.onCaptured) props.onCaptured(url);
+                  }
+              }).catch(function () { setCapturing(false); });
+        }, "image/jpeg", 0.8);
+    }
+
+    if (capturedUrl) {
+        return React.createElement("div", { style: { textAlign: "center", padding: "20px" } },
+            React.createElement("img", { src: capturedUrl, style: { width: 120, height: 90, objectFit: "cover", borderRadius: 8, border: "2px solid " + C.green, marginBottom: 8 } }),
+            React.createElement("div", { style: { fontSize: 12, color: C.green, fontWeight: 700 } }, "\u2705 Photo captured"));
+    }
+
+    if (!camConsent) {
+        return React.createElement("div", { style: { textAlign: "center", padding: "40px 20px", maxWidth: 420, margin: "0 auto" } },
+            React.createElement("div", { style: { fontSize: 40, marginBottom: 10 } }, "\uD83D\uDCF7"),
+            React.createElement("div", { style: { fontSize: 16, fontWeight: 900, color: C.white, marginBottom: 8 } }, "Photo Required To Continue"),
+            React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 20, lineHeight: 1.6 } }, "We take one photo of whoever is actually filling this out. No camera access, no application \u2014 this protects both of us from scammers using someone else's information."),
+            React.createElement("button", { onClick: function () { setCamConsent(true); }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Allow Camera & Continue"));
+    }
+
+    if (camError) {
+        return React.createElement("div", { style: { textAlign: "center", padding: "40px 20px" } },
+            React.createElement("div", { style: { fontSize: 13, color: C.red, marginBottom: 10 } }, "Camera access was denied or unavailable."),
+            React.createElement("div", { style: { fontSize: 12, color: C.dim } }, "This form cannot be completed without allowing camera access. Please check your browser settings and reload."));
+    }
+
+    return React.createElement("div", { style: { textAlign: "center", padding: "20px" } },
+        React.createElement("video", { ref: videoRef, autoPlay: true, playsInline: true, muted: true, style: { width: 240, height: 180, borderRadius: 8, background: "#000", marginBottom: 12 } }),
+        React.createElement("div", null,
+            React.createElement("button", { onClick: takePhoto, disabled: !camStream || capturing, style: { background: C.orange, color: "#000", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, capturing ? "Saving..." : "\uD83D\uDCF8 Take Photo")));
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PARTNER LOGIN — companies log back in with DOT/MC + the password
+// they created at signup. Shows their real status and profile,
+// same idea as staff login, just for external partner companies.
+// ═══════════════════════════════════════════════════════════════════
+function PartnerLogin() {
+    var [dotOrMc, setDotOrMc] = React.useState("");
+    var [password, setPassword] = React.useState("");
+    var [profile, setProfile] = React.useState(null);
+    var [err, setErr] = React.useState("");
+    var [checking, setChecking] = React.useState(false);
+
+    function login() {
+        if (!dotOrMc || !password) { setErr("Enter your DOT/MC number and password."); return; }
+        setChecking(true); setErr("");
+        fetch(SUPABASE_URL + "/rest/v1/carrier_profiles?or=(dot_number.eq." + encodeURIComponent(dotOrMc) + ",mc_number.eq." + encodeURIComponent(dotOrMc) + ")&select=*", {
+            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
+        }).then(function (r) { return r.json(); }).then(function (data) {
+            setChecking(false);
+            var match = Array.isArray(data) ? data.find(function (p) { return p.account_password === password; }) : null;
+            if (!match) { setErr("No account found with that DOT/MC number and password."); return; }
+            setProfile(match);
+        }).catch(function () { setChecking(false); setErr("Something went wrong. Please try again."); });
+    }
+
+    if (profile) {
+        var statusColor = profile.verification_status === "verified" ? "#1DB954" : profile.verification_status === "failed" ? "#E53E3E" : "#F0E000";
+        return React.createElement("div", { style: { minHeight: "100vh", background: "#080808", padding: "30px 16px" } },
+            React.createElement("div", { style: { maxWidth: 500, margin: "0 auto" } },
+                React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: "#F2F2F2", marginBottom: 4 } }, "\uD83E\uDD1D " + profile.company_name),
+                React.createElement("div", { style: { fontSize: 12, color: statusColor, fontWeight: 800, textTransform: "uppercase", marginBottom: 20 } }, "Status: " + profile.verification_status),
+                React.createElement("div", { style: { background: "#111", border: "1px solid #1e1e1e", borderRadius: 10, padding: "16px", marginBottom: 16 } },
+                    [["DOT #", profile.dot_number], ["MC #", profile.mc_number], ["EIN", profile.ein], ["Phone", profile.phone_number]].map(function (r) {
+                        return React.createElement("div", { key: r[0], style: { display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #1e1e1e", fontSize: 12 } },
+                            React.createElement("span", { style: { color: "#888" } }, r[0]), React.createElement("span", { style: { color: "#fff", fontWeight: 700 } }, r[1] || "\u2014"));
+                    })),
+                React.createElement("div", { style: { background: "#1a1400", border: "1px solid #F0E00044", borderRadius: 10, padding: "16px", textAlign: "center" } },
+                    React.createElement("div", { style: { fontSize: 12, color: "#888", marginBottom: 8 } }, "Have a load for us to run?"),
+                    React.createElement("a", { href: "?have-loads", style: { textDecoration: "none" } },
+                        React.createElement("button", { style: { background: "#F0E000", color: "#000", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Submit A Load")))));
+    }
+
+    return React.createElement("div", { style: { minHeight: "100vh", background: "#080808", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 } },
+        React.createElement("div", { style: { maxWidth: 380, width: "100%" } },
+            React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: "#F2F2F2", marginBottom: 4, textAlign: "center" } }, "\uD83E\uDD1D Partner Login"),
+            React.createElement("div", { style: { fontSize: 12, color: "#888", marginBottom: 20, textAlign: "center" } }, "Log in with your DOT or MC number and the password you created."),
+            React.createElement(TxtIn, { label: "DOT or MC Number", value: dotOrMc, onChange: setDotOrMc }),
+            React.createElement(TxtIn, { label: "Password", value: password, onChange: setPassword, type: "password" }),
+            err && React.createElement("div", { style: { fontSize: 12, color: "#E53E3E", marginTop: 6, marginBottom: 6 } }, err),
+            React.createElement("button", { onClick: login, disabled: checking, style: { width: "100%", background: "#F0E000", color: "#000", border: "none", borderRadius: 10, padding: "14px", fontSize: 15, fontWeight: 900, cursor: "pointer", fontFamily: "inherit", marginTop: 10 } }, checking ? "Checking..." : "Log In"),
+            React.createElement("div", { style: { textAlign: "center", marginTop: 16 } },
+                React.createElement("a", { href: "?partner-signup", style: { fontSize: 12, color: "#F0E000" } }, "New here? Apply for a partner account"))));
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// BOL GENERATOR — matches the real Curri BOL layout exactly, POTENT
+// branded. Auto-populated from a real job. Print-to-PDF, same
+// reliable pattern used for the onboarding packet.
+// ═══════════════════════════════════════════════════════════════════
+function downloadBOL(job) {
+    var w = window.open("", "_blank");
+    var bolNum = "BOL-" + (job.id || Date.now());
+    w.document.write(
+        "<html><head><title>Bill of Lading \u2014 " + job.id + "</title>" +
+        "<style>body{font-family:Arial,sans-serif;padding:30px;color:#111;font-size:12px;} " +
+        ".hdr{display:flex;justify-content:space-between;margin-bottom:16px;} " +
+        ".box{border:1px solid #333;padding:8px 12px;} .boxhead{background:#111;color:#fff;padding:4px 10px;font-weight:700;font-size:11px;} " +
+        "table{width:100%;border-collapse:collapse;margin-bottom:14px;} td,th{border:1px solid #333;padding:6px 10px;font-size:11px;text-align:left;} " +
+        ".red{color:#c00;font-size:10px;} .sig{border-top:1px solid #333;margin-top:30px;padding-top:4px;font-size:10px;}</style></head><body>" +
+        "<div class='hdr'><div><h2 style='margin:0;'>POTENT LOGISTICS</h2><div style='font-size:11px;'>(770) 648-4228<br>2089 Christian Cir SE, Conyers, GA 30013<br>DOT# 9166689</div></div>" +
+        "<div style='text-align:right;font-size:10px;color:#888;'>THIS IS NOT AN INVOICE</div></div>" +
+        "<h1 style='margin-bottom:4px;'>Bill of Lading</h1>" +
+        "<div style='font-size:11px;margin-bottom:8px;'>Please read the following carefully and verify for accuracy and correctness. If you have questions or concerns, please contact us.</div>" +
+        "<div class='red'>Distances, dimensions, and weights approximated. Costs subject to change pending invoice closure.</div>" +
+        "<table><tr><td><b>Job ID</b><br>" + (job.id || "") + "</td><td><b>Customer Ref #</b><br>" + (job.customer || "") + "</td><td><b>BOL #</b><br>" + bolNum + "</td></tr></table>" +
+        "<div class='boxhead'>Load Information</div>" +
+        "<table><tr><td><b>Distance</b><br>" + (job.miles || "\u2014") + " mi</td><td><b>Weight</b><br>" + (job.weight || "\u2014") + "</td><td><b>Commodity</b><br>" + (job.serviceName || job.service || "\u2014") + "</td><td><b>Value</b><br>$" + (job.finalPrice || 0) + "</td></tr></table>" +
+        "<table><tr><th>Load Description</th><th>Req'd Equipment</th></tr>" +
+        "<tr><td>" + (job.notes || "\u2014") + "</td><td>16ft Dock-Height Box Truck</td></tr></table>" +
+        "<table><tr><th>Pickup</th><th>Delivery</th></tr>" +
+        "<tr><td><b>Company:</b> " + (job.customer || "") + "<br><b>Address:</b> " + (job.origin || "") + "<br><b>Date/Time:</b> " + (job.date || "") +
+        "<div class='sig'>Signature / Date</div></td>" +
+        "<td><b>Address:</b> " + (job.destination || "") + "<br><b>Date/Time:</b> " + (job.deliveredAt ? new Date(job.deliveredAt).toLocaleString() : "\u2014") +
+        "<div class='sig'>Received By / Date</div></td></tr></table>" +
+        "<p style='font-size:10px;color:#888;margin-top:20px;'>Generated " + new Date().toLocaleString() + " \u00b7 POTENT Logistics LLC \u00b7 DOT# 9166689</p>" +
+        "</body></html>"
+    );
+    w.document.close();
+    setTimeout(function () { w.print(); }, 400);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INVOICE GENERATOR — matches their real existing invoice template
+// exactly, mileage-based, real bank info auto-filled.
+// ═══════════════════════════════════════════════════════════════════
+function downloadInvoice(job) {
+    var w = window.open("", "_blank");
+    var invNum = "INV-" + (job.id || Date.now());
+    var rate = job.miles ? (job.finalPrice / job.miles).toFixed(2) : "\u2014";
+    w.document.write(
+        "<html><head><title>Invoice \u2014 " + job.id + "</title>" +
+        "<style>body{font-family:Arial,sans-serif;padding:30px;color:#111;font-size:12px;} " +
+        "table{width:100%;border-collapse:collapse;margin-bottom:14px;} td,th{border:1px solid #333;padding:8px 10px;font-size:11px;text-align:left;} " +
+        ".total{font-size:16px;font-weight:700;} .remit{background:#f5f5f5;padding:12px;margin-top:20px;font-size:11px;}</style></head><body>" +
+        "<div style='display:flex;justify-content:space-between;'><div><h2 style='margin:0;'>POTENT LOGISTICS</h2><div style='font-size:10px;'>a DBA of Potent Operations LLC<br>1820 GA Hwy 20 SE Ste 114 #440, Conyers, GA 30013<br>770-648-4228</div></div>" +
+        "<div style='text-align:right;'><h2 style='margin:0;'>INVOICE</h2><div style='font-size:11px;'>Date: " + new Date().toLocaleDateString() + "<br>Invoice #: " + invNum + "</div></div></div>" +
+        "<table><tr><th>Bill To</th><th>Origin</th><th>Destination</th></tr>" +
+        "<tr><td>" + (job.customer || "") + "</td><td>" + (job.origin || "") + "</td><td>" + (job.destination || "") + "</td></tr></table>" +
+        "<table><tr><th>BOL Number</th><th>Load Number</th><th>Mileage</th><th>Pick-Up Date</th><th>Delivery Date</th></tr>" +
+        "<tr><td>BOL-" + (job.id || "") + "</td><td>" + (job.id || "") + "</td><td>" + (job.miles || "\u2014") + "</td><td>" + (job.date || "\u2014") + "</td><td>" + (job.deliveredAt ? new Date(job.deliveredAt).toLocaleDateString() : "\u2014") + "</td></tr></table>" +
+        "<table><tr><th>Quantity</th><th>Description</th><th>Rate</th><th>Amount</th></tr>" +
+        "<tr><td>1</td><td>" + (job.serviceName || job.service || "Freight Transport") + " \u2014 " + (job.miles || 0) + " miles</td><td>$" + rate + "/mi</td><td>$" + (job.finalPrice || 0) + "</td></tr></table>" +
+        "<div style='display:flex;justify-content:space-between;'><div style='font-size:11px;'>Pay Terms: NET 7 Days (Maximum)</div><div class='total'>TOTAL AMOUNT DUE: $" + (job.finalPrice || 0) + "</div></div>" +
+        "<div class='remit'><b>REMIT PAYMENT TO</b><br>Business Name: POTENT OPERATIONS LLC (DBA Potent Logistics)<br>Bank: Middlesex Federal Savings, F.A. (affiliated bank of Novo)<br>Routing Number: 211370150<br>Account Number: 103687060<br>Business Address: 2089 Christian Cir SE, Conyers, GA 30013</div>" +
+        "<p style='font-size:10px;color:#888;margin-top:16px;'>Thank you for your business. Please contact us with any questions regarding this invoice.</p>" +
+        "</body></html>"
+    );
+    w.document.close();
+    setTimeout(function () { w.print(); }, 400);
 }
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
