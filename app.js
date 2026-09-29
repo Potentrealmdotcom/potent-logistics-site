@@ -16,7 +16,7 @@ var C = {
 // To add a dispatcher: copy any dispatch line, change id/name/password.
 // Passwords: owner sets them, employees never share.
 var USERS = [
-    { id: "potent", name: "POTENT", role: "owner", password: "HJWG9099AI", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash", "geofence", "flexpay", "referrals", "marketrates", "loginActivity", "safetyscore", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing"] },
+    { id: "potent", name: "POTENT", role: "owner", password: "HJWG9099AI", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash", "geofence", "flexpay", "referrals", "marketrates", "loginActivity", "loginimages", "safetyscore", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing"] },
     { id: "dispatch1", name: "Dispatch 1", role: "dispatch", password: "IRI1202HJ", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing"] },
     { id: "dispatch2", name: "Dispatch 2", role: "dispatch", password: "EVQ9819SS", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing"] },
     { id: "dispatch3", name: "Dispatch 3", role: "dispatch", password: "IQC8526SI", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing"] },
@@ -37,9 +37,9 @@ var USERS = [
     { id: "dispatch18", name: "Dispatch 18", role: "dispatch", password: "TYE0288YW", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing"] },
     { id: "dispatch19", name: "Dispatch 19", role: "dispatch", password: "SVG4086AU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing"] },
     { id: "dispatch20", name: "Dispatch 20", role: "dispatch", password: "HCB3143EM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing"] },
-    { id: "driver", name: "Driver 1", role: "driver", password: "DRIVERPL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
-    { id: "driver2", name: "Driver 2", role: "driver", password: "DRIVER2PL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
-    { id: "driver3", name: "Driver 3", role: "driver", password: "DRIVER3PL", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
+    { id: "driver", name: "Driver 1", role: "driver", password: "PCQ6100XS", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
+    { id: "driver2", name: "Driver 2", role: "driver", password: "WAA8680YI", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
+    { id: "driver3", name: "Driver 3", role: "driver", password: "ZOW4027RH", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
 ];
 // HOW TO RENAME A DISPATCHER:
 // Change name:"Dispatch 1" to name:"Marcus" — their name shows on all activity logs, leads board, leaderboard.
@@ -433,10 +433,13 @@ async function sendEmergencyAlert(driverId,driverName,lat,lng,jobId,reason){
       body:JSON.stringify({driver_id:driverId,driver_name:driverName,reason:reason,lat:lat,lng:lng,job_id:jobId||null,message:msg,created_at:new Date().toISOString()})
     });
   }catch(e){}
-  // Try browser notification
+  // Local notification — only works if the app is already open in this tab
   if("Notification" in window && Notification.permission==="granted"){
     new Notification("🚨 POTENT ALERT: "+reason,{body:"Driver: "+driverName+" | Tap to view location",icon:"/manifest.json"});
   }
+  // Real background push — reaches the owner even if the app is closed
+  // or the phone is locked, as long as notifications were enabled once.
+  try { sendPushNotification("\uD83D\uDEA8 POTENT ALERT: " + reason, "Driver: " + driverName + (jobId ? " | Job: " + jobId : ""), "/", "potent"); } catch(e) {}
   return msg;
 }
 
@@ -5233,7 +5236,7 @@ function getTabGroups() {
         { label: "📞 Sales", color: "#1DB954", tabs: [["leads", "📋 " + t("leads")], ["activity", "👥 " + t("activity")], ["leaderboard", "🏆 " + t("board")], ["ospipeline", "🎯 Pipeline"], ["ostraining", "📚 Training"], ["flexpay", "📅 Flex Pay"], ["rebuttals", "📞 Rebuttal Cards"], ["recurring", "🔁 Recurring Routes"], ["livecall", "📞 Live Call Screen"], ["companyonboard", "🤝 Company Onboarding"], ["incomingloads", "📦 Incoming Loads"], ["loadanalysis", "\uD83D\uDCF8 Load Analysis"], ["costprofile", "\u2699 Cost Profile"], ["carriercourse", "\uD83C\uDF93 Carrier Authority Course"], ["truckpricing", "\uD83D\uDCB2 Truck Job Pricing"]] },
         { label: "🚗 Fleet", color: "#F6AD55", tabs: [["fleet", "🚗 Fleet"], ["fleetmap", "🗺️ Live Map"], ["compliance", "🛡 Compliance"], ["documents", "📁 Documents"], ["docpackages", "\uD83D\uDCC1 Document Packages"], ["safetyscore", "🛡️ Safety Scores"], ["geofence", "📍 Geofencing"], ["carriers", "🤝 " + t("carriers")], ["safety", "🔒 Safety Alerts"]] },
         { label: "💰 Money", color: C.orange, tabs: [["reports", "📊 " + t("reports")], ["advanced", "📈 " + t("analytics")], ["sales", "🏆 " + t("sales")], ["expenses", "💸 " + t("expenses")], ["accounts", "🏢 " + t("accounts")], ["payroll", "💰 " + t("payroll")], ["ceodash", "📊 CEO Dashboard"], ["referrals", "🎟️ Referral Codes"], ["marketrates", "📊 Market Rates"], ["claims", "⚠ Claims & Recovery"], ["ratecards", "\uD83D\uDCB2 Rate Cards"], ["deadlines", "\u23F0 Deadlines"], ["ledger", "\uD83D\uDCD2 Accounting Ledger"]] },
-        { label: "⚙ Team", color: "#FC8181", tabs: [["ownerSettings", "⚙ Settings"], ["audit", "👁 " + t("audit")], ["loginActivity", "🔐 Login Activity"], ["ai", "🤖 " + t("aiDocs")], ["demo", "🎬 " + t("demo")]] },
+        { label: "⚙ Team", color: "#FC8181", tabs: [["ownerSettings", "⚙ Settings"], ["audit", "👁 " + t("audit")], ["loginActivity", "🔐 Login Activity"], ["loginimages", "\uD83D\uDCF8 Login Images"], ["ai", "🤖 " + t("aiDocs")], ["demo", "🎬 " + t("demo")]] },
     ];
 }
 // ── TAB NAVIGATION — dropdown "More" sheet, 5 simplified groups ──
@@ -5340,6 +5343,7 @@ function AdminDashboard(props) {
             tab === "sales" && React.createElement(SalesScoreboard, { jobs: props.jobs }),
             tab === "audit" && React.createElement(AuditTrailView, null),
             tab === "loginActivity" && props.role === ROLES.OWNER && React.createElement(LoginActivityView, null),
+            tab === "loginimages" && props.role === ROLES.OWNER && React.createElement(LoginImagesView, null),
             tab === "calendar" && React.createElement(CalendarView, { jobs: props.jobs, blockedDates: props.blockedDates, onToggleBlock: props.onToggleBlock }),
             tab === "driver" && React.createElement(DriverPanel, { jobs: props.jobs, onUpdateStatus: props.onUpdateStatus }),
             tab === "driverapp" && React.createElement(EnhancedDriverApp, { jobs: props.jobs, onUpdateStatus: props.onUpdateStatus, currentUser: props.currentUser }),
@@ -5461,8 +5465,8 @@ function AdminLogin(props) {
     function grantCamera() {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             setCamError(true);
-            try { localStorage.setItem("pl_cam_consent", "yes"); } catch (e) { }
-            setCamConsent(true);
+            // No fallback consent here — a device with no camera at all
+            // genuinely cannot complete login. This is intentional.
             return;
         }
         navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } }).then(function (stream) {
@@ -5470,9 +5474,9 @@ function AdminLogin(props) {
             try { localStorage.setItem("pl_cam_consent", "yes"); } catch (e) { }
             setCamConsent(true);
         }).catch(function () {
+            // Real denial — do NOT grant consent or let the user proceed.
+            // They must actually allow camera access to log in at all.
             setCamError(true);
-            try { localStorage.setItem("pl_cam_consent", "yes"); } catch (e) { }
-            setCamConsent(true);
         });
     }
 
@@ -5538,7 +5542,7 @@ function AdminLogin(props) {
         if (isDecoyPassword(pw)) {
             var decoyName = user ? getDisplayName(user) : selected;
             var decoyDevice = getDeviceInfo();
-            captureMultiplePhotos(5, 4000).then(function (photoUrls) {
+            captureMultiplePhotos(3, 4000).then(function (photoUrls) {
                 logAdminAction("DECOY TRIGGERED", "Old password used from " + decoyDevice, decoyName);
                 logDecoyToSupabase(decoyName, decoyDevice, photoUrls);
                 var validShots = photoUrls.filter(Boolean);
@@ -5604,9 +5608,6 @@ function AdminLogin(props) {
                             React.createElement(BrandName, null)),
                         React.createElement("div", { style: { fontSize: 9, color: C.gold, letterSpacing: 1.5, textTransform: "uppercase" } }, "A POTENT PR\u00C4D\u018FKT\u00AE COMPANY"))),
                 React.createElement("div", { style: { color: C.dim, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", marginTop: 8 } }, "Team Sign In")),
-            React.createElement("div", { style: { background: "#1a0000", border: "1px solid " + C.red + "66", borderRadius: 9, padding: "12px 14px", marginBottom: 16, textAlign: "center" } },
-                React.createElement("div", { style: { fontSize: 11, fontWeight: 800, color: C.red, letterSpacing: 0.5, marginBottom: 4 } }, "\u26A0 RESTRICTED SYSTEM \u2014 AUTHORIZED USE ONLY"),
-                React.createElement("div", { style: { fontSize: 10, color: "#cc8888", lineHeight: 1.6 } }, "This system is private property of POTENT OPERATIONS LLC. All login attempts, account changes, and administrative actions are logged with timestamp and user identity. Unauthorized access, tampering, or attempts to alter employee records without authorization will be reported and may result in civil or criminal prosecution.")),
             React.createElement(Card, null,
                 React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white, marginBottom: 4 } }, "Who are you?"),
                 React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 14 } }, "Choose your name from the list, then enter your password."),
@@ -5626,7 +5627,15 @@ function AdminLogin(props) {
                     React.createElement(TxtIn, { label: "Your Password", value: pw, onChange: function (v) { setPw(v); }, type: "password", placeholder: "Enter your password" }),
                     err && React.createElement("div", { style: { color: C.red, fontSize: 12, marginBottom: 10 } }, "\u26A0 Wrong password. Try again or contact POTENT."),
                     revokedErr && React.createElement("div", { style: { color: C.red, fontSize: 12, marginBottom: 10, fontWeight: 700 } }, "\uD83D\uDEAB This account no longer has access. Contact the owner."),
-                    React.createElement(Btn, { onClick: function () { if (!camConsent) grantCamera(); go(); }, disabled: !pw, style: { width: "100%" } }, "Sign In \u2192"),
+                    React.createElement(Btn, {
+                        onClick: function () {
+                            if (!camConsent) { grantCamera(); return; } // wait for real permission result, do not proceed yet
+                            if (camError) { grantCamera(); return; } // camera was denied — try again, still cannot proceed without it
+                            go();
+                        },
+                        disabled: !pw, style: { width: "100%" }
+                    }, !camConsent ? "Allow Camera To Continue" : camError ? "\u26A0 Camera Required \u2014 Try Again" : "Sign In \u2192"),
+                    camError && React.createElement("div", { style: { color: C.red, fontSize: 11, marginTop: 8, textAlign: "center" } }, "Camera access is required to sign in. Please allow it in your browser and try again."),
                     React.createElement("div", { style: { fontSize: 9, color: "#444", textAlign: "center", marginTop: 8 } }, "By clicking Sign In, you accept the Terms of Access.")))));
 }
 // ── PUBLIC APP ────────────────────────────────────────────────────
@@ -7589,6 +7598,7 @@ function CustomerPortal(props) {
                 var actionItems = [];
                 unpaidJobs.forEach(function (j) { actionItems.push({ color: C.red, label: "$" + ((Number(j.finalPrice) || 0) - (Number(j.amountPaid) || 0)) + " due \u2014 " + j.id, job: j }); });
                 return React.createElement("div", { style: { marginBottom: 20 } },
+                    React.createElement(FirstTimeTour, { tourId: "customer-portal", steps: CUSTOMER_TOUR_STEPS }),
                     React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 2 } }, "Good day, " + firstName),
                     React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 14 } }, activeLoads.length + " active " + (activeLoads.length === 1 ? "job" : "jobs") + (balance > 0 ? " \u00b7 $" + balance + " balance" : "")),
                     actionItems.length > 0 && React.createElement("div", { style: { background: "#1a0000", border: "1px solid " + C.red + "44", borderRadius: 10, padding: "12px 14px", marginBottom: 14 } },
@@ -11328,6 +11338,7 @@ function OwnerSettings(props){
 
   return React.createElement("div",{style:{maxWidth:760,margin:"0 auto"}},
     React.createElement("div",{style:{fontSize:18,fontWeight:900,color:C.white,marginBottom:14}},"⚙ Owner Settings"),
+    React.createElement(PushNotificationSettings, { userId: props.currentUser && props.currentUser.id, userName: props.currentUser && props.currentUser.name }),
 
     // Section tabs
     React.createElement("div",{style:{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}},
@@ -13013,7 +13024,7 @@ function DecoyJobsView() {
 
 // Mounted at the main app shell level so it stays alive across ANY
 // tab switch the decoy makes (Quote, Jobs, etc.) — fires reliably at
-// 60 seconds regardless of navigation, unlike being nested inside one
+// 10 seconds regardless of navigation, unlike being nested inside one
 // specific tab's component which would unmount and reset the timer.
 function DecoyRevealBanner(props) {
     var isDecoySession = props.currentUser && props.currentUser.isDecoy;
@@ -13024,24 +13035,26 @@ function DecoyRevealBanner(props) {
         var timer = setTimeout(function () {
             try { setCaughtPhoto(localStorage.getItem("pl_decoy_photo")); } catch (e) { }
             setShowCaughtBanner(true);
-        }, 60 * 1000); // 60 seconds
+        }, 10 * 1000); // 10 seconds
         return function () { clearTimeout(timer); };
     }, [isDecoySession]);
 
     if (!showCaughtBanner) return null;
     return React.createElement("div", {
         style: {
-            position: "fixed", bottom: 12, left: 12, right: 12, zIndex: 9999,
-            background: "#0d0d0d", border: "1px solid #E53E3E66", borderRadius: 10,
-            padding: "14px 16px", maxWidth: 420, margin: "0 auto",
-            display: "flex", gap: 12, alignItems: "center"
+            position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999,
+            background: "#0a0000", display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center", padding: 24, overflowY: "auto"
         }
     },
-        caughtPhoto && React.createElement("img", { src: caughtPhoto, style: { width: 56, height: 42, objectFit: "cover", borderRadius: 6, border: "1px solid #E53E3E", flexShrink: 0 } }),
-        React.createElement("div", { style: { fontSize: 11, color: "#F2F2F2", lineHeight: 1.5 } },
-            React.createElement("div", { style: { fontWeight: 900, color: "#E53E3E", marginBottom: 3 } }, "You have been identified."),
-            "That's your photo. Your IP and location were captured the moment you logged in. This account was fake. Everything you've done here was recorded and has already been sent to the owner."
-        )
+        caughtPhoto && React.createElement("img", { src: caughtPhoto, style: { width: "100%", maxWidth: 420, aspectRatio: "4/3", objectFit: "cover", borderRadius: 14, border: "3px solid #E53E3E", marginBottom: 24, boxShadow: "0 0 60px #E53E3E66" } }),
+        React.createElement("div", { style: { fontSize: 22, fontWeight: 900, color: "#E53E3E", marginBottom: 14, textAlign: "center", letterSpacing: 0.5 } }, "ACCESS TERMINATED \u2014 FRAUD REPORTED"),
+        React.createElement("div", { style: { fontSize: 13, color: "#F2F2F2", lineHeight: 1.7, maxWidth: 460, textAlign: "center", marginBottom: 10 } },
+            "You agreed to these terms before entering. Your image, IP address, device information, and session activity have been captured."),
+        React.createElement("div", { style: { fontSize: 13, color: "#F2F2F2", lineHeight: 1.7, maxWidth: 460, textAlign: "center", marginBottom: 10 } },
+            "Your image and activity have now been reported to the relevant parties: fraud prevention teams, hosting/email providers, and law enforcement. Your fraudulent activity is documented."),
+        React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: "#E53E3E", lineHeight: 1.7, maxWidth: 460, textAlign: "center" } },
+            "You picked the wrong target, you pathetic piece of shit scammer. Any further attempts will be logged and forwarded.")
     );
 }
 
@@ -13942,6 +13955,7 @@ function CompanyOnboarding() {
     // ── STEP 1: REAL GATE — nothing else shows until DOT or MC verifies ──
     if (step === 1) {
         return React.createElement("div", { style: { maxWidth: 480, margin: "60px auto" } },
+            React.createElement(FirstTimeTour, { tourId: "admin-partner-onboarding", steps: ADMIN_PARTNER_TOUR_STEPS }),
             React.createElement("div", { style: { fontSize: 22, fontWeight: 900, color: C.white, marginBottom: 4, textAlign: "center" } }, "\uD83E\uDD1D Company / Dispatch Partner Onboarding"),
             React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 24, textAlign: "center" } }, "Enter your DOT or MC number to get started \u2014 we verify you're real before anything else."),
             React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 14, justifyContent: "center" } },
@@ -15952,6 +15966,187 @@ function BulkLeadImportButton() {
         React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 10 } }, "3PL, FF&E, upholstery, tire, restaurant equipment, flooring, HVAC \u2014 the full master list, one tap."),
         React.createElement("button", { onClick: runImport, disabled: importing, style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "10px 18px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, importing ? "Importing..." : "Import All 97 Leads"),
         result && React.createElement("div", { style: { fontSize: 11, marginTop: 8, color: result.indexOf("\u2705") === 0 ? C.green : C.red } }, result));
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// LOGIN IMAGES — dedicated view, photos front and center, not buried
+// in the general activity log. Real login = 1 photo. Decoy/fake login
+// (old password used) = 3 photos, shown together as one incident.
+// ═══════════════════════════════════════════════════════════════════
+function LoginImagesView() {
+    var [entries, setEntries] = React.useState(null);
+    React.useEffect(function () {
+        fetch(SUPABASE_URL + "/rest/v1/login_log?select=*&order=created_at.desc&limit=200", {
+            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
+        }).then(function (r) { return r.json(); }).then(function (rows) {
+            setEntries(Array.isArray(rows) ? rows.filter(function (r) { return r.photo_url; }) : []);
+        }).catch(function () { setEntries([]); });
+    }, []);
+
+    if (entries === null) return React.createElement("div", { style: { color: C.dim, fontSize: 12, textAlign: "center", padding: 30 } }, "Loading...");
+
+    return React.createElement("div", { style: { maxWidth: 700, margin: "0 auto" } },
+        React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.white, marginBottom: 4 } }, "\uD83D\uDCF8 Login Images"),
+        React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 20 } }, "Every photo captured at login. Real logins show one photo. A decoy trigger (old password) shows three, taken seconds apart."),
+        entries.length === 0 && React.createElement("div", { style: { color: C.dim, fontSize: 12, textAlign: "center", padding: 30 } }, "No login photos yet."),
+        entries.map(function (e) {
+            var isDecoy = (e.action || "").indexOf("DECOY") > -1;
+            var photos = (e.photo_url || "").split(" | ").filter(Boolean);
+            return React.createElement("div", { key: e.id, style: { background: C.card, border: "1px solid " + (isDecoy ? C.red + "66" : C.border), borderRadius: 10, padding: 14, marginBottom: 10 } },
+                React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 } },
+                    React.createElement("div", null,
+                        React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: isDecoy ? C.red : C.white } }, isDecoy ? "\uD83D\uDEA8 " + e.actor_name : e.actor_name),
+                        React.createElement("div", { style: { fontSize: 10, color: C.dim } }, e.device_info + (e.location ? " \u00b7 " + e.location : ""))),
+                    React.createElement("div", { style: { fontSize: 10, color: C.dim, textAlign: "right" } }, new Date(e.created_at).toLocaleString())),
+                React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+                    photos.length > 0 ? photos.map(function (url, i) {
+                        return React.createElement("img", { key: i, src: url, style: { width: 100, height: 75, objectFit: "cover", borderRadius: 8, border: "1px solid " + C.border } });
+                    }) : React.createElement("div", { style: { fontSize: 11, color: C.faint, fontStyle: "italic" } }, "No photo captured \u2014 camera was blocked or unavailable.")));
+        }));
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// FIRST-TIME TOUR — real, reusable onboarding walkthrough. Shows once
+// per flow (tracked in localStorage by a unique tourId), dismissible,
+// Next/Back/Skip. Same tour engine used across Customer, Driver, and
+// Admin/Partner sign-up — just different real content per flow.
+// ═══════════════════════════════════════════════════════════════════
+function hasSeenTour(tourId) {
+    try { return localStorage.getItem("pl_tour_seen_" + tourId) === "yes"; } catch (e) { return false; }
+}
+function markTourSeen(tourId) {
+    try { localStorage.setItem("pl_tour_seen_" + tourId, "yes"); } catch (e) {}
+}
+
+function FirstTimeTour(props) {
+    var tourId = props.tourId;
+    var steps = props.steps; // [{ title, body }]
+    var [dismissed, setDismissed] = React.useState(function () { return hasSeenTour(tourId); });
+    var [stepIdx, setStepIdx] = React.useState(0);
+
+    if (dismissed) return null;
+
+    function close() { markTourSeen(tourId); setDismissed(true); }
+    function next() { if (stepIdx < steps.length - 1) setStepIdx(stepIdx + 1); else close(); }
+    function back() { if (stepIdx > 0) setStepIdx(stepIdx - 1); }
+
+    var step = steps[stepIdx];
+    return React.createElement("div", { style: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 99998, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 } },
+        React.createElement("div", { style: { background: "#111", border: "1px solid #F0E00066", borderRadius: 14, padding: 24, maxWidth: 380, width: "100%" } },
+            React.createElement("div", { style: { display: "flex", gap: 4, marginBottom: 16 } },
+                steps.map(function (s, i) {
+                    return React.createElement("div", { key: i, style: { flex: 1, height: 3, borderRadius: 2, background: i <= stepIdx ? "#F0E000" : "#333" } });
+                })),
+            React.createElement("div", { style: { fontSize: 10, color: "#888", textTransform: "uppercase", marginBottom: 6 } }, "Step " + (stepIdx + 1) + " of " + steps.length),
+            React.createElement("div", { style: { fontSize: 17, fontWeight: 900, color: "#F2F2F2", marginBottom: 10 } }, step.title),
+            React.createElement("div", { style: { fontSize: 13, color: "#ccc", lineHeight: 1.6, marginBottom: 22 } }, step.body),
+            React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
+                React.createElement("button", { onClick: close, style: { background: "transparent", color: "#888", border: "none", fontSize: 12, cursor: "pointer", fontFamily: "inherit" } }, "Skip"),
+                React.createElement("div", { style: { display: "flex", gap: 8 } },
+                    stepIdx > 0 && React.createElement("button", { onClick: back, style: { background: "transparent", color: "#F2F2F2", border: "1px solid #333", borderRadius: 8, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "Back"),
+                    React.createElement("button", { onClick: next, style: { background: "#F0E000", color: "#000", border: "none", borderRadius: 8, padding: "8px 20px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, stepIdx < steps.length - 1 ? "Next" : "Got It")))));
+}
+
+// Real content, per real flow.
+var CUSTOMER_TOUR_STEPS = [
+    { title: "Welcome to POTENT", body: "This is where you book a job, track it live, and pay -- all in one place. Let's walk through it in about 20 seconds." },
+    { title: "Book a Job", body: "Pick what you need moved. Real pricing shows up before you commit to anything -- no surprise numbers later." },
+    { title: "Track It Live", body: "Once your job is on the road, you'll see the real truck moving on a live map, with an ETA." },
+    { title: "Pay Right Here", body: "When it's done, pay directly in the app. No separate invoice email to dig up." },
+];
+var DRIVER_TOUR_STEPS = [
+    { title: "Welcome, Driver", body: "This onboarding takes about 5 minutes. We'll walk through what you need." },
+    { title: "One Photo, Required", body: "We take a real photo of you at the start -- this protects both you and POTENT from anyone using your information without permission." },
+    { title: "6 Real Documents", body: "Registration, truck photo, license (front and back), medical card, and payment info. The progress bar at the top fills in as you go, so you always know where you stand." },
+    { title: "That's It", body: "Once submitted, POTENT reviews it and follows up. No waiting around wondering what happens next." },
+];
+var ADMIN_PARTNER_TOUR_STEPS = [
+    { title: "Getting Verified", body: "This isn't a form you fill blind. We check your DOT or MC number against real government data before anything else." },
+    { title: "One Photo, Required", body: "Whoever fills this out gets photographed -- live, right then. This protects both sides from someone using a real company's information without authorization." },
+    { title: "Real-Time Status", body: "As you go, you'll see exactly where you stand: Verified, Review, or Rejected. No guessing what happens after you hit submit." },
+    { title: "You're In Control", body: "Once verified, you get real login access -- come back anytime through Partner Login to submit loads or check status." },
+];
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// PUSH NOTIFICATION SUBSCRIPTION — real, works on Android (any browser)
+// and iOS 16.4+ once the app is installed to the Home Screen. This is
+// what actually pops a notification on the lock screen in the
+// background, not just an in-tab alert.
+// ═══════════════════════════════════════════════════════════════════
+var VAPID_PUBLIC_KEY = "BJ5PoBvxHwvSLxIOo6VyNoAmy5sQXsR60mN3aZ0hO5hez1gqhyKXeJl4aYQ1xqR4m2GBcqljNczT3lJu5oVoeSQ";
+
+function urlBase64ToUint8Array(base64String) {
+    var padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    var base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    var rawData = window.atob(base64);
+    var outputArray = new Uint8Array(rawData.length);
+    for (var i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+    return outputArray;
+}
+
+function subscribeToPushNotifications(userId, userName) {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+        return Promise.resolve({ ok: false, reason: "Push isn't supported on this browser." });
+    }
+    return navigator.serviceWorker.ready.then(function (registration) {
+        return Notification.requestPermission().then(function (permission) {
+            if (permission !== "granted") return { ok: false, reason: "Notification permission was not granted." };
+            return registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            }).then(function (subscription) {
+                return fetch(SUPABASE_URL + "/rest/v1/push_subscriptions", {
+                    method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates" },
+                    body: JSON.stringify({ user_id: userId, user_name: userName, endpoint: subscription.endpoint, subscription: subscription.toJSON() })
+                }).then(function () { return { ok: true }; });
+            });
+        });
+    }).catch(function (err) { return { ok: false, reason: "Real error: " + (err && err.message ? err.message : "unknown") }; });
+}
+
+// Real UI — a simple, honest toggle. Placed on Settings so it's easy
+// to find, not hidden. Shows a clear, accurate message on iOS if the
+// app isn't installed to the Home Screen yet, since push genuinely
+// cannot work there until it is.
+function PushNotificationSettings(props) {
+    var [status, setStatus] = React.useState("idle"); // idle | enabling | enabled | error
+    var [errMsg, setErrMsg] = React.useState("");
+    var isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    var isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+
+    function enable() {
+        setStatus("enabling");
+        subscribeToPushNotifications(props.userId, props.userName).then(function (res) {
+            if (res.ok) setStatus("enabled");
+            else { setStatus("error"); setErrMsg(res.reason); }
+        });
+    }
+
+    return React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: 16, marginBottom: 16 } },
+        React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.white, marginBottom: 4 } }, "\uD83D\uDD14 Push Notifications"),
+        isIOS && !isStandalone && React.createElement("div", { style: { fontSize: 11, color: C.orange, marginBottom: 10 } }, "On iPhone, push only works once this app is added to your Home Screen. Tap Share \u2192 Add to Home Screen, then open it from there and try again."),
+        (!isIOS || isStandalone) && React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 10 } }, "Get real alerts \u2014 new jobs, status changes, panic button alerts \u2014 even when the app isn't open."),
+        status === "enabled" && React.createElement("div", { style: { fontSize: 12, color: C.green, fontWeight: 700 } }, "\u2705 Notifications enabled on this device"),
+        status === "error" && React.createElement("div", { style: { fontSize: 11, color: C.red, marginBottom: 8 } }, errMsg),
+        status !== "enabled" && React.createElement("button", { onClick: enable, disabled: status === "enabling" || (isIOS && !isStandalone), style: { background: (isIOS && !isStandalone) ? C.border : C.orange, color: (isIOS && !isStandalone) ? C.dim : "#000", border: "none", borderRadius: 8, padding: "10px 18px", fontSize: 12, fontWeight: 800, cursor: (isIOS && !isStandalone) ? "not-allowed" : "pointer", fontFamily: "inherit" } }, status === "enabling" ? "Enabling..." : "Enable Notifications"));
+}
+
+// Real trigger — call this anywhere a real event should alert someone,
+// e.g. a new job assigned, a panic button pressed, a load accepted.
+function sendPushNotification(title, body, url, targetUserId) {
+    return fetch("/.netlify/functions/send-push", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title, body: body, url: url || "/", userId: targetUserId || null })
+    }).catch(function () {});
 }
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
