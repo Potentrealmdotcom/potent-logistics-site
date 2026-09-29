@@ -2543,7 +2543,9 @@ function FleetMap() {
                 var mins = Math.round(age / 60000);
                 return "<div style=\"font-family:sans-serif;min-width:150px\"><b>" + (row.driver_name || row.driver_id) + "</b><br>" +
                     (row.job_id ? "Job: " + row.job_id + "<br>" : "No active job<br>") +
-                    (isLive ? "<span style=\"color:#1DB954\">\u25CF Live</span>" : "<span style=\"color:#888\">\u25CF " + mins + "m ago</span>") + "</div>";
+                    (isLive ? "<span style=\"color:#1DB954\">\u25CF Live</span>" : "<span style=\"color:#888\">\u25CF " + mins + "m ago</span>") +
+                    "<br><a href='https://www.waze.com/ul?ll=" + row.lat + "," + row.lon + "&navigate=yes' target='_blank' style='color:#33ccff;'>Open in Waze</a> \u00b7 " +
+                    "<a href='https://www.google.com/maps/dir/?api=1&destination=" + row.lat + "," + row.lon + "' target='_blank' style='color:#F0E000;'>Google Maps</a></div>";
             }
             poll();
             pollId = setInterval(poll, 10000);
@@ -2573,11 +2575,17 @@ function FleetMap() {
             trucks.map(function (t) {
                 var age = Date.now() - new Date(t.updated_at).getTime();
                 var isLive = age <= GPS_STALE_MS;
-                return React.createElement("div", { key: t.driver_id, style: { display: "flex", justifyContent: "space-between", alignItems: "center", background: C.card, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", marginBottom: 6 } },
-                    React.createElement("div", null,
-                        React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.white } }, t.driver_name || t.driver_id),
-                        React.createElement("div", { style: { fontSize: 10, color: C.dim } }, t.job_id ? "Job: " + t.job_id : "No active job")),
-                    React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: isLive ? C.green : C.faint } }, isLive ? "\u25CF LIVE" : "\u25CF " + Math.round(age / 60000) + "m ago"));
+                return React.createElement("div", { key: t.driver_id, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", marginBottom: 6 } },
+                    React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
+                        React.createElement("div", null,
+                            React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.white } }, t.driver_name || t.driver_id),
+                            React.createElement("div", { style: { fontSize: 10, color: C.dim } }, t.job_id ? "Job: " + t.job_id : "No active job")),
+                        React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: isLive ? C.green : C.faint } }, isLive ? "\u25CF LIVE" : "\u25CF " + Math.round(age / 60000) + "m ago")),
+                    React.createElement("div", { style: { display: "flex", gap: 6, marginTop: 8 } },
+                        React.createElement("a", { href: "https://www.waze.com/ul?ll=" + t.lat + "," + t.lon + "&navigate=yes", target: "_blank", rel: "noopener", style: { textDecoration: "none" } },
+                            React.createElement("span", { style: { fontSize: 10, background: "#33ccff", color: "#000", padding: "4px 10px", borderRadius: 6, fontWeight: 800 } }, "\uD83D\uDE97 Waze")),
+                        React.createElement("a", { href: "https://www.google.com/maps/dir/?api=1&destination=" + t.lat + "," + t.lon, target: "_blank", rel: "noopener", style: { textDecoration: "none" } },
+                            React.createElement("span", { style: { fontSize: 10, background: C.border, color: C.white, padding: "4px 10px", borderRadius: 6, fontWeight: 800 } }, "Google Maps"))));
             })));
 }
 // ── TRACKER ───────────────────────────────────────────────────────
@@ -3248,6 +3256,7 @@ function DriverPanel(props) {
                 React.createElement("div", { style: { flex: 1, background: C.surface, borderRadius: 8, padding: "10px 12px" } },
                     React.createElement("div", { style: { fontSize: 9, color: C.dim, textTransform: "uppercase", letterSpacing: 1 } }, "To"),
                     React.createElement("div", { style: { fontSize: 13, color: C.white, fontWeight: 600 } }, job.destination))),
+            (job.status === "Assigned" || job.status === "En Route" || job.status === "Arrived" || job.status === "In Progress" || job.status === "Loading" || job.status === "In Transit") && React.createElement(TruckMap, { jobId: job.id, job: job }),
             job.notes && React.createElement("div", { style: { background: C.surface, borderRadius: 8, padding: "10px 12px", marginBottom: 12, fontSize: 12, color: C.dim } }, "📝 " + job.notes),
             React.createElement("div", { style: { marginBottom: 14 } },
                 React.createElement("div", { style: { color: C.dim, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 8 } }, "Update Status"),
@@ -4624,7 +4633,7 @@ function ExceptionDashboard(props) {
 // ── DAILY PROFIT REPORT ───────────────────────────────────────────────
 function ProfitReport(props) {
     var jobs = props.jobs || [];
-    var expenses = loadExpenses();
+    var expenses = loadExpenses().filter(function (e) { return e.type !== "personal"; });
     var [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
     var [reportTab, setReportTab] = useState("daily");
     var [dateFrom, setDateFrom] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0]);
@@ -4923,14 +4932,55 @@ function AuditTrailView() {
         }));
 }
 // ── EXPENSE CAPTURE ───────────────────────────────────────────────────
+function expenseKey(e) { return [e.jobId || "", e.type || "", Number(e.amount) || 0, e.note || "", e.date || ""].join("|"); }
+var DEMO_EXPENSE_IDS = ["e1", "e2", "e3", "e4", "e5", "e6", "e7", "e8", "e9", "e10"];
 function ExpenseCapture(props) {
     var jobs = props.jobs || [];
-    var [expenses, setExpenses] = useState(loadExpenses); // instant local show, then replaced with real data
+    var isOwner = props.role === ROLES.OWNER;
+    var [expenses, setExpenses] = useState(loadExpenses); // instant local show, then merged with real synced data
     useEffect(function () {
+        // MERGE server + local (never replace) so older on-device expenses are never lost,
+        // and push anything not yet on the server up once. Demo-mode sample rows are never uploaded.
         loadExpensesFromServer().then(function (serverExpenses) {
-            if (serverExpenses.length > 0) setExpenses(serverExpenses);
+            var local = loadExpenses();
+            var serverKeys = {};
+            serverExpenses.forEach(function (e) { serverKeys[expenseKey(e)] = true; });
+            var merged = serverExpenses.slice();
+            local.forEach(function (e) {
+                if (serverKeys[expenseKey(e)]) return;
+                merged.push(e);
+                if (DEMO_EXPENSE_IDS.indexOf(String(e.id)) === -1) {
+                    fetch(SUPABASE_URL + "/rest/v1/expenses_real", {
+                        method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
+                        body: JSON.stringify({ job_id: e.jobId, type: e.type, amount: e.amount, note: e.note, expense_date: e.date })
+                    }).catch(function () {});
+                }
+            });
+            merged.sort(function (a, b) { return String(b.date || "").localeCompare(String(a.date || "")); });
+            if (merged.length > 0) { setExpenses(merged); try { localStorage.setItem("pl_expenses", JSON.stringify(merged)); } catch (err) { } }
         });
     }, []);
+    // Monthly personal bills — owner only, one tap, saved to Supabase like every other expense
+    var MONTHLY_PERSONAL = [
+        ["Laura - house", 1617], ["Company truck insurance", 987], ["Laura - car payment", 634], ["House supplies", 150],
+        ["Food", 1000], ["Pull-ups", 120], ["My phone", 45], ["Laura - phone", 108], ["Personal - other", 350]
+    ];
+    function addMonthlyPersonal() {
+        var monthTag = new Date().toISOString().slice(0, 7);
+        var today = new Date().toISOString().split("T")[0];
+        var list = expenses.slice();
+        var added = 0;
+        MONTHLY_PERSONAL.forEach(function (row) {
+            var exists = list.some(function (e) { return e.type === "personal" && e.note === row[0] + " (" + monthTag + ")"; });
+            if (exists) return;
+            var ne = { id: Date.now() + added, jobId: "", type: "personal", amount: row[1], note: row[0] + " (" + monthTag + ")", date: today };
+            list = [ne].concat(list);
+            saveExpenses(list);   // each call syncs the newest row to Supabase
+            added++;
+        });
+        setExpenses(list);
+        alert(added > 0 ? added + " personal bills added for " + monthTag + " and saved." : "This month's personal bills are already added.");
+    }
     var [f, setF] = useState({ jobId: "", type: "fuel", amount: "", note: "", date: new Date().toISOString().split("T")[0] });
     function set(k, v) { setF(function (p) { var n = Object.assign({}, p); n[k] = v; return n; }); }
     function addExpense() {
@@ -4944,16 +4994,18 @@ function ExpenseCapture(props) {
         if (f.jobId)
             addAuditEntry("Expense Added", f.jobId, "expense", "", "$" + f.amount + " (" + f.type + ")", props.role);
     }
-    var totalToday = expenses.filter(function (e) { return e.date === new Date().toISOString().split("T")[0]; }).reduce(function (s, e) { return s + e.amount; }, 0);
+    var visibleExpenses = expenses.filter(function (e) { return e.type !== "personal" || isOwner; });
+    var totalToday = visibleExpenses.filter(function (e) { return e.date === new Date().toISOString().split("T")[0]; }).reduce(function (s, e) { return s + (Number(e.amount) || 0); }, 0);
     return React.createElement("div", { style: { maxWidth: 600, margin: "0 auto" } },
         React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.white, marginBottom: 4 } }, "\uD83D\uDCB8 Expense Capture"),
         React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 20 } }, "Today's expenses: $" + totalToday.toFixed(2)),
+        isOwner && React.createElement("button", { onClick: addMonthlyPersonal, style: { width: "100%", background: "transparent", color: C.orange, border: "1px dashed " + C.orange, borderRadius: 9, padding: 11, fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", marginBottom: 14 } }, "\uD83C\uDFE0 Add This Month's Personal Bills (owner only)"),
         React.createElement(Card, { style: { marginBottom: 16 } },
             React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: C.white, marginBottom: 12 } }, "Add Expense"),
             React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" } },
                 React.createElement("div", { style: { marginBottom: 14 } },
                     React.createElement(Lbl, null, "Type"),
-                    React.createElement("select", { value: f.type, onChange: function (e) { set("type", e.target.value); }, style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 9, color: C.white, padding: "11px 14px", fontSize: 14, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box" } }, [["fuel", "⛽ Fuel"], ["tolls", "🛣 Tolls"], ["parking", "🅿️ Parking"], ["supplies", "🧰 Supplies"], ["personal", "🏠 Personal"], ["other", "📦 Other"]].map(function (o) { return React.createElement("option", { key: o[0], value: o[0] }, o[1]); }))),
+                    React.createElement("select", { value: f.type, onChange: function (e) { set("type", e.target.value); }, style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 9, color: C.white, padding: "11px 14px", fontSize: 14, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box" } }, [["fuel", "⛽ Fuel"], ["tolls", "🛣 Tolls"], ["parking", "🅿️ Parking"], ["supplies", "🧰 Supplies"], ["personal", "🏠 Personal"], ["other", "📦 Other"]].filter(function (o) { return o[0] !== "personal" || isOwner; }).map(function (o) { return React.createElement("option", { key: o[0], value: o[0] }, o[1]); }))),
                 React.createElement(TxtIn, { label: "Amount ($)", value: f.amount, onChange: function (v) { set("amount", v); }, type: "number", placeholder: "0.00" })),
             React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" } },
                 React.createElement("div", { style: { marginBottom: 14 } },
@@ -4966,7 +5018,7 @@ function ExpenseCapture(props) {
                     React.createElement("input", { type: "date", value: f.date, onChange: function (e) { set("date", e.target.value); }, style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 9, color: C.white, padding: "11px 14px", fontSize: 14, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box", colorScheme: "dark" } }))),
             React.createElement(TxtIn, { label: "Note", value: f.note, onChange: function (v) { set("note", v); }, placeholder: "e.g. Gas station on I-20, job supplies..." }),
             React.createElement(Btn, { onClick: addExpense, disabled: !f.amount, style: { width: "100%" } }, "Add Expense")),
-        React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, expenses.slice(0, 30).map(function (e) {
+        React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, visibleExpenses.slice(0, 30).map(function (e) {
             return React.createElement("div", { key: e.id, style: { background: C.surface, borderRadius: 8, padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" } },
                 React.createElement("div", null,
                     React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.white } },
@@ -4975,7 +5027,7 @@ function ExpenseCapture(props) {
                     React.createElement("div", { style: { fontSize: 10, color: C.dim } },
                         e.date,
                         e.jobId ? " · " + e.jobId : "")),
-                React.createElement("div", { style: { fontSize: 15, fontWeight: 800, color: C.red } }, "$" + e.amount.toFixed(2)));
+                React.createElement("div", { style: { fontSize: 15, fontWeight: 800, color: C.red } }, "$" + (Number(e.amount) || 0).toFixed(2)));
         })));
 }
 // ── BUSINESS ACCOUNT HISTORY ──────────────────────────────────────────
@@ -5627,6 +5679,7 @@ function PublicApp(props) {
                             else if (v === "uploadbol") window.location.href = "?upload-bol";
                             else if (v === "partnersignup") window.location.href = "?partner-signup";
                             else if (v === "partnerlogin") window.location.href = "?partner-login";
+                            else if (v === "stafflogin") window.location.href = "?staff-login";
                             e.target.value = ""; // reset back to placeholder after navigating
                         },
                         style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }
@@ -5638,7 +5691,8 @@ function PublicApp(props) {
                         React.createElement("option", { value: "os" }, "\uD83D\uDCBB Apply — POTENT OS"),
                         React.createElement("option", { value: "loadboard" }, "\uD83D\uDCCB Visit POTENT Loadboard"),
                         React.createElement("option", { value: "partnersignup" }, "\uD83E\uDD1D Company/Dispatch Partner Signup"),
-                        React.createElement("option", { value: "partnerlogin" }, "\uD83D\uDD11 Partner Login")),
+                        React.createElement("option", { value: "partnerlogin" }, "\uD83D\uDD11 Partner Login"),
+                        React.createElement("option", { value: "stafflogin" }, "\uD83D\uDC64 Staff / Dispatch Login")),
                     React.createElement(LangSwitcher, { lang: lang, changeLang: changeLang }),
                     React.createElement("a", { href: "tel:" + DISPATCH_PHONE_DISPLAY.replace(/\D/g,""), title: "Dispatch & Sales: " + DISPATCH_EMAIL, style: { textDecoration: "none", background: C.orange, color: "#000", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" } }, "📞 " + DISPATCH_PHONE_DISPLAY),
                     React.createElement("a", { href: "tel:" + PHONE_NUMBER, title: "Owner: " + BUSINESS_EMAIL, style: { textDecoration: "none", background: "transparent", border: "1px solid " + C.orange + "66", color: C.orange, borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" } }, "👑 " + PHONE_DISPLAY))),
@@ -6979,6 +7033,7 @@ function Root() {
     var isCompanyLoadsIntake = _href.indexOf("have-loads") > -1;
     var isPartnerSignup = _href.indexOf("partner-signup") > -1;
     var isPartnerLogin = _href.indexOf("partner-login") > -1;
+    var isStaffLogin = _href.indexOf("staff-login") > -1;
     var isGetStarted = _href.indexOf("get-started") > -1;
     var isCustomerBOLUpload = _href.indexOf("upload-bol") > -1;
     if (isPOSAdmin)
@@ -7016,6 +7071,8 @@ function Root() {
     );
     if (isAdmin)
         return React.createElement("div",null, offlineBanner, React.createElement(AdminDashboard, { jobs: jobs, onUpdateStatus: updateJob, onUpdatePayment: updateJobPaymentStatus, onAddJob: addJob, onLogout: logout, gasPPG: gasPPG, dieselPPG: dieselPPG, blockedDates: blockedDates, onToggleBlock: toggleBlockDate, role: adminRole, currentUser: currentUser, onApplyAccessorial: addAccessorialToJobPrice }));
+    if (isStaffLogin)
+        return React.createElement(AdminLogin, { onLogin: login });
     if (showLogin)
         return React.createElement(AdminLogin, { onLogin: login, key: "login-" + nameSyncVersion });
     return React.createElement("div", null,
@@ -7032,7 +7089,7 @@ function Root() {
 // ═══════════════════════════════════════════════════════════════════
 function AdvancedReports(props) {
     var jobs = props.jobs || [];
-    var expenses = loadExpenses();
+    var expenses = loadExpenses().filter(function (e) { return e.type !== "personal"; });
     var [reportTab, setReportTab] = useState("overview");
     var [dateFrom, setDateFrom] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0]);
     var [dateTo, setDateTo] = useState(new Date().toISOString().split("T")[0]);
@@ -8862,6 +8919,7 @@ function LeadsBoard(props) {
             React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 20 } },
                 "Calling as ",
                 React.createElement("strong", { style: { color: C.orange } }, callerName)),
+            React.createElement(BulkLeadImportButton, null),
             React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 } }, [["Not Called", stats.notContacted, C.white], ["Follow-Ups", stats.followUps, C.orange], ["Interested", stats.interested, C.green], ["Booked", stats.booked, "#1DB954"]].map(function (s) {
                 return React.createElement(Card, { key: s[0], style: { padding: "18px 16px" } },
                     React.createElement("div", { style: { fontSize: 11, color: C.dim, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 } }, s[0]),
@@ -14138,9 +14196,9 @@ function MandatoryFaceCapture(props) {
     if (!camConsent) {
         return React.createElement("div", { style: { textAlign: "center", padding: "40px 20px", maxWidth: 420, margin: "0 auto" } },
             React.createElement("div", { style: { fontSize: 40, marginBottom: 10 } }, "\uD83D\uDCF7"),
-            React.createElement("div", { style: { fontSize: 16, fontWeight: 900, color: C.white, marginBottom: 8 } }, "Photo Required To Continue"),
-            React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 20, lineHeight: 1.6 } }, "We take one photo of whoever is actually filling this out. No camera access, no application \u2014 this protects both of us from scammers using someone else's information."),
-            React.createElement("button", { onClick: function () { setCamConsent(true); }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Allow Camera & Continue"));
+            React.createElement("div", { style: { fontSize: 16, fontWeight: 900, color: C.white, marginBottom: 8 } }, "Identity Verification Required"),
+            React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 20, lineHeight: 1.6 } }, "By continuing, you agree to POTENT's Identity Verification Terms: that the information you provide is accurate, and that you consent to identity verification as part of onboarding. See full terms on the next screen."),
+            React.createElement("button", { onClick: function () { setCamConsent(true); }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "I Agree & Continue"));
     }
 
     if (camError) {
@@ -15762,6 +15820,138 @@ function TruckJobPricingPanel() {
                         React.createElement("div", { style: { fontSize: 9, color: C.dim, textTransform: "uppercase" } }, m[0]),
                         React.createElement("div", { style: { fontSize: 16, fontWeight: 900, color: C.orange, marginTop: 2 } }, m[1]));
                 }))));
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// BULK LEAD IMPORT — the real 97-company list, one-tap import into
+// the actual leads table. Runs once, skips anything already imported.
+// ═══════════════════════════════════════════════════════════════════
+var BULK_LEADS_IMPORT = [
+    ["QuickBox","3PL / Fulfillment","College Park","470-945-0942","atlanta@quickbox.com"],
+    ["Fulton Warehouse","3PL / Warehousing","Atlanta","404-349-0091","customerservice@fultonwarehouse.com"],
+    ["One Step Logistics","3PL / Distribution","Atlanta","404-537-4488","info@onesteplogistics.com"],
+    ["All Points Third-Party Logistics","3PL / Fulfillment","Atlanta","404-352-5508","info@allpointsatl.com"],
+    ["MWD Logistics","3PL / Warehouse","Atlanta","419-544-0281","chidonna.stephens@mwdlogistics.com"],
+    ["Averitt Distribution & Fulfillment","Distribution / Fulfillment","Atlanta","877-339-3530","distribution@averitt.com"],
+    ["Porter Logistics","3PL / Warehouse","Atlanta","404-574-4641",""],
+    ["Warehouse Basics","3PL / Warehouse","Atlanta","404-346-1848",""],
+    ["PSI Media & Fulfillment Solutions","Fulfillment / Warehouse","Norcross","770-417-1115",""],
+    ["RMK Services","Warehouse / Freight Handling","Atlanta","678-794-9630",""],
+    ["ASD Logistics","3PL / Distribution","Atlanta","404-349-3800",""],
+    ["HWC Logistics","3PL / Distribution","College Park","678-705-6002","info@hwclogistics.com"],
+    ["HWC Logistics — Savannah","3PL / Distribution","Pooler","912-748-9506","savannah@hwclogistics.com"],
+    ["FSI — Fulfillment Strategies International","3PL / Fulfillment","Lithia Springs","800-979-9012",""],
+    ["East Coast Warehouse & Distribution","Temperature-Controlled / Warehouse","Savannah","912-348-4012","sales@eastcoastwarehouse.com"],
+    ["O'Neill Logistics","Warehouse / Distribution","Bloomingdale","912-400-8660",""],
+    ["STG USA — Savannah","3PL / Transload","Savannah","912-964-1736","SAVStationManager@stgusa.com"],
+    ["DX Print & Mail Fulfillment","Fulfillment / Distribution","Statesboro","770-815-5113","emcelveen@dxprintmail.com"],
+    ["Goggin Warehousing","Warehouse","Atlanta","404-699-5999","plangiotti@gogginwarehousing.com"],
+    ["M&W Distribution Services","Distribution","Atlanta","404-344-8902","jgarger@mwlgi.com"],
+    ["Peeples Industries","Warehouse / Distribution","Savannah","912-547-9964","jwestberry@peeplesind.com"],
+    ["RBW Logistics","Logistics / Warehouse","Augusta","877-724-0106","frank_anderson@rbwlogistics.com"],
+    ["Total Warehouse Logistics","Warehouse / Logistics","Atlanta","404-349-4450","wbrooks@twilogistics.com"],
+    ["Union Compress Warehouse","Warehouse","Cordele","864-516-1980","ecramer@ucwlogistics.com"],
+    ["CWC","Commercial Furniture / FF&E","Atlanta","770-493-8200","info@c-w-c.com"],
+    ["Corporate Environments","Commercial Furniture / Workplace","Atlanta","404-679-8999","info@ceofga.com"],
+    ["TriMarc Installation","FF&E Installation","Peachtree Corners","770-447-9308","customerService@atldesigngroup.com"],
+    ["Caudelle Interior Installations","FF&E / Installation","Atlanta","404-355-6878","easter@caudelle.com"],
+    ["Preferred Receiving & Installation","FF&E / Receiving","Atlanta","404-228-7260","jlong@preferredri.com"],
+    ["Atlanta Seating Concepts","Commercial Seating / FF&E","Atlanta","678-654-8316","atlseatingconcepts@gmail.com"],
+    ["Exact Distribution","FF&E / Distribution","Marietta","404-908-0192","info@exactdistribution.com"],
+    ["Arch Receiving","FF&E Receiving","Athens","706-543-7970",""],
+    ["Main Solutions","Commercial Office Furniture","Atlanta","678-244-8100",""],
+    ["Absolute FF&E","FF&E","Atlanta","702-772-5295","Tim@absoluteffe.com"],
+    ["5 Star Office Furniture","Contract Office Furniture","Avondale Estates","404-496-4182","info@5starofficefurniture.com"],
+    ["Atlanta Office Furniture","Commercial Office Furniture","Atlanta","770-734-9100","sales@atlofficefurniture.com"],
+    ["Georgia Office Interiors","Office Furniture / Installation","Dawsonville","678-851-6307",""],
+    ["Office Furniture Inc.","Office Furniture / Relocation","Atlanta","404-344-0340","Patrick@officefurnitureinc.com"],
+    ["Office Interiors Atlanta","Commercial Furniture","Atlanta","770-804-1589","info@oiatlanta.com"],
+    ["OED Reps","Corporate / Healthcare / Hospitality FF&E","Atlanta","770-984-9047","dana@oedreps.com"],
+    ["JR + Associates","Commercial Furnishings","Atlanta","404-274-5623","info@jrareps.com"],
+    ["CORT","Office Furniture / Production Furniture","Atlanta","678-909-0170",""],
+    ["Loy's Office Interiors","Office Furniture","LaGrange","706-884-1723","customerservice@loysoffice.com"],
+    ["First Office Furniture ATL","Office Furniture","Atlanta","770-841-2804","jcorc@fofatl.com"],
+    ["Atlanta Office Liquidators / AOLI","Office Furniture / Liquidation","Atlanta","404-505-9623","veevee@aoliatlanta.com"],
+    ["Advanced Office Solutions","Office Furniture","Gainesville","770-533-9595","bperry@aosonline.com"],
+    ["Advantage Office Solutions","Office Furniture","Villa Rica","770-830-6868","mark@usadvantage.net"],
+    ["Augusta Office Solutions","Office Furniture","Augusta","706-305-3971",""],
+    ["McGarity's","Office Furniture","Gainesville","770-536-9852","toddpennington@mcgartys.com"],
+    ["Minton Jones","Office Furniture","Norcross","770-449-4787","bpugh@mintonjones.com"],
+    ["Office Creations","Office Furniture","Norcross","404-392-2064","Jodi.borges-bradley@officecreations.net"],
+    ["Office Furniture Expo","Office Furniture","Atlanta","770-455-0440","karl@ofexpo.com"],
+    ["Perimeter Office Products","Office Furniture","Lawrenceville","770-689-1900","Ken.clark@perimeteroffice.com"],
+    ["Ponders O/S","Office Furniture","Thomasville","229-226-3341","roger@ponders.com"],
+    ["Russell Ventures","Office Furniture","Acworth","678-574-9805","richard@russellventures.com"],
+    ["Sheffield Office Products","Office Furniture","Duluth","770-623-4452","claires@sheffieldop.com"],
+    ["Office Interiors Atlanta — Eurotech Dealer","Office Furniture","Atlanta","770-804-1589","MKamenca@OIAtlanta.com"],
+    ["VIP Office","Office Furniture","Hinesville","912-877-5222","april@vipoffice.com"],
+    ["Complete Upholstery","Custom Automotive Upholstery","Commerce","770-318-3214",""],
+    ["Banister's Upholstery","Auto / Boat Upholstery","East Point","404-767-4396",""],
+    ["Marietta Auto Trim","Automotive Interiors","Marietta","770-590-8746",""],
+    ["Terry Taylor Custom Interiors","Custom Upholstery / Commercial","Atlanta","404-352-1893","TRTaylor@bellsouth.net"],
+    ["Atlanta Stitchworks","Custom Automotive Interiors","Atlanta","404-503-3949","atlantastitchworks@gmail.com"],
+    ["Romero's Auto Upholstery","Custom Automotive Interiors","Loganville","678-242-8570","Romeros1217@gmail.com"],
+    ["W.B. Custom Upholstery","Automotive Upholstery","Silver Creek","706-591-2265","WBCustomupholstery1@gmail.com"],
+    ["American Radio","Automotive Customization","Roswell","770-458-8585","sales@americanradio.net"],
+    ["Total Appearance","Automotive Interiors","Atlanta","770-717-0734",""],
+    ["MRT Group","Upholstery / Automotive / Marine","Atlanta","407-724-2164","mrtgroupga@gmail.com"],
+    ["Jean & Sons Upholsteryland","Automotive / Furniture Upholstery","Atlanta","404-244-9334","dcbowers55@msn.com"],
+    ["Mags Upholstery","Furniture / Auto / Marine Upholstery","Marietta","770-431-0105",""],
+    ["Kees Customz","Custom Auto Interiors","Mableton","478-777-6177",""],
+    ["Super Upholstery","Upholstery / Auto / Marine","Marietta","770-426-3165","upholsterysuperteam@gmail.com"],
+    ["SR Auto Upholstery","Automotive Upholstery","Norcross","678-707-0414",""],
+    ["Crush Customs Leather Seats","Automotive Upholstery","Marietta","770-989-1818",""],
+    ["Don Carleon Auto Upholstery","Automotive Upholstery","Morrow","404-822-6984",""],
+    ["Gulf Tire Distributors","Wholesale Tires / Wheels","Tucker","770-723-0089","info@gulftires.com"],
+    ["USA Wheel & Tire Outlet","Tires / Wheels","Morrow","770-892-6700","shawnusa.d@gmail.com"],
+    ["360 Tire Retail","Tire Distribution","Atlanta","470-418-0893","contact@360tireretail.com"],
+    ["Western Wheel & Tire","Wholesale Wheels / Tires","Atlanta","404-351-5176",""],
+    ["American Tire Distributors","Wholesale Tire Distribution","Tucker","770-414-9924",""],
+    ["NTW — National Tire Wholesale","Wholesale Tire Distribution","Norcross","770-447-1527",""],
+    ["Tireco Distributors","Wholesale Tires","Doraville","770-447-5110",""],
+    ["Harris Tire","Tire Distribution","Atlanta","404-696-3115",""],
+    ["Restaurant Equipment Market — REM","Restaurant Equipment / Furniture","Atlanta","770-455-0069","sales@rematlanta.com"],
+    ["Littco Restaurant Supply","Restaurant Equipment","Norcross","678-978-1210","order@littco.com"],
+    ["Restaurant Solutions Inc.","Restaurant Equipment","Marietta","770-421-1999","sales@restaurantsolutionsinc.com"],
+    ["NMB Restaurant Equipment","Restaurant Equipment","Atlanta","404-762-9906","contact@nmbrestaurantequipment.com"],
+    ["NES of Georgia","Restaurant Equipment","Lawrenceville","678-336-1672","sales@nesofga.com"],
+    ["Atlanta Culinary Equipment","Commercial Kitchen Equipment","Norcross","770-908-3838","info@atlequipment.com"],
+    ["Atlanta's Better Kitchen Equipment","Commercial Kitchen Equipment","Fayetteville","678-920-2739","atlantasbetterkitchenequipment@gmail.com"],
+    ["PDI Atlanta / Peachtree Distributing","Restaurant Parts / Distribution","Atlanta","404-351-6442","sales@pdiatlanta.com"],
+    ["USA Equipment Direct","Commercial Restaurant Equipment","Atlanta","404-863-9232","orders@usaequipmentdirect.com"],
+    ["Atlanta Restaurant Equipment","Used/New Restaurant Equipment","Norcross","770-925-4858","harry@atlantarestaurantequipment.net"],
+    ["Georgia Flooring Wholesale","Flooring Wholesale","Buford","678-691-3489","chrisj@georgiaflooringwholesale.com"],
+    ["Rustic Wood Floor Supply","Wholesale Flooring","Norcross","678-691-0533","norcross@rusticwoodfloorsupply.com"],
+    ["Perdomo Distributor — Atlanta","HVAC Wholesale","Atlanta","404-401-0483","atlanta@hvac-perdomo.com"],
+    ["JEDCO Supply","HVAC Supply / Distribution","Suwanee","678-608-2858","sales@jedcosupply.com"],
+];
+
+function BulkLeadImportButton() {
+    var [importing, setImporting] = React.useState(false);
+    var [result, setResult] = React.useState(null);
+
+    function runImport() {
+        setImporting(true); setResult(null);
+        var rows = BULK_LEADS_IMPORT.map(function (l) {
+            return { name: l[0], company: l[0], category: l[1], city: l[2], state: "GA", phone: l[3], email: l[4] || null, source: "Master Lead List Import", priority: "New" };
+        });
+        fetch(SUPABASE_URL + "/rest/v1/leads", {
+            method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
+            body: JSON.stringify(rows)
+        }).then(function (res) {
+            setImporting(false);
+            setResult(res.ok ? "\u2705 " + rows.length + " leads imported. Check the Leads tab." : "\u274C Import failed \u2014 server error. Try again.");
+        }).catch(function () { setImporting(false); setResult("\u274C Import failed \u2014 check your connection and try again."); });
+    }
+
+    return React.createElement("div", { style: { background: "#1a1400", border: "1px solid " + C.orange + "66", borderRadius: 10, padding: "14px 16px", marginBottom: 16 } },
+        React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.orange, marginBottom: 4 } }, "\uD83D\uDCE5 Bulk Import: 97 Real Leads"),
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 10 } }, "3PL, FF&E, upholstery, tire, restaurant equipment, flooring, HVAC \u2014 the full master list, one tap."),
+        React.createElement("button", { onClick: runImport, disabled: importing, style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "10px 18px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, importing ? "Importing..." : "Import All 97 Leads"),
+        result && React.createElement("div", { style: { fontSize: 11, marginTop: 8, color: result.indexOf("\u2705") === 0 ? C.green : C.red } }, result));
 }
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
