@@ -86,9 +86,33 @@ select{color-scheme:dark;}
 .bank-notice{background:var(--blue-bg);border:1px solid #1a3a55;border-radius:2px;padding:12px;margin-top:10px;font-size:11px;color:var(--blue);line-height:1.6;}
 .enterprise-box{background:var(--gold-bg);border:1px solid #3a3410;border-radius:2px;padding:18px;text-align:center;}
 @media(max-width:500px){.g2{grid-template-columns:1fr;}.tier-price{font-size:1.1rem;}.pay-method{flex-direction:column;}}
+.tourOverlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:99998;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:20px;}
+.tourCard{background:#141410;border:1px solid #f0e00066;border-radius:14px;padding:24px;max-width:380px;width:100%;}
+.tourBars{display:flex;gap:4px;margin-bottom:16px;}
+.tourBar{flex:1;height:3px;border-radius:2px;background:#2c2c24;}
+.tourBar.active{background:#f0e000;}
+.tourStepLabel{font-size:10px;color:#a9a9a0;text-transform:uppercase;margin-bottom:6px;}
+.tourTitle{font-size:17px;font-weight:700;color:#F2F2F2;margin-bottom:10px;font-family:"Oswald",sans-serif;}
+.tourBody{font-size:13px;color:#ccc;line-height:1.6;margin-bottom:22px;}
+.tourFooter{display:flex;justify-content:space-between;align-items:center;}
+.tourSkip{background:transparent;color:#a9a9a0;border:none;font-size:12px;cursor:pointer;}
+.tourNext{background:#f0e000;color:#000;border:none;border-radius:8px;padding:8px 20px;font-size:12px;font-weight:700;cursor:pointer;}
 </style>
 </head>
 <body>
+
+<div class="tourOverlay" id="tourOverlay" style="display:none;">
+  <div class="tourCard">
+    <div class="tourBars" id="tourBars"></div>
+    <div class="tourStepLabel" id="tourStepLabel"></div>
+    <div class="tourTitle" id="tourTitle"></div>
+    <div class="tourBody" id="tourBody"></div>
+    <div class="tourFooter">
+      <button class="tourSkip" onclick="closeLicenseTour()">Skip</button>
+      <button class="tourNext" onclick="licenseTourNext()" id="tourNextBtn">Next</button>
+    </div>
+  </div>
+</div>
 
 <div class="hero">
   <div class="brand">POTENT PRÄDƏKT®</div>
@@ -381,6 +405,44 @@ select{color-scheme:dark;}
 </div>
 
 <script>
+// Real tour — same engine pattern as Driver Onboarding, shows once per device.
+var LICENSE_TOUR_STEPS = [
+  { title: "Welcome", body: "This walks you through licensing POTENT OS for your own fleet — pick a tier, sign the real agreement, and pay. Takes about 5 minutes." },
+  { title: "Pick Your Tier", body: "Fleet size determines your tier and price. Every tier includes the same real features — Offline Mode, Live GPS, Payroll, unlimited jobs." },
+  { title: "Real Agreement, Not Boilerplate", body: "You'll read and sign the actual license agreement before payment — real terms, including Flex Pay installment details if you choose that option." },
+  { title: "Payment", body: "Card or Flex Pay (20% down, 0% interest). Once paid, you own the license outright — no recurring per-truck fee, ever." },
+];
+var licenseTourStepIdx = 0;
+function startLicenseTour(){
+  try { if (localStorage.getItem('pl_tour_seen_license-signup') === 'yes') return; } catch(e){}
+  licenseTourStepIdx = 0;
+  renderLicenseTourStep();
+  document.getElementById('tourOverlay').style.display = 'flex';
+}
+function renderLicenseTourStep(){
+  var step = LICENSE_TOUR_STEPS[licenseTourStepIdx];
+  document.getElementById('tourStepLabel').textContent = 'Step ' + (licenseTourStepIdx+1) + ' of ' + LICENSE_TOUR_STEPS.length;
+  document.getElementById('tourTitle').textContent = step.title;
+  document.getElementById('tourBody').textContent = step.body;
+  document.getElementById('tourNextBtn').textContent = licenseTourStepIdx < LICENSE_TOUR_STEPS.length - 1 ? 'Next' : 'Got It';
+  var bars = document.getElementById('tourBars');
+  bars.innerHTML = '';
+  LICENSE_TOUR_STEPS.forEach(function(s, i){
+    var b = document.createElement('div');
+    b.className = 'tourBar' + (i <= licenseTourStepIdx ? ' active' : '');
+    bars.appendChild(b);
+  });
+}
+function licenseTourNext(){
+  if (licenseTourStepIdx < LICENSE_TOUR_STEPS.length - 1) { licenseTourStepIdx++; renderLicenseTourStep(); }
+  else closeLicenseTour();
+}
+function closeLicenseTour(){
+  document.getElementById('tourOverlay').style.display = 'none';
+  try { localStorage.setItem('pl_tour_seen_license-signup', 'yes'); } catch(e){}
+}
+window.addEventListener('DOMContentLoaded', startLicenseTour);
+
 // ── STATE ─────────────────────────────────────────────────────────
 var S = { tier:'Starter', price:14500, fleet:'1–10 trucks',
   company:'', name:'', title:'', email:'', phone:'', city:'', state:'GA',
