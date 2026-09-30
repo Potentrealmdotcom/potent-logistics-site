@@ -5332,6 +5332,8 @@ function AdminDashboard(props) {
                     React.createElement("div", { style: { fontSize: 9, color: props.role === ROLES.OWNER ? C.orange : props.role === ROLES.DRIVER ? C.green : C.blue, fontWeight: 600, textTransform: "capitalize", letterSpacing: 1 } }, props.role),
                     React.createElement(Btn, { variant: "muted", onClick: props.onLogout, style: { padding: "4px 10px", fontSize: 10 } }, tA("signOut"))))),
         React.createElement("div", { style: { padding: "20px 14px 90px", maxWidth: 740, margin: "0 auto" } },
+            props.role === ROLES.OWNER && !(props.currentUser && props.currentUser.isDecoy) && React.createElement(FirstTimeTour, { tourId: "admin-dashboard", steps: ADMIN_DASHBOARD_TOUR_STEPS }),
+            props.role === ROLES.OWNER && !(props.currentUser && props.currentUser.isDecoy) && React.createElement(GettingStartedChecklist, { jobs: props.jobs }),
             tab === "quote" && React.createElement(PhoneQuotePanel, { onAddJob: props.onAddJob, gasPPG: props.gasPPG, role: props.role, currentUser: props.currentUser }),
             tab === "jobs" && (props.currentUser && props.currentUser.isDecoy
                 ? React.createElement(DecoyJobsView, null)
@@ -5461,6 +5463,8 @@ function AdminLogin(props) {
     var [camStream, setCamStream] = useState(null);
     var [camError, setCamError] = useState(false);
     var videoRef = React.useRef(null);
+    var camStreamRef = React.useRef(null); // always holds the live stream, immune to stale closures in setTimeout-based capture sequences
+    React.useEffect(function () { camStreamRef.current = camStream; }, [camStream]);
 
     function grantCamera() {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -5494,16 +5498,31 @@ function AdminLogin(props) {
 
     function capturePhoto() {
         return new Promise(function (resolve) {
-            if (!camStream || !videoRef.current) { resolve(null); return; }
-            try {
-                var canvas = document.createElement("canvas");
-                canvas.width = 320; canvas.height = 240;
-                canvas.getContext("2d").drawImage(videoRef.current, 0, 0, 320, 240);
-                canvas.toBlob(function (blob) {
-                    if (!blob) { resolve(null); return; }
-                    uploadLoginPhoto(blob).then(resolve);
-                }, "image/jpeg", 0.7);
-            } catch (e) { resolve(null); }
+            var liveStream = camStreamRef.current; // real, current stream — not a potentially stale closure value
+            if (!liveStream || !videoRef.current) { resolve(null); return; }
+            var video = videoRef.current;
+            // Real fix — a freshly granted camera stream often has zero actual
+            // video frames ready the instant getUserMedia resolves. Capturing
+            // before readyState reaches HAVE_CURRENT_DATA (2) produces a
+            // black/blank frame. Wait for a real frame, with a hard cap so
+            // this never hangs forever on a genuinely broken camera.
+            function doCapture() {
+                try {
+                    var canvas = document.createElement("canvas");
+                    canvas.width = 320; canvas.height = 240;
+                    canvas.getContext("2d").drawImage(video, 0, 0, 320, 240);
+                    canvas.toBlob(function (blob) {
+                        if (!blob) { resolve(null); return; }
+                        uploadLoginPhoto(blob).then(resolve);
+                    }, "image/jpeg", 0.7);
+                } catch (e) { resolve(null); }
+            }
+            if (video.readyState >= 2) { doCapture(); return; }
+            var waited = 0;
+            var checkInterval = setInterval(function () {
+                waited += 100;
+                if (video.readyState >= 2 || waited >= 2000) { clearInterval(checkInterval); doCapture(); }
+            }, 100);
         });
     }
 
@@ -5634,8 +5653,8 @@ function AdminLogin(props) {
                             go();
                         },
                         disabled: !pw, style: { width: "100%" }
-                    }, !camConsent ? "Allow Camera To Continue" : camError ? "\u26A0 Camera Required \u2014 Try Again" : "Sign In \u2192"),
-                    camError && React.createElement("div", { style: { color: C.red, fontSize: 11, marginTop: 8, textAlign: "center" } }, "Camera access is required to sign in. Please allow it in your browser and try again."),
+                    }, !camConsent ? "Allow Camera To Continue" : camError ? "\u26A0 Camera Needed \u2014 Try Again" : "Sign In \u2192"),
+                    camError && React.createElement("div", { style: { color: C.red, fontSize: 11, marginTop: 8, textAlign: "center" } }, "Camera access is needed for documents, BOL uploads, and photo verification inside the app. Please allow it in your browser and try again."),
                     React.createElement("div", { style: { fontSize: 9, color: "#444", textAlign: "center", marginTop: 8 } }, "By clicking Sign In, you accept the Terms of Access.")))));
 }
 // ── PUBLIC APP ────────────────────────────────────────────────────
@@ -5650,6 +5669,7 @@ function PublicApp(props) {
     var changeLang = txObj.changeLang;
     function startBooking(city) { setBookCity(city); setTab("book"); }
     return React.createElement("div", { style: { minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
+        React.createElement(FirstTimeTour, { tourId: "homepage", steps: HOMEPAGE_TOUR_STEPS }),
         showCustomQuote && React.createElement(CustomQuoteModal, { onClose: function () { setShowCustomQuote(false); } }),
         showPartnerApp && React.createElement(PartnerApplicationModal, { onClose: function () { setShowPartnerApp(false); } }),
         React.createElement("div", { style: { borderBottom: "1px solid " + C.border, position: "sticky", top: 0, background: C.black, zIndex: 200 } },
@@ -5817,7 +5837,7 @@ function PublicApp(props) {
                         React.createElement("video", { controls: true, playsInline: true, style: { width: "100%", borderRadius: 8, background: "#000" } },
                             React.createElement("source", { src: "/potent-logo-reveal.mp4", type: "video/mp4" }))),
                     React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" } },
-                        React.createElement("a", { href: "/POTENT-License-Signup.html", style: { textDecoration: "none" } },
+                        React.createElement("a", { href: "/POTENT-OS-Landing-Page.html", style: { textDecoration: "none" } },
                             React.createElement("button", { style: { background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: "13px 32px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCBB See POTENT OS Pricing")),
                         React.createElement("a", { href: "?apply", style: { textDecoration: "none" } },
                             React.createElement("button", { style: { background: "transparent", color: C.orange, border: "1.5px solid " + C.orange, borderRadius: 9, padding: "13px 32px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCCB Apply for Early Access"))))),
@@ -6621,7 +6641,9 @@ function LicenseManager() {
                     err && React.createElement("div", { style: { color: C.red, fontSize: 12, marginBottom: 10 } }, "\u26A0 Incorrect password."),
                     React.createElement(Btn, { onClick: doLogin, disabled: !pw, style: { width: "100%" } }, "Enter License Manager \u2192"))));
     if (loading)
-        return React.createElement("div", { style: { minHeight: "100vh", background: C.black, display: "flex", alignItems: "center", justifyContent: "center", color: C.dim, fontFamily: "'DM Sans','Segoe UI',sans-serif" } }, "Loading...");
+        return React.createElement("div", { style: { minHeight: "100vh", background: C.black, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: C.dim, fontFamily: "'DM Sans','Segoe UI',sans-serif", gap: 16 } },
+            React.createElement("img", { src: "/potent-griffin-icon.png", alt: "POTENT", style: { width: 72, height: 72 } }),
+            React.createElement(LoadingSpinner, { label: "" }));
     return React.createElement("div", { style: { minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
         React.createElement("div", { style: { borderBottom: "1px solid " + C.border, padding: "12px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: C.black, zIndex: 100 } },
             React.createElement("div", null,
@@ -7643,7 +7665,7 @@ function CustomerPortal(props) {
                         React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
                             React.createElement("div", null,
                                 React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.white } }, "Autopay"),
-                                React.createElement("div", { style: { fontSize: 10, color: C.dim, marginTop: 2 } }, autopayEnabled ? "Enabled \u2014 future invoices charge automatically" : "Off \u2014 you approve every payment manually")),
+                                React.createElement("div", { style: { fontSize: 10, color: C.dim, marginTop: 2 } }, autopayEnabled ? "Enabled \u2014 on file to be auto-charged once autopay billing goes live" : "Off \u2014 you approve every payment manually")),
                             React.createElement("button", { onClick: toggleAutopay, disabled: autopaySaving, style: { background: autopayEnabled ? C.green : C.border, color: autopayEnabled ? "#000" : C.dim, border: "none", borderRadius: 20, padding: "6px 16px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, autopaySaving ? "..." : autopayEnabled ? "ON" : "OFF")),
                         autopayEnabled && React.createElement("div", { style: { fontSize: 9, color: C.faint, marginTop: 8 } }, "Authorized " + new Date().toLocaleDateString() + ". You can turn this off anytime.")),
                     payingJob && React.createElement("div", { style: { background: C.card, border: "1px solid " + C.orange + "66", borderRadius: 10, padding: "16px", marginTop: 10 } },
@@ -8929,7 +8951,8 @@ function LeadsBoard(props) {
             React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 20 } },
                 "Calling as ",
                 React.createElement("strong", { style: { color: C.orange } }, callerName)),
-            React.createElement(BulkLeadImportButton, null),
+            React.createElement(ContextualTooltip, { tooltipId: "import-leads-button", text: "\uD83D\uDC46 Start here \u2014 one tap loads 97 real companies to call." },
+                React.createElement(BulkLeadImportButton, null)),
             React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 } }, [["Not Called", stats.notContacted, C.white], ["Follow-Ups", stats.followUps, C.orange], ["Interested", stats.interested, C.green], ["Booked", stats.booked, "#1DB954"]].map(function (s) {
                 return React.createElement(Card, { key: s[0], style: { padding: "18px 16px" } },
                     React.createElement("div", { style: { fontSize: 11, color: C.dim, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 } }, s[0]),
@@ -9416,7 +9439,7 @@ function removeBonus(name){
             React.createElement("div", { style: { padding: "12px 16px", borderBottom: "1px solid " + C.border } },
                 React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.white } }, "Full Rankings"),
                 React.createElement("div", { style: { fontSize: 10, color: C.dim, marginTop: 2 } }, "Score = Revenue(\u00F710) + Jobs Booked(\u00D7200) + Lead Booked(\u00D750) + Interested(\u00D720) + Follow-Up(\u00D75) + Calls(\u00D71)")),
-            loading ? React.createElement("div", { style: { padding: 20, textAlign: "center", color: C.dim, fontSize: 12 } }, "Loading...")
+            loading ? React.createElement(LoadingSpinner, { padding: 20 })
                 : reps.length === 0 ? React.createElement("div", { style: { padding: 20, textAlign: "center", color: C.dim, fontSize: 12 } }, "No activity logged yet. Start calling leads to appear on the board.")
                     : reps.map(function (rep, i) {
                         var isMe = currentUser && currentUser.name === rep.name;
@@ -10785,7 +10808,7 @@ function OSPipeline(props) {
         React.createElement("div", { style: { display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 14 } }, [["all", "All"], ["cold_1", "Cold"], ["followup_1", "Follow-Up"], ["warm_2", "Warm"], ["hot_3", "Hot"], ["zoom", "Zoom"], ["closed_won", "Won"], ["closed_lost", "Lost"]].map(function (f) {
             return React.createElement("button", { key: f[0], onClick: function () { setStageFilter(f[0]); }, style: { background: stageFilter === f[0] ? C.orange : "transparent", color: stageFilter === f[0] ? "#000" : C.dim, border: "1px solid " + (stageFilter === f[0] ? C.orange : C.border), borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, f[1]);
         })),
-        loading && React.createElement("div", { style: { textAlign: "center", padding: 40, color: C.dim } }, "Loading..."),
+        loading && React.createElement(LoadingSpinner, { padding: 40 }),
         !loading && filtered.length === 0 && React.createElement("div", { style: { textAlign: "center", padding: 40, color: C.dim } }, "No prospects yet. Add your first one."),
         filtered.map(function (p) {
             var ver3 = p.version || getVersion(Number(p.fleet_size) || 0);
@@ -12783,8 +12806,8 @@ function RecurringRouteForm(props) {
     }
 
     function submit() {
-        if (!f.customerName || !f.phone || !f.origin || !f.destination || f.days.length === 0 || !f.startDate) {
-            alert("Please fill in customer info, route, at least one day, and a start date.");
+        if (!f.customerName || !f.phone || !f.email || !f.origin || !f.destination || f.days.length === 0 || !f.startDate) {
+            alert("Please fill in customer info (including email — required so they can pay from their account), route, at least one day, and a start date.");
             return;
         }
         if (f.pricingType === "per_run" && !f.ratePerRun) {
@@ -12902,7 +12925,7 @@ function RecurringRoutesView(props) {
             React.createElement(RecurringRouteForm, { onSaved: function () { setShowForm(false); refetch(); } }));
     }
 
-    if (routes === null) return React.createElement("div", { style: { textAlign: "center", padding: "60px 0", color: C.dim } }, "Loading...");
+    if (routes === null) return React.createElement(LoadingSpinner, { padding: 60 });
 
     var active = routes.filter(function (r) { return r.status === "active"; });
     var pending = routes.filter(function (r) { return r.status === "pending"; });
@@ -13054,7 +13077,7 @@ function DecoyRevealBanner(props) {
         React.createElement("div", { style: { fontSize: 13, color: "#F2F2F2", lineHeight: 1.7, maxWidth: 460, textAlign: "center", marginBottom: 10 } },
             "Your image and activity have now been reported to the relevant parties: fraud prevention teams, hosting/email providers, and law enforcement. Your fraudulent activity is documented."),
         React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: "#E53E3E", lineHeight: 1.7, maxWidth: 460, textAlign: "center" } },
-            "You picked the wrong target, you pathetic piece of shit scammer. Any further attempts will be logged and forwarded.")
+            "You picked the wrong target, you pathetic piece of shit scammer. Stop targeting business owners, or we will target you and expose you. Any further attempts will be logged and forwarded.")
     );
 }
 
@@ -13112,8 +13135,8 @@ function PublicRecurringRequest() {
     // Real capacity check — one truck, so we sum already-committed hours per day
     // of week across ALL active recurring routes before allowing a new booking.
     function checkCapacityThenSubmit() {
-        if (!f.customerName || !f.phone || !f.origin || !f.destination || f.days.length === 0 || !f.startDate) {
-            alert("Please fill in your info, route, at least one day, and a preferred start date.");
+        if (!f.customerName || !f.phone || !f.email || !f.origin || !f.destination || f.days.length === 0 || !f.startDate) {
+            alert("Please fill in your info (including email — this is what lets you pay your bill from your account later), route, at least one day, and a preferred start date.");
             return;
         }
         setCheckingCapacity(true);
@@ -13564,7 +13587,7 @@ function IncomingLoadsView() {
         }).then(refetch);
     }
 
-    if (loads === null) return React.createElement("div", { style: { color: C.dim, fontSize: 12 } }, "Loading...");
+    if (loads === null) return React.createElement(LoadingSpinner, { padding: 40 });
 
     var STATUS_COLORS = { pending: C.orange, accepted: C.green, bid_sent: "#F0E000", declined: C.dim };
 
@@ -14022,6 +14045,9 @@ function CompanyOnboarding() {
                     React.createElement("div", { style: { fontSize: 9, color: s[1] ? C.green : C.dim, fontWeight: s[1] ? 700 : 400 } }, s[0]));
             })),
         React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.white, marginBottom: 4 } }, "\uD83E\uDD1D Company / Dispatch Partner Onboarding"),
+        React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: 14, marginBottom: 16, textAlign: "center" } },
+            React.createElement("div", { style: { fontSize: 11, fontWeight: 800, color: C.orange, marginBottom: 8 } }, "\uD83D\uDD12 Every Login Is Genuinely Logged \u2014 Real Security, Not A Slogan"),
+            React.createElement("img", { src: "/potent-security-screenshot.jpg", alt: "Real POTENT login security log", style: { width: "100%", maxWidth: 260, borderRadius: 8, border: "1px solid " + C.border, margin: "0 auto", display: "block" } })),
         dotLookupData && React.createElement("div", { style: { background: dotLookupData.allowedToOperate === "Y" ? "#0d1a10" : "#1a0000", border: "1px solid " + (dotLookupData.allowedToOperate === "Y" ? C.green : C.red) + "66", borderRadius: 8, padding: "10px 14px", marginBottom: 16, fontSize: 12, color: dotLookupData.allowedToOperate === "Y" ? C.green : C.red } },
             (dotLookupData.allowedToOperate === "Y" ? "\u2705 Verified Active \u2014 " : "\u26A0 Not Active \u2014 ") + dotLookupData.legalName + " \u00b7 " + dotLookupData.phyCity + ", " + dotLookupData.phyState),
 
@@ -14125,17 +14151,9 @@ function CompanyOnboarding() {
             }),
             React.createElement("div", { style: { fontSize: 10, color: C.dim, marginTop: 10, fontStyle: "italic" } }, "Banking/COI available on request via My Documents Vault \u2014 not shown publicly here.")),
 
-        // ── TERMS OF SERVICE — real, sourced language, fair but protective ──
-        React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, textTransform: "uppercase", marginTop: 16, marginBottom: 8 } }, "Terms of Service"),
-        React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "14px 16px", marginBottom: 12, maxHeight: 200, overflowY: "auto", fontSize: 11, color: C.dim, lineHeight: 1.7 } },
-            React.createElement("b", { style: { color: C.white } }, "Payment Responsibility. "), "If this account fails to pay an invoice within the agreed terms (maximum Net 7), the responsible party is liable for the full amount owed, plus any collection costs and legal fees POTENT Logistics LLC incurs recovering payment. Unpaid balances accrue interest at 1.5% per month after the due date.", React.createElement("br", null), React.createElement("br", null),
-            React.createElement("b", { style: { color: C.white } }, "Limitation of Liability. "), "POTENT Logistics LLC's liability for any loss, damage, or delay to freight is limited to the lesser of $0.50 per pound or $100,000 per shipment, unless a higher value is declared in writing and agreed to before pickup. POTENT is not liable for indirect, incidental, or consequential damages, including lost profits or business opportunity.", React.createElement("br", null), React.createElement("br", null),
-            React.createElement("b", { style: { color: C.white } }, "Claims. "), "Any claim for loss or damage must be submitted in writing within 48 hours of the delivery date, or the claim is waived.", React.createElement("br", null), React.createElement("br", null),
-            React.createElement("b", { style: { color: C.white } }, "Indemnification. "), "This account agrees to indemnify and hold POTENT Logistics LLC harmless from claims arising out of inaccurate information provided, breach of this agreement, or the account's own negligence.", React.createElement("br", null), React.createElement("br", null),
-            React.createElement("b", { style: { color: C.white } }, "Billing Disputes. "), "A billing dispute does not excuse or delay payment of the undisputed portion of any invoice."),
-        React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.white, cursor: "pointer", marginBottom: 16 } },
-            React.createElement("input", { type: "checkbox", checked: f.termsAgreed, onChange: function (e) { set("termsAgreed", e.target.checked); }, style: { width: 18, height: 18, accentColor: C.orange } }),
-            "I have read and agree to these Terms of Service"),
+        // ── TERMS OF SERVICE — real, sourced language, presented as a clean,
+        // numbered, modern agreement instead of a cramped scroll box ──
+        React.createElement(TermsOfServiceDisplay, { agreed: f.termsAgreed, onAgree: function (v) { set("termsAgreed", v); } }),
 
         React.createElement("div", { style: { background: statusInfo.bg, border: "2px solid " + statusInfo.color, borderRadius: 10, padding: "14px 16px", marginTop: 16, marginBottom: 14, textAlign: "center" } },
             React.createElement("div", { style: { fontSize: 15, fontWeight: 900, color: statusInfo.color } }, statusInfo.label)),
@@ -14804,7 +14822,7 @@ function RateCardsView() {
         fetch(SUPABASE_URL + "/rest/v1/customer_rate_cards?id=eq." + id, { method: "DELETE", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY } }).then(refetch);
     }
 
-    if (cards === null) return React.createElement("div", { style: { color: C.dim, fontSize: 12 } }, "Loading...");
+    if (cards === null) return React.createElement(LoadingSpinner, { padding: 40 });
 
     var byCustomer = {};
     cards.forEach(function (c) { (byCustomer[c.customer_email] = byCustomer[c.customer_email] || []).push(c); });
@@ -14976,7 +14994,7 @@ function DeadlinesView() {
         }).then(function (r) { return r.json(); }).then(function (data) { setDeadlines(Array.isArray(data) ? data : []); }).catch(function () { setDeadlines([]); });
     }, []);
 
-    if (deadlines === null) return React.createElement("div", { style: { color: C.dim, fontSize: 12 } }, "Loading...");
+    if (deadlines === null) return React.createElement(LoadingSpinner, { padding: 40 });
 
     var now = new Date();
     return React.createElement("div", { style: { maxWidth: 700, margin: "0 auto" } },
@@ -15986,7 +16004,7 @@ function LoginImagesView() {
         }).catch(function () { setEntries([]); });
     }, []);
 
-    if (entries === null) return React.createElement("div", { style: { color: C.dim, fontSize: 12, textAlign: "center", padding: 30 } }, "Loading...");
+    if (entries === null) return React.createElement(LoadingSpinner, { padding: 30 });
 
     return React.createElement("div", { style: { maxWidth: 700, margin: "0 auto" } },
         React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.white, marginBottom: 4 } }, "\uD83D\uDCF8 Login Images"),
@@ -16054,6 +16072,16 @@ function FirstTimeTour(props) {
 }
 
 // Real content, per real flow.
+// Real homepage tour — walks a first-time visitor through the actual
+// workflow before they book anything, matching the same tour engine
+// already used for Customer/Driver/Admin onboarding.
+var HOMEPAGE_TOUR_STEPS = [
+    { title: "Welcome to POTENT", body: "Real freight, real pricing, real tracking. Let's walk through how this actually works in about 20 seconds." },
+    { title: "Get a Real Price", body: "Tell us what needs to move. You'll see the real number before you commit to anything \u2014 no calls needed just to get a quote." },
+    { title: "Book & Track Live", body: "Once booked, you'll see your driver moving on a real live map, with a real ETA \u2014 not just a status that says \"in progress.\"" },
+    { title: "Pay Right Here", body: "When it's done, pay directly in the app. No separate invoice email to dig up later." },
+];
+
 var CUSTOMER_TOUR_STEPS = [
     { title: "Welcome to POTENT", body: "This is where you book a job, track it live, and pay -- all in one place. Let's walk through it in about 20 seconds." },
     { title: "Book a Job", body: "Pick what you need moved. Real pricing shows up before you commit to anything -- no surprise numbers later." },
@@ -16066,6 +16094,13 @@ var DRIVER_TOUR_STEPS = [
     { title: "6 Real Documents", body: "Registration, truck photo, license (front and back), medical card, and payment info. The progress bar at the top fills in as you go, so you always know where you stand." },
     { title: "That's It", body: "Once submitted, POTENT reviews it and follows up. No waiting around wondering what happens next." },
 ];
+var ADMIN_DASHBOARD_TOUR_STEPS = [
+    { title: "Welcome To Your Dashboard", body: "Everything is organized into 5 real groups at the top: Jobs, Sales, Fleet, Money, Team. Let's walk through where things actually live." },
+    { title: "Jobs & Sales", body: "Jobs is where every booking lives, start to finish. Sales is where you book new work \u2014 Live Call Screen for phone bookings, Leads for your call list, Incoming Loads for brokers sending you freight." },
+    { title: "Money & Fleet", body: "Money has your real payment tracking, Claims, and the Accounting Ledger. Fleet has your live GPS map and vehicle documents." },
+    { title: "The Checklist Below", body: "You'll see a real Getting Started checklist right on this screen \u2014 it checks itself off automatically as you do real things, not something you manually tick." },
+];
+
 var ADMIN_PARTNER_TOUR_STEPS = [
     { title: "Getting Verified", body: "This isn't a form you fill blind. We check your DOT or MC number against real government data before anything else." },
     { title: "One Photo, Required", body: "Whoever fills this out gets photographed -- live, right then. This protects both sides from someone using a real company's information without authorization." },
@@ -16147,6 +16182,145 @@ function sendPushNotification(title, body, url, targetUserId) {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: title, body: body, url: url || "/", userId: targetUserId || null })
     }).catch(function () {});
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// REAL LOADING SPINNER — replaces the plain "Loading..." text used
+// everywhere. A genuine animated spinner, injected once as a real CSS
+// keyframe, not a static word sitting on the screen.
+// ═══════════════════════════════════════════════════════════════════
+var _spinnerCssInjected = false;
+function ensureSpinnerCss() {
+    if (_spinnerCssInjected) return;
+    _spinnerCssInjected = true;
+    var style = document.createElement("style");
+    style.textContent = "@keyframes potentSpin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}";
+    document.head.appendChild(style);
+}
+function LoadingSpinner(props) {
+    ensureSpinnerCss();
+    var label = props.label || "Loading";
+    var size = props.size || 28;
+    return React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: props.padding || 40, gap: 10 } },
+        React.createElement("div", { style: { width: size, height: size, borderRadius: "50%", border: "3px solid " + C.border, borderTopColor: C.orange, animation: "potentSpin 0.8s linear infinite" } }),
+        props.label !== "" && React.createElement("div", { style: { fontSize: 11, color: C.dim } }, label));
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// TERMS OF SERVICE DISPLAY — real, modern, numbered sections you can
+// expand individually, instead of one cramped scrollbox of dense text.
+// Same real legal language as before, just readable like an actual
+// company's terms page, not a scanned PDF.
+// ═══════════════════════════════════════════════════════════════════
+var TOS_SECTIONS = [
+    { num: 1, title: "Payment Responsibility", body: "If this account fails to pay an invoice within the agreed terms (maximum Net 7), the responsible party is liable for the full amount owed, plus any collection costs and legal fees POTENT Logistics LLC incurs recovering payment. Unpaid balances accrue interest at 1.5% per month after the due date." },
+    { num: 2, title: "Limitation of Liability", body: "POTENT Logistics LLC's liability for any loss, damage, or delay to freight is limited to the lesser of $0.50 per pound or $100,000 per shipment, unless a higher value is declared in writing and agreed to before pickup. POTENT is not liable for indirect, incidental, or consequential damages, including lost profits or business opportunity." },
+    { num: 3, title: "Claims", body: "Any claim for loss or damage must be submitted in writing within 48 hours of the delivery date, or the claim is waived." },
+    { num: 4, title: "Indemnification", body: "This account agrees to indemnify and hold POTENT Logistics LLC harmless from claims arising out of inaccurate information provided, breach of this agreement, or the account's own negligence." },
+    { num: 5, title: "Billing Disputes", body: "A billing dispute does not excuse or delay payment of the undisputed portion of any invoice." },
+];
+
+function TermsOfServiceDisplay(props) {
+    var [expanded, setExpanded] = React.useState(1); // first section open by default, rest collapsed
+
+    return React.createElement("div", { style: { marginTop: 16, marginBottom: 16 } },
+        React.createElement("div", { style: { fontSize: 15, fontWeight: 900, color: C.white, marginBottom: 4 } }, "Terms of Service"),
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 14 } }, "5 sections. Tap each to read. All 5 apply regardless of which you've opened."),
+        TOS_SECTIONS.map(function (s) {
+            var isOpen = expanded === s.num;
+            return React.createElement("div", { key: s.num, style: { border: "1px solid " + C.border, borderRadius: 10, marginBottom: 8, overflow: "hidden", background: C.card } },
+                React.createElement("button", {
+                    onClick: function () { setExpanded(isOpen ? null : s.num); },
+                    style: { width: "100%", background: "transparent", border: "none", padding: "12px 14px", textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }
+                },
+                    React.createElement("div", { style: { width: 22, height: 22, borderRadius: "50%", background: isOpen ? C.orange : C.border, color: isOpen ? "#000" : C.dim, fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } }, s.num),
+                    React.createElement("div", { style: { fontSize: 12.5, fontWeight: 700, color: C.white, flex: 1 } }, s.title),
+                    React.createElement("span", { style: { color: C.dim, fontSize: 12 } }, isOpen ? "\u2212" : "+")),
+                isOpen && React.createElement("div", { style: { padding: "0 14px 14px", fontSize: 12, color: "rgba(255,255,255,0.75)", lineHeight: 1.7 } }, s.body));
+        }),
+        React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.white, cursor: "pointer", marginTop: 4 } },
+            React.createElement("input", { type: "checkbox", checked: props.agreed, onChange: function (e) { props.onAgree(e.target.checked); }, style: { width: 18, height: 18, accentColor: C.orange } }),
+            "I have read and agree to all 5 sections above"));
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// GETTING STARTED CHECKLIST — the real "aha moment" tracker. Shows
+// what a brand-new admin should actually try, checks itself off as
+// each real thing genuinely happens (not manually dismissed), and
+// disappears once every item is done. Same spirit as Motive/Samsara's
+// setup checklist, using your own real data to know what's done.
+// ═══════════════════════════════════════════════════════════════════
+function GettingStartedChecklist(props) {
+    var jobs = props.jobs || [];
+    var [dismissed, setDismissed] = React.useState(function () {
+        try { return localStorage.getItem("pl_getting_started_dismissed") === "yes"; } catch (e) { return false; }
+    });
+    var [driverCount, setDriverCount] = React.useState(null);
+    var [leadCount, setLeadCount] = React.useState(null);
+
+    React.useEffect(function () {
+        fetch(SUPABASE_URL + "/rest/v1/leads?select=id&limit=1", {
+            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
+        }).then(function (r) { return r.json(); }).then(function (rows) { setLeadCount(Array.isArray(rows) ? rows.length : 0); }).catch(function () { setLeadCount(0); });
+    }, []);
+
+    if (dismissed) return null;
+
+    var hasJob = jobs.length > 0;
+    var hasPaidJob = jobs.some(function (j) { return j.paymentStatus === "paid"; });
+    var hasLeads = (leadCount || 0) > 0;
+    var checklistItems = [
+        { done: hasJob, label: "Create your first job", sub: "Sales \u2192 Live Call Screen, or Jobs \u2192 add one directly" },
+        { done: hasPaidJob, label: "Mark a job Paid", sub: "Jobs \u2192 open any job \u2192 real Pay Now / payment status" },
+        { done: hasLeads, label: "Import your lead list", sub: "Sales \u2192 Leads \u2192 Import All Leads button" },
+    ];
+    var doneCount = checklistItems.filter(function (i) { return i.done; }).length;
+    if (doneCount === checklistItems.length) return null; // real completion — disappears on its own, nothing to dismiss
+
+    return React.createElement("div", { style: { background: "#1a1400", border: "1px solid " + C.orange + "66", borderRadius: 10, padding: 16, marginBottom: 16 } },
+        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 } },
+            React.createElement("div", { style: { fontSize: 13, fontWeight: 900, color: C.orange } }, "\uD83D\uDE80 Getting Started (" + doneCount + "/" + checklistItems.length + ")"),
+            React.createElement("button", { onClick: function () { try { localStorage.setItem("pl_getting_started_dismissed", "yes"); } catch (e) {} setDismissed(true); }, style: { background: "transparent", color: C.dim, border: "none", fontSize: 11, cursor: "pointer", fontFamily: "inherit" } }, "Hide")),
+        checklistItems.map(function (item, i) {
+            return React.createElement("div", { key: i, style: { display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0", borderTop: i > 0 ? "1px solid " + C.orange + "22" : "none" } },
+                React.createElement("div", { style: { width: 20, height: 20, borderRadius: "50%", background: item.done ? C.green : "transparent", border: item.done ? "none" : "2px solid " + C.dim, color: "#000", fontSize: 11, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 } }, item.done ? "\u2713" : ""),
+                React.createElement("div", null,
+                    React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: item.done ? C.dim : C.white, textDecoration: item.done ? "line-through" : "none" } }, item.label),
+                    !item.done && React.createElement("div", { style: { fontSize: 10, color: C.dim, marginTop: 1 } }, item.sub)));
+        }));
+}
+
+// ── MOUNT APP ─────────────────────────────────────────────────────
+// [render relocated to end of file]
+
+// ═══════════════════════════════════════════════════════════════════
+// CONTEXTUAL TOOLTIP — genuinely different from FirstTimeTour. Points
+// at ONE specific real button mid-task, not an upfront modal. Shows
+// once per real tooltipId, small, dismissible, doesn't block the page.
+// ═══════════════════════════════════════════════════════════════════
+function ContextualTooltip(props) {
+    var tooltipId = props.tooltipId;
+    var [dismissed, setDismissed] = React.useState(function () {
+        try { return localStorage.getItem("pl_tip_seen_" + tooltipId) === "yes"; } catch (e) { return false; }
+    });
+    if (dismissed || props.hide) return null;
+    function close() { try { localStorage.setItem("pl_tip_seen_" + tooltipId, "yes"); } catch (e) {} setDismissed(true); }
+    return React.createElement("div", { style: { position: "relative", display: "inline-block", width: "100%" } },
+        props.children,
+        React.createElement("div", { style: { position: "absolute", top: "calc(100% + 8px)", left: 0, right: 0, zIndex: 500, background: C.orange, color: "#000", borderRadius: 8, padding: "10px 12px", fontSize: 11, fontWeight: 700, boxShadow: "0 4px 16px rgba(0,0,0,0.4)" } },
+            React.createElement("div", { style: { position: "absolute", top: -6, left: 20, width: 12, height: 12, background: C.orange, transform: "rotate(45deg)" } }),
+            React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 } },
+                React.createElement("div", null, props.text),
+                React.createElement("button", { onClick: close, style: { background: "transparent", border: "none", color: "#000", fontWeight: 900, cursor: "pointer", fontSize: 13, lineHeight: 1, flexShrink: 0 } }, "\u00d7"))));
 }
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
