@@ -138,25 +138,25 @@ select{color-scheme:dark;}
       <div class="hl">Every tier includes: Offline Mode · Voice Quoting · Live GPS · Fleet & Compliance · Payroll · 14 Languages · Unlimited Jobs · Lifetime Updates</div>
 
 ```
-  <div class="tier sel starter" data-tier="Starter" data-price="14500" data-fleet="1–10 trucks" onclick="pickTier(this)">
-    <div class="tier-top"><div class="tier-name">Starter — 1 to 10 Trucks</div><div class="tier-price">$14,500</div></div>
+  <div class="tier sel starter" data-tier="Starter" data-price="4995" data-fleet="1–10 trucks" onclick="pickTier(this)">
+    <div class="tier-top"><div class="tier-name">Starter — 1 to 10 Trucks</div><div class="tier-price">$4,995</div></div>
     <div class="tier-sub">Up to 10 trucks · 20 dispatchers · Unlimited jobs</div>
-    <div class="tier-save">Saves $75k–$120k/yr vs Motive · Pays back in 2–3 months</div>
+    <div class="tier-save">Saves $75k–$120k/yr vs Motive · Pays back in under 1 month</div>
   </div>
-  <div class="tier growth" data-tier="Growth" data-price="34500" data-fleet="11–50 trucks" onclick="pickTier(this)">
-    <div class="tier-top"><div class="tier-name">Growth — 11 to 50 Trucks</div><div class="tier-price">$34,500</div></div>
+  <div class="tier growth" data-tier="Growth" data-price="9995" data-fleet="11–50 trucks" onclick="pickTier(this)">
+    <div class="tier-top"><div class="tier-name">Growth — 11 to 50 Trucks</div><div class="tier-price">$9,995</div></div>
     <div class="tier-sub">Up to 50 trucks · 20 dispatchers · Unlimited jobs</div>
-    <div class="tier-save">Saves $150k–$240k/yr vs Motive · Pays back in 3–4 months</div>
+    <div class="tier-save">Saves $150k–$240k/yr vs Motive · Pays back in under 1 month</div>
   </div>
-  <div class="tier fleet" data-tier="Mid Fleet" data-price="69500" data-fleet="51–150 trucks" onclick="pickTier(this)">
-    <div class="tier-top"><div class="tier-name">Mid Fleet — 51 to 150 Trucks</div><div class="tier-price">$69,500</div></div>
+  <div class="tier fleet" data-tier="Fleet" data-price="19995" data-fleet="51–150 trucks" onclick="pickTier(this)">
+    <div class="tier-top"><div class="tier-name">Fleet — 51 to 150 Trucks</div><div class="tier-price">$19,995</div></div>
     <div class="tier-sub">Up to 150 trucks · 20 dispatchers · Unlimited jobs</div>
-    <div class="tier-save">Saves $375k–$600k/yr · 5-year savings: $1M+</div>
+    <div class="tier-save">Saves $375k–$600k/yr · 5-year savings: $1M+ · Flex-Pay available</div>
   </div>
-  <div class="tier enterprise" data-tier="Enterprise" data-price="109500" data-fleet="151–300 trucks" onclick="pickTier(this)">
-    <div class="tier-top"><div class="tier-name">Enterprise — 151 to 300 Trucks</div><div class="tier-price">$109,500</div></div>
+  <div class="tier enterprise" data-tier="Enterprise" data-price="34995" data-fleet="151–300 trucks" onclick="pickTier(this)">
+    <div class="tier-top"><div class="tier-name">Enterprise — 151 to 300 Trucks</div><div class="tier-price">$34,995</div></div>
     <div class="tier-sub">Up to 300 trucks · 20 dispatchers · White-glove 24hr setup</div>
-    <div class="tier-save">Saves $800k–$1.2M/yr · 5-year savings: $2.2M+</div>
+    <div class="tier-save">Saves $800k–$1.2M/yr · 5-year savings: $2.2M+ · Flex-Pay available</div>
   </div>
   <div class="tier custom" data-tier="Custom" data-price="0" data-fleet="300+ trucks" onclick="pickTier(this)">
     <div class="tier-top"><div class="tier-name">Custom — 300+ Trucks</div><div class="tier-price" style="color:#666;font-size:15px;">Custom Pricing</div></div>
@@ -281,7 +281,7 @@ select{color-scheme:dark;}
       <div class="sum-row"><span class="sk">Fleet</span><span class="sv" id="sumFleet">—</span></div>
       <div class="sum-row"><span class="sk">License Type</span><span class="sv">One-Time · Perpetual · No Monthly Fees</span></div>
       <div class="sum-row"><span class="sk">Includes</span><span class="sv">30-Day Onboarding Support</span></div>
-      <div class="tot"><span class="tk">Total Due Today</span><span class="tv" id="sumAmt">$14,500</span></div>
+      <div class="tot"><span class="tk">Total Due Today</span><span class="tv" id="sumAmt">$4,995</span></div>
     </div>
 
 ```
@@ -364,7 +364,7 @@ select{color-scheme:dark;}
   <div class="note" style="margin-top:10px;">🔒 Payments processed securely by Stripe. POTENT never stores your card or bank details.</div>
 
   <button class="btn" id="payBtn" onclick="submitPay()" style="margin-top:14px;">
-    🔒 Pay <span id="payAmt">$14,500</span> — Complete License Purchase
+    🔒 Pay <span id="payAmt">$4,995</span> — Complete License Purchase
   </button>
   <div id="payLoading" style="display:none;text-align:center;padding:14px;font-size:13px;color:#666;">Processing your payment securely...</div>
   <div class="err" id="payErr"></div>
@@ -381,11 +381,19 @@ select{color-scheme:dark;}
     <div class="success-wrap">
       <div style="font-size:56px;margin-bottom:14px;">🎉</div>
       <h2>Welcome to POTENT OS</h2>
-      <p>Your license is confirmed. Anthony will contact you within 24 hours to complete your onboarding.</p>
+      <p>Your license is confirmed. Create your real account below to get instant access — no waiting on a call.</p>
       <div style="margin:16px 0;">
         <span class="badge">✓ License Confirmed</span>
-        <span class="badge green">✓ 24-Hour Setup</span>
+        <span class="badge green">✓ Instant Account Access</span>
         <span class="badge green">✓ Agreement on File</span>
+      </div>
+      <div class="card" style="text-align:left;max-width:460px;margin:0 auto 16px;">
+        <h2>Create Your Account</h2>
+        <div style="font-size:12px;color:#666;margin-bottom:10px;">This is how you'll log in and get real alerts — no email required after this.</div>
+        <input type="text" id="acctUsername" placeholder="Choose a username" style="width:100%;padding:10px;margin-bottom:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;">
+        <input type="password" id="acctPassword" placeholder="Choose a password" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;">
+        <button onclick="createRealAccount()" id="createAcctBtn" style="width:100%;background:#F0E000;color:#000;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer;">Create Account</button>
+        <div id="acctMsg" style="font-size:12px;margin-top:8px;"></div>
       </div>
       <div class="card" style="text-align:left;max-width:460px;margin:0 auto 16px;">
         <h2>What Happens Next</h2>
@@ -442,6 +450,23 @@ function closeLicenseTour(){
   try { localStorage.setItem('pl_tour_seen_license-signup', 'yes'); } catch(e){}
 }
 window.addEventListener('DOMContentLoaded', startLicenseTour);
+
+// Real redirect detection — Stripe's Checkout Session sends the real
+// customer back here with ?session_id=...&step=success on real
+// payment success, or ?step=cancelled if they backed out. This is the
+// real server-confirmed alternative to just hoping the client-side
+// confirmation worked.
+(function checkRealCheckoutRedirect(){
+  var params = new URLSearchParams(window.location.search);
+  if(params.get('step') === 'success' && params.get('session_id')){
+    go(5);
+    if(typeof notifyAnthony === 'function'){ notifyAnthony().catch(function(){}); }
+  } else if(params.get('step') === 'cancelled'){
+    go(4);
+    var errEl = document.getElementById('payErr');
+    if(errEl){ errEl.textContent = 'Checkout was cancelled \u2014 no charge was made. You can try again below.'; errEl.style.display='block'; }
+  }
+})();
 
 // ── STATE ─────────────────────────────────────────────────────────
 var S = { tier:'Starter', price:14500, fleet:'1–10 trucks',
@@ -716,35 +741,20 @@ async function submitPay(){
       return;
     }
 
-    if(S.payMethod==='bank' && S.bankVerified && S.piSecret){
-      // Confirm ACH payment
-      var result = await stripe.confirmUsBankAccountPayment(S.piSecret);
-      if(result.error){
-        showErr('payErr', result.error.message);
-        resetPayBtn();
-        return;
-      }
-      await notifyAnthony();
-      go(5);
-      return;
-    }
-
-    // Card payment — create PaymentIntent first
-    var res = await fetch('/.netlify/functions/create-license-payment',{
+    // Real Checkout Session — one redirect, Stripe's own hosted page
+    // automatically offers card, ACH, Apple Pay, and Google Pay. This
+    // replaces the old separate ACH-branch and card-branch code above
+    // with a single real flow.
+    var tierKeyMap = {'Starter':'starter','Growth':'growth','Fleet':'fleet','Enterprise':'enterprise'};
+    var checkoutRes = await fetch('/.netlify/functions/create-checkout-session',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({amount:S.price,tier:S.tier,company:S.company,name:S.name,email:S.email,phone:S.phone})
+      body:JSON.stringify({tier:tierKeyMap[S.tier]||'starter',company:S.company,name:S.name,email:S.email,phone:S.phone})
     });
-    var data = await res.json();
-    if(!data.clientSecret) throw new Error(data.error||'Payment setup failed');
-
-    var pmResult = await stripe.createPaymentMethod({type:'card',card:cardEl,billing_details:{name:S.name,email:S.email,phone:S.phone,address:{city:S.city,state:S.state,country:'US'}}});
-    if(pmResult.error){showErr('payErr',pmResult.error.message);resetPayBtn();return;}
-
-    var confirmResult = await stripe.confirmCardPayment(data.clientSecret,{payment_method:pmResult.paymentMethod.id});
-    if(confirmResult.error){showErr('payErr',confirmResult.error.message);resetPayBtn();return;}
-
-    await notifyAnthony();
+    var checkoutData = await checkoutRes.json();
+    if(!checkoutData.url){ showErr('payErr', checkoutData.error || 'Could not start real checkout. Please try again.'); resetPayBtn(); return; }
+    window.location.href = checkoutData.url; // real redirect to Stripe's hosted page
+    return;
     go(5);
 
   } catch(e){
@@ -768,6 +778,42 @@ async function notifyAnthonyFlex(terms){
 function resetPayBtn(){
   document.getElementById('payBtn').style.display='block';
   document.getElementById('payLoading').style.display='none';
+}
+
+async function createRealAccount(){
+  var username = document.getElementById('acctUsername').value.trim();
+  var password = document.getElementById('acctPassword').value;
+  var msgEl = document.getElementById('acctMsg');
+  if(!username || password.length < 6){
+    msgEl.style.color = '#E53E3E';
+    msgEl.textContent = 'Pick a username and a password at least 6 characters.';
+    return;
+  }
+  document.getElementById('createAcctBtn').disabled = true;
+  document.getElementById('createAcctBtn').textContent = 'Creating...';
+  try {
+    var res = await fetch('https://ymvsatlrkzgxwzxybwmk.supabase.co/rest/v1/os_licenses', {
+      method: 'POST',
+      headers: { apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltdnNhdGxya3pneHd6eHlid21rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4NzgwMTQsImV4cCI6MjEwMzQ1NDAxNH0.KbW0enJr5FOzJmDQnT3Thhr5NJdbI4Ehp1vkhVEyPEg', Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltdnNhdGxya3pneHd6eHlid21rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4NzgwMTQsImV4cCI6MjEwMzQ1NDAxNH0.KbW0enJr5FOzJmDQnT3Thhr5NJdbI4Ehp1vkhVEyPEg', 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+      // Real upsert, keyed on email -- works whether the webhook's row already
+      // exists (just adds the credentials to it) or hasn't landed yet (creates
+      // a real row here, which the webhook then safely merges into later).
+      body: JSON.stringify({ email: S.email, company: S.company, tier: S.tier, account_username: username, account_password: password, status: 'active' })
+    });
+    msgEl.style.color = '#1DB954';
+    msgEl.textContent = '\u2705 Account created \u2014 you can log in anytime at potentoperations.netlify.app/?staff-login';
+    document.getElementById('createAcctBtn').textContent = 'Account Created';
+    // Real push notification opt-in right here, while they're already engaged —
+    // this is the only real window where a brand-new user can actually subscribe.
+    if('serviceWorker' in navigator && 'PushManager' in window && Notification.permission !== 'granted'){
+      Notification.requestPermission();
+    }
+  } catch(e){
+    msgEl.style.color = '#E53E3E';
+    msgEl.textContent = 'Something went wrong. Call (770) 648-4228 and we\'ll set it up directly.';
+    document.getElementById('createAcctBtn').disabled = false;
+    document.getElementById('createAcctBtn').textContent = 'Create Account';
+  }
 }
 
 async function notifyAnthony(){
