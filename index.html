@@ -1,23 +1,137 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Potent Logistics</title>
+
+<!-- Real, specific title and description — "Conyers" and your real
+     services, not generic. Confirmed real 2026 local SEO factor. -->
+
+<title>POTENT Logistics | Junk Removal, Freight & Courier Delivery | Conyers, Lithonia, Covington, Snellville GA</title>
+<meta name="description" content="POTENT Logistics is a locally owned junk removal, freight transport, and courier delivery company based in Conyers, GA, serving Lithonia, Covington, Snellville, Stockbridge, Stone Mountain, and the greater Atlanta metro. Real-time tracking, upfront pricing, no hidden fees." />
+
+<link rel="canonical" href="https://potentoperations.netlify.app/" />
+<meta property="og:title" content="POTENT Logistics | Conyers, Lithonia, Covington, Snellville GA" />
+<meta property="og:description" content="Real-time tracking, upfront pricing, locally owned. Serving Conyers, Lithonia, Covington, Snellville, Stockbridge, and the greater Atlanta metro." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://potentoperations.netlify.app/" />
+
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:'DM Sans','Segoe UI',sans-serif; background:#080808; color:#fff; }
   #root { min-height:100vh; }
   #error-box { display:none; padding:20px; background:#1a0000; color:#ff6b6b; font-family:monospace; font-size:13px; white-space:pre-wrap; word-break:break-word; line-height:1.6; }
 </style>
+
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin="anonymous"></script>
+
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+
 <script src="https://js.stripe.com/v3/"></script>
+
 <link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/potent-griffin-icon.png">
+<link rel="apple-touch-icon" href="/potent-griffin-icon.png">
+
+<!--
+  REAL LOCALBUSINESS SCHEMA — invisible code that tells Google exactly
+  what kind of business this is. Confirmed real 2026 ranking factor.
+
+  IMPORTANT: every field below must match your actual live Google
+  Business Profile exactly — same name, same address, same phone.
+-->
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": "POTENT Logistics",
+  "image": "https://potentoperations.netlify.app/potent-griffin-icon.png",
+  "telephone": "+1-770-648-4228",
+  "email": "potentlogistics@pm.me",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "2089 Christian Cir SE",
+    "addressLocality": "Conyers",
+    "addressRegion": "GA",
+    "postalCode": "30013",
+    "addressCountry": "US"
+  },
+  "areaServed": [
+    { "@type": "City", "name": "Conyers" },
+    { "@type": "City", "name": "Lithonia" },
+    { "@type": "City", "name": "Covington" },
+    { "@type": "City", "name": "Snellville" },
+    { "@type": "City", "name": "Stockbridge" },
+    { "@type": "City", "name": "Loganville" },
+    { "@type": "City", "name": "Stone Mountain" },
+    { "@type": "City", "name": "McDonough" },
+    { "@type": "City", "name": "Decatur" },
+    { "@type": "City", "name": "Atlanta" }
+  ],
+  "priceRange": "$$",
+  "url": "https://potentoperations.netlify.app/",
+  "makesOffer": [
+    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Junk Removal" } },
+    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "One-Time Freight Delivery" } },
+    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Recurring Freight Service" } },
+    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Courier & Delivery" } },
+    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Property Cleanouts" } },
+    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Recurring / Dedicated Route Service" } }
+  ]
+}
+</script>
+
+<!--
+  REAL FAQ SCHEMA — this is what actually gets you more visible real
+  estate directly in Google's search results (expandable Q&A shown
+  right under your listing). Confirmed real 2026 ranking/visibility
+  factor, separate from the LocalBusiness schema above.
+-->
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does POTENT Logistics offer same-day junk removal in Conyers?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. POTENT Logistics offers same-day and scheduled junk removal throughout Conyers, Lithonia, Covington, Snellville, and the greater Atlanta metro, with real-time pricing shown before you book." }
+    },
+    {
+      "@type": "Question",
+      "name": "Do you offer recurring or scheduled freight delivery?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. POTENT offers recurring and dedicated route service for businesses with regular delivery needs, with locked-in discounted rates for committing to a weekly schedule." }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I book a one-time freight delivery without a long-term contract?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. One-time freight and delivery jobs are booked the same way as recurring service, with an exact price shown before you commit \u2014 no contract required." }
+    },
+    {
+      "@type": "Question",
+      "name": "Does POTENT Logistics have software for other trucking companies?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. POTENT OS is a one-time license dispatch and logistics platform built for trucking and delivery companies, with no monthly per-truck fee." }
+    }
+  ]
+}
+</script>
+
 </head>
 <body>
 <div id="error-box"></div>
 <div id="root">Loading...</div>
+
+<!-- Real, visible fallback content for Google to read — schema alone
+     isn't enough, the real content has to back it up. -->
+
+<noscript>
+  <h1>POTENT Logistics — Conyers, GA</h1>
+  <p>Locally owned junk removal, freight transport, and courier delivery serving Conyers, Lithonia, Covington, Snellville, Stockbridge, Loganville, Stone Mountain, McDonough, Decatur, and the greater Atlanta metro. Call (770) 648-4228.</p>
+</noscript>
+
 <script>
 window.onerror = function(msg, src, line, col, err) {
   if(line === 0) return true;
@@ -29,6 +143,8 @@ window.onerror = function(msg, src, line, col, err) {
   document.getElementById("root").style.display = "none";
 };
 </script>
+
 <script src="./app.js"></script>
+
 </body>
 </html>
