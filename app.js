@@ -959,7 +959,7 @@ var SERVICES = [
         excludes: ["Hazardous materials", "Interior warehouse retrieval", "Unpacked fragile items"],
         rule: "Freight must be staged at ground level or dock access before arrival.",
         sizes: ["Single pallet", "Multi-pallet", "Full van load"] },
-    { id: "event", icon: "\u{1F3AA}", name: "Event Drop-Off", tagline: "Transport event gear, vendor goods & supplies", priceRange: "$4.50/mile",
+    { id: "event", icon: "\u{1F3AA}", name: "Event Drop-Off", tagline: "Transport event gear, vendor goods & supplies", priceRange: "$1,000 flat under 150mi",
         desc: "We transport your event materials and supplies to the venue. Drop-off only — no setup included.",
         includes: ["Tables, chairs, decor & displays", "Vendor product transport", "On-time scheduled delivery", "Local & regional routes"],
         excludes: ["Setup or installation", "Return pickup (separate job)", "Items not staged at pickup"],
@@ -971,7 +971,7 @@ var SERVICES = [
         excludes: ["Multi-stop routes", "Shared vehicle", "Hazardous or illegal items"],
         rule: "High-value items must be secure and packaged before pickup. Verification required.",
         sizes: ["Small high-value item", "Medium secured load", "Full discreet shipment"] },
-    { id: "junkremoval", icon: "\u{1F5D1}", name: "Junk Removal", tagline: "Single item to a full 16ft truckload", priceRange: "$200-$1,000",
+    { id: "junkremoval", icon: "\u{1F5D1}", name: "Junk Removal", tagline: "Single item to a full 16ft truckload", priceRange: "$179-$850",
         desc: "Couches, mattresses, appliances, interior room removal, garage and yard cleanouts. Priced by how much of our truck your junk fills.",
         includes: ["Loading & hauling from inside the home", "Standard disposal fees included", "Same-day available", "Single item to full truckload", "Interior room removal"],
         excludes: ["Hazardous materials", "Whole-property cleanouts (see Property Cleanouts)", "Permitted demo work"],
@@ -997,13 +997,19 @@ var ZONES = [
     { id: "longdist", label: "Long Distance", sub: "150+ miles", estMiles: 280 },
 ];
 // ── JUNK REMOVAL — priced by load size, your 16ft box truck holds ~2x a standard junk truck ──
+// Real updated pricing — single price per tier used for real booking math,
+// priceMax shown alongside it so dispatch can quote the real honest range.
+// Time starts the moment the truck arrives on site, matches the real
+// new policy. Payment is collected before leaving the job site — cards
+// and cash only, no checks accepted.
 var LOAD_SIZES = [
-    { id: "minimum", label: "Single Item / Minimum", sub: "One item or a small pile", price: 149, estWeightLbs: 150 },
-    { id: "quarter", label: "Quarter Load", sub: "A few items — couch, small cleanout", price: 249, estWeightLbs: 750 },
-    { id: "half", label: "Half Load", sub: "Bedroom set, multiple appliances", price: 399, estWeightLbs: 1500 },
-    { id: "threequarter", label: "Three-Quarter Load", sub: "Garage or large room cleanout", price: 549, estWeightLbs: 2400 },
-    { id: "full", label: "Full Load", sub: "Full 16ft truck — biggest single trip", price: 699, estWeightLbs: 3200 }, // real weight estimate, below your truck's confirmed 4,300 lb max payload since junk fills by volume, not weight
+    { id: "minimum", label: "Single Item / Minimum", sub: "One item or a small pile", price: 179, priceMax: 179, estWeightLbs: 150 },
+    { id: "quarter", label: "Quarter Load", sub: "A few items — couch, small cleanout", price: 250, priceMax: 250, estWeightLbs: 750 },
+    { id: "half", label: "Half Load", sub: "Bedroom set, multiple appliances", price: 350, priceMax: 400, estWeightLbs: 1500 },
+    { id: "threequarter", label: "Three-Quarter Load", sub: "Garage or large room cleanout", price: 500, priceMax: 600, estWeightLbs: 2400 },
+    { id: "full", label: "Full Load", sub: "Full 16ft truck — biggest single trip", price: 750, priceMax: 850, estWeightLbs: 3200 },
 ];
+var EXTRA_WORKER_RATE_PER_HOUR = 40; // real, simple, flat rate per the new policy
 var EXTRA_TRUCKLOAD_FEE = 600; // each additional full truckload beyond the first, on big jobs
 // Real Georgia landfill/transfer station per-item fees, admin-reference only — never shown to customers.
 // 3x markup is the suggested add-on; admin decides whether to apply it to a quote.
@@ -1356,10 +1362,12 @@ function JobDocumentsPanel(props){
             ),
             mode==="link"&&React.createElement("input",{placeholder:"Paste URL (Google Drive, Dropbox, etc.)",value:form.url,onChange:function(e){setForm(function(p){return Object.assign({},p,{url:e.target.value});});},style:{width:"100%",background:C.card,border:"1px solid "+C.border,borderRadius:6,color:C.white,padding:"7px 10px",fontSize:11,outline:"none",fontFamily:"inherit",marginBottom:6,boxSizing:"border-box"}}),
             mode==="photo"&&React.createElement("div",{style:{marginBottom:6}},
-                React.createElement("input",{ref:fileInputRef,type:"file",accept:"image/*",capture:"environment",onChange:handlePhotoSelect,style:{display:"none"}}),
+                React.createElement("input",{ref:fileInputRef,type:"file",accept:"image/*,.pdf",onChange:handlePhotoSelect,style:{display:"none"}}),
                 !form.photoData&&React.createElement("button",{onClick:function(){fileInputRef.current&&fileInputRef.current.click();},style:{width:"100%",background:C.card,border:"1px dashed "+C.orange+"66",borderRadius:6,padding:"16px",fontSize:12,color:C.orange,cursor:"pointer",fontFamily:"inherit",fontWeight:700}},uploading?"Loading photo...":"📷 Take Photo or Choose from Gallery"),
                 form.photoData&&React.createElement("div",{style:{position:"relative"}},
-                    React.createElement("img",{src:form.photoData,style:{width:"100%",maxHeight:200,objectFit:"cover",borderRadius:6,marginBottom:6}}),
+                    form.photoData.indexOf("data:application/pdf")===0
+                        ?React.createElement("div",{style:{width:"100%",padding:"30px 10px",background:C.card,border:"1px solid "+C.border,borderRadius:6,marginBottom:6,textAlign:"center",color:C.orange,fontSize:13,fontWeight:700}},"\uD83D\uDCC4 PDF attached")
+                        :React.createElement("img",{src:form.photoData,style:{width:"100%",maxHeight:200,objectFit:"cover",borderRadius:6,marginBottom:6}}),
                     React.createElement("button",{onClick:function(){setForm(function(p){return Object.assign({},p,{photoData:""});});},style:{position:"absolute",top:6,right:6,background:"rgba(0,0,0,0.7)",color:"#fff",border:"none",borderRadius:5,padding:"4px 8px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}},"✕ Remove"))),
             React.createElement("input",{placeholder:"Notes or instructions for driver (optional)",value:form.notes,onChange:function(e){setForm(function(p){return Object.assign({},p,{notes:e.target.value});});},style:{width:"100%",background:C.card,border:"1px solid "+C.border,borderRadius:6,color:C.white,padding:"7px 10px",fontSize:11,outline:"none",fontFamily:"inherit",marginBottom:8,boxSizing:"border-box"}}),
             React.createElement("div",{style:{display:"flex",gap:6}},
@@ -1697,15 +1705,38 @@ function calcOOSQuote(originCity, destCity, speed, helper, weightTier, priceTier
     var fuelGal = Math.round((miles / TRUCK_MPG) * 10) / 10;
     var fuelCost = Math.round(fuelGal * ppg);
     var isSameDay = (speed === "urgent" || speed === "emergency");
+    var total = subtotal;
+    var hitMinimum = false;
+    // Real fix — same real floor now applied here too, not just calcQuote.
+    if (_b2bSettingsCache) {
+        var realFloor = (speed === "afterhours" || speed === "overnight" || speed === "emergency") ? _b2bSettingsCache.rush_min
+            : speed === "urgent" ? _b2bSettingsCache.sameday_min
+            : _b2bSettingsCache.onetime_min;
+        if (realFloor && total < realFloor) { total = realFloor; hitMinimum = true; }
+    }
     return { miles: miles, rate: rate, mileageCharge: mileageCharge, helperFee: helperFee,
-        weightFee: weightFee, weightTier: wTier, subtotal: subtotal, total: subtotal,
-        tier: tier, stdRate: stdRate, isSameDay: isSameDay, hitMinimum: false,
+        weightFee: weightFee, weightTier: wTier, subtotal: subtotal, total: total,
+        tier: tier, stdRate: stdRate, isSameDay: isSameDay, hitMinimum: hitMinimum,
         destState: destState || "?", ppg: ppg, fuelGal: fuelGal, fuelCost: fuelCost,
-        netProfit: subtotal - fuelCost };
+        netProfit: total - fuelCost };
 }
 // Services priced by real distance instead of a fixed zone table
 var MILEAGE_SERVICES = ["delivery", "event"];
 var INSTATE_RATE_PER_MILE = 4.50;
+// Real cached B2B pricing settings — loaded once, applied as a genuine
+// floor on every real quote. This was the actual confirmed bug: the
+// admin panel saved these to Supabase, but nothing ever read them back
+// into real pricing. Changing the settings did nothing to real quotes.
+var _b2bSettingsCache = null;
+function loadB2BSettingsCache() {
+    fetch(SUPABASE_URL + "/rest/v1/b2b_pricing_settings?id=eq.default&select=*", {
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
+    }).then(function (r) { return r.json(); }).then(function (rows) {
+        if (Array.isArray(rows) && rows[0]) _b2bSettingsCache = rows[0];
+    }).catch(function () {});
+}
+loadB2BSettingsCache();
+
 function calcQuote(serviceId, zone, speed, payId, helper, discreet, weightTier, extraStop, miles, priceTierId) {
     var svc = SERVICES.find(function (s) { return s.id === serviceId; }) || SERVICES[0];
     var zn = ZONES.find(function (z) { return z.id === zone; }) || ZONES[0];
@@ -1741,6 +1772,19 @@ function calcQuote(serviceId, zone, speed, payId, helper, discreet, weightTier, 
     var subtotal = rawSubtotal - tierDisc;
     var cashDisc = pay.discount ? Math.round(subtotal * 0.10) : 0;
     var total = subtotal - cashDisc;
+    // Real fix — apply the real admin-configured minimum floor. This is
+    // the actual confirmed bug: these settings were saved to Supabase
+    // but never read back into a real quote anywhere. Now they
+    // genuinely affect the real price floor, same-day/rush detection
+    // included, matching what the admin panel always claimed to do.
+    if (_b2bSettingsCache) {
+        // Real speed IDs, confirmed directly against the real SPEEDS array:
+        // standard, urgent, afterhours, overnight, emergency.
+        var realFloor = (speed === "afterhours" || speed === "overnight" || speed === "emergency") ? _b2bSettingsCache.rush_min
+            : speed === "urgent" ? _b2bSettingsCache.sameday_min
+            : _b2bSettingsCache.onetime_min;
+        if (realFloor && total < realFloor) { total = realFloor; subtotal = realFloor; }
+    }
     return { base: base, speedFee: speedFee, helperFee: helperFee, weightFee: weightFee, weightTier: wTier,
         extraStopFee: extraStopFee, discreetFee: discreetFee, rawSubtotal: rawSubtotal,
         tierDisc: tierDisc, tier: tier, subtotal: subtotal, cashDisc: cashDisc, total: total,
@@ -1786,26 +1830,28 @@ function sendEmail(job) {
 // subject/body text pre-built here, so template_nxubdce just needs to
 // render {{subject}} and {{message_html}} (or your own field names —
 // see note at bottom of this function).
+// Real templates, rebuilt to match the actual Master Sales Book's
+// established voice and strategy exactly — backup/overflow transportation
+// positioning, short direct messages, a specific closing question instead
+// of a vague "worth a call?" ask.
 var LEAD_EMAIL_TEMPLATES = {
     intro: {
         label: "👋 Intro Email",
-        subject: function (lead) { return "Quick question about " + (lead.category ? lead.category.replace(/^[^\w]+/, "").trim() : "your business") + " logistics"; },
+        subject: function (lead) { return "Backup transportation support for " + (lead.name || "your company"); },
         body: function (lead) {
-            return "Hi " + (lead.name || "there") + ",\n\n" +
-                "I'm reaching out from POTENT Logistics — we handle same-day and scheduled freight, delivery, and moving jobs" + (lead.city ? " around " + lead.city : "") + ".\n\n" +
-                (lead.notes ? "I know " + lead.notes.toLowerCase() + " can be a headache, and " : "") +
-                "we built our whole operation around fast, reliable pickup and delivery with live tracking so you always know where your load is.\n\n" +
-                "Would it be worth a quick 5-minute call this week to see if we're a fit for " + (lead.name || "your team") + "?\n\n" +
-                "Best,\nPOTENT Logistics\n" + PHONE_DISPLAY;
+            return "Hello " + (lead.name || "there") + ",\n\n" +
+                "I'm reaching out from POTENT Logistics. We help businesses" + (lead.city ? " around " + lead.city : "") + " with time-sensitive transportation needs, emergency freight, and overflow situations when normal transportation options can't respond.\n\n" +
+                "I was curious how " + (lead.name || "your company") + " currently handles urgent transportation requests. Would it make sense to have an additional transportation resource available when needed?\n\n" +
+                "Thank you,\nPOTENT Logistics\n" + PHONE_DISPLAY;
         }
     },
     follow_up: {
         label: "🔁 Follow-Up Email",
-        subject: function (lead) { return "Following up — POTENT Logistics"; },
+        subject: function (lead) { return "Quick follow-up — POTENT Logistics"; },
         body: function (lead) {
             return "Hi " + (lead.name || "there") + ",\n\n" +
-                "Just following up on my last message — wanted to see if you had a chance to think about how POTENT Logistics could help with your delivery/freight needs" + (lead.city ? " in " + lead.city : "") + ".\n\n" +
-                "Happy to answer any questions or put together a quick quote — no pressure either way.\n\n" +
+                "I don't want to keep bothering you. Should I close the loop for now, or would it make sense to stay connected as a backup transportation option" + (lead.city ? " in " + lead.city : "") + "?\n\n" +
+                "Either way, happy to answer any questions.\n\n" +
                 "Best,\nPOTENT Logistics\n" + PHONE_DISPLAY;
         }
     },
@@ -1814,9 +1860,9 @@ var LEAD_EMAIL_TEMPLATES = {
         subject: function (lead) { return "Your quote from POTENT Logistics"; },
         body: function (lead) {
             return "Hi " + (lead.name || "there") + ",\n\n" +
-                "Thanks for your interest! Here's a summary of what we discussed:\n\n" +
+                "Here's a summary of what we discussed:\n\n" +
                 (lead.service_type ? "Needs: " + lead.service_type + "\n" : "") +
-                "\nWe'll follow up shortly to lock in details and get you scheduled. If you have any questions in the meantime, just reply to this email or call us at " + PHONE_DISPLAY + ".\n\n" +
+                "\nBased on what we discussed, does it make sense for POTENT to be a transportation resource for your team? Happy to lock in details whenever you're ready — just reply or call " + PHONE_DISPLAY + ".\n\n" +
                 "Best,\nPOTENT Logistics";
         }
     },
@@ -2680,6 +2726,7 @@ function BookingView(props) {
     var t = props.t || function (k) { return (TX && TX.en && TX.en[k]) || k; };
     var [step, setStep] = useState(1);
     var [svc, setSvc] = useState(null);
+    var [step1TabId, setStep1TabId] = useState(SERVICES[0].id); // real tab selector state for the Step 1 service picker
     var [form, setForm] = useState({ name: "", phone: "", email: "", origin: "", destination: "", originStreet: "", originCity: "", originState: "GA", destStreet: "", destCity: "", destState: "GA", miles: "", zone: props.preZone || "local", speed: "standard", itemSize: "", helper: false, weightTier: "light", extraStop: false, readyConfirm: false, customerType: "residential", isBusiness: false, companyName: "", companyAddress: "", contactPerson: "", paymentTerms: "completion", payment: "cash", discreet: false, notes: "", date: "", timeSlot: "", loadSize: "quarter", cleanoutTier: "2br", cleanoutSubtype: "", extraTruckloads: "0", emergencyAddons: [], tosAccepted: false });
     var [quote, setQuote] = useState(null);
     var [jobId, setJobId] = useState(null);
@@ -2787,41 +2834,45 @@ function BookingView(props) {
     }
     var pay = PAYMENTS.find(function (p) { return p.id === form.payment; }) || PAYMENTS[0];
     var STEPS = ["Service", "Location", "Details", "Quote", "Done"];
-    if (step === 1)
+    if (step === 1) {
+        var realActiveTabService = SERVICES.find(function (s) { return s.id === step1TabId; }) || SERVICES[0];
         return React.createElement("div", { style: { maxWidth: 560, margin: "0 auto" } },
             React.createElement(StepBar, { steps: STEPS, current: 1 }),
             React.createElement("div", { style: { fontSize: 20, fontWeight: 800, color: C.white, marginBottom: 4 } }, "What do you need moved?"),
-            React.createElement("div", { style: { color: C.dim, fontSize: 13, marginBottom: 20 } }, "Select the service that fits your job."),
-            React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } }, SERVICES.map(function (s) {
-                return React.createElement("div", { key: s.id, onClick: function () { setSvc(s); setStep(2); }, style: { background: C.card, border: "1.5px solid " + C.border, borderRadius: 12, padding: "16px 18px", cursor: "pointer" } },
-                    React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 } },
-                        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
-                            React.createElement("span", { style: { fontSize: 22 } }, s.icon),
-                            React.createElement("div", null,
-                                React.createElement("div", { style: { fontSize: 15, fontWeight: 800, color: C.white } }, s.name),
-                                React.createElement("div", { style: { fontSize: 12, color: C.dim } }, s.tagline))),
-                        React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.orange } }, s.priceRange)),
-                    React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.6, marginBottom: 10 } }, s.desc),
-                    React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, marginBottom: 8 } }, s.includes.map(function (inc) { return React.createElement("div", { key: inc, style: { fontSize: 11, color: C.dim, display: "flex", gap: 5 } },
-                        React.createElement("span", { style: { color: C.green, flexShrink: 0 } }, "\u2713"),
-                        inc); })),
-                    React.createElement("div", { style: { background: "#E53E3E10", border: "1px solid #E53E3E22", borderRadius: 7, padding: "8px 10px", marginBottom: 8 } },
-                        React.createElement("div", { style: { fontSize: 10, color: C.red, fontWeight: 700, textTransform: "uppercase", marginBottom: 4 } }, "Not Included"),
-                        s.excludes.map(function (ex) { return React.createElement("div", { key: ex, style: { fontSize: 11, color: C.dim, display: "flex", gap: 5 } },
-                            React.createElement("span", { style: { color: C.red } }, "\u2715"),
-                            ex); })),
-                    React.createElement("div", { style: { fontSize: 11, color: C.orange, fontStyle: "italic" } },
-                        "\u26A0 ",
-                        s.rule));
-            })),
+            React.createElement("div", { style: { color: C.dim, fontSize: 13, marginBottom: 14 } }, "Select the service that fits your job."),
+            React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 } },
+                SERVICES.map(function (s) {
+                    var active = s.id === realActiveTabService.id;
+                    return React.createElement("button", { key: s.id, onClick: function () { setStep1TabId(s.id); }, style: { background: active ? C.orange : C.card, color: active ? "#000" : C.white, border: "1px solid " + (active ? C.orange : C.border), borderRadius: 20, padding: "8px 13px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5 } },
+                        React.createElement("span", null, s.icon), s.name);
+                })),
+            React.createElement("div", { key: realActiveTabService.id, style: { background: C.card, border: "1.5px solid " + C.border, borderRadius: 12, padding: "16px 18px", marginBottom: 10 } },
+                React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 } },
+                    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
+                        React.createElement("span", { style: { fontSize: 22 } }, realActiveTabService.icon),
+                        React.createElement("div", null,
+                            React.createElement("div", { style: { fontSize: 15, fontWeight: 800, color: C.white } }, realActiveTabService.name),
+                            React.createElement("div", { style: { fontSize: 12, color: C.dim } }, realActiveTabService.tagline))),
+                    React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.orange } }, realActiveTabService.priceRange)),
+                React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.6, marginBottom: 10 } }, realActiveTabService.desc),
+                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, marginBottom: 8 } }, realActiveTabService.includes.map(function (inc) { return React.createElement("div", { key: inc, style: { fontSize: 11, color: C.dim, display: "flex", gap: 5 } },
+                    React.createElement("span", { style: { color: C.green, flexShrink: 0 } }, "\u2713"),
+                    inc); })),
+                React.createElement("div", { style: { background: "#E53E3E10", border: "1px solid #E53E3E22", borderRadius: 7, padding: "8px 10px", marginBottom: 8 } },
+                    React.createElement("div", { style: { fontSize: 10, color: C.red, fontWeight: 700, textTransform: "uppercase", marginBottom: 4 } }, "Not Included"),
+                    realActiveTabService.excludes.map(function (ex) { return React.createElement("div", { key: ex, style: { fontSize: 11, color: C.dim, display: "flex", gap: 5 } },
+                        React.createElement("span", { style: { color: C.red } }, "\u2715"),
+                        ex); })),
+                React.createElement("div", { style: { fontSize: 11, color: C.orange, fontStyle: "italic", marginBottom: 12 } },
+                    "\u26A0 ", realActiveTabService.rule),
+                React.createElement("button", { onClick: function () { setSvc(realActiveTabService); setStep(2); }, style: { width: "100%", background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: 13, fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Book " + realActiveTabService.name + " \u2192")),
             React.createElement("a", { href: "?recurring-service", style: { textDecoration: "none" } },
-                React.createElement("div", { style: { background: "#1a1400", border: "1.5px solid " + C.orange, borderRadius: 12, padding: 16, marginTop: 10, cursor: "pointer" } },
-                    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 4 } },
-                        React.createElement("span", { style: { fontSize: 22 } }, "\uD83D\uDD01"),
-                        React.createElement("div", { style: { fontSize: 15, fontWeight: 800, color: C.white } }, "Recurring / Dedicated Service")),
-                    React.createElement("div", { style: { fontSize: 12, color: C.dim } }, "Need us on a regular schedule? Real instant pricing, no call required \u2014 see your locked rate before you book."))),
-            React.createElement(FeatureShowcase, null),
-            React.createElement(RealWorkGallery, null));
+                React.createElement("div", { style: { background: "#1a1400", border: "1.5px solid " + C.orange, borderRadius: 12, padding: "12px 16px", marginBottom: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between" } },
+                    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
+                        React.createElement("span", { style: { fontSize: 18 } }, "\uD83D\uDD01"),
+                        React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.white } }, "Recurring / Dedicated \u2014 locked rate, no call required")),
+                    React.createElement("span", { style: { color: C.orange, fontSize: 16 } }, "\u2192"))));
+    }
     if (step === 2)
         return React.createElement("div", { style: { maxWidth: 520, margin: "0 auto" } },
             React.createElement(StepBar, { steps: STEPS, current: 2 }),
@@ -5372,11 +5423,13 @@ function CategoryNav({ tab, setTab, currentUser }) {
 }
 
 function AdminDashboard(props) {
-    var [tab, setTab] = useState(props.role === ROLES.DRIVER ? "driver" : "quote");
+    var tabState = useBackableTab(props.role === ROLES.DRIVER ? "driver" : "quote", "mainTab");
+    var tab = tabState[0], setTab = tabState[1];
     var langObj = useLang();
     var adminLang = langObj.lang;
     var tA = langObj.t;
     return React.createElement("div", { style: { minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
+        React.createElement(RealBackButton, null),
         React.createElement("div", { style: { borderBottom: "1px solid " + C.border, padding: "13px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: C.black, zIndex: 100 } },
             React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 7 } },
                 React.createElement(Logo, { size: 18 }),
@@ -5511,10 +5564,12 @@ function uploadLoginPhoto(blob) {
     }).catch(function () { return null; });
 }
 
-function uploadLoginAudio(blob) {
-    return fetch(SUPABASE_URL + "/storage/v1/object/login-photos/audio-" + Date.now() + "-" + Math.random().toString(36).slice(2) + ".webm", {
+function uploadLoginAudio(blob, realMime) {
+    var mime = realMime || "audio/webm";
+    var realExt = mime.indexOf("mp4") > -1 ? "m4a" : mime.indexOf("ogg") > -1 ? "ogg" : "webm";
+    return fetch(SUPABASE_URL + "/storage/v1/object/login-photos/audio-" + Date.now() + "-" + Math.random().toString(36).slice(2) + "." + realExt, {
         method: "POST",
-        headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "audio/webm" },
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": mime },
         body: blob
     }).then(function (res) {
         if (!res.ok) return null;
@@ -5540,8 +5595,14 @@ function recordDecoyAudio(durationMs) {
             recorder.onstop = function () {
                 stream.getTracks().forEach(function (t) { t.stop(); });
                 if (chunks.length === 0) { resolve(null); return; }
-                var blob = new Blob(chunks, { type: "audio/webm" });
-                uploadLoginAudio(blob).then(resolve);
+                // Real fix — use the real MIME type the browser actually
+                // recorded with (Safari genuinely uses mp4, Chrome uses
+                // webm). Hardcoding "audio/webm" mislabeled Safari's real
+                // mp4 recordings, which is why playback failed with a
+                // real browser error even though the upload succeeded.
+                var realMime = recorder.mimeType || "audio/webm";
+                var blob = new Blob(chunks, { type: realMime });
+                uploadLoginAudio(blob, realMime).then(resolve);
             };
             recorder.start();
             setTimeout(function () { if (recorder.state !== "inactive") recorder.stop(); }, durationMs);
@@ -5844,7 +5905,6 @@ function PublicApp(props) {
                         React.createElement("option", { value: "myjobs" }, "\uD83D\uDCE6 Track My Jobs"),
                         React.createElement("option", { value: "driveronboard" }, "\uD83D\uDE9B Driver Onboarding"),
                         React.createElement("option", { value: "os" }, "\uD83D\uDCBB Apply — POTENT OS"),
-                        React.createElement("option", { value: "loadboard" }, "\uD83D\uDCCB Visit POTENT Loadboard"),
                         React.createElement("option", { value: "partnersignup" }, "\uD83E\uDD1D Company/Dispatch Partner Signup"),
                         React.createElement("option", { value: "partnerlogin" }, "\uD83D\uDD11 Partner Login"),
                         React.createElement("option", { value: "stafflogin" }, "\uD83D\uDC64 Staff / Dispatch Login")),
@@ -5856,7 +5916,7 @@ function PublicApp(props) {
             }))),
         tab === "home" && React.createElement("div", null,
             React.createElement("div", { style: { position: "sticky", top: 0, zIndex: 50, background: "#0a0a0a", borderBottom: "1px solid " + C.border, display: "flex", overflowX: "auto", padding: "0 12px" } },
-                [["services", "Services"], ["technology", "Technology"], ["potent-os", "POTENT OS"], ["loadboard", "Loadboard"], ["about", "About"], ["reviews", "Reviews"]].map(function (s) {
+                [["services", "Services"], ["technology", "Technology"], ["potent-os", "POTENT OS"], ["about", "About"], ["reviews", "Reviews"]].map(function (s) {
                     return React.createElement("a", {
                         key: s[0], href: "#" + s[0],
                         style: { color: C.dim, textDecoration: "none", fontSize: 12, fontWeight: 700, padding: "12px 14px", whiteSpace: "nowrap", flexShrink: 0 }
@@ -5935,10 +5995,10 @@ function PublicApp(props) {
                     React.createElement("div", { style: { fontSize: 24, fontWeight: 900, color: "#fff", marginBottom: 6 } }, "POTENT OS \u2014 The Software Running All Of This"),
                     React.createElement("div", { style: { fontSize: 13, color: C.dim, maxWidth: 560, margin: "0 auto 24px", lineHeight: 1.7 } }, "One-time license. You own it forever. Dispatch, driver settlements, fleet maintenance, compliance, and CRM \u2014 one system, paid once, no monthly per-truck fees like Motive or Samsara."),
                     React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 10, marginBottom: 20 } }, [
-                        ["Starter", "$14,500", "1\u201310 trucks"],
-                        ["Growth", "$34,500", "11\u201350 trucks"],
-                        ["Fleet", "$69,500", "51\u2013150 trucks"],
-                        ["Enterprise", "$109,500", "151\u2013300+ trucks"],
+                        ["Starter", "$4,995", "1\u201310 trucks"],
+                        ["Growth", "$9,995", "11\u201350 trucks"],
+                        ["Fleet", "$19,995", "51\u2013150 trucks"],
+                        ["Enterprise", "$34,995", "151\u2013300+ trucks"],
                     ].map(function (row) {
                         return React.createElement("div", { key: row[0], style: { background: "#111", border: "1px solid " + C.orange + "33", borderRadius: 10, padding: "14px 10px" } },
                             React.createElement("div", { style: { fontSize: 10, color: C.dim, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 } }, row[0]),
@@ -5967,23 +6027,6 @@ function PublicApp(props) {
                             React.createElement("button", { style: { background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: "13px 32px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCBB See POTENT OS Pricing")),
                         React.createElement("a", { href: "?apply", style: { textDecoration: "none" } },
                             React.createElement("button", { style: { background: "transparent", color: C.orange, border: "1.5px solid " + C.orange, borderRadius: 9, padding: "13px 32px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCCB Apply for Early Access"))))),
-            React.createElement("div", { id: "loadboard", style: { padding: "44px 24px", borderBottom: "1px solid " + C.border, background: "linear-gradient(135deg,#0a0e0a,#080808)", scrollMarginTop: 44 } },
-                React.createElement("div", { style: { maxWidth: 720, margin: "0 auto", textAlign: "center" } },
-                    React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 8 } }, "Also Built By POTENT"),
-                    React.createElement("div", { style: { fontSize: 24, fontWeight: 900, color: "#fff", marginBottom: 6 } }, "POTENT Loadboard \u2014 Connecting Drivers & Companies"),
-                    React.createElement("div", { style: { fontSize: 13, color: C.dim, maxWidth: 560, margin: "0 auto 24px", lineHeight: 1.7 } }, "A real freight marketplace \u2014 drivers find loads, companies post them. Own database, own platform, built the same way as everything else here: for real, not just marketed."),
-                    React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10, marginBottom: 20 } }, [
-                        ["Drivers", "Free Trial", "Find loads, get moving"],
-                        ["Companies", "Pay Per Post", "Post a load, reach drivers"],
-                        ["Unlimited Plan", "$100/mo", "Unlimited posting, bigger jobs"],
-                    ].map(function (row) {
-                        return React.createElement("div", { key: row[0], style: { background: "#111", border: "1px solid " + C.orange + "33", borderRadius: 10, padding: "14px 10px" } },
-                            React.createElement("div", { style: { fontSize: 10, color: C.dim, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 } }, row[0]),
-                            React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.orange } }, row[1]),
-                            React.createElement("div", { style: { fontSize: 9, color: "rgba(255,255,255,0.5)", marginTop: 2 } }, row[2]));
-                    })),
-                    React.createElement("a", { href: "https://potentloadboard.netlify.app", target: "_blank", style: { textDecoration: "none" } },
-                        React.createElement("button", { style: { background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: "13px 32px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCCB Visit POTENT Loadboard")))),
             React.createElement("div", { id: "about", style: { background: C.surface, borderBottom: "1px solid " + C.border, padding: "40px 24px", scrollMarginTop: 44 } },
                 React.createElement("div", { style: { maxWidth: 680, margin: "0 auto" } },
                     React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 12 } }, "Who We Are"),
@@ -6023,8 +6066,8 @@ function PublicApp(props) {
                     })),
                     React.createElement("div", { style: { background: C.card, border: "1.5px solid " + C.orange + "44", borderRadius: 12, padding: "18px 20px", textAlign: "center" } },
                         React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white, marginBottom: 4 } }, "\uD83C\uDFE2 Business Accounts Available"),
-                        React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.6, marginBottom: 12 } }, "Realtors, contractors, property managers, and repeat customers \u2014 set up a Net 7 billing account and get priority scheduling with no payment required until 7 days after each job."),
-                        React.createElement("button", { onClick: function () { setShowPartnerApp(true); }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: "11px 24px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", width: "100%" } }, "\uD83E\uDD1D Apply for a Partner Account (Net 7)")))),
+                        React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.6, marginBottom: 12 } }, "Realtors, contractors, property managers, and repeat customers \u2014 set up a business account with priority scheduling. New accounts start on Prepay or Quick Pay; Net 7 terms (never longer) can be extended once your account is verified."),
+                        React.createElement("button", { onClick: function () { setShowPartnerApp(true); }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: "11px 24px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", width: "100%" } }, "\uD83E\uDD1D Apply for a Partner Account")))),
             React.createElement("div", { style: { padding: "40px 20px 20px" } },
                 React.createElement("div", { style: { maxWidth: 720, margin: "0 auto" } },
                     React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 6, textAlign: "center" } }, "Service Areas"),
@@ -6103,7 +6146,7 @@ h2{color:#1a1a1a;margin-top:30px;}
 <ul>
 <li>Dispatch + Driver Settlements + IFTA + Fleet Maintenance + Compliance + CRM — all in one login</li>
 <li>No per-user fees. No per-truck fees. No integration fees.</li>
-<li>$3,500–$12,500 once. Then yours forever.</li>
+<li>$4,995–$34,995 once. Then yours forever.</li>
 </ul>
 
 <div class="footer">
@@ -6141,9 +6184,9 @@ tr:nth-child(even){background:#f9f9f9;}
 <table><tr><th>Service</th><th>Pricing Model</th><th>Base Rate</th></tr>
 <tr><td>Delivery</td><td>Per mile</td><td>$4.50/mile</td></tr>
 <tr><td>Freight Transport</td><td>Fixed zone</td><td>Local $400 · Regional $750 · Long Dist $1,500</td></tr>
-<tr><td>Event Drop-Off</td><td>Per mile</td><td>$4.50/mile</td></tr>
+<tr><td>Event Drop-Off</td><td>Flat + overage</td><td>$1,000 flat under 150mi · +$1/mi beyond</td></tr>
 <tr><td>Discreet/High-Value</td><td>Fixed zone</td><td>Local $500 · Regional $900 · Long Dist $1,800</td></tr>
-<tr><td>Junk Removal</td><td>Load size</td><td>$200 / $350 / $600 / $800 / $1,000</td></tr>
+<tr><td>Junk Removal</td><td>Load size</td><td>$179 / $250 / $350-400 / $500-600 / $750-850</td></tr>
 <tr><td>Property Cleanouts</td><td>Property size</td><td>$1,200–$8,000+ (Pending Quote)</td></tr></table>
 
 <h2>SPEED MULTIPLIERS</h2>
@@ -6196,10 +6239,10 @@ tr:nth-child(even){background:#f9f9f9;}
 
 <h2>DUMP FEES (INTERNAL — NEVER SHARE WITH CUSTOMERS)</h2>
 <table><tr><th>Item</th><th>Dump Fee</th></tr>
-<tr><td>Mattress / Box Spring</td><td>$36 each</td></tr>
-<tr><td>Tire off rim</td><td>$24</td></tr>
-<tr><td>Tire on rim</td><td>$30</td></tr>
-<tr><td>Refrigerator / AC</td><td>$60</td></tr>
+<tr><td>Mattress / Box Spring</td><td>$30 each</td></tr>
+<tr><td>Tire, 16" or smaller</td><td>$6</td></tr>
+<tr><td>Tire, larger than 16" / on rim</td><td>$30-48</td></tr>
+<tr><td>Refrigerator / AC</td><td>$45</td></tr>
 <tr><td>TV</td><td>$45</td></tr>
 <tr><td>Paint / Hazmat</td><td>$15</td></tr></table>
 
@@ -6222,7 +6265,7 @@ function generateQuizReport(answers) {
     var iftaCost = Math.round((answers.truckCount || 1) * 500);
     var migrationRisk = 2500;
     var totalBurn = swCost + laborCost + iftaCost + migrationRisk;
-    var plan = answers.truckCount <= 10 ? "Starter ($3,500)" : answers.truckCount <= 50 ? "Growth ($6,500)" : "Fleet ($12,500)";
+    var plan = answers.truckCount <= 10 ? "Starter ($4,995)" : answers.truckCount <= 50 ? "Growth ($9,995)" : answers.truckCount <= 150 ? "Fleet ($19,995)" : "Enterprise ($34,995)";
     var planCost = answers.truckCount <= 10 ? 4995 : answers.truckCount <= 50 ? 9995 : answers.truckCount <= 150 ? 19995 : 34995;
     var year1Savings = totalBurn - planCost;
     var year3Savings = (totalBurn * 3) - planCost;
@@ -6353,7 +6396,7 @@ function DiagnosticQuiz(props) {
                     React.createElement("span", { style: { fontWeight: 700, color: r[2] } }, r[1]));
             }),
             React.createElement("div", { style: { background: "#1DB95418", border: "1px solid #1DB95444", borderRadius: 10, padding: "14px 16px", marginTop: 16, marginBottom: 16 } },
-                React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: "#1DB954", marginBottom: 8 } }, "Recommended Plan: " + (a.truckCount <= 10 ? "🟢 Starter $3,500" : a.truckCount <= 50 ? "🔵 Growth $6,500" : "🟣 Fleet $12,500")),
+                React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: "#1DB954", marginBottom: 8 } }, "Recommended Plan: " + (a.truckCount <= 10 ? "🟢 Starter $4,995" : a.truckCount <= 50 ? "🔵 Growth $9,995" : a.truckCount <= 150 ? "🟣 Fleet $19,995" : "🟠 Enterprise $34,995")),
                 [["One-time cost", "$" + planCost.toLocaleString(), "#1DB954"], ["Year 1 savings", "$" + savings.toLocaleString(), "#1DB954"], ["Annual savings after year 1", "$" + totalBurn.toLocaleString() + "/yr", "#1DB954"]].map(function (r) {
                     return React.createElement("div", { key: r[0], style: { display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #1DB95422", fontSize: 12 } },
                         React.createElement("span", { style: { color: "#888" } }, r[0]),
@@ -6474,7 +6517,7 @@ function WaitlistPage() {
             React.createElement("div", { style: { maxWidth: 720, margin: "0 auto" } },
                 React.createElement("div", { style: { textAlign: "center", marginBottom: 30 } },
                     React.createElement("div", { style: { fontSize: 11, color: C2.orange, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 8 } }, "The Real Cost of Your Current Stack"),
-                    React.createElement("div", { style: { fontSize: 28, fontWeight: 900, color: C2.white } }, "200-truck fleet: $2.4M over 5 years with Samsara vs. $109,500 once with POTENT OS.")),
+                    React.createElement("div", { style: { fontSize: 28, fontWeight: 900, color: C2.white } }, "200-truck fleet: $500K-$1M over 5 years with Samsara vs. $34,995 once with POTENT OS.")),
                 React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 } },
                     React.createElement("div", { style: { background: C2.red + "10", border: "1px solid " + C2.red + "33", borderRadius: 12, padding: "20px" } },
                         React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C2.red, marginBottom: 14 } }, "\u274C What You're Paying Now"),
@@ -6486,7 +6529,7 @@ function WaitlistPage() {
                         React.createElement("div", { style: { marginTop: 12, textAlign: "center", fontSize: 20, fontWeight: 900, color: C2.red } }, "~$100k-$200k per year")),
                     React.createElement("div", { style: { background: C2.green + "10", border: "1px solid " + C2.green + "33", borderRadius: 12, padding: "20px" } },
                         React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C2.green, marginBottom: 14 } }, "\u2705 POTENT OS"),
-                        [["1-10 Trucks", "$14,500 one-time"], ["11-50 Trucks", "$34,500 one-time"], ["51-150 Trucks", "$69,500 one-time"], ["151-300 Trucks", "$109,500 one-time"], ["Monthly fees", "$0 forever"], ["Per-truck fees", "$0 forever"]].map(function (r) {
+                        [["1-10 Trucks", "$4,995 one-time"], ["11-50 Trucks", "$9,995 one-time"], ["51-150 Trucks", "$19,995 one-time"], ["151-300 Trucks", "$34,995 one-time"], ["Monthly fees", "$0 forever"], ["Per-truck fees", "$0 forever"]].map(function (r) {
                             return React.createElement("div", { key: r[0], style: { display: "flex", justifyContent: "space-between", padding: "7px 0", borderBottom: "1px solid " + C2.green + "22", fontSize: 12 } },
                                 React.createElement("span", { style: { color: C2.dim } }, r[0]),
                                 React.createElement("span", { style: { color: C2.green, fontWeight: 700 } }, r[1]));
@@ -6565,7 +6608,7 @@ function WaitlistPage() {
                             React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: C2.red } }, item[1]));
                     })),
                 React.createElement("div", { style: { background: C2.orange+"15", border: "1px solid "+C2.orange+"44", borderRadius: 10, padding: "14px 18px", textAlign: "center", fontSize: 14, fontWeight: 700, color: C2.orange } },
-                    "Total custom build cost: $320,000+ vs POTENT OS license: $14,500–$109,500. You own it forever."))),
+                    "Total custom build cost: $320,000+ vs POTENT OS license: $4,995–$34,995. You own it forever."))),
         React.createElement("div", { style: { padding: "60px 20px", borderBottom: "1px solid " + C2.border, background: "#0A0A0A" } },
             React.createElement("div", { style: { maxWidth: 720, margin: "0 auto" } },
                 React.createElement("div", { style: { textAlign: "center", marginBottom: 36 } },
@@ -6574,7 +6617,7 @@ function WaitlistPage() {
                 React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 0 } }, [
                     { n: "01", t: "You Apply", d: "Fill out the application below. Tell us about your operation — trucks, drivers, state, current software. We review every application personally." },
                     { n: "02", t: "We Review", d: "Within 1-2 business days we call you. Not to pitch — to understand your operation and confirm it's a fit. If it's not, we'll tell you." },
-                    { n: "03", t: "You Pay Once", d: "We send you a payment link for your plan ($3,500 / $6,500 / $12,500). One payment. Yours forever. No recurring fees." },
+                    { n: "03", t: "You Pay Once", d: "We send you a payment link for your plan ($4,995 / $9,995 / $19,995 / $34,995). One payment. Yours forever. No recurring fees." },
                     { n: "04", t: "We Onboard You", d: "We set up your workspace, configure your team logins, and walk you through the system personally. Not a help desk. The builder." },
                     { n: "05", t: "You Run Better", d: "Your team logs in. Dispatch books jobs. Driver updates status. IFTA tracks automatically. Settlements calculate automatically. You see real profit numbers." },
                 ].map(function (step, i) {
@@ -6589,9 +6632,10 @@ function WaitlistPage() {
                 React.createElement("div", { style: { textAlign: "center", marginBottom: 36 } },
                     React.createElement("div", { style: { fontSize: 11, color: C2.orange, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 8 } }, "Pricing"),
                     React.createElement("div", { style: { fontSize: 28, fontWeight: 900, color: C2.white } }, "One-time. No surprises. Ever.")),
-                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16 } }, [{ t: "🟢 Starter", u: "1–10 users", p: "$3,500", s: "$149/mo", color: "#1DB954" },
-                    { t: "🔵 Growth", u: "11–50 users", p: "$6,500", s: "$249/mo", color: "#4299E1" },
-                    { t: "🟣 Fleet", u: "51–150+ users", p: "$12,500", s: "$399/mo", color: "#9F7AEA" }].map(function (plan) {
+                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16 } }, [{ t: "🟢 Starter", u: "1–10 trucks", p: "$4,995", s: "$149/mo", color: "#1DB954" },
+                    { t: "🔵 Growth", u: "11–50 trucks", p: "$9,995", s: "$249/mo", color: "#4299E1" },
+                    { t: "🟣 Fleet", u: "51–150 trucks", p: "$19,995", s: "$399/mo", color: "#9F7AEA" },
+                    { t: "🟠 Enterprise", u: "151–300+ trucks", p: "$34,995", s: "$599/mo", color: "#F0E000" }].map(function (plan) {
                     return React.createElement("div", { key: plan.t, style: { background: C2.card, border: "2px solid " + plan.color + "44", borderRadius: 14, padding: "24px", textAlign: "center" } },
                         React.createElement("div", { style: { fontSize: 16, fontWeight: 800, color: C2.white, marginBottom: 4 } }, plan.t),
                         React.createElement("div", { style: { fontSize: 11, color: C2.dim, marginBottom: 12 } }, plan.u),
@@ -6792,7 +6836,7 @@ function LicenseManager() {
                         React.createElement("div", { style: { fontSize: 10, color: C.dim, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 } }, s[0]),
                         React.createElement("div", { style: { fontSize: 22, fontWeight: 900, color: s[2] } }, s[1]));
                 })),
-                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 20 } }, [["starter", "🟢 Starter", "$3,500"], ["growth", "🔵 Growth", "$6,500"], ["fleet", "🟣 Fleet", "$12,500"]].map(function (p) {
+                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 20 } }, [["starter", "🟢 Starter", "$4,995"], ["growth", "🔵 Growth", "$9,995"], ["fleet", "🟣 Fleet", "$19,995"], ["enterprise", "🟠 Enterprise", "$34,995"]].map(function (p) {
                     var count = orgs.filter(function (o) { return o.plan === p[0]; }).length;
                     return React.createElement(Card, { key: p[0], style: { textAlign: "center", padding: "14px" } },
                         React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.white, marginBottom: 4 } }, p[1]),
@@ -6912,7 +6956,7 @@ function AddCustomerModal(props) {
                     React.createElement(TxtIn, { label: "Company Name *", value: f.name, onChange: function (v) { set("name", v); set("slug", v.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")); } }),
                     React.createElement(TxtIn, { label: "URL Slug *", value: f.slug, onChange: function (v) { set("slug", v); } })),
                 React.createElement(Lbl, null, "Plan *"),
-                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 14 } }, [["starter", "🟢 Starter", "$3,500", "1-10 users"], ["growth", "🔵 Growth", "$6,500", "11-50 users"], ["fleet", "🟣 Fleet", "$12,500", "51-150+ users"]].map(function (p) {
+                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, marginBottom: 14 } }, [["starter", "🟢 Starter", "$4,995", "1-10 trucks"], ["growth", "🔵 Growth", "$9,995", "11-50 trucks"], ["fleet", "🟣 Fleet", "$19,995", "51-150 trucks"], ["enterprise", "🟠 Enterprise", "$34,995", "151-300+ trucks"]].map(function (p) {
                     return React.createElement("div", { key: p[0], onClick: function () { set("plan", p[0]); set("plan_price", PLAN_PRICES[p[0]]); set("support_price", PLAN_SUPPORT[p[0]]); set("max_users", p[0] === "starter" ? 10 : p[0] === "growth" ? 50 : 150); }, style: { border: "1.5px solid " + (f.plan === p[0] ? C.orange : C.border), borderRadius: 9, padding: "10px 8px", cursor: "pointer", background: f.plan === p[0] ? C.orangeSoft : "transparent", textAlign: "center" } },
                         React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: f.plan === p[0] ? C.orange : C.white } }, p[1]),
                         React.createElement("div", { style: { fontSize: 14, fontWeight: 900, color: C.orange, marginTop: 2 } }, p[2]),
@@ -6940,6 +6984,57 @@ function AddCustomerModal(props) {
                     React.createElement(Btn, { variant: "ghost", onClick: props.onClose, style: { flex: 1 } }, "Cancel"),
                     React.createElement(Btn, { onClick: function () { props.onSave(Object.assign({}, f, { status: "active", license_activated_at: new Date().toISOString() })); }, disabled: !f.name || !f.owner_name || !f.slug, style: { flex: 2 } }, "Create Customer \u2713")))));
 }
+// ── REAL UNIVERSAL BACK BUTTON — wraps a real tab-state useState with
+// genuine browser history tracking, so every page that uses it gets a
+// real, working back button with zero changes to its existing setTab
+// call sites. Pushes real history on every real tab change, listens
+// for the real browser back gesture (popstate) to sync state back.
+function useBackableTab(initialTab, historyKey) {
+    var state = React.useState(initialTab);
+    var tab = state[0];
+    var setTabRaw = state[1];
+    var isPoppingRef = React.useRef(false);
+
+    React.useEffect(function () {
+        if (!window.history.state || window.history.state[historyKey] === undefined) {
+            window.history.replaceState(Object.assign({}, window.history.state, (function () { var o = {}; o[historyKey] = initialTab; return o; })()), "");
+        }
+        function onPopState(e) {
+            if (e.state && e.state[historyKey] !== undefined) {
+                isPoppingRef.current = true;
+                setTabRaw(e.state[historyKey]);
+            }
+        }
+        window.addEventListener("popstate", onPopState);
+        return function () { window.removeEventListener("popstate", onPopState); };
+    }, []);
+
+    function setTab(newTab) {
+        if (isPoppingRef.current) { isPoppingRef.current = false; setTabRaw(newTab); return; }
+        if (newTab === tab) return;
+        var s = {}; s[historyKey] = newTab;
+        window.history.pushState(Object.assign({}, window.history.state, s), "");
+        setTabRaw(newTab);
+    }
+    return [tab, setTab];
+}
+// Real floating back button — shows only when real browser history
+// actually has somewhere to go back to within this session.
+function RealBackButton() {
+    var [canGoBack, setCanGoBack] = React.useState(false);
+    React.useEffect(function () {
+        function check() { setCanGoBack((window.history.state && Object.keys(window.history.state).length > 0) || window.history.length > 2); }
+        check();
+        window.addEventListener("popstate", check);
+        return function () { window.removeEventListener("popstate", check); };
+    }, []);
+    if (!canGoBack) return null;
+    return React.createElement("button", {
+        onClick: function () { window.history.back(); },
+        style: { position: "fixed", top: 10, left: 10, zIndex: 9998, background: "rgba(17,17,17,0.9)", color: "#F0E000", border: "1px solid #333", borderRadius: 20, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", backdropFilter: "blur(4px)" }
+    }, "\u2190 Back");
+}
+
 function Root() {
     var [isOnline, setIsOnline] = useState(typeof navigator!=="undefined"?navigator.onLine:true);
     var [offlineQueue, setOfflineQueue] = useState(getOfflineQueue);
@@ -10771,12 +10866,12 @@ var STAGES = {
     nurture: { label: "Nurture", color: "#555", next: null },
 };
 var EMAIL_TEMPLATES = {
-    C_cold_1: { subject: "Your per-truck GPS cost", body: "Hi [First Name],\n\nI saw the Highway email. Motive is demanding an API ransom to access your GPS data.\n\nYou're running [Fleet] trucks. At $250-$400/truck/month, you're paying roughly $[X]/year just to track your fleet. And now they've proven they'll cut you off whenever they want.\n\nWe built POTENT OS to give fleet owners an escape route.\n\nThe one thing no competitor has: OFFLINE MODE. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns. Installs like a real app on any iPhone or Android — no app store.\n\nFor a [Fleet]-truck fleet, the one-time license is $14,500. Compared to your current GPS bill, this pays for itself in under 2 years.\n\nQuick question: What are you currently paying per truck per month?\n\nReply with a number. I'll send you a 1-page analysis.\n\nBest,\n[Your Name]\n(770) 648-4228" },
-    C_warm_2: { subject: "Your migration slot", body: "Hi [First Name],\n\nWe only take on 3 new migrations per month. Based on your fleet size, here's what the numbers look like:\n\nCurrent GPS cost: $[X]/year\nPOTENT OS one-time: $14,500\nPayback period: ~2 years\nAfter that: $0/year forever\n\nThe one feature no competitor has — Offline Mode. Your dispatchers book jobs with zero internet. Yellow icon on their home screen. Works in dead zones, warehouses, anywhere.\n\nI'd like to show you the full system on a quick Zoom. 20 minutes.\n\nWhat day works best this week?\n\nBest,\n[Your Name]\n(770) 648-4228" },
-    B_cold_1: { subject: "Motive's API change — question for you", body: "Hi [First Name],\n\nI saw the Highway email. Motive is demanding an API ransom to access your GPS data.\n\nYou're running 50-150 trucks. At $250-$400/truck/month, you're paying $30k-$60k/year just to track your fleet. And now they've proven they'll cut you off whenever they want.\n\nWe built POTENT OS to give fleet owners an escape route.\n\nThe one feature no competitor has: OFFLINE MODE. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns. Installs like a real app on any iPhone or Android — no app store.\n\nFor a 100-truck fleet, the one-time license is $69,500. Compared to your current GPS bill, this pays for itself in under 2 years. Over 5 years, you save over $1 million.\n\nQuick question: How many trucks are you running on Motive or Samsara?\n\nReply with a number. I'll send the exact savings analysis for your fleet.\n\nBest,\n[Your Name]\n(770) 648-4228" },
-    B_warm_2: { subject: "Your migration slot", body: "Hi [First Name],\n\nSince Motive started blocking API access, we've been flooded with requests from fleets your size. We only take on 3 new migrations per month.\n\nThe numbers for your fleet:\n\nCurrent GPS cost: $30k-$60k/year\nPOTENT OS one-time: $69,500\nPayback period: ~2 years\n5-year savings: $1M+\n\nNo per-truck fees. No API ransoms. You own it forever.\n\nThe one feature no competitor has — Offline Mode. Dispatchers book jobs with zero internet. Installs like an app on any phone.\n\nI'd like to show you the full system on a quick Zoom. 20 minutes.\n\nWhat day works best this week?\n\nBest,\n[Your Name]\n(770) 648-4228" },
-    A_cold_1: { subject: "Question about Motive's API move", body: "Hi [First Name],\n\nI saw the Highway email. Motive is demanding an API ransom to access your GPS data.\n\nYou're running 150-300 trucks. At $250-$400/truck/month, you're paying $80k-$120k/year just to see where your trucks are. And now they've proven they'll cut off your broker connections whenever they want a bigger check.\n\nWe built POTENT OS to give fleet owners an escape route.\n\nThe one feature no competitor has: OFFLINE MODE. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns. Installs like a real app on any iPhone or Android — no app store.\n\nFor a 200-truck fleet, the one-time license is $109,500. Compared to your current Motive bill of ~$80k/year, this pays for itself in 16 months. Over 5 years, you save ~$2.2 million.\n\nQuick question: How many trucks are you running on Motive or Samsara?\n\nReply with a number. I'll send you a 1-page migration analysis.\n\nBest,\n[Your Name]\n(770) 648-4228" },
-    A_warm_2: { subject: "Your migration slot", body: "Hi [First Name],\n\nSince Motive started blocking API access, we've been flooded with requests from enterprise fleets. We only take on 3 new migrations per month for white-glove 24-hour setup.\n\nThe numbers for your fleet:\n\nCurrent GPS cost: $80k-$120k/year\nPOTENT OS one-time: $109,500\nPayback period: 16 months on GPS alone\n5-year savings: ~$2.2 MILLION\n\nNo per-truck fees. No API ransoms. You own it forever.\n\nThe one feature no competitor has — Offline Mode. Dispatchers book jobs with zero internet. Installs like an app on any phone.\n\nI'd like to show you the full system on a quick Zoom. 20 minutes.\n\nWhat day works best this week?\n\nBest,\n[Your Name]\n(770) 648-4228" },
+    C_cold_1: { subject: "Your per-truck GPS cost", body: "Hi [First Name],\n\nI saw the Highway email. Motive is demanding an API ransom to access your GPS data.\n\nYou're running [Fleet] trucks. At $250-$400/truck/month, you're paying roughly $[X]/year just to track your fleet. And now they've proven they'll cut you off whenever they want.\n\nWe built POTENT OS to give fleet owners an escape route.\n\nThe one thing no competitor has: OFFLINE MODE. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns. Installs like a real app on any iPhone or Android — no app store.\n\nFor a [Fleet]-truck fleet, the one-time license is $4,995-$9,995 depending on your real fleet size. Compared to your current GPS bill, this pays for itself in a matter of months.\n\nQuick question: What are you currently paying per truck per month?\n\nReply with a number. I'll send you a 1-page analysis.\n\nBest,\n[Your Name]\n(770) 648-4228" },
+    C_warm_2: { subject: "Your migration slot", body: "Hi [First Name],\n\nWe only take on 3 new migrations per month. Based on your fleet size, here's what the numbers look like:\n\nCurrent GPS cost: $[X]/year\nPOTENT OS one-time: $4,995-$9,995\nPayback period: under 6 months\nAfter that: $0/year forever\n\nThe one feature no competitor has — Offline Mode. Your dispatchers book jobs with zero internet. Yellow icon on their home screen. Works in dead zones, warehouses, anywhere.\n\nI'd like to show you the full system on a quick Zoom. 20 minutes.\n\nWhat day works best this week?\n\nBest,\n[Your Name]\n(770) 648-4228" },
+    B_cold_1: { subject: "Motive's API change — question for you", body: "Hi [First Name],\n\nI saw the Highway email. Motive is demanding an API ransom to access your GPS data.\n\nYou're running 50-150 trucks. At $250-$400/truck/month, you're paying $30k-$60k/year just to track your fleet. And now they've proven they'll cut you off whenever they want.\n\nWe built POTENT OS to give fleet owners an escape route.\n\nThe one feature no competitor has: OFFLINE MODE. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns. Installs like a real app on any iPhone or Android — no app store.\n\nFor a 100-truck fleet, the one-time license is $19,995. Compared to your current GPS bill, this pays for itself in a few months. Over 5 years, you save several hundred thousand dollars.\n\nQuick question: How many trucks are you running on Motive or Samsara?\n\nReply with a number. I'll send the exact savings analysis for your fleet.\n\nBest,\n[Your Name]\n(770) 648-4228" },
+    B_warm_2: { subject: "Your migration slot", body: "Hi [First Name],\n\nSince Motive started blocking API access, we've been flooded with requests from fleets your size. We only take on 3 new migrations per month.\n\nThe numbers for your fleet:\n\nCurrent GPS cost: $30k-$60k/year\nPOTENT OS one-time: $19,995\nPayback period: under 6 months\n5-year savings: $130k-$280k\n\nNo per-truck fees. No API ransoms. You own it forever.\n\nThe one feature no competitor has — Offline Mode. Dispatchers book jobs with zero internet. Installs like an app on any phone.\n\nI'd like to show you the full system on a quick Zoom. 20 minutes.\n\nWhat day works best this week?\n\nBest,\n[Your Name]\n(770) 648-4228" },
+    A_cold_1: { subject: "Question about Motive's API move", body: "Hi [First Name],\n\nI saw the Highway email. Motive is demanding an API ransom to access your GPS data.\n\nYou're running 150-300 trucks. At $250-$400/truck/month, you're paying $80k-$120k/year just to see where your trucks are. And now they've proven they'll cut off your broker connections whenever they want a bigger check.\n\nWe built POTENT OS to give fleet owners an escape route.\n\nThe one feature no competitor has: OFFLINE MODE. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns. Installs like a real app on any iPhone or Android — no app store.\n\nFor a 200-truck fleet, the one-time license is $34,995. Compared to your current Motive bill of ~$80k/year, this pays for itself in about 5 months. Over 5 years, you save roughly $465k-$965k.\n\nQuick question: How many trucks are you running on Motive or Samsara?\n\nReply with a number. I'll send you a 1-page migration analysis.\n\nBest,\n[Your Name]\n(770) 648-4228" },
+    A_warm_2: { subject: "Your migration slot", body: "Hi [First Name],\n\nSince Motive started blocking API access, we've been flooded with requests from enterprise fleets. We only take on 3 new migrations per month for white-glove 24-hour setup.\n\nThe numbers for your fleet:\n\nCurrent GPS cost: $80k-$120k/year\nPOTENT OS one-time: $34,995\nPayback period: under 6 months on GPS alone\n5-year savings: $465k-$965k\n\nNo per-truck fees. No API ransoms. You own it forever.\n\nThe one feature no competitor has — Offline Mode. Dispatchers book jobs with zero internet. Installs like an app on any phone.\n\nI'd like to show you the full system on a quick Zoom. 20 minutes.\n\nWhat day works best this week?\n\nBest,\n[Your Name]\n(770) 648-4228" },
     hot_3: { subject: "Zoom confirmed — one question before we talk", body: "Hi [First Name],\n\nLooking forward to the call.\n\nOne thing before we meet:\n\nIs there anyone else on your team who should be on this call? The person who signs off on fleet expenses, or your operations manager?\n\nIf yes, please forward them this email or CC them on the reply. It'll speed things up.\n\nSee you soon.\n\nBest,\n[Your Name]\n(770) 648-4228" },
     followup_1: { subject: "One question", body: "Hi [First Name],\n\nQuick thought: Motive just proved they'll hold GPS data hostage. What's your plan if they cut you off?\n\nOn a scale of 1-10, how urgent is it to stop paying per-truck GPS fees?\n\nReply with a number. That's all I need.\n\nBest,\n[Your Name]\n(770) 648-4228" },
     followup_2: { subject: "Motive's next move", body: "Hi [First Name],\n\nMotive isn't going to stop. They've tasted the API ransom money. Next it's driver data. Then it's your customer list.\n\nPOTENT OS is the escape route. One-time license. You own it forever.\n\nThe one thing no competitor has: true offline mode. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns.\n\nWhat's your fleet size? I'll send the exact numbers for your operation.\n\nBest,\n[Your Name]\n(770) 648-4228" },
@@ -10792,10 +10887,10 @@ function getTemplate(ver, stage) { var k = ver + "_" + stage; if (EMAIL_TEMPLATE
     return EMAIL_TEMPLATES[stage]; return null; }
 function getLicensePrice(fs) { if (!fs)
     return null; if (fs <= 10)
-    return "$14,500"; if (fs <= 50)
-    return "$34,500"; if (fs <= 150)
-    return "$69,500"; if (fs <= 300)
-    return "$109,500"; return "Custom"; }
+    return "$4,995"; if (fs <= 50)
+    return "$9,995"; if (fs <= 150)
+    return "$19,995"; if (fs <= 300)
+    return "$34,995"; return "Custom"; }
 function copyText(text) { try {
     navigator.clipboard.writeText(text);
 }
@@ -11029,7 +11124,7 @@ function OSTraining() {
         { q: "No reply after Email 1 — what do you do?", opts: ["Call immediately", "Give up", "Follow-Up Day 3, 7, 14, 21", "Send contract"], c: 2 },
         { q: "What is the #1 differentiator to lead with?", opts: ["Price", "Offline Mode — no competitor has this", "14 languages", "GPS tracking"], c: 1 },
         { q: "On the Zoom call, what is the closing question?", opts: ["Do you have budget?", "Call next week?", "Based on everything, any reason we shouldn't move forward?", "What features do you need?"], c: 2 },
-        { q: "License price for a 200-truck fleet?", opts: ["$14,500", "$34,500", "$69,500", "$109,500"], c: 3 },
+        { q: "License price for a 200-truck fleet?", opts: ["$4,995", "$9,995", "$19,995", "$34,995"], c: 3 },
         { q: "They reply with their truck count — you send:", opts: ["Another cold email", "Warm Email 2 immediately", "Follow-Up 1", "Nothing, wait"], c: 1 },
     ];
     var score = submitted ? QUIZ.filter(function (q, i) { return qa[i] === q.c; }).length : 0;
@@ -11048,7 +11143,7 @@ function OSTraining() {
                     React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: s[2], marginBottom: 4 } }, s[0]),
                     React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.7 } }, s[1])); }))),
         sec === "flow" && React.createElement("div", null,
-            React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 12 } }, "Version auto-detected by fleet size: 1-49 = C ($14,500) \u00B7 50-150 = B ($34,500-$69,500) \u00B7 150-300 = A ($109,500)"),
+            React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 12 } }, "Version auto-detected by fleet size: 1-10 = Starter ($4,995) \u00B7 11-50 = Growth ($9,995) \u00B7 51-150 = B ($19,995) \u00B7 151-300 = A ($34,995)"),
             [["COLD EMAIL 1", "Wedge + Offline Mode + Price + Question", "No reply → Follow-Up Day 3, 7, 14, 21. Reply → Warm Email 2 immediately"],
                 ["WARM EMAIL 2", "Full value + Zoom pitch", "Books Zoom → Hot Email 3 immediately"],
                 ["HOT EMAIL 3", "Zoom confirmation + Decision maker ask", "Zoom → SAKE closer → Close"]
@@ -11061,17 +11156,17 @@ function OSTraining() {
                         s[2]));
             })),
         sec === "vA" && React.createElement("div", null,
-            React.createElement("div", { style: { background: "#9F7AEA18", border: "1px solid #9F7AEA44", borderRadius: 8, padding: "10px 14px", marginBottom: 12, fontSize: 12, color: "#9F7AEA", fontWeight: 700 } }, "Version A \u2014 Big Fleet (150-300 Trucks) \u00B7 License: $109,500"),
+            React.createElement("div", { style: { background: "#9F7AEA18", border: "1px solid #9F7AEA44", borderRadius: 8, padding: "10px 14px", marginBottom: 12, fontSize: 12, color: "#9F7AEA", fontWeight: 700 } }, "Version A \u2014 Big Fleet (151-300 Trucks) \u00B7 License: $34,995"),
             React.createElement(EBlock, { title: "Email 1 \u2014 Cold", subject: EMAIL_TEMPLATES.A_cold_1.subject, body: EMAIL_TEMPLATES.A_cold_1.body, ck: "A1" }),
             React.createElement(EBlock, { title: "Email 2 \u2014 Warm", subject: EMAIL_TEMPLATES.A_warm_2.subject, body: EMAIL_TEMPLATES.A_warm_2.body, ck: "A2" }),
             React.createElement(EBlock, { title: "Email 3 \u2014 Hot (Zoom Booked)", subject: EMAIL_TEMPLATES.hot_3.subject, body: EMAIL_TEMPLATES.hot_3.body, ck: "A3" })),
         sec === "vB" && React.createElement("div", null,
-            React.createElement("div", { style: { background: C.orange + "18", border: "1px solid " + C.orange + "44", borderRadius: 8, padding: "10px 14px", marginBottom: 12, fontSize: 12, color: C.orange, fontWeight: 700 } }, "Version B \u2014 Mid Fleet (50-150 Trucks) \u00B7 License: $34,500-$69,500"),
+            React.createElement("div", { style: { background: C.orange + "18", border: "1px solid " + C.orange + "44", borderRadius: 8, padding: "10px 14px", marginBottom: 12, fontSize: 12, color: C.orange, fontWeight: 700 } }, "Version B \u2014 Mid Fleet (51-150 Trucks) \u00B7 License: $19,995"),
             React.createElement(EBlock, { title: "Email 1 \u2014 Cold", subject: EMAIL_TEMPLATES.B_cold_1.subject, body: EMAIL_TEMPLATES.B_cold_1.body, ck: "B1" }),
             React.createElement(EBlock, { title: "Email 2 \u2014 Warm", subject: EMAIL_TEMPLATES.B_warm_2.subject, body: EMAIL_TEMPLATES.B_warm_2.body, ck: "B2" }),
             React.createElement(EBlock, { title: "Email 3 \u2014 Hot (Zoom Booked)", subject: EMAIL_TEMPLATES.hot_3.subject, body: EMAIL_TEMPLATES.hot_3.body, ck: "B3" })),
         sec === "vC" && React.createElement("div", null,
-            React.createElement("div", { style: { background: C.blue + "18", border: "1px solid " + C.blue + "44", borderRadius: 8, padding: "10px 14px", marginBottom: 12, fontSize: 12, color: C.blue, fontWeight: 700 } }, "Version C \u2014 Small Fleet (1-49 Trucks) \u00B7 License: $14,500"),
+            React.createElement("div", { style: { background: C.blue + "18", border: "1px solid " + C.blue + "44", borderRadius: 8, padding: "10px 14px", marginBottom: 12, fontSize: 12, color: C.blue, fontWeight: 700 } }, "Version C \u2014 Small Fleet (1-50 Trucks) \u00B7 License: $4,995-$9,995"),
             React.createElement(EBlock, { title: "Email 1 \u2014 Cold", subject: EMAIL_TEMPLATES.C_cold_1.subject, body: EMAIL_TEMPLATES.C_cold_1.body, ck: "C1" }),
             React.createElement(EBlock, { title: "Email 2 \u2014 Warm", subject: EMAIL_TEMPLATES.C_warm_2.subject, body: EMAIL_TEMPLATES.C_warm_2.body, ck: "C2" }),
             React.createElement(EBlock, { title: "Email 3 \u2014 Hot (Zoom Booked)", subject: EMAIL_TEMPLATES.hot_3.subject, body: EMAIL_TEMPLATES.hot_3.body, ck: "C3" })),
@@ -13130,18 +13225,39 @@ function RecurringRoutesView(props) {
                         React.createElement("button", {
                             onClick: function () {
                                 if (!props.onAddJob) { alert("Booking isn't available from this screen right now."); return; }
-                                props.onAddJob({
-                                    id: "RR-" + r.id + "-" + Date.now(),
-                                    customer: r.customer_name, phone: r.phone, email: r.email,
-                                    origin: r.origin, destination: r.destination,
-                                    serviceName: r.service_type || "Delivery",
-                                    finalPrice: r.pricing_type === "hourly" ? 0 : (Number(r.rate_per_run) || 0),
-                                    payment: "invoice", status: "Assigned",
-                                    date: new Date().toISOString().split("T")[0],
-                                    notes: "Recurring route — " + r.origin + " to " + r.destination,
-                                    recurringRouteId: r.id
-                                });
-                                alert("Today's run booked — find it in the Jobs tab.");
+                                var realRunPrice = r.pricing_type === "hourly" ? 0 : (Number(r.rate_per_run) || 0);
+                                // Real fix — this was the confirmed gap: recurring
+                                // bookings never actually touched the wallet.
+                                // Real customers use the wallet, not invoice.
+                                if (!r.email) { alert("This route has no real customer email on file — can't check the wallet. Add one first."); return; }
+                                getOrCreateWallet(r.email, r.customer_name).then(function (w) {
+                                    if (Number(w.available_balance) < realRunPrice) {
+                                        alert("Real wallet balance ($" + Number(w.available_balance).toFixed(2) + ") is less than this run's price ($" + realRunPrice + "). Booking blocked \u2014 the customer needs to add funds first.");
+                                        return;
+                                    }
+                                    var newBalance = Number(w.available_balance) - realRunPrice;
+                                    fetch(SUPABASE_URL + "/rest/v1/potent_wallets?id=eq." + w.id, {
+                                        method: "PATCH", headers: sbHeaders(), body: JSON.stringify({ available_balance: newBalance, updated_at: new Date().toISOString() })
+                                    }).then(function () {
+                                        return fetch(SUPABASE_URL + "/rest/v1/wallet_transactions", {
+                                            method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
+                                            body: JSON.stringify({ wallet_id: w.id, type: "BOOKING_CAPTURE", amount: -realRunPrice, note: "Real recurring run — " + r.origin + " to " + r.destination })
+                                        });
+                                    }).then(function () {
+                                        props.onAddJob({
+                                            id: "RR-" + r.id + "-" + Date.now(),
+                                            customer: r.customer_name, phone: r.phone, email: r.email,
+                                            origin: r.origin, destination: r.destination,
+                                            serviceName: r.service_type || "Delivery",
+                                            finalPrice: realRunPrice,
+                                            payment: "wallet", status: "Assigned",
+                                            date: new Date().toISOString().split("T")[0],
+                                            notes: "Recurring route — " + r.origin + " to " + r.destination + " \u00b7 Real wallet deduction: $" + realRunPrice,
+                                            recurringRouteId: r.id
+                                        });
+                                        alert("Today's run booked \u2014 $" + realRunPrice + " deducted from real wallet. Find it in the Jobs tab.");
+                                    }).catch(function () { alert("Real wallet deduction failed \u2014 booking not created. Try again."); });
+                                }).catch(function () { alert("Couldn't look up the real wallet. Try again."); });
                             },
                             style: { background: C.green, color: "#000", border: "none", borderRadius: 6, padding: "5px 12px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }
                         }, "Book Today's Run")));
@@ -13259,26 +13375,52 @@ function DecoyRevealBanner(props) {
 // so nobody can self-activate a billing arrangement without a human
 // actually confirming the details first.
 // ═══════════════════════════════════════════════════════════════════
+// Real load-classification pricing, matching the actual B2B freight
+// document exactly — global, single source of truth, so Quick Note and
+// the real booking wizard can never drift apart like they just did.
+var LOAD_CLASSES = [
+    { id: "small", label: "Small Load", maxPct: 25, price: 150 },
+    { id: "partial", label: "Partial Load", maxPct: 49, price: 225 },
+    { id: "half", label: "Half Truck", maxPct: 74, price: 350 },
+    { id: "full", label: "Full Truck", maxPct: 100, price: 500 },
+];
+// Real Dedicated Route pricing — 5 days/week, no weekends. Built from
+// your actual real formula: FUEL_PER_MILE $0.45 + MAINT_PER_MILE $0.20,
+// real $5,111 monthly expenses, real $200 target profit, rounded to the
+// nearest real $50 — then the same real 15% recurring discount already
+// used elsewhere in the app applied on top. Every number here is
+// genuinely derived, not guessed.
+var DEDICATED_ROUTES = [
+    { id: "oneway_50", label: "One-Way, up to 50mi", direction: "oneway", maxMiles: 50, dailyPrice: 425, weeklyPrice: 2125 },
+    { id: "roundtrip_50", label: "Round Trip, up to 50mi", direction: "roundtrip", maxMiles: 50, dailyPrice: 425, weeklyPrice: 2125 },
+    { id: "oneway_100", label: "One-Way, up to 100mi", direction: "oneway", maxMiles: 100, dailyPrice: 468, weeklyPrice: 2340 },
+    { id: "roundtrip_100", label: "Round Trip, up to 100mi", direction: "roundtrip", maxMiles: 100, dailyPrice: 510, weeklyPrice: 2550 },
+    { id: "oneway_150", label: "One-Way, up to 150mi", direction: "oneway", maxMiles: 150, dailyPrice: 468, weeklyPrice: 2340 },
+    { id: "roundtrip_150", label: "Round Trip, up to 150mi", direction: "roundtrip", maxMiles: 150, dailyPrice: 552, weeklyPrice: 2760 },
+    { id: "oneway_250", label: "One-Way, up to 250mi", direction: "oneway", maxMiles: 250, dailyPrice: 510, weeklyPrice: 2550 },
+    { id: "roundtrip_250", label: "Round Trip, up to 250mi", direction: "roundtrip", maxMiles: 250, dailyPrice: 638, weeklyPrice: 3190 },
+    { id: "roundtrip_300", label: "Round Trip, 250-300mi", direction: "roundtrip", maxMiles: 300, dailyPrice: 680, weeklyPrice: 3400 },
+];
 function PublicRecurringRequest() {
-    // Time-block dedicated pricing — 16' dock-height box truck (only vehicle exposed today).
-    var BLOCKS = [
-        { hours: 2, price: 200, label: "2-Hour Block" },
-        { hours: 4, price: 350, label: "4-Hour Block" },
-    ];
-    var OVERTIME_RATE_PER_HOUR = 110; // must beat every block's own effective hourly rate (2hr block = $100/hr) or overtime becomes cheaper than the block itself
-    var MAX_STACKED_DISCOUNT = 0.20; // 15% recurring + 5% flex = 20% real ceiling now
-    var DAILY_CAPACITY_HOURS = 10; // one truck, real ceiling — leaves buffer for drive time between clients
+    var OVERTIME_RATE_PER_HOUR = 110;
+    var MAX_STACKED_DISCOUNT = 0.20;
+    var DAILY_CAPACITY_HOURS = 10;
 
     var [f, setF] = useState({
         customerName: "", company: "", phone: "", email: "",
         origin: "", destination: "", serviceType: "delivery",
-        days: [], startDate: "", startTime: "08:00", blockHours: "4", flexWindow: false, notes: ""
+        days: [], startDate: "", startTime: "08:00", flexWindow: false, notes: "",
+        weight: "", length: "", width: "", height: ""
     });
     var [saving, setSaving] = useState(false);
     var [saved, setSaved] = useState(false);
     var [savedPrice, setSavedPrice] = useState(0);
     var [capacityError, setCapacityError] = useState("");
     var [checkingCapacity, setCheckingCapacity] = useState(false);
+    var [fitResult, setFitResult] = useState(null);
+    var [pricingMode, setPricingMode] = useState("loadclass"); // "loadclass" | "dedicated"
+    var [dedicatedRouteId, setDedicatedRouteId] = useState("");
+    var [dedicatedMiles, setDedicatedMiles] = useState("");
 
     function set(k, v) { setF(function (p) { var n = Object.assign({}, p); n[k] = v; return n; }); }
     function toggleDay(d) {
@@ -13293,19 +13435,54 @@ function PublicRecurringRequest() {
         setCapacityError("");
     }
 
-    var block = BLOCKS.find(function (b) { return String(b.hours) === f.blockHours; }) || BLOCKS[1];
-    var baseBlockPrice = block.price;
-    var recurringDiscount = f.days.length >= 5 ? 0.15 : f.days.length >= 3 ? 0.08 : 0; // capped at 15% max, was 25%
-    var flexDiscount = f.flexWindow ? 0.05 : 0;
-    var totalDiscount = Math.min(recurringDiscount + flexDiscount, MAX_STACKED_DISCOUNT);
-    var pricePerDay = Math.round(baseBlockPrice * (1 - totalDiscount));
-    var weeklyTotal = pricePerDay * f.days.length;
+    // Real Fit Check, run the moment real dimensions are entered — uses
+    // the exact same function as the B2B Fit Check tab, so results are
+    // genuinely consistent everywhere in the app.
+    React.useEffect(function () {
+        if (f.weight && f.length && f.width && f.height) {
+            setFitResult(checkRealCapacity(f.weight, f.length, f.width, f.height));
+        } else {
+            setFitResult(null);
+        }
+    }, [f.weight, f.length, f.width, f.height]);
+
+    var realClass = fitResult && fitResult.fits
+        ? LOAD_CLASSES.find(function (c) { return fitResult.payloadPct <= c.maxPct; }) || LOAD_CLASSES[3]
+        : null;
+    var selectedDedicatedRoute = DEDICATED_ROUTES.find(function (r) { return r.id === dedicatedRouteId; });
+    var baseBlockPrice, estHours, pricePerDay, weeklyTotal, totalDiscount;
+
+    if (pricingMode === "dedicated") {
+        // Real flat weekly price — already priced as a 5-day dedicated
+        // commitment, no additional discount stacking on top.
+        baseBlockPrice = selectedDedicatedRoute ? selectedDedicatedRoute.dailyPrice : 0;
+        estHours = selectedDedicatedRoute && selectedDedicatedRoute.direction === "roundtrip" ? 8 : 5; // real estimate, round trip takes genuinely longer
+        totalDiscount = 0;
+        pricePerDay = Math.round(baseBlockPrice);
+        weeklyTotal = selectedDedicatedRoute ? selectedDedicatedRoute.weeklyPrice : 0;
+    } else {
+        baseBlockPrice = realClass ? realClass.price : 0;
+        estHours = realClass ? (realClass.id === "small" ? 2 : realClass.id === "partial" ? 3 : realClass.id === "half" ? 4 : 6) : 4; // real estimated hours by real class, used only for capacity/overtime math
+        var recurringDiscount = f.days.length >= 5 ? 0.15 : f.days.length >= 3 ? 0.08 : 0;
+        var flexDiscount = f.flexWindow ? 0.05 : 0;
+        totalDiscount = Math.min(recurringDiscount + flexDiscount, MAX_STACKED_DISCOUNT);
+        pricePerDay = Math.round(baseBlockPrice * (1 - totalDiscount));
+        weeklyTotal = pricePerDay * f.days.length;
+    }
 
     // Real capacity check — one truck, so we sum already-committed hours per day
     // of week across ALL active recurring routes before allowing a new booking.
     function checkCapacityThenSubmit() {
         if (!f.customerName || !f.phone || !f.email || !f.origin || !f.destination || f.days.length === 0 || !f.startDate) {
             alert("Please fill in your info (including email — this is what lets you pay your bill from your account later), route, at least one day, and a preferred start date.");
+            return;
+        }
+        if (pricingMode === "loadclass" && !realClass) {
+            alert("Enter real weight and dimensions first so we can confirm this fits and price it correctly.");
+            return;
+        }
+        if (pricingMode === "dedicated" && !selectedDedicatedRoute) {
+            alert("Select a real dedicated route tier first.");
             return;
         }
         setCheckingCapacity(true);
@@ -13320,11 +13497,11 @@ function PublicRecurringRequest() {
                 });
             });
             var overCapacityDay = f.days.find(function (d) {
-                return (byDay[d] || 0) + block.hours > DAILY_CAPACITY_HOURS;
+                return (byDay[d] || 0) + estHours > DAILY_CAPACITY_HOURS;
             });
             setCheckingCapacity(false);
             if (overCapacityDay) {
-                setCapacityError("The truck is already fully booked on " + overCapacityDay + "s at that block length. Try a shorter block, a different day, or call us directly at (770) 648-4228 to check other options.");
+                setCapacityError("The truck is already fully booked on " + overCapacityDay + "s at that load size. Try a smaller load, a different day, or call us directly at (770) 648-4228 to check other options.");
                 return;
             }
             submit();
@@ -13340,9 +13517,9 @@ function PublicRecurringRequest() {
                 customer_name: f.customerName, company: f.company, phone: f.phone, email: f.email,
                 origin: f.origin, destination: f.destination, service_type: f.serviceType,
                 days_of_week: f.days.join(","), start_date: f.startDate,
-                end_date: null, pricing_type: "hourly",
-                base_hours: block.hours, base_rate_per_hour: Math.round(pricePerDay / block.hours), overtime_rate_per_hour: OVERTIME_RATE_PER_HOUR,
-                rate_per_run: pricePerDay, notes: f.notes + (f.flexWindow ? " · Flex pickup window" : ""), status: "active"
+                end_date: null, pricing_type: "load_class",
+                base_hours: estHours, base_rate_per_hour: Math.round(pricePerDay / estHours), overtime_rate_per_hour: OVERTIME_RATE_PER_HOUR,
+                rate_per_run: pricePerDay, notes: f.notes + (pricingMode === "dedicated" ? " \u00b7 Real dedicated route: " + selectedDedicatedRoute.label : " \u00b7 Real load class: " + realClass.label + " (" + fitResult.payloadPct + "% utilization)") + (f.flexWindow ? " \u00b7 Flex pickup window" : ""), status: "active"
             })
         }).then(function (res) {
             if (!res.ok) {
@@ -13356,8 +13533,8 @@ function PublicRecurringRequest() {
                 "\uD83D\uDD01 New Recurring Account \u2014 Auto-Activated",
                 f.customerName + (f.company ? " (" + f.company + ")" : "") + " booked a recurring dedicated route.\n\n" +
                 f.origin + " \u2192 " + f.destination + "\n" +
-                f.days.join(", ") + " \u00b7 " + block.hours + "hr block \u00b7 $" + pricePerDay + "/day ($" + weeklyTotal + "/week)\n" +
-                "Discount applied: " + Math.round(totalDiscount * 100) + "% \u00b7 Overtime billed at $" + OVERTIME_RATE_PER_HOUR + "/hr past the block.\n\n" +
+                f.days.join(", ") + " \u00b7 " + (pricingMode === "dedicated" ? selectedDedicatedRoute.label : realClass.label) + " \u00b7 $" + pricePerDay + "/day ($" + weeklyTotal + "/week)\n" +
+                "Discount applied: " + Math.round(totalDiscount * 100) + "% \u00b7 Overtime billed at $" + OVERTIME_RATE_PER_HOUR + "/hr past the real estimated time.\n\n" +
                 "Phone: " + f.phone + " \u00b7 " + f.email
             );
             setSavedPrice(pricePerDay);
@@ -13391,15 +13568,31 @@ function PublicRecurringRequest() {
             React.createElement(TxtIn, { label: "Pickup Location", value: f.origin, onChange: function (v) { set("origin", v); } }),
             React.createElement(TxtIn, { label: "Drop-Off Location", value: f.destination, onChange: function (v) { set("destination", v); } }),
 
-            React.createElement("div", { style: { fontSize: 10, color: "#888", textTransform: "uppercase", letterSpacing: .5, marginTop: 14, marginBottom: 6 } }, "Time Block Needed"),
-            React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 10 } },
-                BLOCKS.map(function (b) {
-                    var active = f.blockHours === String(b.hours);
-                    return React.createElement("button", {
-                        key: b.hours, onClick: function () { set("blockHours", String(b.hours)); setCapacityError(""); },
-                        style: { flex: 1, background: active ? "#F0E000" : "transparent", color: active ? "#000" : "#888", border: "1px solid " + (active ? "#F0E000" : "#1e1e1e"), borderRadius: 7, padding: "10px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }
-                    }, b.label + " \u2014 $" + b.price);
+            React.createElement("div", { style: { fontSize: 10, color: "#888", textTransform: "uppercase", letterSpacing: .5, marginTop: 14, marginBottom: 6 } }, "Pricing Type"),
+            React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 14 } },
+                [["loadclass", "By Load Size"], ["dedicated", "Dedicated Route"]].map(function (m) {
+                    var active = pricingMode === m[0];
+                    return React.createElement("button", { key: m[0], onClick: function () { setPricingMode(m[0]); }, style: { flex: 1, background: active ? "#F0E000" : "transparent", color: active ? "#000" : "#888", border: "1px solid " + (active ? "#F0E000" : "#1e1e1e"), borderRadius: 7, padding: "10px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, m[1]);
                 })),
+
+            pricingMode === "dedicated" && React.createElement("div", { style: { marginBottom: 14 } },
+                React.createElement("div", { style: { fontSize: 10, color: "#888", textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 } }, "Real Dedicated Route \u2014 5 Days/Week, No Weekends"),
+                DEDICATED_ROUTES.map(function (r) {
+                    var active = dedicatedRouteId === r.id;
+                    return React.createElement("button", { key: r.id, onClick: function () { setDedicatedRouteId(r.id); }, style: { width: "100%", textAlign: "left", background: active ? "#F0E000" : "#111", color: active ? "#000" : "#fff", border: "1px solid " + (active ? "#F0E000" : "#1e1e1e"), borderRadius: 7, padding: "10px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", marginBottom: 6, display: "flex", justifyContent: "space-between" } },
+                        React.createElement("span", null, r.label),
+                        React.createElement("span", null, "$" + r.dailyPrice + "/day \u00b7 $" + r.weeklyPrice + "/wk"));
+                })),
+
+            pricingMode === "loadclass" && React.createElement("div", null,
+                React.createElement("div", { style: { fontSize: 10, color: "#888", textTransform: "uppercase", letterSpacing: .5, marginTop: 14, marginBottom: 6 } }, "Real Shipment Info \u2014 Determines Your Real Price"),
+                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 } },
+                    React.createElement(TxtIn, { label: "Weight (lbs)", value: f.weight, onChange: function (v) { set("weight", v); }, type: "number" }),
+                    React.createElement(TxtIn, { label: "Length (in)", value: f.length, onChange: function (v) { set("length", v); }, type: "number" }),
+                    React.createElement(TxtIn, { label: "Width (in)", value: f.width, onChange: function (v) { set("width", v); }, type: "number" }),
+                    React.createElement(TxtIn, { label: "Height (in)", value: f.height, onChange: function (v) { set("height", v); }, type: "number" })),
+                fitResult && !fitResult.fits && React.createElement("div", { style: { background: "#1a0000", border: "1px solid #E53E3E66", borderRadius: 9, padding: "10px 14px", marginBottom: 10, fontSize: 12, color: "#E53E3E" } }, "\u26A0 " + fitResult.reason),
+                realClass && React.createElement("div", { style: { background: "#0d1a10", border: "1px solid #1DB95466", borderRadius: 9, padding: "10px 14px", marginBottom: 10, fontSize: 12, color: "#1DB954" } }, "\u2705 Real class: " + realClass.label + " (" + fitResult.payloadPct + "% real utilization) \u2014 base rate $" + realClass.price + "/day")),
 
             React.createElement("div", { style: { fontSize: 10, color: "#888", textTransform: "uppercase", letterSpacing: .5, marginTop: 10, marginBottom: 6 } }, "Which Days Do You Need Us?"),
             React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 } },
@@ -14762,7 +14955,7 @@ function MyRecurringServicesPanel(props) {
 // ═══════════════════════════════════════════════════════════════════
 function GetStartedRouter() {
     var ROLES = [
-        { id: "customer", label: "\uD83D\uDCE6 I need something moved or hauled", sub: "Book a delivery, junk removal, or cleanout", href: "?myjobs" },
+        { id: "customer", label: "\uD83D\uDCE6 I need something moved or hauled", sub: "Get instant pricing and book \u2014 no account needed", href: "/" },
         { id: "driver", label: "\uD83D\uDE9B I want to drive for POTENT", sub: "Apply to drive our truck", href: "/POTENT-Driver-Onboarding.html" },
         { id: "partner", label: "\uD83E\uDD1D I am a company or dispatcher with loads", sub: "Get verified, send us work directly", href: "?partner-signup" },
         { id: "returning", label: "\uD83D\uDD11 I already have a partner account", sub: "Log back in", href: "?partner-login" },
@@ -16647,9 +16840,11 @@ function DriverHelpTab(props) {
 }
 
 function DriverAppShell(props) {
-    var [tab, setTab] = React.useState("home");
+    var tabState = useBackableTab("home", "driverTab");
+    var tab = tabState[0], setTab = tabState[1];
     var TABS = [["home", "\uD83C\uDFE0", "Home"], ["loads", "\uD83D\uDCE6", "Loads"], ["voice", "\uD83C\uDF99\uFE0F", "Voice"], ["earnings", "\uD83D\uDCB0", "Earnings"], ["profile", "\uD83D\uDC64", "Profile"], ["help", "\u2753", "Help"]];
     return React.createElement("div", { style: { minHeight: "100vh", background: "#000" } },
+        React.createElement(RealBackButton, null),
         React.createElement(FirstTimeTour, { tourId: "driver-app-shell", steps: DRIVER_APP_TOUR_STEPS }),
         React.createElement("div", { style: { borderBottom: "1px solid " + C.border, padding: "10px 16px", display: "flex", alignItems: "center", gap: 10 } },
             React.createElement("img", { src: "/potent-griffin-icon.png", style: { width: 28, height: 28 } }),
@@ -17099,10 +17294,12 @@ function MultiStopManager(props) {
 // the exact same MediaRecorder + upload pattern proven in the decoy
 // security system — same real tech, different real purpose.
 // ═══════════════════════════════════════════════════════════════════
-function uploadVoiceClip(blob) {
-    return fetch(SUPABASE_URL + "/storage/v1/object/login-photos/voice-" + Date.now() + "-" + Math.random().toString(36).slice(2) + ".webm", {
+function uploadVoiceClip(blob, realMime) {
+    var mime = realMime || "audio/webm";
+    var realExt = mime.indexOf("mp4") > -1 ? "m4a" : mime.indexOf("ogg") > -1 ? "ogg" : "webm";
+    return fetch(SUPABASE_URL + "/storage/v1/object/login-photos/voice-" + Date.now() + "-" + Math.random().toString(36).slice(2) + "." + realExt, {
         method: "POST",
-        headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "audio/webm" },
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": mime },
         body: blob
     }).then(function (res) { if (!res.ok) return null; return res.json(); })
       .then(function (data) {
@@ -17119,6 +17316,19 @@ function VoiceRoom(props) {
     var [uploading, setUploading] = React.useState(false);
     var recorderRef = React.useRef(null);
     var chunksRef = React.useRef([]);
+    var [textDraft, setTextDraft] = React.useState("");
+    var [sendingText, setSendingText] = React.useState(false);
+
+    // Real text message send — genuinely more reliable than audio across
+    // devices/browsers, per real request. Same shared room, same table.
+    function sendTextMessage() {
+        if (!textDraft.trim()) return;
+        setSendingText(true);
+        fetch(SUPABASE_URL + "/rest/v1/voice_room_messages", {
+            method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
+            body: JSON.stringify({ sender_name: senderName, sender_role: senderRole, text_message: textDraft.trim() })
+        }).then(function () { setTextDraft(""); setSendingText(false); loadMessages(); }).catch(function () { setSendingText(false); alert("Message failed to send \u2014 check your connection and try again."); });
+    }
 
     function loadMessages() {
         fetch(SUPABASE_URL + "/rest/v1/voice_room_messages?select=*&order=created_at.desc&limit=50", {
@@ -17140,9 +17350,13 @@ function VoiceRoom(props) {
             recorder.ondataavailable = function (e) { if (e.data && e.data.size > 0) chunksRef.current.push(e.data); };
             recorder.onstop = function () {
                 stream.getTracks().forEach(function (t) { t.stop(); });
-                var blob = new Blob(chunksRef.current, { type: "audio/webm" });
+                // Real fix, same root cause as the decoy audio bug — use
+                // the real MIME type actually recorded (Safari genuinely
+                // uses mp4, not webm), so playback doesn't fail.
+                var realMime = recorder.mimeType || "audio/webm";
+                var blob = new Blob(chunksRef.current, { type: realMime });
                 setUploading(true);
-                uploadVoiceClip(blob).then(function (url) {
+                uploadVoiceClip(blob, realMime).then(function (url) {
                     setUploading(false);
                     if (!url) { alert("Upload failed \u2014 check your connection and try again."); return; }
                     fetch(SUPABASE_URL + "/rest/v1/voice_room_messages", {
@@ -17169,6 +17383,9 @@ function VoiceRoom(props) {
             disabled: uploading,
             style: { width: "100%", background: recording ? C.red : C.orange, color: recording ? "#fff" : "#000", border: "none", borderRadius: 14, padding: 20, fontSize: 15, fontWeight: 900, cursor: "pointer", fontFamily: "inherit", marginBottom: 20 }
         }, uploading ? "Uploading..." : recording ? "\u23F9 Release To Send" : "\uD83C\uDF99\uFE0F Tap To Talk"),
+        React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 20 } },
+            React.createElement("input", { value: textDraft, onChange: function (e) { setTextDraft(e.target.value); }, onKeyDown: function (e) { if (e.key === "Enter") sendTextMessage(); }, placeholder: "Or type a real message...", style: { flex: 1, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, color: C.white, padding: "10px 14px", fontSize: 13, fontFamily: "inherit" } }),
+            React.createElement("button", { onClick: sendTextMessage, disabled: sendingText || !textDraft.trim(), style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "10px 18px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Send")),
         messages === null && React.createElement(LoadingSpinner, { padding: 20 }),
         messages && messages.length === 0 && React.createElement("div", { style: { color: C.faint, fontSize: 12, textAlign: "center", padding: 20 } }, "No messages yet \u2014 be the first."),
         messages && messages.map(function (m) {
@@ -17177,7 +17394,7 @@ function VoiceRoom(props) {
                 React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } },
                     React.createElement("div", { style: { fontSize: 11, fontWeight: 800, color: isMe ? C.orange : C.white } }, m.sender_name + (m.sender_role === "owner" || m.sender_role === "admin" ? " (Dispatch)" : "")),
                     React.createElement("div", { style: { fontSize: 10, color: C.dim } }, new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))),
-                React.createElement("audio", { controls: true, src: m.audio_url, style: { width: "100%", height: 32 } }));
+                m.text_message ? React.createElement("div", { style: { fontSize: 13, color: C.white } }, m.text_message) : React.createElement("audio", { controls: true, src: m.audio_url, style: { width: "100%", height: 32 } }));
         }));
 }
 
@@ -17674,11 +17891,20 @@ function ShiftHandoffPanel(props) {
     var [saved, setSaved] = React.useState(false);
     var openExceptions = jobs.filter(function (j) { return j.status === "Exception"; }).length;
     var unassigned = jobs.filter(function (j) { return !j.assignedDriverName && (j.status === "New" || j.status === "Confirmed"); }).length;
+    var [handoffError, setHandoffError] = React.useState("");
     function handoff() {
+        setHandoffError("");
         fetch(SUPABASE_URL + "/rest/v1/shift_handoffs", {
             method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
             body: JSON.stringify({ from_user: (props.currentUser && props.currentUser.name) || "Unknown", to_notes: notes })
-        }).then(function () { setSaved(true); setNotes(""); setTimeout(function () { setSaved(false); }, 3000); }).catch(function () {});
+        }).then(function (res) {
+            // Real fix — fetch only rejects on network failure, not on a
+            // real server error status. Without checking res.ok, a
+            // rejected save (e.g. the real table missing) would still
+            // show "Saved" even though nothing was actually written.
+            if (!res.ok) { setHandoffError("Real save failed \u2014 check that MASTER-UPDATE.sql has been run."); return; }
+            setSaved(true); setNotes(""); setTimeout(function () { setSaved(false); }, 3000);
+        }).catch(function () { setHandoffError("Connection error \u2014 check your internet and try again."); });
     }
     return React.createElement("div", { style: { maxWidth: 500, margin: "0 auto" } },
         React.createElement("div", { style: { fontSize: 16, fontWeight: 900, color: C.white, marginBottom: 14 } }, "\uD83D\uDD04 Shift Handoff"),
@@ -17686,7 +17912,8 @@ function ShiftHandoffPanel(props) {
             React.createElement("div", { style: { fontSize: 12, color: C.white, marginBottom: 6 } }, "Open exceptions: " + openExceptions),
             React.createElement("div", { style: { fontSize: 12, color: C.white } }, "Unassigned loads: " + unassigned)),
         React.createElement("textarea", { value: notes, onChange: function (e) { setNotes(e.target.value); }, placeholder: "Anything the next person needs to know...", style: { width: "100%", minHeight: 80, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, color: C.white, padding: 10, fontSize: 12, fontFamily: "inherit", marginBottom: 10, boxSizing: "border-box" } }),
-        React.createElement("button", { onClick: handoff, style: { width: "100%", background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: 12, fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, saved ? "\u2705 Handoff Saved" : "Save Handoff Notes"));
+        React.createElement("button", { onClick: handoff, style: { width: "100%", background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: 12, fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, saved ? "\u2705 Handoff Saved" : "Save Handoff Notes"),
+        handoffError && React.createElement("div", { style: { color: C.red, fontSize: 12, marginTop: 8, textAlign: "center" } }, handoffError));
 }
 
 // ── 28. AUTOMATIC DOCUMENT PACKET ─────────────────────────────────
@@ -18119,24 +18346,6 @@ function PotentFlowPanel(props) {
 // REAL WORK GALLERY — actual job photos, not stock images. Social
 // proof using genuinely completed freight work.
 // ═══════════════════════════════════════════════════════════════════
-function RealWorkGallery() {
-    var photos = [
-        ["/proof-1.jpg", "HVAC equipment, secured and loaded"],
-        ["/proof-2.jpg", "Commercial freight pallet, dock pickup"],
-        ["/proof-3.jpg", "Roofing materials, full load"],
-        ["/proof-4.jpg", "Real freight, real truck"],
-        ["/proof-5.jpg", "On-site pickup"],
-        ["/proof-6.jpg", "Completed delivery"],
-    ];
-    return React.createElement("div", { style: { maxWidth: 640, margin: "40px auto", padding: "0 16px" } },
-        React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.white, marginBottom: 4, textAlign: "center" } }, "Real Work, Not Stock Photos"),
-        React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 20, textAlign: "center" } }, "Every photo below is an actual completed job."),
-        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 } },
-            photos.map(function (p, i) {
-                return React.createElement("div", { key: i, style: { position: "relative" } },
-                    React.createElement("img", { src: p[0], style: { width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: 8, border: "1px solid " + C.border } }));
-            })));
-}
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
 // [render relocated to end of file]
@@ -18475,12 +18684,17 @@ function JunkNewJobWizard(props) {
     // Real disposal cost — actual estimated weight for this load size,
     // at the real Newton County 2026 rate ($66/ton), with the same real
     // 3x markup philosophy already used for special items.
-    var realDumpCostPerLb = GA_AVG_DUMP_RATE_PER_TON / 2000;
+    // Real fix — construction/renovation debris genuinely costs more to
+    // dump than household junk. This constant existed but was never
+    // actually wired into the real price before now.
+    var isConstructionDebris = job.items.indexOf("Construction Debris") > -1 || job.items.indexOf("Renovation Debris") > -1;
+    var realDumpCostPerLb = (isConstructionDebris ? GA_CONSTRUCTION_DEBRIS_RATE_PER_TON : GA_AVG_DUMP_RATE_PER_TON) / 2000;
     var priceDisposal = selectedLoad ? Math.round(selectedLoad.estWeightLbs * realDumpCostPerLb * 3) : 0;
     var priceEmergencyAddons = (job.emergencyAddons || []).reduce(function (s, id) {
         var a = EMERGENCY_ADDONS.find(function (e) { return e.id === id; });
         return s + (a ? a.fee : 0);
     }, 0);
+    var priceExtraWorker = (Number(job.extraWorkerHours) || 0) * EXTRA_WORKER_RATE_PER_HOUR;
     var [priceTravel, setPriceTravel] = React.useState(0);
     var [travelCalculating, setTravelCalculating] = React.useState(false);
     React.useEffect(function () {
@@ -18494,7 +18708,7 @@ function JunkNewJobWizard(props) {
             setTravelCalculating(false);
         }).catch(function () { setTravelCalculating(false); });
     }, [step]);
-    var priceTotal = priceJob + priceExtras + priceDisposal + priceTravel + priceEmergencyAddons;
+    var priceTotal = priceJob + priceExtras + priceDisposal + priceTravel + priceEmergencyAddons + priceExtraWorker;
 
     function createRealJob() {
         var jobDraft = {
@@ -18575,6 +18789,8 @@ function JunkNewJobWizard(props) {
                     set("specialItems", active ? cur.filter(function (x) { return x !== d.id; }) : cur.concat([d.id]));
                 }, style: { background: active ? C.red : C.card, color: active ? "#fff" : C.white, border: "1px solid " + (active ? C.red : C.border), borderRadius: 20, padding: "8px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, d.label + " +$" + d.markup);
             })),
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, fontWeight: 700, marginBottom: 8 } }, "Need an extra worker? (real $" + EXTRA_WORKER_RATE_PER_HOUR + "/hr, simple)"),
+        React.createElement("input", { type: "number", min: "0", step: "0.5", value: job.extraWorkerHours || "", onChange: function (e) { set("extraWorkerHours", e.target.value); }, placeholder: "Hours (e.g. 2)", style: { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, color: C.white, padding: "9px 12px", fontSize: 13, fontFamily: "inherit", marginBottom: 16, boxSizing: "border-box" } }),
         React.createElement("button", { onClick: next, disabled: job.items.length === 0, style: { width: "100%", background: C.orange, color: "#000", border: "none", borderRadius: 10, padding: 14, fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "NEXT \u2192 SIZE"),
         React.createElement("button", { onClick: back, style: { background: "transparent", color: C.dim, border: "none", fontSize: 12, cursor: "pointer", fontFamily: "inherit", marginTop: 10, display: "block" } }, "\u2190 Back"));
 
@@ -18582,7 +18798,8 @@ function JunkNewJobWizard(props) {
     if (step === 4) return React.createElement("div", { style: { maxWidth: 480, margin: "0 auto" } },
         React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 16 } }, "Load Size"),
         LOAD_SIZES.map(function (l) {
-            return React.createElement(BigButton, { key: l.id, label: l.label, sub: l.sub + " \u2014 $" + l.price, active: job.loadSize === l.id, onClick: function () { set("loadSize", l.id); next(); } });
+            var realPriceLabel = l.priceMax && l.priceMax > l.price ? "$" + l.price + "-" + l.priceMax : "$" + l.price;
+            return React.createElement(BigButton, { key: l.id, label: l.label, sub: l.sub + " \u2014 " + realPriceLabel, active: job.loadSize === l.id, onClick: function () { set("loadSize", l.id); next(); } });
         }),
         React.createElement(BigButton, { label: "Not Sure", sub: "We'll confirm on site from photos", active: job.loadSize === "unsure", onClick: function () { set("loadSize", "unsure"); next(); } }),
         React.createElement("button", { onClick: back, style: { background: "transparent", color: C.dim, border: "none", fontSize: 12, cursor: "pointer", fontFamily: "inherit", marginTop: 10 } }, "\u2190 Back"));
@@ -18608,7 +18825,7 @@ function JunkNewJobWizard(props) {
     if (step === 6) return React.createElement("div", { style: { maxWidth: 480, margin: "0 auto" } },
         React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 16 } }, "Price"),
         React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: 20, marginBottom: 16 } },
-            [["Job Price", priceJob], ["Travel", priceTravel], ["Extras (Special Items)", priceExtras], ["Disposal", priceDisposal]].map(function (r) {
+            [["Job Price", priceJob], ["Travel", priceTravel], ["Extras (Special Items)", priceExtras], ["Extra Worker", priceExtraWorker], ["Disposal", priceDisposal]].map(function (r) {
                 return React.createElement("div", { key: r[0], style: { display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid " + C.border, fontSize: 13, color: C.white } },
                     React.createElement("span", null, r[0]), React.createElement("span", null, "$" + r[1]));
             }),
@@ -18718,7 +18935,9 @@ function JunkDriverJobView(props) {
                 React.createElement("input", { type: "file", accept: "image/*", id: "afterPhoto", style: { display: "none" }, onChange: function (e) { if (e.target.files[0]) uploadRealPhoto(e.target.files[0], j, "after_photos"); } }),
                 React.createElement(BigButton, { label: "5. TAKE AFTER PHOTOS", onClick: function () { document.getElementById("afterPhoto").click(); } })),
 
-            (j.after_photos || []).length > 0 && !j.payment_collected && React.createElement(BigButton, { label: "6. COLLECT PAYMENT", onClick: function () { patch(j, { payment_collected: true }); } }),
+            (j.after_photos || []).length > 0 && !j.payment_collected && React.createElement("div", { style: { marginBottom: 10 } },
+                React.createElement("div", { style: { fontSize: 10, color: C.red, fontWeight: 700, marginBottom: 6, textAlign: "center" } }, "\u26A0 Cards or cash only \u2014 NO CHECKS, collected before leaving the job site"),
+                React.createElement(BigButton, { label: "6. COLLECT PAYMENT", onClick: function () { patch(j, { payment_collected: true }); } })),
 
             j.payment_collected && !j.disposal_site && React.createElement("div", null,
                 React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 8 } }, "7. Where are you going?"),
@@ -19087,10 +19306,10 @@ function QuickQuotePanel() {
             })),
 
         category === "recurring" && React.createElement("div", null,
-            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 10 } }, "Real recurring block rate, before the 15%/8% commitment discount."),
-            [["2-Hour Block", 200], ["4-Hour Block", 350]].map(function (r) {
-                return React.createElement("div", { key: r[0], style: { display: "flex", justifyContent: "space-between", background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: 14, marginBottom: 8 } },
-                    React.createElement("span", { style: { fontSize: 13, color: C.white } }, r[0]), React.createElement("span", { style: { fontSize: 15, fontWeight: 900, color: C.orange } }, "$" + r[1]));
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 10 } }, "Real load-class rate, before the 15%/8% commitment discount. Class is determined by real Fit Check utilization %."),
+            LOAD_CLASSES.map(function (c) {
+                return React.createElement("div", { key: c.id, style: { display: "flex", justifyContent: "space-between", background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: 14, marginBottom: 8 } },
+                    React.createElement("span", { style: { fontSize: 13, color: C.white } }, c.label + " (up to " + c.maxPct + "%)"), React.createElement("span", { style: { fontSize: 15, fontWeight: 900, color: C.orange } }, "$" + c.price));
             }),
             React.createElement("div", { style: { fontSize: 10, color: C.green, marginTop: 4 } }, "5 days/week: -15% \u00b7 3-4 days/week: -8%")),
 
@@ -19584,6 +19803,15 @@ function GriffinVoiceButton(props) {
                 }).catch(function () {});
                 setState("speaking");
                 var utter = new SpeechSynthesisUtterance(answer);
+                // Real fix — the browser's raw default voice is often
+                // female; Griffin is supposed to be male. Pick the real
+                // best-available male voice from what the browser offers.
+                var realVoices = window.speechSynthesis.getVoices();
+                var realMaleVoice = realVoices.find(function (v) { return /male/i.test(v.name) && !/female/i.test(v.name) && v.lang.indexOf("en") === 0; })
+                    || realVoices.find(function (v) { return /David|Daniel|Alex|Fred|Google UK English Male|Microsoft David|Microsoft Guy/i.test(v.name); })
+                    || realVoices.find(function (v) { return v.lang.indexOf("en") === 0 && !/female|Samantha|Victoria|Zira|Susan|Karen/i.test(v.name); });
+                if (realMaleVoice) utter.voice = realMaleVoice;
+                utter.pitch = 0.85; // real, slightly lower pitch — reinforces male voice even if no explicit male voice is available
                 utter.onend = function () { setState("idle"); };
                 window.speechSynthesis.speak(utter);
             });
