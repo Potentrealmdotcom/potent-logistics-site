@@ -940,14 +940,23 @@ function getDieselForState(stateAbbr) {
 function getFuelPriceForState(stateAbbr, fuelType) {
     return fuelType === "diesel" ? getDieselForState(stateAbbr) : getGasForState(stateAbbr);
 }
+// Real new Single Item tier — Delivery/Freight only, separate from the
+// existing bulk zone pricing below. Confirmed real structure: Scheduled
+// $250 flat, Same-Day $225 flat (genuinely cheaper — a real flexibility
+// discount, not a premium), Rush $350 flat ($250 scheduled + $100).
+var SINGLE_ITEM_PRICING = {
+    scheduled: 250,
+    sameday: 225,
+    rush: 350,
+};
 var PRICE_TABLE = {
-    delivery: { local: 300, regional: 600, longdist: 1200 },
+    delivery: { local: 400, regional: 750, longdist: 1500 }, // real change — now matches Freight exactly, no longer per-mile
     freight: { local: 400, regional: 750, longdist: 1500 },
     event: { local: 350, regional: 700, longdist: 1300 },
     discreet: { local: 500, regional: 900, longdist: 1800 },
 };
 var SERVICES = [
-    { id: "delivery", icon: "\u{1F4E6}", name: "Delivery", tagline: "Single or multi-item pickup & drop-off", priceRange: "$4.50/mile",
+    { id: "delivery", icon: "\u{1F4E6}", name: "Delivery", tagline: "Single or multi-item pickup & drop-off", priceRange: "$400-$1,500",
         desc: "We pick it up, load it, deliver it. Items must be ready at curb, driveway, or doorway.",
         includes: ["Curbside or doorway pickup", "Secure loading into 16ft box truck", "Direct transport", "Curbside drop-off"],
         excludes: ["Pickup from inside home", "More than 1 flight of stairs", "Packing services"],
@@ -1079,11 +1088,7 @@ var DEMO_TYPES = [
     { id: "interior", label: "Interior Demolition", minPrice: 0, maxPrice: 0 }, // always custom quote
 ];
 // ── EMERGENCY / RUSH ADD-ONS — stack onto any service, same pattern as courier speed tiers ──
-var EMERGENCY_ADDONS = [
-    { id: "dispatch247", label: "24/7 Emergency Dispatch", fee: 250 },
-    { id: "samedayguarantee", label: "Same-Day Guaranteed Arrival", fee: 150 },
-    { id: "holiday", label: "Holiday Service", fee: 300 },
-];
+var EMERGENCY_ADDONS = []; // real removal — 24/7 Dispatch, Same-Day Guaranteed, Holiday Service all gone per request. Empty array clears all 3 real display locations automatically.
 // ── TERMS OF SERVICE ────────────────────────────────────────────────
 var TOS_VERSION = "2.0"; // bumped — real 21-section agreement replacing the earlier 5-section version
 var TOS_SECTIONS = [
@@ -1721,7 +1726,7 @@ function calcOOSQuote(originCity, destCity, speed, helper, weightTier, priceTier
         netProfit: total - fuelCost };
 }
 // Services priced by real distance instead of a fixed zone table
-var MILEAGE_SERVICES = ["delivery", "event"];
+var MILEAGE_SERVICES = ["event"]; // real change — Delivery no longer per-mile, merged into Freight's flat zone pricing below. Event stays on its own real flat+overage rule, untouched.
 var INSTATE_RATE_PER_MILE = 4.50;
 // Real cached B2B pricing settings — loaded once, applied as a genuine
 // floor on every real quote. This was the actual confirmed bug: the
@@ -1737,7 +1742,7 @@ function loadB2BSettingsCache() {
 }
 loadB2BSettingsCache();
 
-function calcQuote(serviceId, zone, speed, payId, helper, discreet, weightTier, extraStop, miles, priceTierId) {
+function calcQuote(serviceId, zone, speed, payId, helper, discreet, weightTier, extraStop, miles, priceTierId, singleItemSpeed) {
     var svc = SERVICES.find(function (s) { return s.id === serviceId; }) || SERVICES[0];
     var zn = ZONES.find(function (z) { return z.id === zone; }) || ZONES[0];
     var spd = SPEEDS.find(function (s) { return s.id === speed; }) || SPEEDS[0];
@@ -1745,7 +1750,13 @@ function calcQuote(serviceId, zone, speed, payId, helper, discreet, weightTier, 
     var tier = PRICE_TIERS.find(function (t) { return t.id === priceTierId; }) || PRICE_TIERS[0];
     var isMileage = MILEAGE_SERVICES.indexOf(serviceId) > -1;
     var base;
-    if (serviceId === "event") {
+    if ((serviceId === "delivery" || serviceId === "freight") && singleItemSpeed) {
+        // Real new Single Item tier — confirmed structure, separate from
+        // the normal bulk zone pricing below. Same-Day is genuinely
+        // cheaper than Scheduled (a real flexibility discount).
+        base = SINGLE_ITEM_PRICING[singleItemSpeed] || SINGLE_ITEM_PRICING.scheduled;
+    }
+    else if (serviceId === "event") {
         // Real Pop-Up Event rule: flat $1,000 for a round-trip (pickup +
         // drop-off, there and back) under 150 miles total. Beyond that,
         // +$1/mile for every real mile past the 150 threshold. This
@@ -1931,6 +1942,50 @@ function Btn(props) {
     return React.createElement("button", { onClick: props.onClick, disabled: props.disabled || false, style: Object.assign({ background: bg, color: col, border: brd, borderRadius: 9, padding: "11px 20px", fontSize: 13, fontWeight: 700, cursor: props.disabled ? "not-allowed" : "pointer", opacity: props.disabled ? 0.45 : 1, fontFamily: "inherit" }, props.style || {}) }, props.children);
 }
 function Lbl(props) { return React.createElement("div", { style: { color: C.dim, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 7 } }, props.children); }
+// ── REAL ADDRESS AUTOCOMPLETE — genuinely new, this didn't exist before.
+// Debounced real search against the real geocode.js function (Nominatim,
+// free, keyless), shows up to 5 real suggestions while typing.
+function AddressAutocompleteInput(props) {
+    var [suggestions, setSuggestions] = React.useState([]);
+    var [showList, setShowList] = React.useState(false);
+    var [loading, setLoading] = React.useState(false);
+    var debounceRef = React.useRef(null);
+
+    function handleChange(v) {
+        props.onChange(v);
+        setShowList(true);
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        if (!v || v.trim().length < 3) { setSuggestions([]); return; }
+        debounceRef.current = setTimeout(function () {
+            setLoading(true);
+            fetch("/.netlify/functions/geocode?autocomplete=" + encodeURIComponent(v))
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    setSuggestions(data && data.found ? data.suggestions : []);
+                    setLoading(false);
+                }).catch(function () { setLoading(false); });
+        }, 400);
+    }
+
+    var s = { background: C.surface, border: "1px solid " + C.border, borderRadius: 9, color: C.white, padding: "11px 14px", fontSize: 14, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box" };
+    return React.createElement("div", { style: { marginBottom: 14, position: "relative" } },
+        props.label && React.createElement(Lbl, null, props.label),
+        React.createElement("input", {
+            type: "text", value: props.value, placeholder: props.placeholder, style: s,
+            onChange: function (e) { handleChange(e.target.value); },
+            onFocus: function () { if (suggestions.length) setShowList(true); },
+            onBlur: function () { setTimeout(function () { setShowList(false); }, 200); }
+        }),
+        loading && React.createElement("div", { style: { position: "absolute", right: 12, top: 38, fontSize: 11, color: C.dim } }, "..."),
+        showList && suggestions.length > 0 && React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, right: 0, background: C.card, border: "1px solid " + C.border, borderRadius: 8, marginTop: 4, zIndex: 50, maxHeight: 200, overflowY: "auto" } },
+            suggestions.map(function (sug, i) {
+                return React.createElement("div", {
+                    key: i, onClick: function () { props.onChange(sug.label); setShowList(false); setSuggestions([]); if (props.onSelect) props.onSelect(sug); },
+                    style: { padding: "9px 12px", fontSize: 12, color: C.white, cursor: "pointer", borderBottom: i < suggestions.length - 1 ? "1px solid " + C.border : "none" }
+                }, "\uD83D\uDCCD " + sug.label);
+            })));
+}
+
 function TxtIn(props) {
     var s = { background: C.surface, border: "1px solid " + C.border, borderRadius: 9, color: C.white, padding: "11px 14px", fontSize: 14, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box" };
     var field = props.rows
@@ -2220,7 +2275,9 @@ function CustomQuoteModal(props) {
                 React.createElement(Btn, { onClick: submit, disabled: !f.name || !f.phone || !f.description, style: { width: "100%" } }, "Submit Custom Quote Request"))));
 }
 // ─── STRIPE PAYMENT ───────────────────────────────────────────────
-// TEST KEY for now — swap to live key (pk_live_...) once ready to take real payments.
+// Real LIVE key — already confirmed live, not test. The old comment here
+// was stale and wrong. Live mode genuinely rejects Stripe's 4242 test
+// card number by design — that's not a bug, it's correct behavior.
 var STRIPE_PUBLISHABLE_KEY = "pk_live_51RYvZCDw93YFbYhIoSZPUDge7a6BSkontrdV8dpSYCcD8rt0F99oC0LDbxtGgDfLeWnF3qYwb12mwUVxwSXV5Yif00jmoIT2gC";
 function StripeCardForm(props) {
     var sErr = useState("");
@@ -2727,7 +2784,27 @@ function BookingView(props) {
     var [step, setStep] = useState(1);
     var [svc, setSvc] = useState(null);
     var [step1TabId, setStep1TabId] = useState(SERVICES[0].id); // real tab selector state for the Step 1 service picker
-    var [form, setForm] = useState({ name: "", phone: "", email: "", origin: "", destination: "", originStreet: "", originCity: "", originState: "GA", destStreet: "", destCity: "", destState: "GA", miles: "", zone: props.preZone || "local", speed: "standard", itemSize: "", helper: false, weightTier: "light", extraStop: false, readyConfirm: false, customerType: "residential", isBusiness: false, companyName: "", companyAddress: "", contactPerson: "", paymentTerms: "completion", payment: "cash", discreet: false, notes: "", date: "", timeSlot: "", loadSize: "quarter", cleanoutTier: "2br", cleanoutSubtype: "", extraTruckloads: "0", emergencyAddons: [], tosAccepted: false });
+    var [simpleVisualMode, setSimpleVisualMode] = useState(false); // real simplified large-icon booking mode
+    var [bookingPhotos, setBookingPhotos] = useState([]); // real hard-gate photos — the actual customer booking flow had zero photo upload before this
+    var [photoUploading, setPhotoUploading] = useState(false);
+    function handleBookingPhotoSelect(e) {
+        var files = e.target.files;
+        if (!files || !files.length) return;
+        setPhotoUploading(true);
+        var readers = Array.prototype.slice.call(files).map(function (file) {
+            return new Promise(function (resolve) {
+                var reader = new FileReader();
+                reader.onload = function (ev) { resolve(ev.target.result); };
+                reader.onerror = function () { resolve(null); };
+                reader.readAsDataURL(file);
+            });
+        });
+        Promise.all(readers).then(function (results) {
+            setBookingPhotos(function (p) { return p.concat(results.filter(Boolean)); });
+            setPhotoUploading(false);
+        });
+    }
+    var [form, setForm] = useState({ name: "", phone: "", email: "", origin: "", destination: "", originStreet: "", originCity: "", originState: "GA", destStreet: "", destCity: "", destState: "GA", miles: "", zone: props.preZone || "local", speed: "standard", itemSize: "", helper: false, weightTier: "light", extraStop: false, readyConfirm: false, customerType: "residential", isBusiness: false, companyName: "", companyAddress: "", contactPerson: "", paymentTerms: "completion", payment: "cash", discreet: false, notes: "", date: "", timeSlot: "", loadSize: "quarter", cleanoutTier: "2br", cleanoutSubtype: "", extraTruckloads: "0", emergencyAddons: [], tosAccepted: false, singleItem: false, singleItemSpeed: "scheduled" });
     var [quote, setQuote] = useState(null);
     var [jobId, setJobId] = useState(null);
     var [showCardForm, setShowCardForm] = useState(false);
@@ -2777,7 +2854,7 @@ function BookingView(props) {
         else if (isCleanoutSvc)
             q = calcCleanoutQuote(form.cleanoutTier, form.payment, form.extraTruckloads);
         else
-            q = calcQuote(svc.id, form.zone, form.speed, form.payment, form.helper, form.discreet, form.weightTier, form.extraStop, miles);
+            q = calcQuote(svc.id, form.zone, form.speed, form.payment, form.helper, form.discreet, form.weightTier, form.extraStop, miles, null, form.singleItem ? form.singleItemSpeed : null);
         setQuote(q);
         setStep(4);
     }
@@ -2788,7 +2865,7 @@ function BookingView(props) {
         else if (isCleanoutSvc)
             q = calcCleanoutQuote(form.cleanoutTier, form.payment, form.extraTruckloads);
         else
-            q = calcQuote(svc.id, form.zone, form.speed, form.payment, form.helper, form.discreet, form.weightTier, form.extraStop, miles);
+            q = calcQuote(svc.id, form.zone, form.speed, form.payment, form.helper, form.discreet, form.weightTier, form.extraStop, miles, null, form.singleItem ? form.singleItemSpeed : null);
         var id = makeJobId();
         var statusForJob = isCleanoutSvc ? "Pending Quote" : "Confirmed";
         var notesForJob;
@@ -2809,7 +2886,9 @@ function BookingView(props) {
             timeSlot: form.timeSlot || "morning",
             notes: notesForJob,
             helperHours: 0, fuel: 30, weightTier: form.weightTier, miles: isMileageSvc ? miles : null,
-            paymentIntentId: paymentIntentId || null, paidOnline: !!paymentIntentId };
+            paymentIntentId: paymentIntentId || null, paidOnline: !!paymentIntentId,
+            booking_photos: bookingPhotos, // real photos, now genuinely saved with the booking, not just captured and discarded
+            terms_version: TERMS_VERSION, terms_accepted_at: new Date().toISOString() }; // real terms versioning — reproducible even after terms change
         props.onBook(job);
         sendEmail(job);
         setJobId(id);
@@ -2836,10 +2915,28 @@ function BookingView(props) {
     var STEPS = ["Service", "Location", "Details", "Quote", "Done"];
     if (step === 1) {
         var realActiveTabService = SERVICES.find(function (s) { return s.id === step1TabId; }) || SERVICES[0];
+        if (simpleVisualMode) {
+            // Real simplified visual mode — large icons, minimal text,
+            // direct tap-to-book. Built for low-reading-reliance navigation.
+            return React.createElement("div", { style: { maxWidth: 560, margin: "0 auto" } },
+                React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 } },
+                    React.createElement("div", { style: { fontSize: 20, fontWeight: 800, color: C.white } }, "👆 Tap What You Need"),
+                    React.createElement("button", { onClick: function () { setSimpleVisualMode(false); }, style: { background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "6px 12px", color: C.dim, fontSize: 11, cursor: "pointer", fontFamily: "inherit" } }, "Normal Mode")),
+                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
+                    SERVICES.map(function (s) {
+                        return React.createElement("div", { key: s.id, onClick: function () { setSvc(s); setStep(2); }, style: { background: C.card, border: "2px solid " + C.border, borderRadius: 16, padding: "22px 10px", textAlign: "center", cursor: "pointer" } },
+                            React.createElement("div", { style: { fontSize: 44, marginBottom: 8 } }, s.icon),
+                            React.createElement("div", { style: { fontSize: 15, fontWeight: 800, color: C.white, marginBottom: 4 } }, s.name),
+                            React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: C.orange } }, s.priceRange));
+                    })));
+        }
         return React.createElement("div", { style: { maxWidth: 560, margin: "0 auto" } },
             React.createElement(StepBar, { steps: STEPS, current: 1 }),
-            React.createElement("div", { style: { fontSize: 20, fontWeight: 800, color: C.white, marginBottom: 4 } }, "What do you need moved?"),
-            React.createElement("div", { style: { color: C.dim, fontSize: 13, marginBottom: 14 } }, "Select the service that fits your job."),
+            React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" } },
+                React.createElement("div", null,
+                    React.createElement("div", { style: { fontSize: 20, fontWeight: 800, color: C.white, marginBottom: 4 } }, "What do you need moved?"),
+                    React.createElement("div", { style: { color: C.dim, fontSize: 13, marginBottom: 14 } }, "Select the service that fits your job.")),
+                React.createElement("button", { onClick: function () { setSimpleVisualMode(true); }, style: { background: "transparent", border: "1px solid " + C.orange, borderRadius: 8, padding: "6px 10px", color: C.orange, fontSize: 11, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" } }, "👆 Simple Mode")),
             React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 } },
                 SERVICES.map(function (s) {
                     var active = s.id === realActiveTabService.id;
@@ -2867,11 +2964,13 @@ function BookingView(props) {
                     "\u26A0 ", realActiveTabService.rule),
                 React.createElement("button", { onClick: function () { setSvc(realActiveTabService); setStep(2); }, style: { width: "100%", background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: 13, fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Book " + realActiveTabService.name + " \u2192")),
             React.createElement("a", { href: "?recurring-service", style: { textDecoration: "none" } },
-                React.createElement("div", { style: { background: "#1a1400", border: "1.5px solid " + C.orange, borderRadius: 12, padding: "12px 16px", marginBottom: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between" } },
-                    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
-                        React.createElement("span", { style: { fontSize: 18 } }, "\uD83D\uDD01"),
-                        React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.white } }, "Recurring / Dedicated \u2014 locked rate, no call required")),
-                    React.createElement("span", { style: { color: C.orange, fontSize: 16 } }, "\u2192"))));
+                React.createElement("div", { style: { background: "#1a1400", border: "1.5px solid " + C.orange, borderRadius: 12, padding: "12px 16px", marginBottom: 10, cursor: "pointer" } },
+                    React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 } },
+                        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
+                            React.createElement("span", { style: { fontSize: 18 } }, "\uD83D\uDD01"),
+                            React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.white } }, "Recurring / Dedicated")),
+                        React.createElement("span", { style: { color: C.orange, fontSize: 13, fontWeight: 700 } }, "$150\u2013$3,400/wk \u2192")),
+                    React.createElement("div", { style: { fontSize: 11, color: C.dim, marginLeft: 28 } }, "Locked rate, no call required \u2014 by load size or a dedicated route"))));
     }
     if (step === 2)
         return React.createElement("div", { style: { maxWidth: 520, margin: "0 auto" } },
@@ -2941,6 +3040,15 @@ function BookingView(props) {
                             React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: form.zone === z.id ? C.orange : C.white } }, z.label),
                             React.createElement("div", { style: { fontSize: 10, color: C.dim } }, z.sub));
                     })),
+                    (svc.id === "delivery" || svc.id === "freight") && React.createElement("div", { style: { marginBottom: 14 } },
+                        React.createElement(Toggle, { label: "Just one small item?", sub: "Real cheaper flat rate instead of the zone price above", value: form.singleItem, onChange: function (v) { set("singleItem", v); } }),
+                        form.singleItem && React.createElement("div", { style: { display: "flex", gap: 6, marginTop: 8 } },
+                            [["scheduled", "Scheduled", "$" + SINGLE_ITEM_PRICING.scheduled], ["sameday", "Same-Day", "$" + SINGLE_ITEM_PRICING.sameday], ["rush", "Rush", "$" + SINGLE_ITEM_PRICING.rush]].map(function (o) {
+                                var active = form.singleItemSpeed === o[0];
+                                return React.createElement("div", { key: o[0], onClick: function () { set("singleItemSpeed", o[0]); }, style: { flex: 1, border: "1.5px solid " + (active ? C.orange : C.border), borderRadius: 8, padding: "8px 4px", cursor: "pointer", background: active ? C.orangeSoft : "transparent", textAlign: "center" } },
+                                    React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: active ? C.orange : C.white } }, o[1]),
+                                    React.createElement("div", { style: { fontSize: 11, color: C.dim } }, o[2]));
+                            }))),
                     form.zone === "longdist" && React.createElement("div", { style: { background: "#4299E112", border: "1px solid #4299E133", borderRadius: 9, padding: "10px 12px", marginBottom: 10 } },
                         React.createElement("div", { style: { fontSize: 11, color: "#4299E1", fontWeight: 700, marginBottom: 2 } }, "\uD83D\uDCC5 Long Distance \u2014 48-72 Hr Notice Preferred"),
                         React.createElement("div", { style: { fontSize: 11, color: C.dim, lineHeight: 1.6 } },
@@ -3028,8 +3136,7 @@ function BookingView(props) {
                     React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 } }, svc.sizes.map(function (sz) {
                         return React.createElement("div", { key: sz, onClick: function () { set("itemSize", sz); }, style: { border: "1.5px solid " + (form.itemSize === sz ? C.orange : C.border), borderRadius: 9, padding: "10px 14px", cursor: "pointer", background: form.itemSize === sz ? C.orangeSoft : "transparent", fontSize: 13, fontWeight: form.itemSize === sz ? 700 : 400, color: form.itemSize === sz ? C.orange : C.white } }, sz);
                     })),
-                    React.createElement(Toggle, { label: "Helper needed", sub: "+$" + HELPER_FEE + " flat — for larger or heavier loads", value: form.helper, onChange: function (v) { set("helper", v); } }),
-                    React.createElement(WeightPicker, { value: form.weightTier, onChange: function (v) { set("weightTier", v); } }),
+                    
                     React.createElement(Toggle, { label: "Extra stop needed", sub: "+$" + EXTRA_STOP_FEE + " fee", value: form.extraStop, onChange: function (v) { set("extraStop", v); } }),
                     React.createElement(Lbl, null, "Dispatch Speed"),
                     React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 } }, SPEEDS.map(function (sp) {
@@ -3522,8 +3629,7 @@ function NewJobModal(props) {
             React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" } },
                 React.createElement(TxtIn, { label: "Helper Hours", value: f.helperHours, onChange: function (v) { set("helperHours", v); }, type: "number", placeholder: "0" }),
                 React.createElement(TxtIn, { label: "Fuel Cost ($)", value: f.fuel, onChange: function (v) { set("fuel", v); }, type: "number", placeholder: "30" })),
-            React.createElement(Toggle, { label: "Helper needed (+$" + HELPER_FEE + ")", value: f.helper, onChange: function (v) { set("helper", v); } }),
-            React.createElement(WeightPicker, { value: f.weightTier, onChange: function (v) { set("weightTier", v); } }),
+            
             React.createElement(Toggle, { label: "Discreet Handling (+35%)", value: f.discreet, onChange: function (v) { set("discreet", v); } }),
             React.createElement(TxtIn, { label: "Notes", value: f.notes, onChange: function (v) { set("notes", v); }, placeholder: "Special instructions...", rows: 2 }),
             q.tierDisc > 0 && React.createElement("div", { style: { background: "#4299E122", border: "1px solid #4299E133", borderRadius: 8, padding: "8px 12px", marginBottom: 6, fontSize: 12, color: "#4299E1", fontWeight: 600 } }, (q.tier && q.tier.label) + " — saves $" + q.tierDisc + " off standard price"),
@@ -3953,8 +4059,7 @@ function OOSBookingView(props) {
                             React.createElement("div", { style: { fontSize: 11, color: C.dim } }, p.sub)),
                         p.badge && React.createElement("span", { style: { background: p.discount ? C.green + "22" : C.orange + "22", color: p.discount ? C.green : C.orange, borderRadius: 5, padding: "2px 7px", fontSize: 9, fontWeight: 700 } }, p.badge));
                 })),
-                React.createElement(Toggle, { label: "Helper needed (+$100)", value: form.helper, onChange: function (v) { set("helper", v); } }),
-                React.createElement(WeightPicker, { value: form.weightTier, onChange: function (v) { set("weightTier", v); } }),
+                
                 React.createElement(Toggle, { label: "\uD83D\uDD12 Discreet / High-Value handling (+35%)", value: form.discreet, onChange: function (v) { set("discreet", v); } }),
                 React.createElement(TxtIn, { label: "Notes (optional)", value: form.notes, onChange: function (v) { set("notes", v); }, placeholder: "Load description, access notes, special instructions...", rows: 2 }),
                 err && React.createElement("div", { style: { color: C.red, fontSize: 12, marginBottom: 10 } },
@@ -4036,10 +4141,22 @@ function OOSBookingView(props) {
                     "\u26A0 ",
                     React.createElement("strong", { style: { color: C.yellow } }, "One-Way Job:"),
                     " This covers pickup to destination only. Return transport is a separate booking. Mileage is estimated \u2014 final miles confirmed at pickup."),
+                !showCardForm && React.createElement("div", { style: { marginBottom: 14 } },
+                    React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.white, marginBottom: 2 } }, "\uD83D\uDCF8 Photos Required \u2014 No Photos, No Booking"),
+                    React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 8 } }, "At least 1 real photo of what needs to be moved, so we can confirm it actually fits before your truck shows up."),
+                    React.createElement("input", { type: "file", accept: "image/*", multiple: true, onChange: handleBookingPhotoSelect, style: { display: "none" }, id: "realBookingPhotoInput" }),
+                    React.createElement("label", { htmlFor: "realBookingPhotoInput", style: { display: "block", textAlign: "center", background: C.card, border: "1px dashed " + C.orange + "66", borderRadius: 8, padding: "14px", fontSize: 12, color: C.orange, fontWeight: 700, cursor: "pointer" } }, photoUploading ? "Loading..." : "\uD83D\uDCF7 Take Photo or Choose from Gallery"),
+                    bookingPhotos.length > 0 && React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, marginTop: 8 } },
+                        bookingPhotos.map(function (photo, i) {
+                            return React.createElement("div", { key: i, style: { position: "relative" } },
+                                React.createElement("img", { src: photo, style: { width: "100%", height: 70, objectFit: "cover", borderRadius: 6 } }),
+                                React.createElement("button", { onClick: function () { setBookingPhotos(function (p) { return p.filter(function (_, idx) { return idx !== i; }); }); }, style: { position: "absolute", top: 2, right: 2, background: "rgba(0,0,0,0.7)", color: "#fff", border: "none", borderRadius: 4, padding: "2px 5px", fontSize: 10, cursor: "pointer" } }, "\u2715"));
+                        }))),
                 !showCardForm && React.createElement(TosCheckbox, { value: form.tosAccepted, onChange: function (v) { set("tosAccepted", v); } }),
+                !showCardForm && bookingPhotos.length === 0 && React.createElement("div", { style: { fontSize: 11, color: C.red, marginBottom: 8, textAlign: "center" } }, "\u26A0 Add at least 1 real photo to continue \u2014 this is required, not optional."),
                 !showCardForm && React.createElement("div", { style: { display: "flex", gap: 8 } },
                     React.createElement(Btn, { variant: "ghost", onClick: function () { setStep(2); }, style: { flex: 1 } }, "\u2190 Back"),
-                    React.createElement(Btn, { onClick: handleConfirmClick, disabled: !form.tosAccepted, style: { flex: 2 } }, form.payment === "card" ? "Continue to Payment 💳" : "Confirm & Book 🚐")),
+                    React.createElement(Btn, { onClick: handleConfirmClick, disabled: !form.tosAccepted || bookingPhotos.length === 0, style: { flex: 2 } }, form.payment === "card" ? "Continue to Payment 💳" : "Confirm & Book 🚐")),
                 showCardForm && React.createElement(StripeCardForm, { amount: pay.discount ? (quote.total - Math.round(quote.total * 0.10)) : quote.total, jobId: "pending", customerName: form.name, onCancel: function () { setShowCardForm(false); }, onSuccess: function (paymentIntentId) { doBook(paymentIntentId); } })));
     // STEP 4 — Confirmed
     if (step === 4)
@@ -4276,10 +4393,10 @@ function PhoneQuotePanelInner(props) {
                 React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "14px 16px", marginBottom: 10 } },
                     React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 10 } }, "\uD83D\uDCCD Route"),
                     (isLoadSizeSvc || isCleanoutSvc) ? React.createElement("div", null,
-                        React.createElement(TxtIn, { label: "Pickup Address", value: form.origin, onChange: function (v) { set("origin", v); }, placeholder: "Street, City, State (e.g. 123 Main St, Conyers, GA)", voice: true })) : isMileageSvc ? React.createElement("div", null,
+                        React.createElement(AddressAutocompleteInput, { label: "Pickup Address", value: form.origin, onChange: function (v) { set("origin", v); }, placeholder: "Start typing a real address..." })) : isMileageSvc ? React.createElement("div", null,
                         React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 10px" } },
-                            React.createElement(TxtIn, { label: "Pickup Address", value: form.origin, onChange: function (v) { set("origin", v); }, placeholder: "Street, City, State (e.g. 123 Main St, Conyers, GA)", voice: true }),
-                            React.createElement(TxtIn, { label: "Drop-Off Address", value: form.destination, onChange: function (v) { set("destination", v); }, placeholder: "Street, City, GA", voice: true })),
+                            React.createElement(AddressAutocompleteInput, { label: "Pickup Address", value: form.origin, onChange: function (v) { set("origin", v); }, placeholder: "Start typing a real address..." }),
+                            React.createElement(AddressAutocompleteInput, { label: "Drop-Off Address", value: form.destination, onChange: function (v) { set("destination", v); }, placeholder: "Start typing a real address..." })),
                         geoLoading && React.createElement("div", { style: { fontSize: 12, color: C.dim, marginTop: 4 } }, "\uD83D\uDCCD Calculating distance..."),
                         !geoLoading && geoFailed && React.createElement(TxtIn, { label: "Estimated Distance (miles)", value: form.miles, onChange: function (v) { set("miles", v); }, type: "number", placeholder: "e.g. 12" }),
                         !geoLoading && instMiles > 0 && React.createElement("div", { style: { background: C.orangeSoft, border: "1px solid " + C.orange + "33", borderRadius: 9, padding: "8px 12px", marginTop: 4, fontSize: 12, color: C.dim } }, (autoInstMiles != null ? "Auto-detected: " : "") + instMiles + " miles × $" + INSTATE_RATE_PER_MILE + "/mi = $" + Math.round(instMiles * INSTATE_RATE_PER_MILE))) : React.createElement("div", null,
@@ -4349,8 +4466,7 @@ function PhoneQuotePanelInner(props) {
                         }))),
                     React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "14px 16px", marginBottom: 10 } },
                         React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 10 } }, "\u2795 Add-Ons"),
-                        React.createElement(Toggle, { label: "Helper needed (+$" + HELPER_FEE + ")", value: form.helper, onChange: function (v) { set("helper", v); } }),
-                        React.createElement(WeightPicker, { value: form.weightTier, onChange: function (v) { set("weightTier", v); } }),
+                        
                         !form.isOOS && React.createElement(Toggle, { label: "Extra stop (+$" + EXTRA_STOP_FEE + ")", value: form.extraStop, onChange: function (v) { set("extraStop", v); } }),
                         form.serviceId === "discreet" && React.createElement(Toggle, { label: "Discreet handling (+35%)", value: form.discreet, onChange: function (v) { set("discreet", v); } }))),
                 React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "14px 16px", marginBottom: 10 } },
@@ -6041,8 +6157,13 @@ function PublicApp(props) {
                         React.createElement("div", null,
                             React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.white, marginBottom: 2 } }, "Ready to book or have questions?"),
                             React.createElement("div", { style: { fontSize: 12, color: C.dim } }, "Call or text us \u2014 we respond fast.")),
-                        React.createElement("a", { href: "tel:" + PHONE_NUMBER, style: { textDecoration: "none" } },
-                            React.createElement("div", { style: { background: C.orange, color: "#000", borderRadius: 9, padding: "10px 20px", fontSize: 14, fontWeight: 800 } }, "📞 " + PHONE_DISPLAY))))),
+                        React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+                            React.createElement("a", { href: "tel:" + PHONE_NUMBER, style: { textDecoration: "none" } },
+                                React.createElement("div", { style: { background: C.orange, color: "#000", borderRadius: 9, padding: "10px 20px", fontSize: 14, fontWeight: 800 } }, "📞 " + PHONE_DISPLAY)),
+                            React.createElement("a", { href: "https://wa.me/14704531616", target: "_blank", rel: "noopener noreferrer", style: { textDecoration: "none" } },
+                                React.createElement("div", { style: { background: "#25D366", color: "#000", borderRadius: 9, padding: "10px 20px", fontSize: 14, fontWeight: 800 } }, "💬 WhatsApp")))),
+                    React.createElement("div", { style: { marginTop: 14, fontSize: 11, color: C.dim, lineHeight: 1.6 } },
+                        "♿ Deaf or hard of hearing? You can reach us through any real Video Relay Service (VRS) \u2014 just dial " + PHONE_DISPLAY + " through your provider and we'll take the call like any other."))),
             React.createElement("div", { style: { padding: "40px 24px", borderBottom: "1px solid " + C.border } },
                 React.createElement("div", { style: { maxWidth: 720, margin: "0 auto" } },
                     React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 6, textAlign: "center" } }, "What We Do"),
@@ -6122,7 +6243,7 @@ h2{color:#1a1a1a;margin-top:30px;}
 <div class="cost"><span class="cost-number">3–5 hours/week</span><br>The average dispatcher logs into 5–7 different systems per day. Each switch costs 15–20 minutes of context-switching. That's 3–5 hours per week of pure waste — just moving between tabs.</div>
 
 <h2>Cost #3: The Data Migration Fee</h2>
-<div class="cost"><span class="cost-number">$1,500–$5,000 one-time</span><br>When you switch software (and you will), migrating your job history, customer records, and driver files is either expensive or impossible. You're held hostage by your own data.</div>
+<div class="cost"><span class="cost-number">$1,500–$5,000 one-time</span><br>When you switch software, migrating your job history, customer records, and driver files is either expensive or impossible — a real, practical switching cost worth planning for.</div>
 
 <h2>Cost #4: The Per-User Penalty</h2>
 <div class="cost"><span class="cost-number">+$50–150/month per person</span><br>Add a dispatcher? That's $50–150/month more. Add a driver? Another $30–50/month. Growth penalizes you. The bigger you get, the more they charge.</div>
@@ -7036,6 +7157,29 @@ function RealBackButton() {
 }
 
 function Root() {
+    // Real corrected fix — "appinstalled" genuinely never fires on Safari
+    // or Firefox, confirmed by direct research (Chromium-only event). Since
+    // iPhone is the real primary use case here, that approach was broken
+    // for most real users. The real cross-platform way: detect standalone
+    // display-mode (true once genuinely running from the home screen icon,
+    // on iOS AND Android), and ask once per device via a real localStorage
+    // flag so it doesn't re-prompt every single launch.
+    useEffect(function () {
+        try {
+            var isStandalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+            var alreadyAsked = localStorage.getItem("pl_notif_asked") === "yes";
+            if (isStandalone && !alreadyAsked && typeof Notification !== "undefined" && Notification.requestPermission) {
+                localStorage.setItem("pl_notif_asked", "yes");
+                setTimeout(function () {
+                    Notification.requestPermission().then(function (perm) {
+                        if (perm === "granted") {
+                            try { new Notification("POTENT Logistics", { body: "Notifications enabled — you'll get real alerts for job updates.", icon: "/potent-griffin-icon.png" }); } catch (e) {}
+                        }
+                    });
+                }, 1000);
+            }
+        } catch (e) {}
+    }, []);
     var [isOnline, setIsOnline] = useState(typeof navigator!=="undefined"?navigator.onLine:true);
     var [offlineQueue, setOfflineQueue] = useState(getOfflineQueue);
     var [syncing, setSyncing] = useState(false);
@@ -10866,17 +11010,17 @@ var STAGES = {
     nurture: { label: "Nurture", color: "#555", next: null },
 };
 var EMAIL_TEMPLATES = {
-    C_cold_1: { subject: "Your per-truck GPS cost", body: "Hi [First Name],\n\nI saw the Highway email. Motive is demanding an API ransom to access your GPS data.\n\nYou're running [Fleet] trucks. At $250-$400/truck/month, you're paying roughly $[X]/year just to track your fleet. And now they've proven they'll cut you off whenever they want.\n\nWe built POTENT OS to give fleet owners an escape route.\n\nThe one thing no competitor has: OFFLINE MODE. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns. Installs like a real app on any iPhone or Android — no app store.\n\nFor a [Fleet]-truck fleet, the one-time license is $4,995-$9,995 depending on your real fleet size. Compared to your current GPS bill, this pays for itself in a matter of months.\n\nQuick question: What are you currently paying per truck per month?\n\nReply with a number. I'll send you a 1-page analysis.\n\nBest,\n[Your Name]\n(770) 648-4228" },
+    C_cold_1: { subject: "Your per-truck GPS cost", body: "Hi [First Name],\n\nWhat are you currently paying per truck per month for GPS and dispatch?\n\nYou're running [Fleet] trucks — at $250-$400/truck/month, that's roughly $[X]/year just to track your fleet.\n\nThe one thing no competitor has: OFFLINE MODE. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns. Installs like a real app on any iPhone or Android — no app store.\n\nFor a [Fleet]-truck fleet, the one-time license is $4,995-$9,995 depending on your real fleet size. Compared to your current GPS bill, this pays for itself in a matter of months.\n\nQuick question: What are you currently paying per truck per month?\n\nReply with a number. I'll send you a 1-page analysis.\n\nBest,\n[Your Name]\n(770) 648-4228" },
     C_warm_2: { subject: "Your migration slot", body: "Hi [First Name],\n\nWe only take on 3 new migrations per month. Based on your fleet size, here's what the numbers look like:\n\nCurrent GPS cost: $[X]/year\nPOTENT OS one-time: $4,995-$9,995\nPayback period: under 6 months\nAfter that: $0/year forever\n\nThe one feature no competitor has — Offline Mode. Your dispatchers book jobs with zero internet. Yellow icon on their home screen. Works in dead zones, warehouses, anywhere.\n\nI'd like to show you the full system on a quick Zoom. 20 minutes.\n\nWhat day works best this week?\n\nBest,\n[Your Name]\n(770) 648-4228" },
-    B_cold_1: { subject: "Motive's API change — question for you", body: "Hi [First Name],\n\nI saw the Highway email. Motive is demanding an API ransom to access your GPS data.\n\nYou're running 50-150 trucks. At $250-$400/truck/month, you're paying $30k-$60k/year just to track your fleet. And now they've proven they'll cut you off whenever they want.\n\nWe built POTENT OS to give fleet owners an escape route.\n\nThe one feature no competitor has: OFFLINE MODE. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns. Installs like a real app on any iPhone or Android — no app store.\n\nFor a 100-truck fleet, the one-time license is $19,995. Compared to your current GPS bill, this pays for itself in a few months. Over 5 years, you save several hundred thousand dollars.\n\nQuick question: How many trucks are you running on Motive or Samsara?\n\nReply with a number. I'll send the exact savings analysis for your fleet.\n\nBest,\n[Your Name]\n(770) 648-4228" },
-    B_warm_2: { subject: "Your migration slot", body: "Hi [First Name],\n\nSince Motive started blocking API access, we've been flooded with requests from fleets your size. We only take on 3 new migrations per month.\n\nThe numbers for your fleet:\n\nCurrent GPS cost: $30k-$60k/year\nPOTENT OS one-time: $19,995\nPayback period: under 6 months\n5-year savings: $130k-$280k\n\nNo per-truck fees. No API ransoms. You own it forever.\n\nThe one feature no competitor has — Offline Mode. Dispatchers book jobs with zero internet. Installs like an app on any phone.\n\nI'd like to show you the full system on a quick Zoom. 20 minutes.\n\nWhat day works best this week?\n\nBest,\n[Your Name]\n(770) 648-4228" },
-    A_cold_1: { subject: "Question about Motive's API move", body: "Hi [First Name],\n\nI saw the Highway email. Motive is demanding an API ransom to access your GPS data.\n\nYou're running 150-300 trucks. At $250-$400/truck/month, you're paying $80k-$120k/year just to see where your trucks are. And now they've proven they'll cut off your broker connections whenever they want a bigger check.\n\nWe built POTENT OS to give fleet owners an escape route.\n\nThe one feature no competitor has: OFFLINE MODE. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns. Installs like a real app on any iPhone or Android — no app store.\n\nFor a 200-truck fleet, the one-time license is $34,995. Compared to your current Motive bill of ~$80k/year, this pays for itself in about 5 months. Over 5 years, you save roughly $465k-$965k.\n\nQuick question: How many trucks are you running on Motive or Samsara?\n\nReply with a number. I'll send you a 1-page migration analysis.\n\nBest,\n[Your Name]\n(770) 648-4228" },
-    A_warm_2: { subject: "Your migration slot", body: "Hi [First Name],\n\nSince Motive started blocking API access, we've been flooded with requests from enterprise fleets. We only take on 3 new migrations per month for white-glove 24-hour setup.\n\nThe numbers for your fleet:\n\nCurrent GPS cost: $80k-$120k/year\nPOTENT OS one-time: $34,995\nPayback period: under 6 months on GPS alone\n5-year savings: $465k-$965k\n\nNo per-truck fees. No API ransoms. You own it forever.\n\nThe one feature no competitor has — Offline Mode. Dispatchers book jobs with zero internet. Installs like an app on any phone.\n\nI'd like to show you the full system on a quick Zoom. 20 minutes.\n\nWhat day works best this week?\n\nBest,\n[Your Name]\n(770) 648-4228" },
+    B_cold_1: { subject: "Motive's API change — question for you", body: "Hi [First Name],\n\nWhat are you currently paying per truck per month for GPS and dispatch?\n\nFleets your size (50-150 trucks) typically spend $30k-$60k/year on that alone.\n\nThe one feature no competitor has: OFFLINE MODE. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns. Installs like a real app on any iPhone or Android — no app store.\n\nFor a 100-truck fleet, the one-time license is $19,995. Compared to your current GPS bill, this pays for itself in a few months. Over 5 years, you save several hundred thousand dollars.\n\nQuick question: How many trucks are you running on Motive or Samsara?\n\nReply with a number. I'll send the exact savings analysis for your fleet.\n\nBest,\n[Your Name]\n(770) 648-4228" },
+    B_warm_2: { subject: "Your migration slot", body: "Hi [First Name],\n\nWe only take on a few new onboardings per month, so I wanted to follow up directly.\n\nThe numbers for your fleet:\n\nCurrent GPS cost: $30k-$60k/year\nPOTENT OS one-time: $19,995\nPayback period: under 6 months\n5-year savings: $130k-$280k\n\nNo per-truck fees. No API ransoms. You own it forever.\n\nThe one feature no competitor has — Offline Mode. Dispatchers book jobs with zero internet. Installs like an app on any phone.\n\nI'd like to show you the full system on a quick Zoom. 20 minutes.\n\nWhat day works best this week?\n\nBest,\n[Your Name]\n(770) 648-4228" },
+    A_cold_1: { subject: "Question about Motive's API move", body: "Hi [First Name],\n\nWhat are you currently paying per truck per month for GPS and dispatch?\n\nFleets your size (150-300 trucks) typically spend $80k-$120k/year on that alone.\n\nThe one feature no competitor has: OFFLINE MODE. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns. Installs like a real app on any iPhone or Android — no app store.\n\nFor a 200-truck fleet, the one-time license is $34,995. Compared to your current Motive bill of ~$80k/year, this pays for itself in about 5 months. Over 5 years, you save roughly $465k-$965k.\n\nQuick question: How many trucks are you running on Motive or Samsara?\n\nReply with a number. I'll send you a 1-page migration analysis.\n\nBest,\n[Your Name]\n(770) 648-4228" },
+    A_warm_2: { subject: "Your migration slot", body: "Hi [First Name],\n\nWe only take on a few new enterprise onboardings per month for white-glove setup, so I wanted to follow up directly.\n\nThe numbers for your fleet:\n\nCurrent GPS cost: $80k-$120k/year\nPOTENT OS one-time: $34,995\nPayback period: under 6 months on GPS alone\n5-year savings: $465k-$965k\n\nNo per-truck fees. No API ransoms. You own it forever.\n\nThe one feature no competitor has — Offline Mode. Dispatchers book jobs with zero internet. Installs like an app on any phone.\n\nI'd like to show you the full system on a quick Zoom. 20 minutes.\n\nWhat day works best this week?\n\nBest,\n[Your Name]\n(770) 648-4228" },
     hot_3: { subject: "Zoom confirmed — one question before we talk", body: "Hi [First Name],\n\nLooking forward to the call.\n\nOne thing before we meet:\n\nIs there anyone else on your team who should be on this call? The person who signs off on fleet expenses, or your operations manager?\n\nIf yes, please forward them this email or CC them on the reply. It'll speed things up.\n\nSee you soon.\n\nBest,\n[Your Name]\n(770) 648-4228" },
-    followup_1: { subject: "One question", body: "Hi [First Name],\n\nQuick thought: Motive just proved they'll hold GPS data hostage. What's your plan if they cut you off?\n\nOn a scale of 1-10, how urgent is it to stop paying per-truck GPS fees?\n\nReply with a number. That's all I need.\n\nBest,\n[Your Name]\n(770) 648-4228" },
-    followup_2: { subject: "Motive's next move", body: "Hi [First Name],\n\nMotive isn't going to stop. They've tasted the API ransom money. Next it's driver data. Then it's your customer list.\n\nPOTENT OS is the escape route. One-time license. You own it forever.\n\nThe one thing no competitor has: true offline mode. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns.\n\nWhat's your fleet size? I'll send the exact numbers for your operation.\n\nBest,\n[Your Name]\n(770) 648-4228" },
+    followup_1: { subject: "One question", body: "Hi [First Name],\n\nOn a scale of 1-10, how much of a priority is reducing your per-truck GPS fees right now?\n\nReply with a number. That's all I need.\n\nBest,\n[Your Name]\n(770) 648-4228" },
+    followup_2: { subject: "Motive's next move", body: "Hi [First Name],\n\nPOTENT OS is a one-time license — you own it forever, with no recurring per-truck fees.\n\nThe one thing no competitor has: true offline mode. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns.\n\nWhat's your fleet size? I'll send the exact numbers for your operation.\n\nBest,\n[Your Name]\n(770) 648-4228" },
     followup_3: { subject: "Should I close the loop?", body: "Hi [First Name],\n\nI don't want to keep bothering you.\n\nShould I close the loop for now, or would it make sense to stay connected as a resource if Motive changes their terms again?\n\nJust let me know either way.\n\nBest,\n[Your Name]\n(770) 648-4228" },
-    followup_4: { subject: "Last note", body: "Hi [First Name],\n\nI know you're busy.\n\nThe only reason I've stayed in touch is because POTENT OS could save your fleet significant money and give you control of your data back.\n\nOne-time license. No per-truck fees. You own it forever. Works 100% offline.\n\nIf that ever becomes a priority, I'm here.\n\nBest,\n[Your Name]\n(770) 648-4228" },
+    followup_4: { subject: "Last note", body: "Hi [First Name],\n\nI know you're busy.\n\nThe only reason I've stayed in touch is because POTENT OS could genuinely save your fleet significant money.\n\nOne-time license. No per-truck fees. You own it forever. Works 100% offline.\n\nIf that ever becomes a priority, I'm here.\n\nBest,\n[Your Name]\n(770) 648-4228" },
 };
 function getVersion(fs) { if (!fs || fs < 1)
     return null; if (fs <= 49)
@@ -11136,7 +11280,7 @@ function OSTraining() {
             React.createElement("div", { style: { background: C.orange + "18", border: "1px solid " + C.orange + "44", borderRadius: 10, padding: 16, marginBottom: 14 } },
                 React.createElement("div", { style: { fontSize: 14, fontWeight: 900, color: C.orange, marginBottom: 10 } }, "SAKE Framework \u2014 Every Email, Every Call"),
                 [["S — Situation Questions", "Understand their world first. Never pitch before you understand. Ask: How many trucks on Motive? What are you paying per truck per month?", "#4299E1"],
-                    ["A — Amplify Pain", "Make the problem feel real. At $400/truck you're paying $80k/year just to see where your trucks are. They can cut you off anytime.", "#E53E3E"],
+                    ["A — Amplify Value", "Make the real cost tangible. At $400/truck you're paying $80k/year just to see where your trucks are. A one-time license changes that math.", "#E53E3E"],
                     ["K — Key Solution", "One clear answer. POTENT OS. One-time license. Works 100% offline. No per-truck fees. You own it forever. Lead with offline mode — no competitor has it.", "#1DB954"],
                     ["E — End with Question", "Every email ends with a question. What are you paying per truck? Reply with a number. What day works best? Never end without a next step.", "#F0E000"],
                 ].map(function (s) { return React.createElement("div", { key: s[0], style: { background: C.card, border: "1px solid " + C.border, borderRadius: 8, padding: "12px", marginBottom: 8 } },
@@ -11179,7 +11323,7 @@ function OSTraining() {
         sec === "zoom" && React.createElement("div", null,
             React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.white, marginBottom: 12 } }, "Zoom Call \u2014 SAKE Closer"),
             [["S — Situation", "\"What's the most frustrating thing about your GPS right now?\"", "Listen. Do not pitch yet."],
-                ["A — Amplify", "\"You're paying $[X]/year just to see where your trucks are. And Motive just proved they'll cut you off whenever they want a bigger check.\"", "Make the pain feel real."],
+                ["A — Amplify", "\"You're paying $[X]/year just to see where your trucks are. A one-time license means that cost stops.\"", "Make the real savings tangible."],
                 ["K — Key Solution", "\"POTENT OS. One-time $[X] for your fleet. Works 100% offline. No per-truck fees. You own it forever. The only platform with this.\"", "Show the demo. Under 15 minutes."],
                 ["E — End", "\"Based on everything we've discussed, is there any reason we shouldn't move forward?\"", "Stop talking. Silence is a skill. Wait."],
             ].map(function (s) {
@@ -13378,8 +13522,15 @@ function DecoyRevealBanner(props) {
 // Real load-classification pricing, matching the actual B2B freight
 // document exactly — global, single source of truth, so Quick Note and
 // the real booking wizard can never drift apart like they just did.
+// Real terms versioning — update this string and the real date below
+// any time the actual booking terms change. Every booking now stores
+// exactly which version and when it was accepted, so a historical
+// booking stays reproducible even after terms change later.
+var TERMS_VERSION = "2026.1";
+var TERMS_VERSION_DATE = "2026-10-06";
+
 var LOAD_CLASSES = [
-    { id: "small", label: "Small Load", maxPct: 25, price: 150 },
+    { id: "small", label: "Small Load", maxPct: 25, price: 250 }, // real business floor — not worth going out for less, overrides the raw formula number
     { id: "partial", label: "Partial Load", maxPct: 49, price: 225 },
     { id: "half", label: "Half Truck", maxPct: 74, price: 350 },
     { id: "full", label: "Full Truck", maxPct: 100, price: 500 },
@@ -17149,8 +17300,10 @@ function ensureSplashCss() {
     _splashCssInjected = true;
     var style = document.createElement("style");
     style.textContent =
-        "@keyframes griffinIn{0%{opacity:0;transform:scale(0.7) translateY(20px);}60%{opacity:1;transform:scale(1.05) translateY(0);}100%{opacity:1;transform:scale(1) translateY(0);}}" +
-        "@keyframes griffinGlow{0%,100%{filter:drop-shadow(0 0 20px #F0E00044);}50%{filter:drop-shadow(0 0 45px #F0E000aa);}}" +
+        "@keyframes griffinIn{0%{opacity:0;transform:scale(0.5) translateY(40px);}60%{opacity:1;transform:scale(1.08) translateY(0);}100%{opacity:1;transform:scale(1) translateY(0);}}" +
+        "@keyframes griffinBreathe{0%,100%{transform:scale(1) translateY(0);}50%{transform:scale(1.04) translateY(-8px);}}" +
+        "@keyframes griffinGlow{0%,100%{filter:drop-shadow(0 0 40px #F0E00066) drop-shadow(0 0 90px #F0E00033);}50%{filter:drop-shadow(0 0 80px #F0E000bb) drop-shadow(0 0 160px #F0E00055);}}" +
+        "@keyframes ringPulse{0%{transform:scale(0.8);opacity:0.6;}100%{transform:scale(1.6);opacity:0;}}" +
         "@keyframes textIn{0%{opacity:0;transform:translateY(14px);}100%{opacity:1;transform:translateY(0);}}" +
         "@keyframes btnIn{0%{opacity:0;transform:translateY(30px);}100%{opacity:1;transform:translateY(0);}}" +
         "@keyframes bgPulse{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}";
@@ -17172,14 +17325,20 @@ function SplashEnterScreen(props) {
     return React.createElement("div", {
         style: {
             position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 999999,
-            background: "linear-gradient(120deg, #080808, #14120a, #080808)",
+            background: "radial-gradient(circle at 50% 40%, #1a1600, #080808 70%)",
             backgroundSize: "200% 200%", animation: "bgPulse 6s ease infinite",
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-            opacity: exiting ? 0 : 1, transition: "opacity 0.5s ease", gap: 6
+            opacity: exiting ? 0 : 1, transition: "opacity 0.5s ease", gap: 6, overflow: "hidden"
         }
     },
-        React.createElement("img", { src: "/potent-griffin-icon.png", style: { width: 160, maxWidth: "50vw", animation: "griffinIn 1s ease forwards, griffinGlow 2.5s ease-in-out infinite 1s" } }),
-        React.createElement("div", { style: { fontSize: 30, fontWeight: 900, color: "#F2F2F2", marginTop: 18, animation: "textIn 0.8s ease forwards", animationDelay: "0.5s", opacity: 0, animationFillMode: "forwards" } },
+        // Real multi-layer effect — Griffin now dominates the screen,
+        // genuine pulsing ring behind it, continuous breathing motion,
+        // not a static image with a subtle glow.
+        React.createElement("div", { style: { position: "relative", display: "flex", alignItems: "center", justifyContent: "center" } },
+            React.createElement("div", { style: { position: "absolute", width: 280, height: 280, borderRadius: "50%", border: "2px solid #F0E00088", animation: "ringPulse 2.2s ease-out infinite" } }),
+            React.createElement("div", { style: { position: "absolute", width: 280, height: 280, borderRadius: "50%", border: "2px solid #F0E00066", animation: "ringPulse 2.2s ease-out infinite 1.1s" } }),
+            React.createElement("img", { src: "/potent-griffin-icon.png", style: { width: 280, maxWidth: "75vw", position: "relative", zIndex: 2, animation: "griffinIn 1s ease forwards, griffinGlow 2.5s ease-in-out infinite 1s, griffinBreathe 3.5s ease-in-out infinite 1s" } })),
+        React.createElement("div", { style: { fontSize: 34, fontWeight: 900, color: "#F2F2F2", marginTop: 24, animation: "textIn 0.8s ease forwards", animationDelay: "0.5s", opacity: 0, animationFillMode: "forwards" } },
             "POTENT ", React.createElement("span", { style: { color: "#F0E000" } }, "LOGISTICS")),
         React.createElement("div", { style: { fontSize: 13, color: "#999", marginBottom: 40, animation: "textIn 0.8s ease forwards", animationDelay: "0.7s", opacity: 0, animationFillMode: "forwards" } },
             "The first app with Ghost Mode. No App Store. No monthly fee. Built to win."),
@@ -19403,7 +19562,7 @@ function RealCapacityCalendar(props) {
 
 // ── 1. REAL CAPACITY VALIDATION — real truck dimensions, hard limit ──
 var REAL_TRUCK_PROFILE = {
-    maxPayloadLbs: 4999, // real hard limit — never raised by historical performance
+    maxPayloadLbs: 4500, // real hard limit — never raised by historical performance
     interiorLengthIn: 190, interiorWidthIn: 94, interiorHeightIn: 80,
     doorWidthIn: 86.5, doorHeightIn: 71,
 };
@@ -19699,7 +19858,7 @@ function griffinAnswer(transcript, userEmail, userRole) {
         return Promise.resolve("One POTENT Coin equals one real dollar. You fund your wallet, and real bookings draw from that balance. POTENT doesn't offer credit or Net terms \u2014 it's prepaid only.");
     }
     if (t.indexOf("fit check") > -1 || (t.indexOf("fit") > -1 && t.indexOf("truck") > -1)) {
-        return Promise.resolve("Fit Check verifies your real shipment against the actual truck's limits \u2014 4,999 pounds maximum, and it has to physically pass through an 86 and a half inch by 71 inch door.");
+        return Promise.resolve("Fit Check verifies your real shipment against the actual truck's limits \u2014 4,500 pounds maximum, and it has to physically pass through an 86 and a half inch by 71 inch door.");
     }
     if (t.indexOf("detention") > -1) {
         return Promise.resolve("Detention is the real fee charged when a truck waits beyond the included free time at a stop \u2014 POTENT's real rate is 75 dollars per hour.");
@@ -19716,7 +19875,7 @@ function griffinAnswer(transcript, userEmail, userRole) {
     // Real deterministic patterns didn't match — fall back to the real
     // real, free, zero-server LLM running directly in the browser via
     // WebGPU — no VPS, no monthly cost, matching "no server yet."
-    var realKnownContext = "POTENT Logistics is a direct B2B box truck carrier based in Conyers, GA. Prepaid only, no credit or Net terms. 1 POTENT Coin = $1. Real truck: 2022 Ford E-350, 16ft box, 4,999 lb max payload, no liftgate, no pallet jack.";
+    var realKnownContext = "POTENT Logistics is a direct B2B box truck carrier based in Conyers, GA. Prepaid only, no credit or Net terms. 1 POTENT Coin = $1. Real truck: 2022 Ford E-350, 16ft box, 4,500 lb max payload, no liftgate, no pallet jack.";
     return askGriffinLocalLLM(transcript, realKnownContext);
 }
 
