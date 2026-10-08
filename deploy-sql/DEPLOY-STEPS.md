@@ -14,7 +14,7 @@ Your Mailjet key and secret were typed inside the old send-email.js. Treat them 
    - RESEND_API_KEY and MAIL_FROM_ADDRESS  (company-branded customer email; optional until you set up Resend)
 3. Make sure the old send-email.js is NOT in GitHub with the keys (the new one in this zip has none).
 
-## 2. Supabase: run this BEFORE you upload, so the new columns exist. ONE file (SQL Editor > paste ALL > Run). Safe to run twice.
+## 2. Supabase: FIRST paste STEP-0-PRECHECK.sql and Run (changes nothing; every row must say yes). THEN run this BEFORE you upload, so the new columns exist. ONE file (SQL Editor > paste ALL > Run). Safe to run twice.
 RUN-THIS-ONCE.sql  (it already contains 68, 70, 71, 72, 73, 74, 75, 76, 77, 78 and 69 in the right order; you do not need the separate files)
 It stops with a clear message and changes nothing if the company-accounts tables are missing.
 The check at the bottom should show 0 in every row.
