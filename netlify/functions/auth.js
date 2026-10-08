@@ -221,6 +221,15 @@ function staffMap() {
     try { return JSON.parse(process.env.STAFF_PASSWORDS_JSON || "{}"); } catch (e) { return {}; }
 }
 
+
+// A company's public page (customers book and sign in under that company's name). Only paid companies have one.
+async function tenantBySlug(slug) {
+    slug = String(slug || "").trim().toLowerCase();
+    if (!slug || slug === "potent-logistics" || !/^[a-z0-9\-]{2,60}$/.test(slug)) return null;
+    var r = await sb("organizations?slug=eq." + encodeURIComponent(slug) + "&select=*");
+    var o = r.ok && Array.isArray(r.data) ? r.data[0] : null;
+    return o && billing.isPaid(o) ? o : null;
+}
 exports.handler = async function (event) {
     if (event.httpMethod !== "POST") return J(405, { ok: false, error: "POST only" });
     if (!process.env.AUTH_SECRET || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -280,28 +289,42 @@ exports.handler = async function (event) {
             });
         }
 
+        // ── public: a company's name, look and prices for its own booking page ──
+        if (action === "brand") {
+            var bo = await tenantBySlug(body.org_slug);
+            if (!bo) return J(404, { ok: false, error: "This company page is not available." });
+            var bb = Object.assign({}, bo.branding || {}); if (!bb.name) bb.name = bo.name;
+            return J(200, { ok: true, org_id: String(bo.id), branding: bb, pricing: bo.pricing_config || null });
+        }
+
         // ── Customer portal accounts (customer_accounts) ──────────
         if (action === "custlogin") {
             var cem = String(body.email || "").trim().toLowerCase();
-            var ck = "cust:" + cem;
+            var corg = null;
+            if (body.org_slug && String(body.org_slug) !== "potent-logistics") { corg = await tenantBySlug(body.org_slug); if (!corg) return J(404, { ok: false, error: "This company page is not available." }); }
+            var ckey = corg ? String(corg.id) + ":" + cem : cem;      // a company's customers are kept apart from POTENT's and from each other
+            var ck = "cust:" + ckey;
             if (tooMany(ck)) return J(429, { ok: false, error: "Too many attempts. Try again in 15 minutes." });
-            var ca = await sb("customer_accounts?email=eq." + encodeURIComponent(cem) + "&select=*");
+            var ca = await sb("customer_accounts?email=eq." + encodeURIComponent(ckey) + "&select=*");
             var acct = ca.ok && Array.isArray(ca.data) ? ca.data[0] : null;
             if (!acct || !checkPw(acct.password, body.password)) { noteFail(ck); return J(401, { ok: false, error: "Wrong email or password." }); }
             if (String(acct.password).indexOf("scrypt$") !== 0) {
                 // upgrade legacy plain-text password to a hash on first successful login
-                await sb("customer_accounts?email=eq." + encodeURIComponent(cem), { method: "PATCH", prefer: "return=minimal", body: { password: hashPw(String(body.password)) } });
+                await sb("customer_accounts?email=eq." + encodeURIComponent(ckey), { method: "PATCH", prefer: "return=minimal", body: { password: hashPw(String(body.password)) } });
             }
-            return J(200, { ok: true, token: sign({ uid: "cust:" + cem, role: "customer", orgId: null, exp: Date.now() + TOKEN_TTL_MS }), autopay_enabled: !!acct.autopay_enabled, account_role: acct.account_role || "admin" });
+            return J(200, { ok: true, token: sign({ uid: "cust:" + cem, role: "customer", orgId: corg ? corg.id : null, exp: Date.now() + TOKEN_TTL_MS }), autopay_enabled: !!acct.autopay_enabled, account_role: acct.account_role || "admin" });
         }
         if (action === "custsignup") {
             var sem = String(body.email || "").trim().toLowerCase();
             if (!sem || !body.password || String(body.password).length < 6) return J(400, { ok: false, error: "Enter your email and a password (at least 6 characters)." });
-            var ex = await sb("customer_accounts?email=eq." + encodeURIComponent(sem) + "&select=email");
+            var sorg = null;
+            if (body.org_slug && String(body.org_slug) !== "potent-logistics") { sorg = await tenantBySlug(body.org_slug); if (!sorg) return J(404, { ok: false, error: "This company page is not available." }); }
+            var skey = sorg ? String(sorg.id) + ":" + sem : sem;
+            var ex = await sb("customer_accounts?email=eq." + encodeURIComponent(skey) + "&select=email");
             if (ex.ok && Array.isArray(ex.data) && ex.data.length) return J(409, { ok: false, error: "An account with that email already exists. Use Sign In, or call us to reset it." });
-            var mk = await sb("customer_accounts", { method: "POST", prefer: "return=minimal", body: { email: sem, password: hashPw(String(body.password)) } });
+            var mk = await sb("customer_accounts", { method: "POST", prefer: "return=minimal", body: { email: skey, password: hashPw(String(body.password)) } });
             if (!mk.ok) return J(500, { ok: false, error: "Could not create account." });
-            return J(200, { ok: true, token: sign({ uid: "cust:" + sem, role: "customer", orgId: null, exp: Date.now() + TOKEN_TTL_MS }), autopay_enabled: false, account_role: "admin" });
+            return J(200, { ok: true, token: sign({ uid: "cust:" + sem, role: "customer", orgId: sorg ? sorg.id : null, exp: Date.now() + TOKEN_TTL_MS }), autopay_enabled: false, account_role: "admin" });
         }
 
 
@@ -340,6 +363,8 @@ exports.handler = async function (event) {
         // everything below needs a valid token
         var tok = verify(body.token);
         if (!tok) return J(401, { ok: false, error: "Session expired. Sign in again." });
+        // a customer login can do exactly one thing here: change its own autopay setting
+        if (tok.role === "customer" && action !== "custautopay") return J(403, { ok: false, error: "Not allowed" });
 
 
         // ── Staff: review partner applications (scoped to the staff member's own company) ──
@@ -359,7 +384,7 @@ exports.handler = async function (event) {
 
         if (action === "custautopay") {
             if (!tok.uid || tok.uid.indexOf("cust:") !== 0) return J(403, { ok: false, error: "Customers only" });
-            var up2 = await sb("customer_accounts?email=eq." + encodeURIComponent(tok.uid.slice(5)), { method: "PATCH", prefer: "return=minimal", body: { autopay_enabled: !!body.enabled, autopay_authorized_at: body.enabled ? new Date().toISOString() : null } });
+            var up2 = await sb("customer_accounts?email=eq." + encodeURIComponent((tok.orgId ? String(tok.orgId) + ":" : "") + tok.uid.slice(5)), { method: "PATCH", prefer: "return=minimal", body: { autopay_enabled: !!body.enabled, autopay_authorized_at: body.enabled ? new Date().toISOString() : null } });
             return up2.ok ? J(200, { ok: true }) : J(500, { ok: false, error: "Could not update autopay." });
         }
 

@@ -86,6 +86,8 @@ Never put STAFF_PASSWORDS_JSON.txt or POTENT-leads-backup.json in GitHub.
 - Quote screen: with a zone set up in Growth Tools > Zones, a quote whose miles fall in that band shows "Zone ... is included in the price".
 - Data & Imports > QuickBooks export downloads an invoice file for QuickBooks Online.
 
+- Company pages (new): each paid customer company has its own booking page and customer portal at https://potentoperations.netlify.app/?c=THEIR-SLUG (the slug is shown in Customers & Licenses). It shows that company's name and colors, quotes use that company's prices, bookings land in that company's account, and the portal shows only that company's customers and jobs. Card payments and wallet top-ups by card stay with POTENT's own page; a company's customers pay that company directly (the office can still add wallet money by hand). Test: open the link for a paid test company, book a job, sign up as a customer, then sign in to the portal.
+
 ## 8. LAST: run the lockdown files, in order
 LOCKDOWN-3-RUN-LAST.sql (jobs, job photos, jobs backup, wallets), then LOCKDOWN-4-RUN-LAST.sql (expenses, claims, audit log, documents, prospects and the rest of the office tables; public forms can only ADD rows).
 Run each only after steps 6 and 7 pass.

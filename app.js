@@ -6656,7 +6656,7 @@ function ReviewModal(props) {
             return fetch(SUPABASE_URL + "/rest/v1/reviews", {
                 method: "POST",
                 headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
-                body: JSON.stringify({ name: f.name, job_id: cleanId, rating: f.rating, comment: f.comment })
+                body: JSON.stringify({ name: f.name, job_id: cleanId, rating: f.rating, comment: f.comment, org_id: PL_TENANT_ID || undefined })
             }).then(function (res) {
                 setSubmitting(false);
                 if (!res.ok) { setJobErr("Your review could not be saved (server error). Please try again."); return; }
@@ -7314,8 +7314,10 @@ function ReviewsSection(props) {
     var [showModal, setShowModal] = useState(qrTriggered);
 
     function refetch() {
-        fetch(SUPABASE_URL + "/rest/v1/reviews?select=*&order=created_at.desc&limit=50", {
-            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
+        getOrgId().then(function (oid) {
+            return fetch(SUPABASE_URL + "/rest/v1/reviews?select=*&order=created_at.desc&limit=50" + (oid && oid !== "from-login" ? "&org_id=eq." + encodeURIComponent(oid) : ""), {
+                headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
+            });
         }).then(function (r) { return r.json(); })
           .then(function (data) { setReviews(Array.isArray(data) ? data : []); })
           .catch(function () { setLoadErr(true); setReviews([]); });
@@ -10603,13 +10605,14 @@ function CustomerPortal(props) {
     var [portalMsg, setPortalMsg] = useState("");
     var [wallet, setWallet] = useState(null);
     var [fundAmt, setFundAmt] = useState(0);
+    var [onlinePay, setOnlinePay] = useState(true);   // false for a company's customers: card payment is handled by that company
     var [repeatFor, setRepeatFor] = useState(null);
     var [repeatDate, setRepeatDate] = useState("");
     var [repeatSlot, setRepeatSlot] = useState("");
 
     function loadPortal(tok) {
         return plPortalCall("data", tok).then(function (d) {
-            if (d && d.ok) { setCustomerJobs((d.jobs || []).map(plPortalJob)); setPortalX({ photos: d.photos || [], rate_cards: d.rate_cards || [], properties: d.properties || [] }); setPortalMsg(""); }
+            if (d && d.ok) { setOnlinePay(d.online_pay !== false); setCustomerJobs((d.jobs || []).map(plPortalJob)); setPortalX({ photos: d.photos || [], rate_cards: d.rate_cards || [], properties: d.properties || [] }); setPortalMsg(""); }
             else setPortalMsg(d && d.error === "network" ? "Can't reach the server. Pull down to retry." : "We couldn't load your jobs. Please sign in again.");
         });
     }
@@ -10660,7 +10663,7 @@ function CustomerPortal(props) {
     function login() {
         if (!email || !pw) { setLoginErr("Enter your email and password."); return; }
         setLoginErr("");
-        plApi("custlogin", { token: "", email: email, password: pw }).then(function (res) {
+        plApi("custlogin", { token: "", email: email, password: pw, org_slug: PL_ORG_SLUG }).then(function (res) {
             if (!res || !res.ok) { setLoginErr(res && res.error === "network" ? "Can't reach the server. Try again." : ((res && res.error) || "Wrong email or password.")); return; }
             setCustToken(res.token);
             setAutopayEnabled(!!res.autopay_enabled);
@@ -10671,7 +10674,7 @@ function CustomerPortal(props) {
     function createAccount() {
         if (!email || !pw || pw.length < 6) { setLoginErr("Enter your email and a password (at least 6 characters)."); return; }
         setLoginErr("");
-        plApi("custsignup", { token: "", email: email, password: pw }).then(function (res) {
+        plApi("custsignup", { token: "", email: email, password: pw, org_slug: PL_ORG_SLUG }).then(function (res) {
             if (!res || !res.ok) { setLoginErr(res && res.error === "network" ? "Can't reach the server. Try again." : ((res && res.error) || "Something went wrong creating your account.")); return; }
             setCustToken(res.token);
             finishLogin(res.token);
@@ -10736,13 +10739,13 @@ function CustomerPortal(props) {
                                     React.createElement("div", { style: { fontSize: 12, color: C.white } }, a.label)),
                                 React.createElement("div", { style: { display: "flex", gap: 6 } },
                                     wallet && Number(wallet.balance) >= ((Number(a.job.finalPrice) || 0) - (Number(a.job.amountPaid) || 0)) && React.createElement("button", { onClick: function () { payFromWallet([a.job.id]); }, style: { background: C.green, color: "#000", border: "none", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Pay from wallet"),
-                                    React.createElement("button", { onClick: function () { setPayingJob(a.job); }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 6, padding: "5px 12px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Pay Now")));
+                                    onlinePay && React.createElement("button", { onClick: function () { setPayingJob(a.job); }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 6, padding: "5px 12px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Pay Now")));
                         }),
                         selectedForPayment.length > 1 && wallet && Number(wallet.balance) >= actionItems.filter(function (a) { return selectedForPayment.indexOf(a.job.id) > -1; }).reduce(function (t, a) { return t + ((Number(a.job.finalPrice) || 0) - (Number(a.job.amountPaid) || 0)); }, 0) && React.createElement("button", {
                             onClick: function () { payFromWallet(selectedForPayment.slice()); },
                             style: { width: "100%", marginTop: 8, background: C.orange, color: "#000", border: "none", borderRadius: 6, padding: "8px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }
                         }, "Pay " + selectedForPayment.length + " selected from wallet"),
-                        selectedForPayment.length > 1 && React.createElement("button", {
+                        onlinePay && selectedForPayment.length > 1 && React.createElement("button", {
                             onClick: function () { setPayingBulk(true); },
                             style: { width: "100%", marginTop: 8, background: C.green, color: "#000", border: "none", borderRadius: 6, padding: "8px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }
                         }, "Pay " + selectedForPayment.length + " Selected \u2014 $" + actionItems.filter(function (a) { return selectedForPayment.indexOf(a.job.id) > -1; }).reduce(function (s, a) { return s + ((Number(a.job.finalPrice) || 0) - (Number(a.job.amountPaid) || 0)); }, 0))),
@@ -10798,7 +10801,7 @@ function CustomerPortal(props) {
                             React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 800, letterSpacing: 1.3, textTransform: "uppercase" } }, "\uD83E\uDE99 Your wallet"),
                             React.createElement("div", { style: { fontSize: 24, fontWeight: 900, color: C.white } }, "$" + Number(wallet.balance).toFixed(2))),
                         React.createElement("div", { style: { fontSize: 10, margin: "4px 0 8px" } }, "Prepaid. Add money once, and your jobs are paid from it. 1 coin = $1." + (autopayEnabled ? " Autopay is on: finished jobs are paid from your wallet automatically when it has enough." : "")),
-                        !fundAmt && React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } }, [100, 250, 500, 1000, 2500].map(function (a) { return React.createElement("button", { key: a, onClick: function () { setFundAmt(a); }, style: { background: C.surface, color: C.white, border: "1px solid " + C.border, borderRadius: 7, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "+ $" + a); }),
+                        onlinePay && !fundAmt && React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } }, [100, 250, 500, 1000, 2500].map(function (a) { return React.createElement("button", { key: a, onClick: function () { setFundAmt(a); }, style: { background: C.surface, color: C.white, border: "1px solid " + C.border, borderRadius: 7, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "+ $" + a); }),
                             React.createElement("input", { type: "number", min: "10", placeholder: "Other amount", onChange: function (e) { var v = Math.floor(Number(e.target.value)); if (v >= 10 && v <= 10000) setFundAmt(v); }, onKeyDown: function () { }, style: { width: 110, background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "7px 8px", fontSize: 12, fontFamily: "inherit" } })),
                         fundAmt > 0 && React.createElement(StripeCardForm, { amount: fundAmt, jobId: "WALLET", customerName: email, onCancel: function () { setFundAmt(0); }, onSuccess: function (piId) { fundWallet(piId); } }),
                         wallet.txns && wallet.txns.length > 0 && React.createElement("div", { style: { marginTop: 10, fontSize: 11 } }, wallet.txns.slice(0, 5).map(function (x, i) {
@@ -14744,6 +14747,24 @@ function LoginActivityView(){
 
 // Customer companies price with their own setup; POTENT keeps its hardcoded pricing.
 try { var _bootUser = loadCurrentUser(); if (_bootUser && _bootUser.orgId) { applyTenantPricing(_bootUser.pricing); plBrandApply(_bootUser.branding); } } catch (e) { }
+// ── A company's own public page: yoursite/?c=their-slug ──
+// Customers see that company's name, colors and prices, book under that company, and sign in to a portal that shows only that company's jobs.
+var PL_TENANT_ID = null, PL_TENANT_FAIL = false;
+var plTenantReady = Promise.resolve();
+try {
+    var _tm = /[?&]c=([A-Za-z0-9\-]{2,60})/.exec(window.location.search);
+    var _ts = _tm ? _tm[1].toLowerCase() : "";
+    if (!_ts) { try { _ts = sessionStorage.getItem("pl_tenant") || ""; } catch (e) { } }
+    if (_ts && _ts !== "potent-logistics" && !(_bootUser && _bootUser.orgId)) {
+        try { sessionStorage.setItem("pl_tenant", _ts); } catch (e) { }
+        PL_ORG_SLUG = _ts;
+        plTenantReady = plApi("brand", { token: "", org_slug: _ts }).then(function (r) {
+            if (r && r.ok) { PL_TENANT_ID = r.org_id; _plOrgId = r.org_id; applyTenantPricing(r.pricing); plBrandApply(r.branding); try { document.title = (r.branding && r.branding.name) || document.title; } catch (e) { } }
+            else { PL_TENANT_FAIL = true; try { sessionStorage.removeItem("pl_tenant"); } catch (e) { } }
+        }).catch(function () { PL_TENANT_FAIL = true; });
+    }
+} catch (e) { }
+
 // ── MOUNT APP ─────────────────────────────────────────────────────
 // [render relocated to end of file]
 
@@ -15989,6 +16010,7 @@ function RecurringRouteForm(props) {
             method: "POST",
             headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
             body: JSON.stringify({
+                org_id: PL_TENANT_ID || undefined,
                 customer_name: f.customerName, company: f.company, phone: f.phone, email: f.email,
                 origin: f.origin, destination: f.destination, service_type: f.serviceType,
                 days_of_week: f.days.join(","), start_date: f.startDate,
@@ -16392,7 +16414,7 @@ function PublicRecurringRequest() {
         }
         setCheckingCapacity(true);
         setCapacityError("");
-        fetch("/.netlify/functions/data-api?capacity=1").then(function (r) { return r.json(); }).then(function (existing) {
+        fetch("/.netlify/functions/data-api?capacity=1" + (PL_TENANT_ID ? "&org_slug=" + encodeURIComponent(PL_ORG_SLUG) : "")).then(function (r) { return r.json(); }).then(function (existing) {
             var byDay = {};
             (Array.isArray(existing) ? existing : []).forEach(function (r) {
                 (r.days_of_week || "").split(",").filter(Boolean).forEach(function (d) {
@@ -16417,6 +16439,7 @@ function PublicRecurringRequest() {
             method: "POST",
             headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
             body: JSON.stringify({
+                org_id: PL_TENANT_ID || undefined,
                 customer_name: f.customerName, company: f.company, phone: f.phone, email: f.email,
                 origin: f.origin, destination: f.destination, service_type: f.serviceType,
                 days_of_week: f.days.join(","), start_date: f.startDate,
@@ -19718,7 +19741,7 @@ function BusinessPlannerTab(props) {
         setSaving(true);
         fetch(SUPABASE_URL + "/rest/v1/recurring_routes", {
             method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
-            body: JSON.stringify({ customer_name: props.customerName || "", phone: props.customerPhone || "", email: props.customerEmail || "", origin: f.startLoc, destination: f.endLoc, days_of_week: f.recurring ? "Mon,Tue,Wed,Thu,Fri" : "", status: "active", assigned_driver: f.driver, start_time: f.startTime })
+            body: JSON.stringify({ org_id: PL_TENANT_ID || undefined, customer_name: props.customerName || "", phone: props.customerPhone || "", email: props.customerEmail || "", origin: f.startLoc, destination: f.endLoc, days_of_week: f.recurring ? "Mon,Tue,Wed,Thu,Fri" : "", status: "active", assigned_driver: f.driver, start_time: f.startTime })
         }).then(function (res) {
             setSaving(false);
             if (!res.ok) { alert("Route creation failed \u2014 server error. Nothing was saved."); return; }
@@ -22547,4 +22570,7 @@ function GriffinVoiceButton(props) {
 // ── MOUNT APP ─────────────────────────────────────────────────────
 var rootEl = document.getElementById("root");
 var reactRoot = ReactDOM.createRoot(rootEl);
-reactRoot.render(React.createElement(React.Fragment, null, React.createElement(Root), React.createElement(RealBackButton, null)));
+plTenantReady.then(function () {
+    if (PL_TENANT_FAIL) { rootEl.innerHTML = "<div style=\"font-family:sans-serif;text-align:center;padding:60px 20px;color:#ccc;background:#000;min-height:100vh\"><h2>This company page is not available</h2><p>Check the link, or contact the company that sent it to you.</p></div>"; return; }
+    reactRoot.render(React.createElement(React.Fragment, null, React.createElement(Root), React.createElement(RealBackButton, null)));
+});

@@ -186,6 +186,13 @@ exports.handler = async function (event) {
     // ── public: how many hours per weekday are already committed to recurring routes (for the recurring request form) ──
     if (qs.capacity) {
         var cpo = await potentOrgId();
+        if (qs.org_slug && String(qs.org_slug) !== (process.env.POTENT_ORG_SLUG || "potent-logistics")) {
+            if (!/^[a-z0-9\-]{2,60}$/.test(String(qs.org_slug))) return J(400, { error: "Bad company" });
+            var cso = await sb("organizations?slug=eq." + encodeURIComponent(String(qs.org_slug)) + "&select=id");
+            var csr = cso.ok ? parse(cso.text) : null;
+            if (!Array.isArray(csr) || !csr[0]) return J(404, { error: "Company not found" });
+            cpo = String(csr[0].id);
+        }
         if (!cpo) return J(500, { error: "Company not found" });
         var cr = await sb("recurring_routes?status=eq.active&org_id=eq." + encodeURIComponent(cpo) + "&select=days_of_week,base_hours");
         var crr = cr.ok ? parse(cr.text) : null;
@@ -268,8 +275,10 @@ exports.handler = async function (event) {
         if (!ptok || ptok.role !== "customer" || String(ptok.uid || "").indexOf("cust:") !== 0) return J(401, { error: "Sign in again" });
         var pemail = String(ptok.uid).slice(5).toLowerCase();
         if (!pemail || pemail.length > 160 || /[\s,()*%]/.test(pemail)) return J(400, { error: "Bad account" });
-        var porg = await potentOrgId();
+        var potentId = await potentOrgId();
+        var porg = ptok.orgId ? String(ptok.orgId) : potentId;       // a company's customer signs in under that company only
         if (!porg) return J(500, { error: "Company not found" });
+        var onlinePay = porg === potentId;                            // card payments here run on POTENT's own Stripe account
         var pk = "pt:" + pemail + ":" + Math.floor(Date.now() / 60000);
         TERMS_HITS[pk] = (TERMS_HITS[pk] || 0) + 1;
         if (TERMS_HITS[pk] > 40) return J(429, { error: "Too many requests" });
@@ -299,7 +308,7 @@ exports.handler = async function (event) {
             var pq = await sb("properties?org_id=eq." + encodeURIComponent(porg) + "&select=company,name,address,access_notes,hours&limit=300");
             var pqr = pq.ok ? parse(pq.text) : null;
             if (Array.isArray(pqr)) props = pqr.filter(function (p) { return p.company && names[String(p.company).trim().toLowerCase()]; }).map(function (p) { return { company: p.company, name: p.name, address: p.address }; });
-            return J(200, { ok: true, jobs: outJobs, photos: photos, rate_cards: cards, properties: props });
+            return J(200, { ok: true, jobs: outJobs, photos: photos, rate_cards: cards, properties: props, online_pay: onlinePay });
         }
         if (qs.portal === "repeat") {
             if (event.httpMethod !== "POST") return J(405, { error: "POST only" });
@@ -347,6 +356,7 @@ exports.handler = async function (event) {
         // Add money: only after Stripe confirms the payment. The credit is the amount Stripe actually collected.
         if (qs.portal === "walletfund") {
             if (event.httpMethod !== "POST") return J(405, { error: "POST only" });
+            if (!onlinePay) return J(403, { error: "Add money by contacting your provider." });
             var fb = parse(event.body || "null"); var fpi = fb ? String(fb.payment_intent_id || "") : "";
             if (!/^pi_[A-Za-z0-9_]{6,100}$/.test(fpi)) return J(400, { error: "Bad request" });
             var fpiObj;
@@ -371,6 +381,7 @@ exports.handler = async function (event) {
         // The browser says "I paid"; the server asks Stripe. Jobs are marked paid only when Stripe confirms a succeeded payment that covers them.
         if (qs.portal === "paid") {
             if (event.httpMethod !== "POST") return J(405, { error: "POST only" });
+            if (!onlinePay) return J(403, { error: "Online card payment is not available for this company. Contact them to pay." });
             var yb = parse(event.body || "null");
             var yids = yb && Array.isArray(yb.job_ids) ? yb.job_ids.map(String).filter(function (x) { return /^[A-Za-z0-9\-_.]{1,60}$/.test(x); }).slice(0, 50) : [];
             var piId = yb ? String(yb.payment_intent_id || "") : "";
@@ -457,7 +468,7 @@ exports.handler = async function (event) {
             var jemail = String(ajr[0].email || "").trim().toLowerCase();
             if (!jemail) return J(200, { ok: true, charged: 0, reason: "no customer email" });
             if (owedOn(ajr[0]) <= 0) return J(200, { ok: true, charged: 0, reason: "already paid" });
-            var acct = await sb("customer_accounts?email=eq." + encodeURIComponent(jemail) + "&select=autopay_enabled&limit=1"), acr = acct.ok ? parse(acct.text) : null;
+            var acct = await sb("customer_accounts?email=eq." + encodeURIComponent((sorg === (await potentOrgId()) ? "" : sorg + ":") + jemail) + "&select=autopay_enabled&limit=1"), acr = acct.ok ? parse(acct.text) : null;
             if (!Array.isArray(acr) || !acr[0] || !acr[0].autopay_enabled) return J(200, { ok: true, charged: 0, reason: "autopay is off" });
             var aw = await walletFor(sorg, jemail, null, false);
             if (!aw) return J(200, { ok: true, charged: 0, reason: "no wallet" });
