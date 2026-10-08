@@ -7555,7 +7555,7 @@ function AdminDashboard(props) {
             tab === "leads" && React.createElement(LeadsBoard, { currentUser: props.currentUser }),
             tab === "licenses" && props.role === ROLES.OWNER && !(props.currentUser && props.currentUser.orgId) && React.createElement(LicenseManager, { embedded: true }),
             tab === "mycompany" && props.currentUser && props.currentUser.orgId && React.createElement(MyCompany, { currentUser: props.currentUser }),
-            tab === "datatools" && props.role === ROLES.OWNER && React.createElement(DataTools, null),
+            tab === "datatools" && props.role === ROLES.OWNER && React.createElement(DataTools, { jobs: props.jobs }),
             tab === "vendors" && React.createElement(VendorCommandCenter, null),
             tab === "properties" && React.createElement(PropertiesManager, null),
             tab === "growthtools" && React.createElement(GrowthTools, { jobs: props.jobs, onAddJob: props.onAddJob }),
@@ -9327,7 +9327,22 @@ function plDataApi(body) {
     return fetch("/.netlify/functions/company-data", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + plTokenGet() }, body: JSON.stringify(body) })
         .then(function (r) { return r.json().catch(function () { return { ok: false, error: "Server error" }; }); }).catch(function () { return { ok: false, error: "No connection." }; });
 }
-function DataTools() {
+// Jobs as a QuickBooks Online invoice import file (Invoices > Import). One line per job.
+function plQuickBooksRows(jobs, onlyUnbilled) {
+    var H = ["InvoiceNo", "Customer", "InvoiceDate", "DueDate", "Terms", "Memo", "Item(Product/Service)", "ItemDescription", "ItemQuantity", "ItemRate", "ItemAmount"];
+    var rows = [];
+    (jobs || []).forEach(function (j) {
+        var amt = Number(j.finalPrice || j.basePrice) || 0;
+        if (!j.id || amt <= 0 || j.status === "Cancelled") return;
+        if (onlyUnbilled && (j.status !== "Completed" || j.paymentStatus === "paid")) return;
+        var d = (j.date || new Date().toISOString().slice(0, 10)).slice(0, 10);
+        var vals = ([j.id, j.companyName || j.customer || "Customer", d, d, "Due on receipt", "Job " + j.id, j.serviceName || j.service || "Service",
+            [j.serviceName || j.service, j.origin, j.destination && j.destination !== j.origin ? "to " + j.destination : ""].filter(Boolean).join(" "), 1, amt.toFixed(2), amt.toFixed(2)]);
+        var o = {}; H.forEach(function (h, i) { o[h] = vals[i]; }); rows.push(o);
+    });
+    return rows;
+}
+function DataTools(props) {
     var [exp, setExp] = useState(null);
     var [busy, setBusy] = useState("");
     var [msg, setMsg] = useState("");
@@ -9378,6 +9393,13 @@ function DataTools() {
     var tmpl = kind === "trucks" ? "make,model,year,plate,vin,color\nIsuzu,NPR,2021,GA1234,1HGCM82633A004352,White" : "name,email,phone\nJoe Driver,joe@example.com,404-555-0100";
     return React.createElement("div", { style: { maxWidth: 640, margin: "0 auto" } },
         React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.white, marginBottom: 4 } }, "📦 Data & Imports"),
+        React.createElement("div", { style: box },
+            React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.white, marginBottom: 4 } }, "QuickBooks export"),
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 10 } }, "Download your jobs as invoices. In QuickBooks Online: Settings > Import data > Invoices, upload the file."),
+            React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+                React.createElement(Btn, { onClick: function () { var r = plQuickBooksRows(props.jobs, true); if (!r.length) { setMsg("No completed, unpaid jobs to export."); return; } plDownload("quickbooks-invoices-unpaid.csv", plCsvBuild(r)); } }, "Unpaid completed jobs"),
+                React.createElement(Btn, { variant: "ghost", onClick: function () { var r = plQuickBooksRows(props.jobs, false); if (!r.length) { setMsg("No jobs to export."); return; } plDownload("quickbooks-invoices-all.csv", plCsvBuild(r)); } }, "All jobs"))),
+
         React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 18, lineHeight: 1.5 } }, "Your data is yours. Download it any time. Only your company's data is ever included."),
         React.createElement(Card, { style: { marginBottom: 16 } },
             React.createElement(Lbl, null, "Export my data"),
