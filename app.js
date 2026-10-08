@@ -2,6 +2,7 @@
 var useState = React.useState;
 var useEffect = React.useEffect;
 var useRef = React.useRef;
+var PL_BRAND = null; // customer-company branding (logo, name, colors); null for POTENT itself
 var C = {
     black: "#080808", surface: "#0F0F0F", card: "#141414", border: "#222222",
     orange: "#F0E000", orangeSoft: "#F0E00014", gold: "#C8962A",
@@ -16,30 +17,30 @@ var C = {
 // To add a dispatcher: copy any dispatch line, change id/name/password.
 // Passwords: owner sets them, employees never share.
 var USERS = [
-    { id: "potent", name: "POTENT", role: "owner", password: "HJWG9099AI", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash", "geofence", "flexpay", "referrals", "marketrates", "loginActivity", "loginimages", "safetyscore", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
-    { id: "dispatch1", name: "Dispatch 1", role: "dispatch", password: "IRI1202HJ", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
-    { id: "dispatch2", name: "Dispatch 2", role: "dispatch", password: "EVQ9819SS", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
-    { id: "dispatch3", name: "Dispatch 3", role: "dispatch", password: "IQC8526SI", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
-    { id: "dispatch4", name: "Dispatch 4", role: "dispatch", password: "EPZ0124FH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
-    { id: "dispatch5", name: "Dispatch 5", role: "dispatch", password: "UXB6653FH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
-    { id: "dispatch6", name: "Dispatch 6", role: "dispatch", password: "BSD0421RN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
-    { id: "dispatch7", name: "Dispatch 7", role: "dispatch", password: "NEK4282YX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
-    { id: "dispatch8", name: "Dispatch 8", role: "dispatch", password: "RUQ7232FK", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
-    { id: "dispatch9", name: "Dispatch 9", role: "dispatch", password: "LBY3027CH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
-    { id: "dispatch10", name: "Dispatch 10", role: "dispatch", password: "FYJ9996BX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
-    { id: "dispatch11", name: "Dispatch 11", role: "dispatch", password: "XMG4340LN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
-    { id: "dispatch12", name: "Dispatch 12", role: "dispatch", password: "EEA2653NU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
-    { id: "dispatch13", name: "Dispatch 13", role: "dispatch", password: "STM4563VM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
-    { id: "dispatch14", name: "Dispatch 14", role: "dispatch", password: "GHU7822NX", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
-    { id: "dispatch15", name: "Dispatch 15", role: "dispatch", password: "SLL8046WH", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
-    { id: "dispatch16", name: "Dispatch 16", role: "dispatch", password: "MXH2933UN", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
-    { id: "dispatch17", name: "Dispatch 17", role: "dispatch", password: "SJV8263MA", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
-    { id: "dispatch18", name: "Dispatch 18", role: "dispatch", password: "TYE0288YW", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
-    { id: "dispatch19", name: "Dispatch 19", role: "dispatch", password: "SVG4086AU", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
-    { id: "dispatch20", name: "Dispatch 20", role: "dispatch", password: "HCB3143EM", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
-    { id: "driver", name: "Driver 1", role: "driver", password: "PCQ6100XS", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
-    { id: "driver2", name: "Driver 2", role: "driver", password: "WAA8680YI", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
-    { id: "driver3", name: "Driver 3", role: "driver", password: "ZOW4027RH", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
+    { id: "potent", name: "POTENT", role: "owner", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash", "geofence", "flexpay", "referrals", "marketrates", "loginActivity", "loginimages", "safetyscore", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "licenses", "datatools", "vendors", "properties", "growthtools", "commandcenter", "setup", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "dispatch1", name: "Dispatch 1", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "dispatch2", name: "Dispatch 2", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "dispatch3", name: "Dispatch 3", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "dispatch4", name: "Dispatch 4", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "dispatch5", name: "Dispatch 5", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "dispatch6", name: "Dispatch 6", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "dispatch7", name: "Dispatch 7", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "dispatch8", name: "Dispatch 8", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "dispatch9", name: "Dispatch 9", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "dispatch10", name: "Dispatch 10", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "dispatch11", name: "Dispatch 11", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "dispatch12", name: "Dispatch 12", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "dispatch13", name: "Dispatch 13", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "dispatch14", name: "Dispatch 14", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "dispatch15", name: "Dispatch 15", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "dispatch16", name: "Dispatch 16", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "dispatch17", name: "Dispatch 17", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "dispatch18", name: "Dispatch 18", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "dispatch19", name: "Dispatch 19", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "dispatch20", name: "Dispatch 20", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "driver", name: "Driver 1", role: "driver", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
+    { id: "driver2", name: "Driver 2", role: "driver", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
+    { id: "driver3", name: "Driver 3", role: "driver", emoji: "🚐", commission: 0, commLogistics: 0, commOS: 0, commLoadboard: 0, access: ["driver", "driverapp", "payroll", "demo", "fleetmap", "documents", "calendar"] },
 ];
 // HOW TO RENAME A DISPATCHER:
 // Change name:"Dispatch 1" to name:"Marcus" — their name shows on all activity logs, leads board, leaderboard.
@@ -217,24 +218,10 @@ function getMasterPw(){ try{ return localStorage.getItem(MASTER_PW_KEY)||""; }ca
 function setMasterPw(pw){ try{ localStorage.setItem(MASTER_PW_KEY,pw); }catch(e){} }
 function getCustomPws(){ try{ return JSON.parse(localStorage.getItem(CUSTOM_PWS_KEY)||"{}"); }catch(e){ return {}; } }
 function setCustomPw(uid,pw){
-  try{ var c=getCustomPws(); c[uid]=pw; localStorage.setItem(CUSTOM_PWS_KEY,JSON.stringify(c)); }catch(e){}
-  // Real cross-device sync — was local-only before, meaning a password change
-  // only worked on the device that made it.
-  fetch(SUPABASE_URL + "/rest/v1/user_password_overrides", {
-    method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates" },
-    body: JSON.stringify({ user_id: uid, password: pw, updated_at: new Date().toISOString() })
-  }).catch(function(){});
+  // Password changes are stored (hashed) on the server; nothing sensitive is kept in the browser or readable with the public key.
+  return plApi("setpw",{userId:uid,newPassword:pw}).then(function(r){ if(!r||!r.ok){ try{ alert((r&&r.error)||"Could not save password."); }catch(e){} } return r; });
 }
-function loadPasswordOverridesFromServer(){
-  return fetch(SUPABASE_URL + "/rest/v1/user_password_overrides?select=user_id,password", { headers: sbHeaders() })
-    .then(function(r){ return r.json(); })
-    .then(function(rows){
-      if (!Array.isArray(rows)) return;
-      var map = {};
-      rows.forEach(function(row){ map[row.user_id] = row.password; });
-      try { localStorage.setItem(CUSTOM_PWS_KEY, JSON.stringify(map)); } catch(e){}
-    }).catch(function(){});
-}
+function loadPasswordOverridesFromServer(){ return Promise.resolve(); }
 function clearCustomPw(uid){ try{ var c=getCustomPws(); delete c[uid]; localStorage.setItem(CUSTOM_PWS_KEY,JSON.stringify(c)); }catch(e){} }
 function checkPassword(uid,entered){
   // Check master password first
@@ -245,7 +232,7 @@ function checkPassword(uid,entered){
   if(customs[uid]&&entered===customs[uid]) return true;
   // Check default password
   var user=USERS.find(function(u){return u.id===uid;});
-  return user&&entered===user.password;
+  return false; // default passwords no longer ship in the bundle; login is verified server-side
 }
 function loadPayrollCode() { try {
     return localStorage.getItem(PAYROLL_CODE_KEY) || "";
@@ -264,7 +251,7 @@ function getUserByPassword(pw) {
   var customs=getCustomPws();
   var byCustom=USERS.find(function(u){return customs[u.id]&&pw===customs[u.id];});
   if(byCustom)return byCustom;
-  return USERS.find(function(u){return u.password===pw;})||null;
+  return null;
 }
 function loadCurrentUser() { try {
     var r = localStorage.getItem("pl_user");
@@ -326,24 +313,154 @@ function checkGPSStall(lat,lng,driverId,driverName,jobId){
   }
 }
 // Fetch Potent Logistics org_id once and cache it
+// Multi-tenant: a logged-in company user (org_users) carries their own orgId.
+function plSha256(str) {
+    try {
+        var enc = new TextEncoder().encode(str);
+        return crypto.subtle.digest("SHA-256", enc).then(function (buf) {
+            return Array.prototype.map.call(new Uint8Array(buf), function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
+        });
+    } catch (e) { return Promise.resolve(str); }
+}
+function plTruckLimitHit() {
+    try {
+        var u = loadCurrentUser();
+        if (!u || !u.orgId || !u.limits) return false;
+        var n = loadFleet().length;
+        if (n >= u.limits.trucks) { alert("Your " + u.limits.tier + " plan allows " + u.limits.trucks + " trucks. Contact POTENT to upgrade."); return true; }
+    } catch (e) { }
+    return false;
+}
+function setActiveOrg(orgId) { _plOrgId = orgId || null; }
+// Per-company local data separation: each company's browser-stored data is parked
+// in its own snapshot, so one company never sees another's jobs/drivers/leads on a shared device.
+var PL_NS_KEEP = /^(pl_user|pl3_auth|pl_token|pl_ns|pl_ns_snap_.*|pl_cam_consent|pl_notif_asked|pl_driver_device_id|pl_tour_seen_.*|pl_tip_seen_.*|pl_getting_started_dismissed|pl_decoy_photo|potent_lang)$/;
+function plSwapNamespace(target) {
+    try {
+        var cur = localStorage.getItem("pl_ns") || "potent";
+        if (cur === target) return false;
+        var snap = {};
+        Object.keys(localStorage).forEach(function (k) {
+            if ((k.indexOf("pl_") === 0 || k.indexOf("pl3_") === 0 || k.indexOf("potent_") === 0) && !PL_NS_KEEP.test(k)) snap[k] = localStorage.getItem(k);
+        });
+        localStorage.setItem("pl_ns_snap_" + cur, JSON.stringify(snap)); // throws before anything is removed if storage is full
+        Object.keys(snap).forEach(function (k) { localStorage.removeItem(k); });
+        var next = localStorage.getItem("pl_ns_snap_" + target);
+        if (next) { var o = JSON.parse(next); Object.keys(o).forEach(function (k) { localStorage.setItem(k, o[k]); }); }
+        localStorage.setItem("pl_ns", target);
+        return true;
+    } catch (e) { return false; }
+}
+// ── SERVER AUTH (netlify/functions/auth.js + leads-api.js) ──────────
+var PL_TOKEN_KEY = "pl_token";
+function plTokenGet() { try { return localStorage.getItem(PL_TOKEN_KEY) || ""; } catch (e) { return ""; } }
+function plTokenSet(t) { try { if (t) localStorage.setItem(PL_TOKEN_KEY, t); else localStorage.removeItem(PL_TOKEN_KEY); } catch (e) { } }
+function plApi(action, body) {
+    return fetch("/.netlify/functions/auth", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(Object.assign({ action: action, token: plTokenGet() }, body || {}))
+    }).then(function (r) { return r.json().catch(function () { return { ok: false, error: "Server error" }; }); })
+      .catch(function () { return { ok: false, error: "network" }; });
+}
+// ── TENANT GATEWAY — company data goes through the server, never straight to the database ──
+// Every read/write of these tables is sent to /.netlify/functions/data-api with the
+// signed-in login, so each company only ever sees and changes its own rows.
+var PL_GATED = ["fleet_vehicles","fleet_maintenance","driver_locations","voice_room_messages","driver_compliance","brokers_carriers_backup","storage_partners","safety_alerts","job_route_legs","job_events","job_scope_changes","vendors","disposal_facilities","properties","potent_wallets","wallet_transactions","rate_cards","service_zones","job_templates","quote_terms_acceptance","jobs","job_photos","junk_jobs","jobs_backup","audit_log_real","expenses_real","commission_rates_real","payment_references","cost_profiles","customer_rate_cards","claims","change_orders","addon_authorizations","my_documents","deadlines","shift_handoffs","escalation_timers","site_profiles","customer_locations","incoming_loads","user_display_names","revoked_users","receipts","job_communications","login_log","push_subscriptions","griffin_queries","recurring_routes","reviews","waitlist","os_prospects","business_rules"];
+(function () {
+    if (typeof window === "undefined" || !window.fetch || window.__plGate) return;
+    window.__plGate = true;
+    var orig = window.fetch.bind(window);
+    var base = SUPABASE_URL + "/rest/v1/";
+    window.fetch = function (input, init) {
+        try {
+            if (typeof input === "string" && input.indexOf(base) === 0) {
+                var rest = input.slice(base.length), qi = rest.indexOf("?");
+                var table = qi < 0 ? rest : rest.slice(0, qi), query = qi < 0 ? "" : rest.slice(qi + 1);
+                if (PL_GATED.indexOf(table) >= 0) {
+                    init = init || {};
+                    var method = (init.method || "GET").toUpperCase();
+                    // customer tracking page: public, one job, position only
+                    var tm = table === "driver_locations" && method === "GET" && /(^|&)job_id=eq\.([^&]+)/.exec(query);
+                    if (tm) return orig("/.netlify/functions/data-api?track=" + encodeURIComponent(decodeURIComponent(tm[2])));
+                    var tok = plTokenGet();
+                    // signed-out customers: two narrow public doors (book a job, attach paperwork to their own job)
+                    if (!tok) {
+                        var pubBody = null; try { pubBody = init.body ? JSON.parse(init.body) : null; } catch (e0) { }
+                        if (table === "jobs" && method === "POST" && pubBody) {
+                            delete pubBody.org_id; pubBody.org_slug = (typeof PL_ORG_SLUG !== "undefined" && PL_ORG_SLUG) || undefined;
+                            return orig("/.netlify/functions/data-api?book=1", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(pubBody) });
+                        }
+                        if (table === "job_photos" && method === "POST" && pubBody) {
+                            return orig("/.netlify/functions/data-api?bol=1", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ job_id: pubBody.job_id, url: pubBody.url }) });
+                        }
+                        var jm = table === "jobs" && method === "GET" && /(^|&)id=eq\.([^&]+)/.exec(query);
+                        if (jm) {
+                            var jid = decodeURIComponent(jm[2]);
+                            return orig("/.netlify/functions/data-api?bol=1", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ job_id: jid, check: true }) })
+                                .then(function (r) { return r.json(); })
+                                .then(function (j) { return new Response(JSON.stringify(j && j.ok ? [{ id: jid }] : []), { status: 200, headers: { "Content-Type": "application/json" } }); });
+                        }
+                    }
+                    if (tok) {
+                        var h = {};
+                        var src = init.headers || {};
+                        Object.keys(src).forEach(function (k) { var lk = k.toLowerCase(); if (lk !== "apikey" && lk !== "authorization") h[k] = src[k]; });
+                        h.Authorization = "Bearer " + tok;
+                        return orig("/.netlify/functions/data-api?t=" + table + "&q=" + encodeURIComponent(query), Object.assign({}, init, { headers: h }));
+                    }
+                }
+            }
+        } catch (e) { /* fall through to the normal request */ }
+        return orig(input, init);
+    };
+})();
+// Partner (carrier) calls: shape a plApi answer like a fetch Response so older code keeps working.
+function plAsResponse(r) {
+    var ok = !!(r && r.ok);
+    return { ok: ok, status: ok ? 200 : ((r && r.status) || 400), text: function () { return Promise.resolve((r && r.error) || ""); }, json: function () { return Promise.resolve(r); } };
+}
+// Drop-in for fetch() against the leads table. qs is "" or "?id=eq.5" etc.
+function plLeadsFetch(qs, opts) {
+    opts = opts || {};
+    var h = { "Content-Type": "application/json", Authorization: "Bearer " + plTokenGet() };
+    if (opts.prefer) h.Prefer = opts.prefer;
+    return fetch("/.netlify/functions/leads-api?q=" + encodeURIComponent(qs || ""), { method: opts.method || "GET", headers: h, body: opts.body });
+}
 function getOrgId() {
     if (_plOrgId)
         return Promise.resolve(_plOrgId);
+    try {
+        var _su = JSON.parse(localStorage.getItem("pl_user") || "null");
+        if (_su && _su.orgId) { _plOrgId = _su.orgId; return Promise.resolve(_plOrgId); }
+    } catch (e) { }
     return fetch(SUPABASE_URL + "/rest/v1/organizations?slug=eq." + PL_ORG_SLUG + "&select=id", { headers: sbHeaders() })
         .then(function (r) { return r.json(); })
         .then(function (data) {
         if (data && data[0] && data[0].id) {
             _plOrgId = data[0].id;
         }
-        return _plOrgId;
-    }).catch(function () { return null; });
+        // signed in: the server picks the company from the login, so any value works as the placeholder
+        return _plOrgId || (plTokenGet() ? "from-login" : null);
+    }).catch(function () { return plTokenGet() ? "from-login" : null; });
+}
+// Web bookings and portal repeat requests are saved on the server only. These two pull them into the staff job list.
+function plJobFromRow(r) {
+    return { id: r.id, customer: r.customer, phone: r.phone, email: r.email || "", service: r.service, serviceName: r.service_name || r.service || "Service", origin: r.origin, destination: r.destination || r.origin,
+        zone: r.zone || "", speed: r.speed || "standard", basePrice: Number(r.base_price) || 0, finalPrice: Number(r.final_price) || 0, status: r.status || "New", payment: r.payment || "cash", discreet: !!r.discreet,
+        isBusiness: !!r.is_business, customerType: r.customer_type || "residential", companyName: r.company_name || "", paymentTerms: r.payment_terms || "completion", date: r.date, timeSlot: r.time_slot || "", notes: r.notes || "",
+        miles: r.miles || null, helperHours: Number(r.helper_hours) || 0, weightTier: r.weight_tier || "light", paymentIntentId: r.payment_intent_id || null, paidOnline: !!r.paid_online,
+        heavyFee: Number(r.heavy_fee) || 0, heavyLbs: Number(r.heavy_lbs) || 0, heavyItems: r.heavy_items || [], estTotalLbs: r.est_total_lbs || null, trips: r.trips || null, source: "web" };
+}
+// Rows that a customer created (no staff author), that this device has not already imported or removed.
+function plNewWebBookings(rows, localJobs, seen) {
+    var have = {}; (localJobs || []).forEach(function (j) { have[j.id] = 1; });
+    var sn = {}; (seen || []).forEach(function (i) { sn[i] = 1; });
+    return (rows || []).filter(function (r) { return r && r.id && !have[r.id] && !sn[r.id] && !r.created_by && !r.salesperson && r.status !== "Cancelled"; });
 }
 // Push a job to Supabase — runs in the background, never blocks the UI
-function syncJobToSupabase(job) {
-    getOrgId().then(function (orgId) {
-        if (!orgId)
-            return;
-        var payload = {
+// One job in the shape the database table expects (shared by the live save and the offline queue)
+function plJobToRow(job, orgId) {
+    var payload = {
             id: job.id,
             org_id: orgId,
             customer: job.customer,
@@ -375,8 +492,22 @@ function syncJobToSupabase(job) {
             created_by: job.createdBy || "",
             payment_intent_id: job.paymentIntentId || null,
             paid_online: job.paidOnline || false,
-            recurring_route_id: job.recurringRouteId || null
+            recurring_route_id: job.recurringRouteId || null,
+            heavy_fee: job.heavyFee || 0,
+            heavy_lbs: job.heavyLbs || 0,
+            heavy_items: job.heavyItems || [],
+            est_total_lbs: job.estTotalLbs || null,
+            trips: job.trips || null
         };
+    if (job.paymentStatus) payload.payment_status = job.paymentStatus;
+    if (job.amountPaid != null) payload.amount_paid = Number(job.amountPaid) || 0;
+    return payload;
+}
+function syncJobToSupabase(job) {
+    getOrgId().then(function (orgId) {
+        if (!orgId)
+            return;
+        var payload = plJobToRow(job, orgId);
         fetch(SUPABASE_URL + "/rest/v1/jobs", {
             method: "POST",
             headers: Object.assign({}, sbHeaders(), { Prefer: "resolution=merge-duplicates" }),
@@ -405,6 +536,12 @@ function syncStatusToSupabase(jobId, newStatus, timestampPatch) {
     });
 }
 var BUSINESS_EMAIL = "potentlogistics@pm.me";
+// Where internal alerts go. POTENT's own account: POTENT's inbox. A customer company: its own
+// email only (never POTENT's), or nowhere if it has not set one.
+function plNotifyEmail() {
+    try { var u = loadCurrentUser(); if (u && u.orgId) return (u.branding && u.branding.email) || (PL_BRAND && PL_BRAND.email) || ""; } catch (e) { }
+    return BUSINESS_EMAIL;
+}
 var DISPATCH_PHONE_DISPLAY = "(470) 574-6340"; // Dispatch & Sales — customer-facing
 var DISPATCH_EMAIL = "logisticspotent@gmail.com"; // Dispatch & Sales — customer-facing
 var PHONE_NUMBER = "+17706484228";
@@ -824,11 +961,117 @@ var TX = {
         readyConfirm: "Ich bestätige, dass die Angaben korrekt sind und bin bereit, kontaktiert zu werden.",
     },
 };
+// ── AUTO-TRANSLATE — translates ALL on-screen text, not just the tabs ───────
+// The tabs/labels that have hand-written translations still use t(). Everything else is
+// translated as it appears: each phrase is looked up once (server saves it), then reused.
+// Names, addresses, IDs, numbers and emails are left alone. Turn off per element with data-notranslate.
+var PL_TR = { lang: "en", cache: {}, miss: {}, nodes: new Set(), orig: new WeakMap(), done: new WeakMap(), pending: {}, timer: null, obs: null, flushing: false };
+var PL_TR_SKIP_TAGS = { SCRIPT: 1, STYLE: 1, TEXTAREA: 1, CODE: 1, PRE: 1, NOSCRIPT: 1, INPUT: 1, SVG: 1 };
+var PL_TR_ATTRS = ["placeholder", "title", "aria-label"];
+var PL_STREET = /\b(st|street|ave|avenue|rd|road|blvd|dr|drive|ln|lane|hwy|highway|pkwy|ct|way|suite|ste|apt)\b/i;
+function plTrWanted(core) {
+    if (core.length < 2 || core.length > 240) return false;
+    if (!/[A-Za-zÀ-ɏ]/.test(core)) return false;
+    if (/^[\w.+-]+@[\w-]+\.[\w.-]+$/.test(core) || /^(https?:|www\.)/i.test(core)) return false;
+    if (/^[A-Z]{1,4}[-#]?\d{3,}/.test(core)) return false;            // job / load IDs like PL-8842
+    if (/^\d{1,6}\s+[A-Za-z]/.test(core) && PL_STREET.test(core)) return false; // street addresses
+    return true;
+}
+function plTrBlocked(el) {
+    for (var e = el; e && e.nodeType === 1; e = e.parentNode) {
+        if (PL_TR_SKIP_TAGS[(e.tagName || "").toUpperCase()]) return true;
+        if (e.hasAttribute && (e.hasAttribute("data-notranslate") || e.getAttribute("contenteditable") === "true" || (e.classList && e.classList.contains("notranslate")))) return true;
+    }
+    return false;
+}
+function plTrLoadCache(lang) { try { return JSON.parse(localStorage.getItem("pl_tr_" + lang) || "{}") || {}; } catch (e) { return {}; } }
+function plTrSaveCache() { try { var j = JSON.stringify(PL_TR.cache); if (j.length < 1500000) localStorage.setItem("pl_tr_" + PL_TR.lang, j); } catch (e) { } }
+function plTrApplyText(node) {
+    var text = node.nodeValue;
+    if (PL_TR.done.get(node) === text) return;                    // our own translation, leave it
+    var core = text.trim();
+    if (!plTrWanted(core) || plTrBlocked(node.parentNode)) return;
+    PL_TR.orig.set(node, text); PL_TR.nodes.add(node);
+    var hit = PL_TR.cache[core];
+    if (hit !== undefined) { if (hit && hit !== core) { var out = text.replace(core, function () { return hit; }); PL_TR.done.set(node, out); node.nodeValue = out; } }
+    else if (!PL_TR.miss[core]) PL_TR.pending[core] = 1;
+}
+function plTrApplyAttrs(el) {
+    PL_TR_ATTRS.forEach(function (a) {
+        var v = el.getAttribute && el.getAttribute(a); if (!v) return;
+        if (el.getAttribute("data-pl-t-" + a) === v) return;
+        var core = v.trim(); if (!plTrWanted(core) || (el.hasAttribute("data-notranslate") || plTrBlocked(el.parentNode))) return;
+        el.setAttribute("data-pl-o-" + a, v); PL_TR.nodes.add(el);
+        var hit = PL_TR.cache[core];
+        if (hit !== undefined) { if (hit && hit !== core) { var out = v.replace(core, function () { return hit; }); el.setAttribute("data-pl-t-" + a, out); el.setAttribute(a, out); } }
+        else if (!PL_TR.miss[core]) PL_TR.pending[core] = 1;
+    });
+}
+function plTrScan(root) {
+    if (!root || PL_TR.lang === "en") return;
+    if (root.nodeType === 3) { plTrApplyText(root); return; }
+    if (root.nodeType !== 1) return;
+    plTrApplyAttrs(root);
+    if (plTrBlocked(root)) return;
+    var w = document.createTreeWalker(root, 4 | 1, null), n;
+    while ((n = w.nextNode())) { if (n.nodeType === 3) plTrApplyText(n); else plTrApplyAttrs(n); }
+}
+function plTrSchedule() {
+    if (PL_TR.timer) return;
+    PL_TR.timer = setTimeout(function () { PL_TR.timer = null; plTrFlush(); }, 200);
+}
+function plTrFlush() {
+    var keys = Object.keys(PL_TR.pending);
+    if (!keys.length || PL_TR.flushing || PL_TR.lang === "en") return;
+    var lang = PL_TR.lang, batch = keys.slice(0, 60);
+    batch.forEach(function (k) { delete PL_TR.pending[k]; });
+    PL_TR.flushing = true;
+    fetch("/.netlify/functions/translate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lang: lang, phrases: batch }) })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+            PL_TR.flushing = false;
+            if (lang !== PL_TR.lang) return;
+            var got = d && d.t ? d.t : {};
+            batch.forEach(function (k) { if (typeof got[k] === "string" && got[k]) PL_TR.cache[k] = got[k]; else PL_TR.miss[k] = 1; });
+            plTrSaveCache();
+            PL_TR.nodes.forEach(function (n) { if (!n.isConnected) PL_TR.nodes.delete(n); });
+            plTrScan(document.body);
+            if (Object.keys(PL_TR.pending).length) plTrSchedule();
+        }).catch(function () { PL_TR.flushing = false; batch.forEach(function (k) { PL_TR.miss[k] = 1; }); });
+}
+function plTrRestore() {
+    PL_TR.nodes.forEach(function (n) {
+        if (n.nodeType === 3) { var o = PL_TR.orig.get(n); if (o !== undefined && PL_TR.done.get(n) === n.nodeValue) n.nodeValue = o; }
+        else if (n.getAttribute) PL_TR_ATTRS.forEach(function (a) { var o = n.getAttribute("data-pl-o-" + a); if (o !== null && n.getAttribute("data-pl-t-" + a) === n.getAttribute(a)) { n.setAttribute(a, o); n.removeAttribute("data-pl-t-" + a); n.removeAttribute("data-pl-o-" + a); } });
+    });
+    PL_TR.nodes.clear(); PL_TR.done = new WeakMap();
+}
+function plTrStart(lang) {
+    if (typeof document === "undefined" || !document.body) return;
+    try { document.documentElement.lang = lang; document.documentElement.dir = lang === "ar" ? "rtl" : "ltr"; } catch (e) { }
+    // put back English first, so switching language always starts from the original text
+    plTrRestore(); PL_TR.pending = {}; PL_TR.miss = {};
+    PL_TR.lang = lang;
+    if (lang === "en") { if (PL_TR.obs) { PL_TR.obs.disconnect(); PL_TR.obs = null; } return; }
+    PL_TR.cache = plTrLoadCache(lang);
+    if (!PL_TR.obs && window.MutationObserver) {
+        PL_TR.obs = new MutationObserver(function (recs) {
+            recs.forEach(function (r) {
+                if (r.type === "characterData") plTrScan(r.target);
+                else if (r.type === "attributes") plTrApplyAttrs(r.target);
+                else r.addedNodes.forEach(function (n) { plTrScan(n); });
+            });
+            plTrSchedule();
+        });
+        PL_TR.obs.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: PL_TR_ATTRS });
+    }
+    plTrScan(document.body); plTrSchedule();
+}
 var _globalLang = getLang();
 var _langListeners = [];
 function subscribeLang(fn) { _langListeners.push(fn); }
 function unsubscribelang(fn) { _langListeners = _langListeners.filter(function (f) { return f !== fn; }); }
-function changeGlobalLang(l) { _globalLang = l; setLang(l); _langListeners.forEach(function (f) { f(l); }); }
+function changeGlobalLang(l) { _globalLang = l; setLang(l); _langListeners.forEach(function (f) { f(l); }); setTimeout(function () { plTrStart(l); }, 60); }
 function t(key) { return (TX[_globalLang] && TX[_globalLang][key]) || TX.en[key] || key; }
 function useTranslations() {
     var [lang, setLangState] = useState(getLang);
@@ -845,6 +1088,7 @@ function useLang() {
     function tl(key) { return (TX[lang] && TX[lang][key]) || TX.en[key] || key; }
     return { lang, t: tl };
 }
+if (typeof window !== "undefined" && _globalLang !== "en") { var _plTrBoot = function () { setTimeout(function () { plTrStart(_globalLang); }, 400); }; if (document.readyState === "complete") _plTrBoot(); else window.addEventListener("load", _plTrBoot); }
 function LangSwitcher({ lang, changeLang }) {
     var [open, setOpen] = useState(false);
     var ALL_LANGS = [
@@ -885,7 +1129,7 @@ function LangSwitcher({ lang, changeLang }) {
     );
 }
 var TRUCK_MPG = 9;
-var TRUCK_MAX_LBS = 4300;
+var TRUCK_MAX_LBS = 4500;
 var TRUCK_LENGTH = "16ft";
 var TRUCK_WIDTH = "93 inches wide";
 var HELPER_FEE = 100;
@@ -993,13 +1237,22 @@ var SERVICES = [
         rule: "Starting prices are estimates. Final price confirmed by phone after a quick walkthrough.",
         sizes: ["Studio / 1 Bedroom", "2 Bedroom", "3 Bedroom", "4 Bedroom", "5+ Bedroom", "Hoarder House", "Commercial / School / Warehouse"] },
 ];
+// Regular zone jobs (Delivery / Freight / Discreet): three speeds, flat-dollar adjustments to the zone price.
+//   Scheduled = zone price. Same-Day = $25 less (flexibility discount, matches Single Item $250 -> $225).
+//   Rush = $100 more (matches Single Item $250 -> $350).
+// The old speeds stay as hidden entries so jobs booked earlier still open and display correctly.
+var SPEED_SAMEDAY_ADJ = -25, SPEED_RUSH_ADJ = 100;
 var SPEEDS = [
-    { id: "standard", label: "Standard", sub: "Scheduled dispatch", icon: "🟢", mult: 1.0, color: "#1DB954" },
-    { id: "urgent", label: "Urgent", sub: "Priority same-day", icon: "⚡", mult: 1.25, color: "#F0E000" },
-    { id: "afterhours", label: "After-Hours", sub: "Late night / early morning", icon: "🌙", mult: 1.6, color: "#F0E000" },
-    { id: "overnight", label: "Overnight", sub: "Driven through the night — arrives by morning", icon: "🌃", mult: 1.8, color: "#9F7AEA" },
-    { id: "emergency", label: "Emergency", sub: "Urgent + after-hours", icon: "🚨", mult: 1.5, color: "#E53E3E" },
+    { id: "standard", label: "Scheduled", sub: "Normal scheduled dispatch", icon: "🟢", mult: 1.0, add: 0, color: "#1DB954" },
+    { id: "sameday", label: "Same-Day", sub: "Anytime that day, you save $25", icon: "📅", mult: 1.0, add: SPEED_SAMEDAY_ADJ, color: "#4299E1" },
+    { id: "rush", label: "Rush", sub: "Priority, we move fast (+$100)", icon: "⚡", mult: 1.0, add: SPEED_RUSH_ADJ, color: "#F0E000" },
+    { id: "urgent", label: "Urgent", sub: "Priority same-day", icon: "⚡", mult: 1.25, color: "#F0E000", hidden: true },
+    { id: "afterhours", label: "After-Hours", sub: "Late night / early morning", icon: "🌙", mult: 1.6, color: "#F0E000", hidden: true },
+    { id: "overnight", label: "Overnight", sub: "Driven through the night", icon: "🌃", mult: 1.8, color: "#9F7AEA", hidden: true },
+    { id: "emergency", label: "Emergency", sub: "Urgent + after-hours", icon: "🚨", mult: 1.5, color: "#E53E3E", hidden: true },
 ];
+function visibleSpeeds() { return SPEEDS.filter(function (sp) { return !sp.hidden; }); }
+function speedNote(sp) { return sp.add !== undefined ? (sp.add === 0 ? "Base rate" : (sp.add > 0 ? "+$" : "-$") + Math.abs(sp.add)) : (sp.mult === 1 ? "Base rate" : "x" + sp.mult + " rate"); }
 var ZONES = [
     { id: "local", label: "Local", sub: "0-50 miles", estMiles: 40 },
     { id: "regional", label: "Regional", sub: "51-150 miles", estMiles: 120 },
@@ -1012,11 +1265,11 @@ var ZONES = [
 // new policy. Payment is collected before leaving the job site — cards
 // and cash only, no checks accepted.
 var LOAD_SIZES = [
-    { id: "minimum", label: "Single Item / Minimum", sub: "One item or a small pile", price: 179, priceMax: 179, estWeightLbs: 150 },
-    { id: "quarter", label: "Quarter Load", sub: "A few items — couch, small cleanout", price: 250, priceMax: 250, estWeightLbs: 750 },
-    { id: "half", label: "Half Load", sub: "Bedroom set, multiple appliances", price: 350, priceMax: 400, estWeightLbs: 1500 },
-    { id: "threequarter", label: "Three-Quarter Load", sub: "Garage or large room cleanout", price: 500, priceMax: 600, estWeightLbs: 2400 },
-    { id: "full", label: "Full Load", sub: "Full 16ft truck — biggest single trip", price: 750, priceMax: 850, estWeightLbs: 3200 },
+    { id: "minimum", label: "Single Item / Minimum", sub: "One item or a small pile", price: 179, priceMax: 179, estWeightLbs: 150, capLbs: 300 },
+    { id: "quarter", label: "Quarter Load", sub: "A few items — couch, small cleanout", price: 250, priceMax: 250, estWeightLbs: 750, capLbs: 1075 },
+    { id: "half", label: "Half Load", sub: "Bedroom set, multiple appliances", price: 350, priceMax: 400, estWeightLbs: 1500, capLbs: 2150 },
+    { id: "threequarter", label: "Three-Quarter Load", sub: "Garage or large room cleanout", price: 500, priceMax: 600, estWeightLbs: 2400, capLbs: 3225 },
+    { id: "full", label: "Full Load", sub: "Full 16ft truck — biggest single trip", price: 750, priceMax: 850, estWeightLbs: 3200, capLbs: 4300 },
 ];
 var EXTRA_WORKER_RATE_PER_HOUR = 40; // real, simple, flat rate per the new policy
 var EXTRA_TRUCKLOAD_FEE = 600; // each additional full truckload beyond the first, on big jobs
@@ -1090,29 +1343,508 @@ var DEMO_TYPES = [
 // ── EMERGENCY / RUSH ADD-ONS — stack onto any service, same pattern as courier speed tiers ──
 var EMERGENCY_ADDONS = []; // real removal — 24/7 Dispatch, Same-Day Guaranteed, Holiday Service all gone per request. Empty array clears all 3 real display locations automatically.
 // ── TERMS OF SERVICE ────────────────────────────────────────────────
-var TOS_VERSION = "2.0"; // bumped — real 21-section agreement replacing the earlier 5-section version
+var TOS_VERSION = "3.1"; // bumped — real 21-section agreement replacing the earlier 5-section version
+// <<LEGAL-GENERATED v3.1>> — edit /site/legal.js, not this block
 var TOS_SECTIONS = [
-    { title: "1. Agreement to Terms",
-        body: "By booking a job with Potent Logistics LLC (\"Potent Logistics,\" \"we,\" \"us\"), you agree to these Terms of Service. If you do not agree, do not book or use our services." },
-    { title: "2. Binding Arbitration — No Court Lawsuits",
-        body: "Any dispute, claim, or disagreement arising from or related to our services shall be resolved exclusively through binding arbitration, not in a court of law. Arbitration will be conducted by a neutral, mutually agreed-upon arbitrator under standard commercial arbitration rules. The arbitrator's decision is final and binding on both parties. By agreeing to these terms, you waive any right to a jury trial or to bring a claim in state or federal court." },
-    { title: "3. No Class Actions",
-        body: "You agree to bring any claim against Potent Logistics solely in your individual capacity, not as a plaintiff or class member in any purported class, collective, or representative proceeding." },
-    { title: "4. Limitation of Liability",
-        body: "To the maximum extent permitted by law, Potent Logistics' total liability for any claim arising from a job is limited to the amount actually paid for that specific job. We are not liable for indirect, incidental, consequential, or speculative damages, including but not limited to lost wages, emotional distress, or claims of unjust enrichment. This limitation does not apply to liability that cannot be limited or waived under applicable law (such as liability for gross negligence or intentional misconduct)." },
-    { title: "5. Insurance",
-        body: "Potent Logistics maintains commercial insurance coverage. Claims involving property damage or injury directly caused by our negligence during a job should be reported immediately so they may be handled through our insurance process." },
-    { title: "6. Claim Reporting Window",
-        body: "Any claim or dispute regarding a completed job must be reported to us in writing within 7 days of job completion. Claims reported after this window may be declined." },
-    { title: "7. Service Description & Pricing",
-        body: "Quoted prices are based on information provided at booking (load size, property size, distance, etc.). Final pricing may be adjusted on-site if the actual job differs materially from what was described at booking, and you will be notified before any adjusted charge is finalized." },
-    { title: "8. Cancellation Policy",
-        body: "Cancellation terms vary by job type and timing and are disclosed during booking. Same-day and urgent bookings are generally final and non-refundable once confirmed." },
-    { title: "9. Changes to These Terms",
-        body: "We may update these Terms of Service from time to time. Continued use of our services after changes are posted constitutes acceptance of the updated terms." },
-    { title: "10. Contact",
-        body: "Questions about these terms can be directed to " + BUSINESS_EMAIL + " or " + PHONE_NUMBER + "." },
+ {
+  "num": 1,
+  "title": "Agreement to These Terms",
+  "body": "POTENT LOGISTICS LLC (DOT# 9166689, 2089 Christian Cir SE, Conyers, GA 30013) (\"POTENT,\" \"we,\" \"us\") provides delivery, freight, junk removal, cleanout and related hauling services in Georgia and nearby areas. By booking a job, accepting a quote, paying a deposit or invoice, or letting us start work, you (\"Customer,\" \"you\") agree to these Terms, our Privacy Policy, and any written quote or rate confirmation for your job (together, the \"Agreement\"). If you are booking for a business, you confirm you have authority to bind it. If you do not agree, do not book."
+ },
+ {
+  "num": 2,
+  "title": "Electronic Agreement and Signature",
+  "body": "You agree that clicking a box, typing your name, replying \"yes\" to a written quote, paying, or letting us begin work is a legally binding electronic signature under the federal E-SIGN Act and Georgia's Uniform Electronic Transactions Act. We keep a record of the version you accepted, the time, and the device and network address used, so the exact terms that applied to your job can be shown later."
+ },
+ {
+  "num": 3,
+  "title": "Our Services",
+  "body": "Delivery and freight: pickup and delivery of items you describe, in a 16-foot box truck, to the addresses on your booking. Junk removal and cleanouts: loading, hauling and lawful disposal of items you identify. We are a hauler. We are not a moving company, do not pack, crate or disassemble furniture unless a quote says so, and do not handle hazardous, regulated or illegal items. Services are provided in the order and time windows we confirm. Time windows are estimates, not guarantees, unless confirmed in writing."
+ },
+ {
+  "num": 4,
+  "title": "Quotes and Pricing",
+  "body": "A quote is based on what you tell us: addresses, distance, item list and photos, access, load size and weight. Distance is measured by road from our base, including the trip to you and the return, using mapping data. A quote is valid for the date and time window it states. Prices do not include items or conditions you did not tell us about. Payment methods accepted: card and cash. We do not accept checks. Paying in cash may earn a discount on the base job price where we advertise one; the discount does not apply to disposal weight charges, heavy-item fees or third-party fees."
+ },
+ {
+  "num": 5,
+  "title": "Weight, Heavy Items and Disposal Charges",
+  "body": "Landfills and transfer stations charge us by weight. You must tell us about heavy items (for example safes, pianos, hot tubs, exercise equipment, appliances, concrete, brick, dirt, tile, roofing and similar material) and give an accurate weight or your best honest estimate. Heavy items and loose heavy material are priced by weight in addition to the load price. Our truck carries a maximum of 4,300 pounds of junk per trip. If the load is heavier or bigger than the quote, we will tell you, and we may need extra trips, a second truck, or a roll-off container, each at the price we quote you before we proceed. Special-disposal items (mattresses, tires, refrigerants, electronics, paint, propane tanks and similar) carry the per-item fee on our price list."
+ },
+ {
+  "num": 6,
+  "title": "Scope Differences and Price Changes On Site",
+  "body": "If the job on site is materially different from what was described (more items, heavier items, different access, stairs, longer carry, different address, or items we cannot take), our driver will pause and contact our office with photos. We will give you a revised price and wait for your approval before continuing. Work then proceeds only on your approval. If you decline the revised price, we will stop, you will owe the minimum charge in the price list plus any time, travel and disposal already incurred, and we will not remove anything we have not been paid to remove."
+ },
+ {
+  "num": 7,
+  "title": "Items We Cannot Accept",
+  "body": "We do not transport or dispose of hazardous waste, chemicals, fuel, solvents, asbestos, biohazards, medical waste, ammunition, explosives, firearms, controlled substances, human or animal remains, or anything illegal, stolen or subject to a lien or legal hold. You confirm that you own the items or are authorized to have them moved or discarded, and that nothing in the load is prohibited. We may refuse any item for safety, legal or weight reasons and may charge for time already spent."
+ },
+ {
+  "num": 8,
+  "title": "Access, Site Conditions and Your Responsibilities",
+  "body": "You must provide safe, legal access to the pickup and drop-off locations, working elevators or loading areas when applicable, and a person authorized to release or accept the items. Please secure pets, remove valuables and personal papers, and tell us about fragile, valuable or sentimental items before we begin. We are not responsible for items that are not disclosed, for pre-existing damage to floors, walls, doors or property, or for hidden conditions such as weak flooring or unmarked utilities, except where caused by our negligence."
+ },
+ {
+  "num": 9,
+  "title": "Photos and Documentation",
+  "body": "Our drivers photograph the job at pickup, during loading, at delivery or disposal, and at completion, and may record a signed bill of lading or proof of delivery. Photos are timestamped and may include your property and the items. We keep them as job records and for claims, disputes and quality control. Do not remove or hide items before we photograph them."
+ },
+ {
+  "num": 10,
+  "title": "Scheduling, Delays and Cancellation",
+  "body": "Cancellation policy: 48 or more hours before the arranged time, cancellation is free with a full refund or credit. 24 to 48 hours before, a 50% cancellation fee applies. Under 24 hours, the $100 dispatch fee is retained and the balance refunded. Same-day and urgent bookings are final and non-refundable once confirmed. If we cannot start because access is unavailable, no one is present, or the job is not as described, we may charge a trip charge. Time windows are estimates. We are not liable for delays caused by weather, traffic, road closures, breakdown, accident or events outside our reasonable control; we will keep you informed and reschedule at no extra charge."
+ },
+ {
+  "num": 11,
+  "title": "Waiting Time and Extra Labor",
+  "body": "Time on site begins when the truck arrives. Where a price list provides included time, additional time and extra helpers are billed at the posted hourly rate, in increments we state."
+ },
+ {
+  "num": 12,
+  "title": "Payment",
+  "body": "Payment is due when the job is completed unless we agreed otherwise in writing. Approved business accounts may be on invoice terms of up to Net 7 days. Commercial interest: past-due balances on commercial accounts accrue a finance charge of 1.5% per month (18% per year), or the maximum allowed by law if lower. Consumer balances: past-due balances of non-commercial customers accrue interest only at the rate Georgia law allows. Collection costs and attorneys' fees: if a balance is collected through an attorney after it is due, you agree to pay attorneys' fees to the extent allowed by O.C.G.A. section 13-1-11 (15% of the first $500 of principal and interest owed and 10% of the rest), but only after we send you the written 10-day notice that statute requires and you do not pay the principal and interest within that time. Reasonable collection costs are also owed to the extent Georgia law allows. A chargeback or payment reversal for a job we completed as agreed may be disputed with the documentation described above. Returned or failed payments may carry a fee permitted by law."
+ },
+ {
+  "num": 13,
+  "title": "Taxes and Fees",
+  "body": "Prices exclude any sales or use tax, tolls, permits, parking, or third-party container, landfill or disposal charges that apply to your job, which will be shown on your quote or invoice when known. Card payments may be processed by Stripe or another processor; their terms apply to the payment."
+ },
+ {
+  "num": 14,
+  "title": "Insurance",
+  "body": "POTENT maintains commercial auto liability and motor-truck cargo insurance. Cargo coverage applies to freight we accept in our truck while in our care, subject to its terms, exclusions and limits. Insurance does not cover items you did not disclose, pre-existing damage, items of extraordinary value, or items excluded by the policy. To make a claim, follow the Claims section."
+ },
+ {
+  "num": 15,
+  "title": "Limits on Our Liability for Loss or Damage",
+  "body": "For delivery and freight, unless you declare a higher value in writing before pickup and we agree in writing, our liability for loss of or damage to an item is limited to the lesser of (a) the item's actual value or repair cost, (b) $0.60 per pound per article, or (c) $100,000 per shipment. You may request a higher released value for an additional charge before pickup. For junk removal and cleanouts, items you have asked us to remove and dispose of have no recoverable value to you. We are not responsible for items that are discarded in accordance with your instructions."
+ },
+ {
+  "num": 16,
+  "title": "Claims",
+  "body": "Report any damage, loss or complaint to potentlogistics@pm.me or (770) 648-4228 in writing within 48 hours of delivery for freight, or 7 days of completion for other services, with photos and a description. Claims reported later may be declined to the extent the delay prejudiced our ability to investigate. We will acknowledge a claim within two business days and respond after our review."
+ },
+ {
+  "num": 17,
+  "title": "Disclaimer",
+  "body": "Except as stated in this Agreement, services are provided \"as is\" and \"as available.\" To the extent permitted by law, we disclaim all other warranties, express or implied, including fitness for a particular purpose. Nothing in this Agreement limits rights you have under law that cannot be waived."
+ },
+ {
+  "num": 18,
+  "title": "Limitation of Liability",
+  "body": "To the maximum extent permitted by law, POTENT's total liability arising out of a job, whether in contract, tort (including negligence) or otherwise, is limited to the amount you paid for that job, subject to the cargo limits above. We are not liable for indirect, incidental, special, consequential or punitive damages, including lost profits, lost business, or emotional distress. This section does not limit liability that cannot be limited under applicable law, such as liability for gross negligence, willful misconduct, or bodily injury or death caused by our negligence."
+ },
+ {
+  "num": 19,
+  "title": "Indemnity",
+  "body": "You agree to defend and indemnify POTENT against claims, losses and reasonable costs from third parties arising out of inaccurate information you gave us, items you were not entitled to give us, prohibited or undisclosed hazardous items, or your breach of this Agreement. This does not apply to the extent a claim is caused by POTENT's negligence or willful misconduct."
+ },
+ {
+  "num": 20,
+  "title": "Independent Contractors and Subcontractors",
+  "body": "We may use qualified drivers, helpers, vendors, container companies and disposal facilities to perform your job. We remain responsible to you for the service we sell you. Our drivers are not authorized to change prices, waive terms or accept payment except as our office directs."
+ },
+ {
+  "num": 21,
+  "title": "Disputes: Informal Resolution First",
+  "body": "Before filing a claim, you agree to contact us at potentlogistics@pm.me and give us 30 days to resolve the issue. Most issues are resolved this way."
+ },
+ {
+  "num": 22,
+  "title": "Binding Individual Arbitration",
+  "body": "If we cannot resolve a dispute informally, it will be decided by binding arbitration administered by the American Arbitration Association under its rules for the type of dispute, in Rockdale County, Georgia or by video, in individual proceedings. The Federal Arbitration Act governs this section. Either party may bring an individual claim in small-claims court instead. You may opt out of arbitration by emailing potentlogistics@pm.me within 30 days of first accepting these Terms; opting out does not affect any other term. A court, not the arbitrator, decides whether the class waiver is enforceable, and if it is found unenforceable as to a claim, that claim will proceed in court and not in arbitration."
+ },
+ {
+  "num": 23,
+  "title": "No Class Actions",
+  "body": "To the extent allowed by law, disputes will be brought only in the claimant's individual capacity and not as a plaintiff or class member in any class, collective or representative action."
+ },
+ {
+  "num": 24,
+  "title": "Governing Law and Venue",
+  "body": "Georgia law governs this Agreement, without regard to conflict-of-law rules, except that the Federal Arbitration Act applies to arbitration and federal transportation law applies where it governs interstate carriage. For any dispute that proceeds in court, the state and federal courts for Rockdale County, Georgia have exclusive jurisdiction and you consent to them."
+ },
+ {
+  "num": 25,
+  "title": "Privacy, Texts and Calls",
+  "body": "We use your information as described in our Privacy Policy. By giving us your mobile number you agree we may send job-related text messages and calls (confirmations, arrival and tracking updates, receipts, claims follow-up). Message and data rates may apply. Reply STOP to end texts; this does not stop essential calls about a job in progress. Marketing messages are sent only if you separately agree."
+ },
+ {
+  "num": 26,
+  "title": "Changes, Entire Agreement, Severability",
+  "body": "We may update these Terms. The version in force when you booked, shown on your confirmation, governs your job. If a provision is unenforceable, the rest remains in effect. A failure to enforce a provision is not a waiver. This Agreement, with your written quote or rate confirmation, is the entire agreement for the job; a signed quote controls over these Terms if they conflict."
+ },
+ {
+  "num": 27,
+  "title": "Contact",
+  "body": "POTENT LOGISTICS LLC, 2089 Christian Cir SE, Conyers, GA 30013. Email potentlogistics@pm.me. Phone (770) 648-4228."
+ }
 ];
+var POTENT_LOGISTICS_TOS_SECTIONS = [
+ {
+  "num": 1,
+  "title": "Parties, Purpose and Order of Documents",
+  "body": "This Dispatch / Carrier Agreement is between POTENT LOGISTICS LLC (DOT# 9166689, EIN 42-2446741, 2089 Christian Cir SE, Conyers, GA 30013) (\"POTENT\" or \"Carrier\") and the dispatcher, broker, shipper or company that completes this onboarding (\"Dispatch Partner\"). It sets the standing terms for every load POTENT accepts from Dispatch Partner. Each load is confirmed by its own written rate confirmation. If the two conflict, the rate confirmation controls for that load only."
+ },
+ {
+  "num": 2,
+  "title": "Term and Termination",
+  "body": "This Agreement begins when Dispatch Partner accepts it and continues until ended. Either party may end it at any time on written notice, and immediately for the other's material breach, loss of required authority or insurance, or fraud. Ending the Agreement does not cancel a load already accepted or any amount already owed."
+ },
+ {
+  "num": 3,
+  "title": "Verification of Dispatch Partner",
+  "body": "Before accepting freight, POTENT may verify identity and authority, including USDOT and MC numbers with FMCSA, the surety bond or trust fund required of brokers, business registration, and references. Dispatch Partner confirms the information it gives is true and will notify POTENT promptly of changes. Dispatchers acting without their own authority must say so and may only offer loads they are legally authorized to offer."
+ },
+ {
+  "num": 4,
+  "title": "Carrier's Operating Authority and Compliance",
+  "body": "POTENT represents that it holds the operating authority and registrations required for the services it performs and will comply with applicable federal, state and local transportation, safety and employment law."
+ },
+ {
+  "num": 5,
+  "title": "Broker and Shipper Representations",
+  "body": "Dispatch Partner represents that it has the right to tender each load, that load descriptions (commodity, weight, dimensions, pickup and delivery details, hazards, appointment times) are accurate, that it is not a broker double-brokering a load without disclosure, and that no load is hazardous material, regulated waste, or contraband unless disclosed in writing and accepted by POTENT in writing before pickup."
+ },
+ {
+  "num": 6,
+  "title": "Rate Confirmations and Rates",
+  "body": "Rates are confirmed per load in writing (or through the POTENT platform) before work begins. POTENT keeps 100% of the agreed rate for the load. A confirmed rate may be adjusted only by a new written confirmation. Accessorial charges (detention, layover, redelivery, additional stops, lumper fees, tolls, extra labor, loading beyond described scope) are payable in addition when authorized in writing or caused by Dispatch Partner's inaccurate information or delay."
+ },
+ {
+  "num": 7,
+  "title": "Payment Terms",
+  "body": "Until POTENT completes account verification, payment is Prepay or Quick Pay. After verification, POTENT may extend terms of up to Net 7 days from the invoice date, never longer, at its discretion and revocable at any time. Late amounts bear 1.5% per month or the maximum permitted by law, whichever is less, and Dispatch Partner pays reasonable collection costs and attorneys' fees to the extent allowed by Georgia law. Dispatch Partner may not deduct or set off amounts without written agreement. Disputes about part of an invoice do not delay payment of the undisputed part."
+ },
+ {
+  "num": 8,
+  "title": "Factoring and Assignment of Payment",
+  "body": "If Dispatch Partner uses a factoring company, it must give POTENT a signed Notice of Assignment and remittance details. Payment to the party named in a valid notice discharges Dispatch Partner's obligation. POTENT may rely on remittance instructions confirmed by phone with a verified contact and is not liable for payment sent as instructed in a fraudulent change request that was not verified."
+ },
+ {
+  "num": 9,
+  "title": "Performance of Services",
+  "body": "POTENT controls the method, manner and means of performing its services, including equipment, drivers, helpers and route selection. POTENT may refuse a load that is unsafe, over weight, not as described, or that it cannot lawfully carry. POTENT does not guarantee pickup or delivery times unless they are confirmed in writing as time-critical, and will use commercially reasonable efforts to meet confirmed appointments."
+ },
+ {
+  "num": 10,
+  "title": "Load Documentation, Photos and Proof of Delivery",
+  "body": "POTENT will photograph freight at pickup and delivery, note visible condition and exceptions on the bill of lading, and provide a signed bill of lading and proof of delivery. Dispatch Partner will provide accurate load documents before pickup. A bill of lading signed without exception is evidence of delivery in good order."
+ },
+ {
+  "num": 11,
+  "title": "Loading, Unloading and Detention",
+  "body": "Unless agreed in writing, the shipper loads and the receiver unloads. Detention and layover are charged after two (2) hours free time at the rate confirmed, or if none, at the rate in POTENT's current rate card. Detention starts only after the two free hours have fully passed at that stop, and must be supported by timestamped messages or app events sent to the POTENT dispatch office. POTENT may document and charge for delays outside its control."
+ },
+ {
+  "num": 12,
+  "title": "Weight, Capacity and Scope Changes",
+  "body": "POTENT's truck has a maximum legal payload. Loads that exceed it, or that differ materially from the tender, may be refused, split into additional trips, or re-priced by a new written rate confirmation before work continues."
+ },
+ {
+  "num": 13,
+  "title": "Receipts, Records and Right to Audit",
+  "body": "Each party will keep records of loads for at least three (3) years. Dispatch Partner may audit records directly relevant to charges under this Agreement on reasonable written notice, during business hours, no more than once a year."
+ },
+ {
+  "num": 14,
+  "title": "Waiver of Carrier's Lien",
+  "body": "POTENT waives any lien rights against freight in its possession as security for payment of the freight charge, except where law requires otherwise or where Dispatch Partner's payment has failed on that load."
+ },
+ {
+  "num": 15,
+  "title": "Insurance",
+  "body": "POTENT maintains Auto Liability insurance of at least $750,000 per occurrence and Motor Truck Cargo insurance of at least $100,000 per occurrence, and will provide a certificate of insurance on request. Dispatch Partner will maintain the contingent cargo, general liability and surety bond or trust fund that apply to its own authority and provide evidence on request."
+ },
+ {
+  "num": 16,
+  "title": "Loss, Damage and Delay",
+  "body": "POTENT's liability for loss of or damage to freight is limited to the lesser of the actual loss and the amounts stated in the rate confirmation; if none are stated, the lesser of the actual value, $0.50 per pound or $100,000 per shipment, unless a higher value is declared in writing and accepted before pickup. POTENT is not liable for delay except where a time-critical service was confirmed in writing. Claims must be filed in writing within 48 hours of delivery with supporting documents; POTENT will acknowledge within 30 days and pay or decline within 120 days as federal rules require where they apply."
+ },
+ {
+  "num": 17,
+  "title": "Indemnity",
+  "body": "Each party will defend, indemnify and hold harmless the other from third-party claims, losses and reasonable costs to the extent caused by its own negligence, willful misconduct, breach of this Agreement, or violation of law. Dispatch Partner is solely responsible for the accuracy of the information it provides about each load."
+ },
+ {
+  "num": 18,
+  "title": "Limitation of Liability",
+  "body": "Except for payment obligations, indemnity for third-party bodily injury or property damage, fraud and willful misconduct, neither party is liable to the other for indirect, incidental, special, consequential or punitive damages, including lost profits or business."
+ },
+ {
+  "num": 19,
+  "title": "Non-Circumvention and Sub-Contracting",
+  "body": "POTENT will not subcontract or re-broker a load without Dispatch Partner's prior written consent. Dispatch Partner will not contact POTENT's shippers, receivers or drivers to solicit them for the same lane for twelve (12) months after a load, except where they were Dispatch Partner's own customers before the load."
+ },
+ {
+  "num": 20,
+  "title": "Cargo Care and Liability",
+  "body": "Dispatch Partner and its drivers are responsible for the safe transport, custody and care of cargo from the moment pickup is completed until a signed proof of delivery or bill of lading is obtained. Dispatch Partner will carry the cargo insurance POTENT requires for the load and will reimburse POTENT or the affected customer for the actual cash value of cargo lost, damaged or stolen while in its possession, except where caused by POTENT or the shipper."
+ },
+ {
+  "num": 21,
+  "title": "Customer Non-Solicitation by Drivers and Carriers",
+  "body": "During the term and for twelve (12) months after it ends for any reason, a driver, owner-operator or carrier working through POTENT will not directly or indirectly solicit, contract with or perform logistics, hauling, freight or junk-removal services for any POTENT customer it was introduced to, assigned or learned of through POTENT, without POTENT's prior written consent. Because a breach would cause harm that is hard to measure, POTENT may ask the courts in Rockdale County, Georgia for an injunction in addition to any other remedy, including lost profits from the circumvention. This section is limited to the extent Georgia's Restrictive Covenants Act requires."
+ },
+ {
+  "num": 22,
+  "title": "Confidentiality and Data",
+  "body": "Each party will protect the other's non-public business information (rates, customers, systems, load details) and use it only for performing this Agreement, except as required by law. Personal information is handled under POTENT's Privacy Policy. This section survives for three (3) years after termination."
+ },
+ {
+  "num": 23,
+  "title": "Compliance, Safety and Anti-Fraud",
+  "body": "Each party will follow applicable law, including FMCSA regulations that apply to it, sanctions and anti-corruption law, and will not engage in identity theft, cargo theft, fictitious pickups or fraudulent payment redirection. POTENT may delay or stop work when it reasonably suspects fraud or when a safety or legal issue arises."
+ },
+ {
+  "num": 24,
+  "title": "Independent Contractors",
+  "body": "The parties are independent contractors. Nothing creates a partnership, joint venture, employment or agency relationship, and neither may bind the other."
+ },
+ {
+  "num": 25,
+  "title": "Assignment, Modification and Electronic Signature",
+  "body": "Neither party may assign this Agreement without the other's written consent, except to a successor of substantially all its business on notice. It may be modified only in writing signed (including electronically under the E-SIGN Act) by both parties. POTENT keeps a record of the version, time and device used to accept it."
+ },
+ {
+  "num": 26,
+  "title": "Governing Law and Dispute Resolution",
+  "body": "Georgia law governs, and federal transportation law governs where it applies. The parties will first try to resolve a dispute by good-faith negotiation for 30 days, then by non-binding mediation if either asks, and then in the state or federal courts for Rockdale County, Georgia, which have exclusive jurisdiction. The prevailing party in a payment dispute may recover reasonable attorneys' fees to the extent allowed by law."
+ },
+ {
+  "num": 27,
+  "title": "Notices, Severability, Waiver and Complete Agreement",
+  "body": "Notices must be in writing to the contact information on file and are effective on delivery (email counts when receipt is confirmed or sent to the address on file). If a provision is unenforceable the rest remains in effect. Failure to enforce a provision is not a waiver. This Agreement and each signed rate confirmation are the entire agreement on their subject and replace prior discussions."
+ }
+];
+var POTENT_OS_TOS_SECTIONS = [
+ {
+  "num": 1,
+  "title": "Parties and Acceptance",
+  "body": "This agreement is between POTENT OPERATIONS LLC, with its owner Anthony Emmanuel Figueroa Mendes (\"POTENT,\" \"Licensor,\" \"we\"), and the company that signs up (\"Licensee,\" \"you\"). By signing electronically, paying, or using POTENT OS (the \"Service\") you agree to this agreement, the Privacy Policy, and any order showing your tier and price (together, the \"Agreement\"). You confirm you are authorized to bind the company and that you are a business, using the Service for business purposes."
+ },
+ {
+  "num": 2,
+  "title": "What You Are Buying",
+  "body": "POTENT OS is hosted software: POTENT runs it on its own infrastructure and you access it through the internet. You do not receive source code, a copy of the software, or a server. Your one-time License Fee buys the right to use the Service for your licensed fleet tier without recurring license fees for as long as the Agreement is in effect. Monthly Support is optional and separate."
+ },
+ {
+  "num": 3,
+  "title": "License Grant",
+  "body": "Subject to this Agreement and payment, POTENT grants you a non-exclusive, non-transferable, non-sublicensable right to access and use the Service for your own internal business operations, for the fleet size included in your tier, and to let your employees, drivers and contractors use it under your account. \"Perpetual\" in our materials means there is no expiry date or renewal fee for this right while the Agreement remains in effect; it does not mean we will operate the hosted Service forever (see Continuity)."
+ },
+ {
+  "num": 4,
+  "title": "Ownership and Reservation of Rights",
+  "body": "POTENT owns the Service, including software, code, logic, designs, trademarks (including POTENT®, POTENT PRÄDƏKT® and the griffin mark), documentation and improvements, and all rights not expressly granted are reserved. Feedback you give may be used by POTENT without obligation. You own your Customer Data (below)."
+ },
+ {
+  "num": 5,
+  "title": "Account Setup, Security and Users",
+  "body": "You are responsible for your account, for keeping credentials confidential, for the accuracy of the information you enter, and for everything done under your accounts. Tell us promptly of any unauthorized use. You are responsible for your users' compliance. Each login belongs to one person; do not share logins. We may require stronger verification for sensitive actions."
+ },
+ {
+  "num": 6,
+  "title": "Your Customer Data",
+  "body": "\"Customer Data\" means the data you or your users enter into the Service, such as customers, jobs, trucks, drivers, documents, photos and prices. You own it and are responsible for having the rights and legal basis to put it in the Service, including permission to contact your own customers, to photograph their property for job records, and to track your drivers' locations in line with law and your own notices to them. You give POTENT a limited license to host, process, back up, display and transmit Customer Data only to provide, secure, support and improve the Service for you and as these terms allow. We do not sell Customer Data. Each company's data is kept logically separate from other companies' data."
+ },
+ {
+  "num": 7,
+  "title": "Data Export and Return",
+  "body": "You may export your core Customer Data through the Service at any time. After termination we will keep it available for export for 30 days on request, and then delete or anonymize it within a reasonable period unless law requires us to retain it. Backups age out on our normal schedule. We keep back-end system logs, transaction data and audit records about your license and payments for at least three (3) years after the end of the transaction year, and may securely delete them after that in line with our Privacy Policy."
+ },
+ {
+  "num": 8,
+  "title": "Acceptable Use",
+  "body": "You will not: use the Service unlawfully or to harm others; upload malware; attempt to break, probe or bypass security or limits; access another company's data; scrape, resell, sublicense or provide the Service to anyone outside your organization; reverse engineer or copy the Service or use it to build a competing product; use it to send spam or unlawful messages; misrepresent your identity or fleet size; or use it for dangerous activity or anything that violates transportation, privacy or consumer law. We may suspend access that threatens security, harms others, or violates this section, and will tell you why where we can."
+ },
+ {
+  "num": 9,
+  "title": "Fleet Size, Tiers and Upgrades",
+  "body": "Your tier sets the number of trucks and dispatch seats included. Growing past them requires upgrading at the published price. The Service enforces tier limits, and we may audit usage against your tier on reasonable notice."
+ },
+ {
+  "num": 10,
+  "title": "License Fee, Taxes and Payment",
+  "body": "The License Fee is the one-time amount shown on your order, payable at signup by card or other method we offer, or through Flex Pay if you qualify. Fees exclude taxes, which you pay unless you provide an exemption certificate. Payment processing is provided by Stripe, whose terms apply. You authorize us and our processor to charge your selected method for amounts due under this Agreement."
+ },
+ {
+  "num": 11,
+  "title": "Flex Pay Installments",
+  "body": "Flex Pay is available on Fleet and Enterprise tiers. You pay a down payment at signing (Fleet $3,999 and Enterprise $6,999) and twelve equal monthly installments at 0% interest (Fleet $1,333; Enterprise $2,333), on the same calendar day each month, with a two-day grace period. If a second installment is missed during the term, whether or not the first was cured, access is suspended immediately and is restored when all past-due amounts are paid. Flex Pay is a payment plan for the License Fee, not a loan, and the full fee remains owed if you cancel. Perpetual rights to the Service vest in full when the balance is paid."
+ },
+ {
+  "num": 12,
+  "title": "Monthly Support (Optional)",
+  "body": "If you elect Monthly Support, you pay the monthly price shown at purchase (Starter $149, Growth $249, Fleet $399, Enterprise $599), billed monthly on the purchase date until cancelled. Support includes help and training, setup changes you request, branding help, and priority fixes as described on the order. It renews automatically each month until you cancel. Cancel anytime in your account or by emailing us; cancellation takes effect at the end of the paid month and no partial-month refunds are given. Custom development outside configuration is quoted separately. Without Monthly Support you receive 30 days of onboarding support from purchase and the Service as generally released."
+ },
+ {
+  "num": 13,
+  "title": "No Refunds; Chargebacks",
+  "body": "Because you receive immediate access to a hosted service, all sales are final and non-refundable once access is granted, except where law requires otherwise or as stated under Continuity. Before filing a chargeback, contact us to resolve the issue. A chargeback on a valid charge may result in suspension and recovery of our costs."
+ },
+ {
+  "num": 14,
+  "title": "Hosting, Availability and Maintenance",
+  "body": "We host the Service with third-party infrastructure providers and use commercially reasonable efforts to keep it available and secure. We do not promise uninterrupted or error-free operation. Planned maintenance, emergency fixes and events outside our control may cause downtime. We do not offer service credits unless a separate written service-level agreement says so. You are responsible for your own internet, devices and mobile data, and for keeping your own copies of records that you need to run your business."
+ },
+ {
+  "num": 15,
+  "title": "Updates and Changes to the Service",
+  "body": "We may update, improve, add or remove features, and update how the Service works, to keep it secure and useful. We will not remove material core functionality of your tier without reasonable notice. Some features depend on third-party services whose availability we do not control."
+ },
+ {
+  "num": 16,
+  "title": "Third-Party Services and Integrations",
+  "body": "The Service uses third-party services such as payments (Stripe), mapping and geocoding (OpenStreetMap, the U.S. Census Bureau), email and text delivery, and document or AI processing. Optional integrations you connect (for example telematics) work under those providers' terms. We are not responsible for third-party services and may change providers. Messages generated by AI or maps data are aids; you must review them before relying on them."
+ },
+ {
+  "num": 17,
+  "title": "Your Customers and Your Responsibilities",
+  "body": "You are the business serving your customers. You are responsible for your pricing, quotes, insurance, licenses, operating authority, driver compliance and employment, taxes, and your customer terms. POTENT is not a party to your customer or driver relationships, is not a carrier, broker or employer in them, and does not give legal, tax, insurance or regulatory advice. Calculations (profit, mileage, weight, route and pricing tools) are estimates to help you decide."
+ },
+ {
+  "num": 18,
+  "title": "Privacy and Data Protection",
+  "body": "Our Privacy Policy describes how we handle personal information. For personal information of your customers and drivers that you put in the Service, you are the controller or business and POTENT is your service provider, processing it on your instructions to provide the Service, and we will honor deletion and access requests you route to us. Each side will use reasonable administrative, technical and physical safeguards. We will notify you without undue delay of a confirmed breach affecting your Customer Data where required by law."
+ },
+ {
+  "num": 19,
+  "title": "Confidentiality and NDA",
+  "body": "Each side will protect the other's non-public information, including pricing, system design, methods and business data, use it only for this Agreement, and disclose it only to people who need it and are bound to protect it, or as required by law. Licensee will not use confidential information from demos, onboarding or use to build or help build a competing product. Obligations continue for five (5) years after termination, and for trade secrets as long as they stay secret. Either side may seek injunctive relief for breach without posting a bond to the extent allowed by law."
+ },
+ {
+  "num": 20,
+  "title": "Intellectual Property Claims",
+  "body": "If a third party claims the Service as delivered by POTENT infringes its U.S. intellectual property rights, we will defend you and pay damages and costs finally awarded against you, provided you notify us promptly, let us control the defense, and cooperate. We may modify the Service, obtain rights, or end the affected feature. This section states our entire responsibility for infringement claims and does not cover claims arising from Customer Data, your modifications, or combinations we did not supply."
+ },
+ {
+  "num": 21,
+  "title": "Indemnity by Licensee",
+  "body": "You will defend and indemnify POTENT and its owners, employees and contractors from third-party claims and resulting losses and reasonable costs arising from your Customer Data, your use of the Service in violation of law or this Agreement, your operations (including injury, cargo, employment and insurance matters), and your dealings with your customers and drivers."
+ },
+ {
+  "num": 22,
+  "title": "Disclaimer of Warranties",
+  "body": "THE SERVICE IS PROVIDED \"AS IS\" AND \"AS AVAILABLE.\" TO THE MAXIMUM EXTENT PERMITTED BY LAW, POTENT DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT, AND DOES NOT WARRANT THAT THE SERVICE WILL MEET YOUR REQUIREMENTS, BE UNINTERRUPTED, OR BE FREE OF ERRORS OR HARMFUL COMPONENTS. NO ADVICE OR INFORMATION FROM POTENT CREATES A WARRANTY NOT STATED HERE."
+ },
+ {
+  "num": 23,
+  "title": "Limitation of Liability",
+  "body": "TO THE MAXIMUM EXTENT PERMITTED BY LAW, POTENT WILL NOT BE LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY OR PUNITIVE DAMAGES, OR FOR LOST PROFITS, REVENUE, DATA, GOODWILL OR BUSINESS OPPORTUNITIES, EVEN IF ADVISED OF THEIR POSSIBILITY. POTENT'S TOTAL LIABILITY FOR ALL CLAIMS RELATING TO THE AGREEMENT WILL NOT EXCEED THE AMOUNTS YOU ACTUALLY PAID TO POTENT FOR THE SERVICE IN THE TWELVE (12) MONTHS BEFORE THE EVENT GIVING RISE TO THE CLAIM, OR THE LICENSE FEE IF GREATER. THESE LIMITS DO NOT APPLY TO LIABILITY THAT CANNOT BE LIMITED BY LAW, FRAUD OR WILLFUL MISCONDUCT, OR YOUR PAYMENT OBLIGATIONS."
+ },
+ {
+  "num": 24,
+  "title": "Term, Suspension and Termination",
+  "body": "The Agreement begins at signing and continues while you comply with it. You may end it at any time by written notice, but fees paid or owed are not refunded. We may suspend or end it for uncured material breach after 10 days' notice (immediately for security threats, unlawful use or repeated payment failure) and for non-payment under Flex Pay as stated above. On termination your right to use the Service ends, you will stop using it, and the export period above applies. Sections that by their nature should survive will survive, including ownership, confidentiality, fees owed, disclaimers, liability limits, indemnity and dispute terms."
+ },
+ {
+  "num": 25,
+  "title": "Continuity of the Hosted Service",
+  "body": "If POTENT decides to permanently discontinue the hosted Service for all customers, it will give you at least 180 days' written notice, keep your data exportable throughout that period and for 30 days after, and reasonably help you export. Nothing in this Agreement gives you the source code. We may transfer the Service and this Agreement to a successor that assumes our obligations."
+ },
+ {
+  "num": 26,
+  "title": "Dispute Resolution and Governing Law",
+  "body": "Georgia law governs this Agreement. The parties will first try to resolve a dispute informally for 30 days after written notice. Unresolved disputes will be decided by binding arbitration before one arbitrator under the American Arbitration Association's Commercial Arbitration Rules, seated in Rockdale County, Georgia, in individual proceedings, and judgment may be entered in any court with jurisdiction. Either party may seek injunctive relief in the state or federal courts for Rockdale County, Georgia to protect intellectual property or confidential information, and may bring claims within the jurisdiction of small-claims court there. Class and collective actions are waived to the extent allowed by law. The prevailing party recovers reasonable attorneys' fees and costs."
+ },
+ {
+  "num": 27,
+  "title": "General",
+  "body": "Neither party may assign this Agreement without the other's consent, except that POTENT may assign it to a successor to its business. You may not transfer your license. If a provision is unenforceable, the rest stays in effect. Failure to enforce is not a waiver. We may update these terms for future customers at any time and for you with 30 days' notice of material changes, and your continued use after the notice period is acceptance; changes do not affect fees you have already paid for your tier. Notices go to the email you gave at signup and to potentlogistics@pm.me. We keep an electronic record of the version, time and device used to accept it, and you agree electronic signatures and records are valid. This Agreement and your order are the entire agreement and replace prior discussions."
+ }
+];
+var POTENT_PRIVACY_SECTIONS = [
+ {
+  "num": 1,
+  "title": "Who We Are and What This Covers",
+  "body": "POTENT LOGISTICS LLC and POTENT OPERATIONS LLC (\"POTENT,\" \"we\") provide delivery, junk removal and hauling services and the POTENT OS software platform. This policy explains what personal information we collect through our websites, apps, text messages, calls and services (the \"Services\"), how we use it, and your choices. It applies to customers who book with us, drivers and carriers, dispatch partners, and software customers and their staff. When a company that licenses POTENT OS uses it to serve its own customers, that company decides how that information is used, and we process it on its behalf."
+ },
+ {
+  "num": 2,
+  "title": "Information We Collect",
+  "body": "Contact and account details: name, phone, email, company, addresses, logins and password hashes. Job details: pickup and drop-off addresses, item descriptions, photos and videos you or our drivers take, notes, signatures, proof-of-delivery and bill-of-lading records, quotes, payments and invoices. Business verification: USDOT and MC numbers, EIN, insurance and bond documents, identification documents and selfies for driver and partner verification. Location: your address, and for drivers, device location while a job is active or while the app is open, used for dispatch, tracking and safety. Payments: processed by Stripe; we receive confirmations and limited card details (brand, last four digits), not full card numbers. Device and usage data: IP address, device and browser type, pages and actions, login times and approximate location from IP, cookies and similar technologies. Communications: messages, call recordings or notes, support requests. Terms acceptance records: the version accepted, time, and device and network address."
+ },
+ {
+  "num": 3,
+  "title": "Precise Location",
+  "body": "When you use our booking pages, ask for an automated route estimate, or track a dispatch vehicle, we may collect your device's precise location, with your permission. We use it only to check distance from our base, work out road miles and arrival times, and coordinate the job. You can turn location off in your device settings; booking by typing the address still works."
+ },
+ {
+  "num": 4,
+  "title": "Job Photos and Property Documentation",
+  "body": "Our drivers photograph the site and the load at pickup, during loading, and at delivery, disposal and completion. Photos carry timestamps and may carry location data. We use them to confirm the job was done, support billing, and resolve claims and chargebacks. Photos may show your property and belongings."
+ },
+ {
+  "num": 5,
+  "title": "Identity Verification",
+  "body": "To meet cargo, disposal and fraud-prevention requirements, we may ask to see, and may keep a copy of, government-issued ID (such as a driver's license) from a customer or authorized agent at pickup or delivery. We use it only to confirm authority to release or receive items and to protect both sides from unauthorized removal or illegal disposal. We do not sell it, and we keep it only as long as needed for those purposes and any claim."
+ },
+ {
+  "num": 6,
+  "title": "How We Use Information",
+  "body": "To give quotes, schedule, perform and document jobs; take payment and send receipts; send confirmations, arrival times and tracking links; verify partners and drivers and prevent fraud; keep records for claims and disputes; provide customer support; run, secure, debug and improve the Services; comply with law and enforce our terms; and, if you agree, send promotions. We may use photos and job records in anonymized or aggregated form to improve estimating tools, and we do not use your photos for advertising without your permission."
+ },
+ {
+  "num": 7,
+  "title": "Texts and Calls",
+  "body": "If you give us your mobile number, you agree we may text and call about your job and account. Message frequency varies with your job. Message and data rates may apply. Reply STOP to opt out of texts, HELP for help. Marketing texts are sent only with your separate consent, which is not a condition of buying anything."
+ },
+ {
+  "num": 8,
+  "title": "Automated Tools and AI",
+  "body": "Some tools use automated systems, including AI, to read documents, translate text, geocode addresses, and estimate load size and weight from photos. These produce estimates that our staff review before a quote is final. We do not use them to make decisions with legal or similarly significant effects on you without human review."
+ },
+ {
+  "num": 9,
+  "title": "How We Share Information",
+  "body": "With service providers that act for us under contract: hosting and database (Supabase, Netlify), payments (Stripe), email and messaging delivery, mapping and routing (OpenStreetMap, the U.S. Census Bureau geocoder), document and AI processing providers, and analytics. With our drivers, helpers, vendors and disposal facilities as needed to do your job. With a customer's or partner's own company when we act as its service provider. With insurers, claims administrators, factoring companies and professional advisers where needed. With authorities when required by law or to protect rights, safety and property. In a merger, financing or sale of our business. We do not sell personal information, and we do not share it for cross-context behavioral advertising."
+ },
+ {
+  "num": 10,
+  "title": "Cookies and Similar Technologies",
+  "body": "We use essential storage to keep you signed in and remember settings, and limited analytics to understand site use. You can block cookies in your browser, but parts of the Services may not work."
+ },
+ {
+  "num": 11,
+  "title": "How Long We Keep Information",
+  "body": "We keep job and payment records for as long as needed for the job, for tax, insurance, claims and legal purposes (generally up to seven years), and verification documents only as long as needed for compliance. We delete or anonymize information we no longer need."
+ },
+ {
+  "num": 12,
+  "title": "Security",
+  "body": "We use access controls, encryption in transit, per-company data separation, role-based access and audit records. No system is perfectly secure. Keep your password confidential and tell us if you suspect unauthorized access."
+ },
+ {
+  "num": 13,
+  "title": "Your Choices and Rights",
+  "body": "You may ask to access, correct or delete your personal information, to receive a copy, or to opt out of marketing, by emailing potentlogistics@pm.me. Depending on where you live, you may have additional rights under state privacy laws, including the right to know, delete, correct and opt out of sale or sharing (we do not sell or share), and to appeal a denial. We will verify your request and respond within the time the law requires. We will not discriminate against you for using these rights. If you are a customer of a company using POTENT OS, contact that company first."
+ },
+ {
+  "num": 14,
+  "title": "Children",
+  "body": "The Services are not directed to people under 18 and we do not knowingly collect their information. If you believe a child has given us information, contact us and we will delete it."
+ },
+ {
+  "num": 15,
+  "title": "Driver Location and Safety Data",
+  "body": "Drivers who use our app agree that location is collected during active work and shared with dispatch, and with the customer for tracking links for that job. Drivers can see when tracking is on. We keep location history only as long as needed for job records, safety, payment disputes and legal requirements."
+ },
+ {
+  "num": 16,
+  "title": "Changes to This Policy",
+  "body": "We will post updates here with a new date, and tell you of material changes through the Services or by email. This version is effective October 8, 2026."
+ },
+ {
+  "num": 17,
+  "title": "Contact",
+  "body": "POTENT LOGISTICS LLC, 2089 Christian Cir SE, Conyers, GA 30013, potentlogistics@pm.me, (770) 648-4228."
+ }
+];
+var LEGAL_UPDATED = "October 8, 2026";
+// <<END LEGAL-GENERATED>>
 // ── PHASE 9: DISPATCH ENHANCEMENTS ──────────────────────────────────
 var LANE_HISTORY_KEY = "pl_lanes";
 var DEADHEAD_KEY = "pl_deadhead";
@@ -1267,7 +1999,7 @@ function getNextAvailableDates(jobs, blockedDates, count) {
     return results;
 }
 function getCancelPolicy(jobDate, speed) {
-    if (speed === "urgent" || speed === "emergency")
+    if (speed === "urgent" || speed === "emergency" || speed === "sameday" || speed === "rush")
         return CANCEL_POLICY[0];
     var hrs = (new Date(jobDate) - new Date()) / (1000 * 60 * 60);
     if (hrs <= 0)
@@ -1692,7 +2424,7 @@ function calcOOSQuote(originCity, destCity, speed, helper, weightTier, priceTier
     if (!miles)
         return null;
     var tier = PRICE_TIERS.find(function (t) { return t.id === priceTierId; }) || PRICE_TIERS[0];
-    var isSameDay = (speed === "urgent" || speed === "emergency");
+    var isSameDay = (speed === "urgent" || speed === "emergency" || speed === "sameday" || speed === "rush");
     // Rate: use tier's floor rate if set, otherwise apply % discount to standard rate
     var stdRate = isSameDay ? OOS_RATE_SAMEDAY : OOS_RATE_STANDARD;
     var tierRate = isSameDay
@@ -1709,13 +2441,13 @@ function calcOOSQuote(originCity, destCity, speed, helper, weightTier, priceTier
     var ppg = getGasForState(destState);
     var fuelGal = Math.round((miles / TRUCK_MPG) * 10) / 10;
     var fuelCost = Math.round(fuelGal * ppg);
-    var isSameDay = (speed === "urgent" || speed === "emergency");
+    var isSameDay = (speed === "urgent" || speed === "emergency" || speed === "sameday" || speed === "rush");
     var total = subtotal;
     var hitMinimum = false;
     // Real fix — same real floor now applied here too, not just calcQuote.
     if (_b2bSettingsCache) {
-        var realFloor = (speed === "afterhours" || speed === "overnight" || speed === "emergency") ? _b2bSettingsCache.rush_min
-            : speed === "urgent" ? _b2bSettingsCache.sameday_min
+        var realFloor = (speed === "rush" || speed === "afterhours" || speed === "overnight" || speed === "emergency") ? _b2bSettingsCache.rush_min
+            : (speed === "urgent" || speed === "sameday") ? _b2bSettingsCache.sameday_min
             : _b2bSettingsCache.onetime_min;
         if (realFloor && total < realFloor) { total = realFloor; hitMinimum = true; }
     }
@@ -1726,6 +2458,30 @@ function calcOOSQuote(originCity, destCity, speed, helper, weightTier, priceTier
         netProfit: total - fuelCost };
 }
 // Services priced by real distance instead of a fixed zone table
+var TENANT_PRICING = null; // null for POTENT: its own pricing stays hardcoded below. Set only for customer companies.
+function applyTenantPricing(cfg) {
+    cfg = cfg || {};
+    var svcs = (cfg.services && cfg.services.length) ? cfg.services : [{ id: "svc1", name: "My Service", model: "zone", local: 0, regional: 0, longdist: 0 }];
+    SERVICES.length = 0;
+    Object.keys(PRICE_TABLE).forEach(function (k) { delete PRICE_TABLE[k]; });
+    MILEAGE_SERVICES.length = 0;
+    var byId = {};
+    svcs.forEach(function (sv, i) {
+        var id = sv.id || ("svc" + (i + 1));
+        byId[id] = sv;
+        var range = sv.model === "flat" ? "$" + (sv.flat || 0) : sv.model === "permile" ? "$" + (sv.perMile || 0) + "/mile" : "$" + (sv.local || 0) + "-$" + (sv.longdist || 0);
+        SERVICES.push({ id: id, icon: "📦", name: sv.name || "Service", tagline: sv.tagline || "", priceRange: range, desc: sv.desc || "", includes: [], excludes: [], rule: "", sizes: [] });
+        if (sv.model === "permile") MILEAGE_SERVICES.push(id);
+        else PRICE_TABLE[id] = { local: sv.local || 0, regional: sv.regional || 0, longdist: sv.longdist || 0 };
+    });
+    SPEEDS.length = 0;
+    ((cfg.speeds && cfg.speeds.length) ? cfg.speeds : [{ id: "standard", label: "Standard", mult: 1 }]).forEach(function (sp, i) {
+        SPEEDS.push({ id: sp.id || (i === 0 ? "standard" : "speed" + i), label: sp.label || "Standard", sub: "", icon: i === 0 ? "🟢" : "⚡", mult: sp.mult || 1, color: i === 0 ? "#1DB954" : "#F0E000" });
+    });
+    EXTRA_STOP_FEE = cfg.extraStopFee || 0;
+    HELPER_FEE = 0;
+    TENANT_PRICING = { byId: byId, single: cfg.singleItem && cfg.singleItem.enabled ? cfg.singleItem : null, cashPct: (cfg.cashDiscountPct || 0) / 100 };
+}
 var MILEAGE_SERVICES = ["event"]; // real change — Delivery no longer per-mile, merged into Freight's flat zone pricing below. Event stays on its own real flat+overage rule, untouched.
 var INSTATE_RATE_PER_MILE = 4.50;
 // Real cached B2B pricing settings — loaded once, applied as a genuine
@@ -1748,9 +2504,17 @@ function calcQuote(serviceId, zone, speed, payId, helper, discreet, weightTier, 
     var spd = SPEEDS.find(function (s) { return s.id === speed; }) || SPEEDS[0];
     var pay = PAYMENTS.find(function (p) { return p.id === payId; }) || PAYMENTS[0];
     var tier = PRICE_TIERS.find(function (t) { return t.id === priceTierId; }) || PRICE_TIERS[0];
-    var isMileage = MILEAGE_SERVICES.indexOf(serviceId) > -1;
+    var _t = TENANT_PRICING && TENANT_PRICING.byId[serviceId];
+    var isMileage = _t ? _t.model === "permile" : MILEAGE_SERVICES.indexOf(serviceId) > -1;
     var base;
-    if ((serviceId === "delivery" || serviceId === "freight") && singleItemSpeed) {
+    if (_t) {
+        if (singleItemSpeed && TENANT_PRICING.single) base = TENANT_PRICING.single[singleItemSpeed] || TENANT_PRICING.single.scheduled;
+        else if (_t.model === "flat") base = _t.flat;
+        else if (_t.model === "permile") base = Math.max(_t.minimum || 0, Math.round((miles || 0) * (_t.perMile || 0)));
+        else base = _t[zone] != null ? _t[zone] : _t.local;
+        base = Number(base) || 0;
+    }
+    else if ((serviceId === "delivery" || serviceId === "freight") && singleItemSpeed) {
         // Real new Single Item tier — confirmed structure, separate from
         // the normal bulk zone pricing below. Same-Day is genuinely
         // cheaper than Scheduled (a real flexibility discount).
@@ -1772,27 +2536,27 @@ function calcQuote(serviceId, zone, speed, payId, helper, discreet, weightTier, 
         var tbl = PRICE_TABLE[serviceId] || PRICE_TABLE.delivery;
         base = tbl[zone] || tbl.local || 300;
     }
-    var speedFee = Math.round(base * (spd.mult - 1));
+    var speedFee = spd.add !== undefined ? spd.add : Math.round(base * (spd.mult - 1));
     var helperFee = helper ? HELPER_FEE : 0;
     var wTier = WEIGHT_TIERS.find(function (w) { return w.id === weightTier; }) || WEIGHT_TIERS[0];
-    var weightFee = wTier.fee;
+    var weightFee = TENANT_PRICING ? 0 : wTier.fee;
     var extraStopFee = extraStop ? EXTRA_STOP_FEE : 0;
     var discreetFee = discreet ? Math.round(base * 0.35) : 0;
     var rawSubtotal = base + speedFee + helperFee + weightFee + extraStopFee + discreetFee;
     var tierDisc = tier.discountPct > 0 ? Math.round(rawSubtotal * tier.discountPct) : 0;
     var subtotal = rawSubtotal - tierDisc;
-    var cashDisc = pay.discount ? Math.round(subtotal * 0.10) : 0;
+    var cashDisc = pay.discount ? Math.round(subtotal * (TENANT_PRICING ? TENANT_PRICING.cashPct : 0.10)) : 0;
     var total = subtotal - cashDisc;
     // Real fix — apply the real admin-configured minimum floor. This is
     // the actual confirmed bug: these settings were saved to Supabase
     // but never read back into a real quote anywhere. Now they
     // genuinely affect the real price floor, same-day/rush detection
     // included, matching what the admin panel always claimed to do.
-    if (_b2bSettingsCache) {
+    if (_b2bSettingsCache && !TENANT_PRICING) {
         // Real speed IDs, confirmed directly against the real SPEEDS array:
         // standard, urgent, afterhours, overnight, emergency.
-        var realFloor = (speed === "afterhours" || speed === "overnight" || speed === "emergency") ? _b2bSettingsCache.rush_min
-            : speed === "urgent" ? _b2bSettingsCache.sameday_min
+        var realFloor = (speed === "rush" || speed === "afterhours" || speed === "overnight" || speed === "emergency") ? _b2bSettingsCache.rush_min
+            : (speed === "urgent" || speed === "sameday") ? _b2bSettingsCache.sameday_min
             : _b2bSettingsCache.onetime_min;
         if (realFloor && total < realFloor) { total = realFloor; subtotal = realFloor; }
     }
@@ -1802,17 +2566,1104 @@ function calcQuote(serviceId, zone, speed, payId, helper, discreet, weightTier, 
         spd: spd, zn: zn, svc: svc, pay: pay, isMileage: isMileage, miles: miles || 0 };
 }
 // ── JUNK REMOVAL QUOTE — simple load-size pricing, no zones/mileage involved ──
-function calcJunkRemovalQuote(loadSizeId, payId, emergencyAddonIds) {
+
+// ── HEAVY-ITEM PRICING (junk removal) ─────────────────────────────────
+// Rule: heavy things pay for their own weight so POTENT never eats dump
+// weight. Each heavy item = handling fee + (its weight x dump $/lb x 3 markup).
+// Loose heavy material (concrete, dirt, brick, tile, shingles, rock) is
+// charged per pound. The cash discount is NOT applied to the heavy fee.
+// ── WEIGHT, DUMP COSTS AND DUMPSTER PLANNING (junk removal, cleanouts, demo) ─────────────────────
+// Landfills charge by the ton, so every heavy item is entered with its real weight and pays for it.
+// Researched Georgia reference points (Oct 2026): statewide MSW $40-$75/ton, C&D $35-$65/ton; Newton County
+// Landfill (Covington) $62-$66/ton with a $30 minimum; statewide average $55.76/ton; Atlanta commercial transfer ~$110/ton.
+// We charge TRUCK_DUMP_MARKUP x the dump cost on heavy weight (never below DUMP_MARKUP_FLOOR) and
+// DUMPSTER_MARKUP x the vendor price on roll-off containers.
+var JUNK_TRUCK_MAX_LBS = 4300;      // one trip of junk, our 16 ft truck
+var TRUCK_CUYD = 25;                // 190in x 87in x 72in cargo box, about 25 cubic yards
+var TRUCK_DUMP_MARKUP = 3;
+var DUMP_MARKUP_FLOOR = 2;
+var DUMPSTER_MARKUP = 1.5;
+// Average Atlanta-area roll-off prices from 5 published rate cards (7-day rental). "inclTons" is the average weight allowance.
+var DUMPSTER_SIZES = [
+    { yd: 10, rent: 380, inclTons: 1.5 },
+    { yd: 15, rent: 405, inclTons: 2 },
+    { yd: 20, rent: 470, inclTons: 2.75 },
+    { yd: 30, rent: 565, inclTons: 3 },
+    { yd: 40, rent: 695, inclTons: 4 },
+];
+var DUMPSTER_OVERAGE_PER_TON = 85;   // vendors quote $80-$90 per extra ton
+var DUMPSTER_EXTRA_DAY = 25;         // per extra day, vendor cost
+var DUMPSTER_TRIP_FEE = 40;          // delivery + pickup, vendor cost (some include it)
+function plRound5(n) { return Math.round(n / 5) * 5; }
+function plDumpsterPrice(size) { return plRound5(size.rent * DUMPSTER_MARKUP); }
+function plDumpRate(isConstruction) { return isConstruction ? GA_CONSTRUCTION_DEBRIS_RATE_PER_TON : GA_AVG_DUMP_RATE_PER_TON; }
+// Common heavy items. The weight is a starting point only: the person quoting enters the real weight.
+var HEAVY_PRESETS = [
+    { label: "Gun safe (small)", lbs: 250 }, { label: "Gun safe (large)", lbs: 750 }, { label: "Upright piano", lbs: 450 }, { label: "Baby grand piano", lbs: 650 },
+    { label: "Hot tub / spa", lbs: 800 }, { label: "Slate pool table", lbs: 900 }, { label: "Treadmill / elliptical", lbs: 250 }, { label: "Weight bench + plates", lbs: 400 },
+    { label: "Refrigerator / freezer", lbs: 250 }, { label: "Washer", lbs: 175 }, { label: "Dryer", lbs: 130 }, { label: "Stove / range", lbs: 200 },
+    { label: "Water heater", lbs: 130 }, { label: "Sleeper sofa", lbs: 250 }, { label: "Filing cabinet (4 drawer)", lbs: 120 }, { label: "Large cabinet / armoire", lbs: 300 },
+    { label: "Other heavy item", lbs: 200 },
+];
+function plHandlingFor(lbs) { return lbs <= 150 ? 40 : lbs <= 300 ? 75 : lbs <= 600 ? 150 : 300; }
+var HEAVY_MATERIAL_HANDLING_PER_LB = 0.05; // labor on top of dump cost, loose heavy material
+function plHeavyFee(heavy, isConstruction) {
+    var h = heavy || {};
+    var perLb = (plDumpRate(isConstruction) / 2000) * TRUCK_DUMP_MARKUP;
+    var fee = 0, lbs = 0, count = 0, rows = [];
+    (h.items || []).forEach(function (it) {
+        var each = Math.max(0, Math.min(JUNK_TRUCK_MAX_LBS, Number(it.lbs) || 0));
+        var n = Math.max(0, Math.floor(Number(it.qty) || 0));
+        if (!each || !n) return;
+        var f = n * (plHandlingFor(each) + each * perLb);
+        count += n; lbs += n * each; fee += f; rows.push({ label: it.label || "Heavy item", lbs: each, qty: n, fee: Math.round(f) });
+    });
+    var mat = Math.max(0, Number(h.materialLbs) || 0);
+    lbs += mat;
+    fee += mat * (perLb + HEAVY_MATERIAL_HANDLING_PER_LB);
+    var dumpCost = (lbs / 2000) * plDumpRate(isConstruction);
+    return { fee: Math.round(fee), lbs: Math.round(lbs), count: count, materialLbs: mat, items: rows, dumpCost: Math.round(dumpCost * 100) / 100 };
+}
+function plHeavyNote(heavy) {
+    var r = plHeavyFee(heavy, false);
+    if (!r.fee) return "";
+    return " — HEAVY: " + r.items.map(function (x) { return x.qty + "x " + x.label + " (" + x.lbs + " lbs ea)"; }).join(", ") + (r.materialLbs ? (r.items.length ? ", " : "") + r.materialLbs + " lbs loose material" : "") + " (~" + r.lbs + " lbs, +$" + r.fee + ")";
+}
+// What gets saved on the job so heavy charges are never buried inside the total.
+function plJunkFields(q, heavy, loadId) {
+    var hv = plHeavyFee(heavy, false); var plan = plHaulPlan({ loadId: loadId, heavyLbs: hv.lbs });
+    return { heavyFee: (q && q.heavyFee) || hv.fee || 0, heavyLbs: hv.lbs || 0, heavyItems: hv.items, estTotalLbs: plan.totalLbs, trips: plan.trips };
+}
+// Truck trips vs a roll-off dumpster for the same job. Inputs: loadId (volume tier), heavyLbs, optional cuYd and lbs from photos, extraLoads.
+function plHaulPlan(o) {
+    o = o || {};
+    var load = LOAD_SIZES.find(function (l) { return l.id === o.loadId; }) || LOAD_SIZES[0];
+    var typical = (Number(o.totalLbs) || 0) || ((load.estWeightLbs || 0) * Math.max(1, Number(o.loads) || 1) + (Number(o.heavyLbs) || 0));
+    var cuYd = Number(o.cuYd) || (load.capLbs ? (load.capLbs / JUNK_TRUCK_MAX_LBS) * TRUCK_CUYD * Math.max(1, Number(o.loads) || 1) : 0);
+    var byWeight = Math.ceil(typical / JUNK_TRUCK_MAX_LBS), byVolume = Math.ceil(cuYd / TRUCK_CUYD);
+    var trips = Math.max(1, byWeight, byVolume);
+    var tons = typical / 2000;
+    var truckPrice = load.price + (trips - 1) * EXTRA_TRUCKLOAD_FEE;
+    // smallest container that holds the volume, else the biggest, else several
+    var size = DUMPSTER_SIZES.find(function (d) { return d.yd >= cuYd; }) || DUMPSTER_SIZES[DUMPSTER_SIZES.length - 1];
+    var count = DUMPSTER_SIZES.find(function (d) { return d.yd >= cuYd; }) ? 1 : Math.ceil(cuYd / size.yd);
+    var over = Math.max(0, tons - size.inclTons * count);
+    var vendorCost = count * (size.rent + DUMPSTER_TRIP_FEE) + over * DUMPSTER_OVERAGE_PER_TON;
+    var dumpsterPrice = plRound5(vendorCost * DUMPSTER_MARKUP);
+    var recommend = (trips >= 3 || typical > 2 * JUNK_TRUCK_MAX_LBS || cuYd > 2 * TRUCK_CUYD) ? "dumpster" : "truck";
+    return { totalLbs: Math.round(typical), tons: Math.round(tons * 100) / 100, cuYd: Math.round(cuYd), trips: trips, truckPrice: truckPrice, dumpsterYd: size.yd, dumpsterCount: count,
+        dumpsterVendorCost: Math.round(vendorCost), dumpsterPrice: dumpsterPrice, overTons: Math.round(over * 100) / 100, recommend: recommend, overCapacity: typical > JUNK_TRUCK_MAX_LBS };
+}
+// Where we get disposal and container prices: published numbers, flagged NEEDS CONFIRMATION until a person calls and verifies.
+var DISPOSAL_REFERENCE = [
+    { name: "Newton County Landfill", address: "205 Lower River Rd, Covington, GA 30016", phone: "770-786-5808", per_ton: "62-66", min_charge: "30 (first 980 lb)", hours: "Mon-Sat 8:00-4:15", materials: "household junk, furniture, appliances, construction and remodeling debris, yard waste, asbestos with 24h notice", restrictions: "no CRT TVs, batteries, bulbs, oil, hazardous chemicals, propane tanks; card payments +3.5%", service_area: "Conyers, Covington, Rockdale and Newton counties", notes: "Nearest landfill to our base. County page shows $62/ton effective July 2025; our records show $66. Confirm current rate." },
+    { name: "Seminole Road MSW Landfill", address: "Ellenwood, GA", per_ton: "", materials: "municipal solid waste", notes: "Listed in the Georgia EPD landfill list. Call for rates, hours and whether they take commercial haulers." },
+    { name: "Pine Ridge Landfill", address: "Griffin, GA", per_ton: "", materials: "municipal solid waste", notes: "Georgia EPD list. Call for rates." },
+    { name: "Clayton County SR 3 Lovejoy Landfill", address: "Hampton, GA", per_ton: "", materials: "municipal solid waste", notes: "Georgia EPD list. Call for rates." },
+    { name: "Willow Oak Landfill", address: "Fairburn, GA", per_ton: "", materials: "municipal solid waste", notes: "Georgia EPD list. Call for rates." },
+    { name: "Oak Grove Landfill", address: "Winder, GA", per_ton: "", materials: "municipal solid waste", notes: "Georgia EPD list. Call for rates." },
+    { name: "Atlanta-area commercial transfer station (Hampton)", address: "Hampton, GA", per_ton: "110", materials: "mixed waste", notes: "Our earlier reference for commercial transfer rates. Confirm name and current price." },
+];
+var VENDOR_REFERENCE = [
+    { category: "CONTAINERS", name: "Dump Daddy (Atlanta roll-offs)", pricing: "15yd $389 (1 ton incl), 20yd $465 (2 t), 30yd $555 (3 t), 40yd $695 (4 t); extra ton $90; delivery+pickup $40; 5 days", capacity: "15-40 yard", service_area: "Atlanta metro", notes: "Published web price. Confirm availability and current rates by phone." },
+    { category: "CONTAINERS", name: "Roll Off Dumpster Direct (Atlanta)", pricing: "10yd $380 (1.5 t incl), 15yd $430 (3 t), 20yd $470 (3.5 t); extra ton $80; extra day $25; 7 days", capacity: "10-20 yard", service_area: "Atlanta and North Georgia", notes: "Published web price. Confirm by phone." },
+    { category: "CONTAINERS", name: "Red Box+ (Northeast Atlanta)", pricing: "see their price page", capacity: "various", service_area: "Northeast Atlanta", notes: "Listed from a web search. Get a written quote." },
+    { category: "CONTAINERS", name: "Peeps Containers (Atlanta)", pricing: "15yd $350-$450, 20yd $400-$550, 30yd $500-$650 (range)", capacity: "15-30 yard", service_area: "Atlanta", notes: "Range from their cost guide. Included tons not published. Get a written quote." },
+];
+// ── PROFIT GUARD (owner's formula) ────────────────────────────────────
+// Start = base (Conyers). DH1 = base->pickup, Loaded = pickup->dropoff,
+// DH2 = dropoff->base. GasCost = TotalMiles x GasRate. Profit = Bid - GasCost.
+// NeededPerJob = MonthlyBills / (JobsPerWeek x 4.33).
+var PL_PROFIT_DEFAULTS = { base: "2089 Christian Cir SE, Conyers, GA 30013", gasRate: 0.45, monthlyBills: 5111, jobsPerWeek: 10, dumpAddress: "", numStops: 2, stopTime: 15, weeksPerMonth: 4.33 };
+// Jobs per week, worked out from your real job history (last 8 weeks, cancelled jobs excluded) so you never have to guess.
+// Needs at least 6 jobs in the window, otherwise it says "not enough history yet" and uses the number you typed (default 10).
+function plAutoJobsPerWeek(jobs, nowMs) {
+    var now = nowMs || Date.now(), from = now - 56 * 86400000;
+    var n = (jobs || []).filter(function (j) { if (!j || j.status === "Cancelled") return false; var t = new Date(j.date).getTime(); return t >= from && t <= now + 86400000; }).length;
+    return n >= 6 ? { value: Math.round((n / 8) * 10) / 10, jobs: n } : null;
+}
+function plProfitCfg() {
+    var c;
+    try { var r = JSON.parse(localStorage.getItem("pl_profit_cfg") || "null"); c = Object.assign({}, PL_PROFIT_DEFAULTS, r || {}); }
+    catch (e) { c = Object.assign({}, PL_PROFIT_DEFAULTS); }
+    c.jobsSource = "typed";
+    if (c.jobsAuto !== false) {
+        try { var a = typeof loadJobs === "function" ? plAutoJobsPerWeek(loadJobs()) : null; if (a) { c.jobsPerWeek = a.value; c.jobsSource = "auto"; c.jobsAutoCount = a.jobs; } else c.jobsSource = "default"; } catch (e2) { c.jobsSource = "default"; }
+    }
+    return c;
+}
+function plProfitSave(cfg) { try { localStorage.setItem("pl_profit_cfg", JSON.stringify(cfg)); } catch (e) {} }
+function plProfitCalc(cfg, legs, bid) {
+    var total = (Number(legs.dh1) || 0) + (Number(legs.loaded) || 0) + (Number(legs.dh2) || 0);
+    var gasCost = total * (Number(cfg.gasRate) || 0);
+    var profit = (Number(bid) || 0) - gasCost;
+    var perWeek = (Number(cfg.jobsPerWeek) || 0) * (Number(cfg.weeksPerMonth) || 4.33);
+    var needed = perWeek > 0 ? (Number(cfg.monthlyBills) || 0) / perWeek : 0;
+    // Time: drive minutes from the route legs plus planned stops (gas, bathroom, food) x average minutes per stop.
+    var driveMin = (Number(legs.dh1m) || 0) + (Number(legs.loadedm) || 0) + (Number(legs.dh2m) || 0);
+    var stopMin = (Number(cfg.numStops) || 0) * (Number(cfg.stopTime) || 0);
+    var totalMin = driveMin + stopMin;
+    var perHour = totalMin > 0 ? profit / (totalMin / 60) : 0;
+    return { totalMiles: total, gasCost: gasCost, profit: profit, needed: needed, covers: profit >= needed, gap: profit - needed, driveMin: Math.round(driveMin), stopMin: stopMin, totalMin: Math.round(totalMin), perHour: perHour };
+}
+// GAS_RATE from your last job: gas cost / miles driven.
+function plGasRateFrom(gasCost, miles) { var g = Number(gasCost), m = Number(miles); return g > 0 && m > 0 ? Math.round((g / m) * 1000) / 1000 : null; }
+function plFmtMin(m) { m = Math.round(Number(m) || 0); return m >= 60 ? Math.floor(m / 60) + "h " + (m % 60) + "m" : m + "m"; }
+function ProfitGuardCard(props) {
+    var cfgS = React.useState(plProfitCfg); var cfg = cfgS[0], setCfg = cfgS[1];
+    var openS = React.useState(false); var open = openS[0], setOpen = openS[1];
+    var legsS = React.useState(null); var legs = legsS[0], setLegs = legsS[1];
+    var busyS = React.useState(false); var busy = busyS[0], setBusy = busyS[1];
+    var pickup = props.pickup, bid = Number(props.bid) || 0;
+    var dropoff = (props.dropoff && props.dropoff !== props.pickup) ? props.dropoff : (cfg.dumpAddress || "");
+    React.useEffect(function () {
+        if (!pickup || pickup.trim().length < 5) { setLegs(null); return; }
+        var dead = false; setBusy(true);
+        var t = setTimeout(function () {
+            var jobs = [calcRealMilesAndETA(cfg.base, pickup)];
+            if (dropoff) { jobs.push(calcRealMilesAndETA(pickup, dropoff)); jobs.push(calcRealMilesAndETA(dropoff, cfg.base)); }
+            else jobs.push(calcRealMilesAndETA(pickup, cfg.base));
+            Promise.all(jobs).then(function (r) {
+                if (dead) return; setBusy(false);
+                if (r.some(function (x) { return !x; })) { setLegs({ failed: true }); return; }
+                var est = r.some(function (x) { return x.source !== "osrm"; });
+                setLegs(dropoff
+                    ? { dh1: r[0].miles, loaded: r[1].miles, dh2: r[2].miles, dh1m: r[0].minutes, loadedm: r[1].minutes, dh2m: r[2].minutes, estimate: est, hasDrop: true }
+                    : { dh1: r[0].miles, loaded: 0, dh2: r[1].miles, dh1m: r[0].minutes, dh2m: r[1].minutes, estimate: est, hasDrop: false });
+            }).catch(function () { if (!dead) { setBusy(false); setLegs({ failed: true }); } });
+        }, 900);
+        return function () { dead = true; clearTimeout(t); };
+    }, [pickup, dropoff, cfg.base]);
+    function upd(k, v) { var n = Object.assign({}, cfg); n[k] = v; setCfg(n); plProfitSave(n); }
+    var box = { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "12px 14px", marginBottom: 10, textAlign: "left", fontSize: 11 };
+    var row = function (a, b, col) { return React.createElement("div", { key: a, style: { display: "flex", justifyContent: "space-between", padding: "2px 0", color: C.dim } }, React.createElement("span", null, a), React.createElement("span", { style: { color: col || C.white, fontWeight: 700 } }, b)); };
+    var head = React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 } },
+        React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 800, letterSpacing: 1.5, textTransform: "uppercase" } }, "🛡 Profit Guard"),
+        React.createElement("button", { onClick: function () { setOpen(!open); }, style: { background: "transparent", border: "none", color: C.dim, fontSize: 10, cursor: "pointer", fontFamily: "inherit" } }, open ? "close" : "⚙ settings"));
+    var settings = open && React.createElement("div", { style: { marginBottom: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 } },
+        [["gasRate", "Gas $/mile"], ["monthlyBills", "Monthly bills $"], ["numStops", "Stops planned (gas, bathroom, food)"], ["stopTime", "Minutes per stop"], ["jobsPerWeek", cfg.jobsSource === "auto" ? "Jobs / week (auto: " + cfg.jobsAutoCount + " jobs in 8 wks)" : "Jobs / week" + (cfg.jobsSource === "default" ? " (placeholder, not enough history yet)" : "")]].map(function (f) {
+            return React.createElement("label", { key: f[0], style: { fontSize: 10, color: C.dim } }, f[1],
+                React.createElement("input", { type: "number", step: "any", value: cfg[f[0]], onChange: function (e) { if (f[0] === "jobsPerWeek") { var n = Object.assign({}, cfg, { jobsPerWeek: e.target.value, jobsAuto: false }); setCfg(n); plProfitSave(n); } else upd(f[0], e.target.value); }, style: { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 6, color: C.white, padding: "5px 6px", fontSize: 11, fontFamily: "inherit", boxSizing: "border-box" } }));
+        }),
+        React.createElement("div", { style: { gridColumn: "1 / 3", fontSize: 10, color: C.dim } }, "Jobs per week = how many jobs you do in a normal week. Needed per job = monthly bills / (jobs per week x weeks per month 4.33). Gas rate = gas cost / miles from your last job. ",
+            React.createElement("button", { onClick: function () { var n = Object.assign({}, cfg, { jobsAuto: cfg.jobsAuto === false }); setCfg(n); plProfitSave(n); setTimeout(function () { setCfg(plProfitCfg()); }, 0); }, style: { background: "transparent", border: "none", color: C.orange, fontSize: 10, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" } }, cfg.jobsAuto === false ? "Use my real job history" : "Type my own number")),
+        React.createElement("div", { style: { gridColumn: "1 / 3", display: "flex", gap: 6, alignItems: "flex-end" } },
+            React.createElement("label", { style: { fontSize: 10, color: C.dim, flex: 1 } }, "Last job gas cost $", React.createElement("input", { type: "number", step: "any", value: cfg.lastGas || "", onChange: function (e) { upd("lastGas", e.target.value); }, style: { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 6, color: C.white, padding: "5px 6px", fontSize: 11, fontFamily: "inherit", boxSizing: "border-box" } })),
+            React.createElement("label", { style: { fontSize: 10, color: C.dim, flex: 1 } }, "Last job miles", React.createElement("input", { type: "number", step: "any", value: cfg.lastMiles || "", onChange: function (e) { upd("lastMiles", e.target.value); }, style: { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 6, color: C.white, padding: "5px 6px", fontSize: 11, fontFamily: "inherit", boxSizing: "border-box" } })),
+            React.createElement("button", { onClick: function () { var g = plGasRateFrom(cfg.lastGas, cfg.lastMiles); if (g) upd("gasRate", g); }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 6, padding: "6px 8px", fontSize: 10, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Set gas rate")),
+        React.createElement("label", { style: { fontSize: 10, color: C.dim, gridColumn: "1 / 3" } }, "Start / base address",
+            React.createElement("input", { value: cfg.base, onChange: function (e) { upd("base", e.target.value); }, style: { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 6, color: C.white, padding: "5px 6px", fontSize: 11, fontFamily: "inherit", boxSizing: "border-box" } })),
+        React.createElement("label", { style: { fontSize: 10, color: C.dim, gridColumn: "1 / 3" } }, "Dump / drop-off address (junk jobs)",
+            React.createElement("input", { value: cfg.dumpAddress, placeholder: "street, city, GA", onChange: function (e) { upd("dumpAddress", e.target.value); }, style: { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 6, color: C.white, padding: "5px 6px", fontSize: 11, fontFamily: "inherit", boxSizing: "border-box" } })));
+    if (!pickup || pickup.trim().length < 5 || !bid) return React.createElement("div", { style: box }, head, settings, React.createElement("div", { style: { color: C.dim } }, "Enter the pickup address and a price to check this job."));
+    if (busy || !legs) return React.createElement("div", { style: box }, head, settings, React.createElement("div", { style: { color: C.dim } }, "Measuring road miles…"));
+    if (legs.failed) return React.createElement("div", { style: box }, head, settings, React.createElement("div", { style: { color: C.red, fontWeight: 800 } }, "BOOKING REVIEW REQUIRED"), React.createElement("div", { style: { color: C.dim, marginTop: 4 } }, "Could not verify an address or the route. No miles were guessed — check the address."));
+    var r = plProfitCalc(cfg, legs, bid);
+    var col = r.covers ? C.green : C.red;
+    return React.createElement("div", { style: Object.assign({}, box, { borderColor: col + "88" }) }, head, settings,
+        row("Base → Pickup (deadhead)", legs.dh1 + " mi"),
+        legs.hasDrop ? row("Pickup → Drop-off (loaded)", legs.loaded + " mi") : row("Drop-off", "same as pickup — set dump address in ⚙", C.orange),
+        row(legs.hasDrop ? "Drop-off → Base (return)" : "Pickup → Base (return)", legs.dh2 + " mi"),
+        row("Total miles", r.totalMiles + " mi"),
+        row("Gas @ $" + Number(cfg.gasRate).toFixed(2) + "/mi", "$" + r.gasCost.toFixed(2)),
+        row("Drive time", plFmtMin(r.driveMin)),
+        row("Stops (" + (Number(cfg.numStops) || 0) + " × " + (Number(cfg.stopTime) || 0) + " min)", plFmtMin(r.stopMin)),
+        row("Total time", plFmtMin(r.totalMin)),
+        row("Profit (bid − gas)", "$" + r.profit.toFixed(2), col),
+        row("Profit per hour", "$" + r.perHour.toFixed(2)),
+        row("Needed per job", "$" + r.needed.toFixed(2)),
+        React.createElement("div", { style: { marginTop: 6, padding: "6px 8px", borderRadius: 7, background: col + "22", color: col, fontWeight: 800, textAlign: "center" } },
+            r.covers ? "✅ COVERS BILLS (+$" + r.gap.toFixed(2) + ")" : "⚠ SHORT BY $" + Math.abs(r.gap).toFixed(2) + " — REVIEW BEFORE BOOKING"),
+        legs.estimate && React.createElement("div", { style: { color: C.orange, marginTop: 4 } }, "Road routing was unavailable — miles are straight-line × 1.25 estimates."));
+}
+// ── PHOTO ESTIMATE (staff): photos -> items, weights, cubic yards -> truck-or-dumpster plan ──
+function plLoadForCuYd(cu) { return cu > 19 ? "full" : cu > 12.5 ? "threequarter" : cu > 6 ? "half" : cu > 2 ? "quarter" : "minimum"; }
+function plFileToDataUrl(file) { return compressImage(file).then(function (blob) { return new Promise(function (res) { var r = new FileReader(); r.onload = function () { res(r.result); }; r.onerror = function () { res(null); }; r.readAsDataURL(blob); }); }); }
+function LoadEstimatorPanel(props) {
+    var s = React.useState([]); var files = s[0], setFiles = s[1];
+    var rs = React.useState(null); var est = rs[0], setEst = rs[1];
+    var bs = React.useState(false); var busy = bs[0], setBusy = bs[1];
+    var ms = React.useState(""); var msg = ms[0], setMsg = ms[1];
+    var os = React.useState(false); var open = os[0], setOpen = os[1];
+    if (!plTokenGet()) return null;
+    function run() {
+        if (!files.length) { setMsg("Add at least one photo."); return; }
+        setBusy(true); setMsg(""); setEst(null);
+        Promise.all(files.map(plFileToDataUrl)).then(function (urls) {
+            return fetch("/.netlify/functions/estimate-load", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + plTokenGet() }, body: JSON.stringify({ images: urls.filter(Boolean) }) });
+        }).then(function (r) { return r.json(); }).then(function (d) { setBusy(false); if (d && d.ok) setEst(d.estimate); else setMsg((d && d.error) || "Estimate failed."); })
+          .catch(function () { setBusy(false); setMsg("No connection."); });
+    }
+    var plan = est ? plHaulPlan({ loadId: plLoadForCuYd(est.total_cu_yd), cuYd: est.total_cu_yd, totalLbs: est.total_lbs }) : null;
+    function apply() {
+        var heavy = est.items.filter(function (i) { return i.heavy && i.lbs_each > 0; }).map(function (i) { return { label: i.name, lbs: i.lbs_each, qty: i.qty }; });
+        var itemLbs = heavy.reduce(function (t, i) { return t + i.lbs * i.qty; }, 0);
+        var loose = est.material === "concrete_dirt" ? Math.max(0, est.total_lbs - itemLbs) : 0;
+        props.onApply({ items: heavy, materialLbs: loose, loadId: plLoadForCuYd(est.total_cu_yd) });
+        setMsg("Applied. Check the weights, then confirm the load size.");
+    }
+    var btn = { background: "transparent", color: C.orange, border: "1px solid " + C.orange, borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" };
+    return React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "12px 14px", marginBottom: 10 } },
+        React.createElement("button", { onClick: function () { setOpen(!open); }, style: Object.assign({}, btn, { width: "100%" }) }, (open ? "▾ " : "▸ ") + "📷 Estimate from photos (AI)"),
+        open && React.createElement("div", { style: { marginTop: 8 } },
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 6 } }, "Add up to 6 photos of the pile or site. The estimate is a starting point. Always check weights before quoting."),
+            React.createElement("input", { type: "file", accept: "image/*", multiple: true, onChange: function (e) { setFiles(Array.prototype.slice.call(e.target.files || [], 0, 6)); setEst(null); }, style: { fontSize: 12, color: C.white } }),
+            React.createElement("div", { style: { marginTop: 8 } }, React.createElement("button", { onClick: run, disabled: busy, style: btn }, busy ? "Reading photos…" : "Estimate (" + files.length + " photo" + (files.length === 1 ? "" : "s") + ")")),
+            msg && React.createElement("div", { style: { fontSize: 11, color: msg.indexOf("Applied") === 0 ? C.green : C.red, marginTop: 6 } }, msg),
+            est && React.createElement("div", { style: { marginTop: 10, fontSize: 12, color: C.white } },
+                React.createElement("div", { style: { fontWeight: 800, color: C.orange } }, "About " + est.total_cu_yd + " cubic yards · " + est.total_lbs.toLocaleString() + " lbs (" + (est.total_lbs / 2000).toFixed(1) + " tons) · " + est.material.replace("_", " ") + " · confidence " + est.confidence),
+                est.items.map(function (i, k) { return React.createElement("div", { key: k, style: { fontSize: 11, color: C.dim } }, i.qty + " x " + i.name + (i.lbs_each ? " (" + i.lbs_each + " lbs each)" : "") + (i.heavy ? " HEAVY" : "")); }),
+                est.hazards.length > 0 && React.createElement("div", { style: { fontSize: 11, color: C.red, marginTop: 4 } }, "⚠ Possible hazards: " + est.hazards.join(", ") + ". Confirm before booking."),
+                est.notes && React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 4 } }, est.notes),
+                React.createElement("div", { style: { background: C.surface, borderRadius: 8, padding: "8px 10px", marginTop: 8, fontSize: 12 } },
+                    React.createElement("div", null, "Truck: " + plan.trips + " trip" + (plan.trips === 1 ? "" : "s") + " = $" + plan.truckPrice + " plus heavy-item charges"),
+                    React.createElement("div", null, "Dumpster: " + plan.dumpsterCount + " x " + plan.dumpsterYd + " yd = $" + plan.dumpsterPrice + " (our cost $" + plan.dumpsterVendorCost + (plan.overTons ? ", includes " + plan.overTons + " extra tons" : "") + ")"),
+                    React.createElement("div", { style: { fontWeight: 800, color: plan.recommend === "dumpster" ? C.green : C.orange, marginTop: 4 } }, plan.recommend === "dumpster" ? "Suggested: dumpster (big job, several truck trips)" : "Suggested: truck")),
+                React.createElement("button", { onClick: apply, style: Object.assign({}, btn, { marginTop: 8 }) }, "Use these heavy items in the quote"))));
+}
+function HeavyPicker(props) {
+    var h = props.heavy || { items: [], materialLbs: 0 };
+    var items = h.items || [];
+    var r = plHeavyFee(h, props.construction);
+    var plan = plHaulPlan({ loadId: props.loadId, heavyLbs: r.lbs });
+    function setItems(next) { props.onChange(Object.assign({}, h, { items: next })); }
+    function upd(i, patch) { setItems(items.map(function (x, k) { return k === i ? Object.assign({}, x, patch) : x; })); }
+    var inp = { background: C.surface, border: "1px solid " + C.border, borderRadius: 6, color: C.white, padding: "6px 8px", fontSize: 13, fontFamily: "inherit" };
+    return React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "14px 16px", marginBottom: 10 } },
+        React.createElement(LoadEstimatorPanel, { onApply: function (a) { props.onChange(Object.assign({}, h, { items: a.items, materialLbs: a.materialLbs })); } }),
+        React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 2 } }, "🏋 Heavy items (pay for their own weight)"),
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 8 } }, "Enter the real weight of each heavy item. The dump charges us by the ton, so every pound is counted."),
+        items.map(function (it, i) {
+            var fee = r.items.find(function (x) { return x.label === (it.label || "Heavy item") && x.lbs === (Number(it.lbs) || 0); });
+            return React.createElement("div", { key: i, style: { display: "grid", gridTemplateColumns: "1fr 70px 50px 26px", gap: 6, alignItems: "center", padding: "6px 0", borderBottom: "1px solid " + C.border } },
+                React.createElement("select", { value: it.label || "", onChange: function (e) { var p = HEAVY_PRESETS.find(function (x) { return x.label === e.target.value; }); upd(i, { label: e.target.value, lbs: p ? p.lbs : it.lbs }); }, style: Object.assign({}, inp, { width: "100%" }) },
+                    HEAVY_PRESETS.map(function (p) { return React.createElement("option", { key: p.label, value: p.label }, p.label); })),
+                React.createElement("input", { type: "number", min: "1", max: String(JUNK_TRUCK_MAX_LBS), value: it.lbs || "", placeholder: "lbs ea", onChange: function (e) { upd(i, { lbs: Math.max(0, Number(e.target.value) || 0) }); }, style: Object.assign({}, inp, { width: "100%" }) }),
+                React.createElement("input", { type: "number", min: "1", value: it.qty || "", placeholder: "qty", onChange: function (e) { upd(i, { qty: Math.max(0, Math.floor(Number(e.target.value) || 0)) }); }, style: Object.assign({}, inp, { width: "100%" }) }),
+                React.createElement("button", { onClick: function () { setItems(items.filter(function (x, k) { return k !== i; })); }, style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 16 } }, "\u2715"));
+        }),
+        React.createElement("button", { onClick: function () { setItems(items.concat([{ label: HEAVY_PRESETS[0].label, lbs: HEAVY_PRESETS[0].lbs, qty: 1 }])); }, style: { background: "transparent", color: C.orange, border: "1px dashed " + C.orange, borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", marginTop: 8, fontFamily: "inherit" } }, "+ Add a heavy item"),
+        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "10px 0 4px" } },
+            React.createElement("div", null, React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.white } }, "Loose heavy material (lbs)"), React.createElement("div", { style: { fontSize: 10, color: C.dim } }, "concrete, dirt, brick, tile, shingles, rock. Charged by the pound.")),
+            React.createElement("input", { type: "number", min: "0", value: h.materialLbs || "", placeholder: "0", onChange: function (e) { props.onChange(Object.assign({}, h, { materialLbs: Math.max(0, Number(e.target.value) || 0) })); }, style: Object.assign({}, inp, { width: 80 }) })),
+        r.fee > 0 && React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.orange, marginTop: 4 } }, "Heavy charge: +$" + r.fee + " for " + r.lbs + " lbs (" + (r.lbs / 2000).toFixed(2) + " tons)"),
+        plan.overCapacity && React.createElement("div", { style: { fontSize: 11, fontWeight: 800, color: C.red, marginTop: 6 } }, "\u26A0 About " + plan.totalLbs + " lbs. One truck carries " + JUNK_TRUCK_MAX_LBS + " lbs. This needs " + plan.trips + " trips (+$" + (plan.trips - 1) * EXTRA_TRUCKLOAD_FEE + ")" + (plan.recommend === "dumpster" ? " or a dumpster. See the plan below." : ".")),
+        plan.recommend === "dumpster" && React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 4 } }, "Dumpster option: " + plan.dumpsterCount + " x " + plan.dumpsterYd + " yd, about $" + plan.dumpsterPrice + " (vendor cost $" + plan.dumpsterVendorCost + " x " + DUMPSTER_MARKUP + "). Truck option: $" + plan.truckPrice + "."));
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// JOB OPERATIONS — route legs, job clock, scope-difference, vendors, disposal
+// Every call goes through the company gateway (data-api), so each company
+// only ever sees its own rows. Events are add-only (audit trail).
+// ═══════════════════════════════════════════════════════════════════
+function plOps(table, method, q, body) {
+    var h = { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json" };
+    if (method !== "GET") h.Prefer = "return=representation";
+    return fetch(SUPABASE_URL + "/rest/v1/" + table + (q ? "?" + q : ""), { method: method, headers: h, body: body ? JSON.stringify(body) : undefined })
+        .then(function (r) { return r.text().then(function (t) { var d = null; try { d = t ? JSON.parse(t) : null; } catch (e) { } return { ok: r.ok, status: r.status, data: d, error: (!r.ok && ((d && (d.error || d.message)) || t)) || "" }; }); })
+        .catch(function () { return { ok: false, status: 0, data: null, error: "No connection" }; });
+}
+function plOpsRole() { var u = loadCurrentUser(); return (u && u.role) || "driver"; }
+function plOpsCanDecide() { var r = plOpsRole(); return r === "owner" || r === "dispatch" || r === "dispatcher"; }
+function plFmtTime(iso) { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return iso || ""; } }
+// Build the full set of legs for a job: base -> pickup -> (drop-off or dump) -> base, once per trip.
+function plBuildLegs(job, trips) {
+    var cfg = plProfitCfg();
+    var pickup = job.origin, drop = (job.destination && job.destination !== job.origin) ? job.destination : "";
+    var isDisposal = !drop;
+    var dest = drop || cfg.dumpAddress || "";
+    var steps = [{ o: cfg.base, d: pickup, purpose: "DEADHEAD" }];
+    if (dest) { steps.push({ o: pickup, d: dest, purpose: isDisposal ? "DISPOSAL" : "DELIVERY" }); steps.push({ o: dest, d: cfg.base, purpose: "RETURN_TO_BASE" }); }
+    else steps.push({ o: pickup, d: cfg.base, purpose: "RETURN_TO_BASE" });
+    return Promise.all(steps.map(function (s) { return calcRealMilesAndETA(s.o, s.d); })).then(function (res) {
+        if (res.some(function (x) { return !x; })) return null;
+        var legs = [], n = Math.max(1, Math.min(6, Number(trips) || 1)), leg = 0;
+        for (var t = 1; t <= n; t++) steps.forEach(function (s, i) {
+            leg++; legs.push({ job_id: job.id, trip_no: t, leg_no: leg, purpose: (t > 1 && s.purpose === "DEADHEAD") ? "DEADHEAD" : s.purpose, origin: s.o, destination: s.d, miles: res[i].miles, minutes: res[i].minutes, provider: res[i].source });
+        });
+        return legs;
+    });
+}
+function plSaveLegs(jobId, legs) {
+    return plOps("job_route_legs", "DELETE", "job_id=eq." + encodeURIComponent(jobId)).then(function () { return plOps("job_route_legs", "POST", "", legs); });
+}
+function plAutoLegs(job) { // runs quietly after a booking; if routing fails nothing is saved (never a guessed number)
+    try { plBuildLegs(job, job.trips || 1).then(function (legs) { if (legs) plSaveLegs(job.id, legs); }).catch(function () { }); } catch (e) { }
+}
+function RouteLegsPanel(props) {
+    var job = props.job;
+    var s = React.useState([]); var legs = s[0], setLegs = s[1];
+    var ms = React.useState(""); var msg = ms[0], setMsg = ms[1];
+    var ts = React.useState(job.trips || 1); var trips = ts[0], setTrips = ts[1];
+    var bs = React.useState(false); var busy = bs[0], setBusy = bs[1];
+    // Every job gets its legs: if none are saved yet, measure them the first time staff opens the job (once per session, never a guessed number).
+    function load() { plOps("job_route_legs", "GET", "job_id=eq." + encodeURIComponent(job.id) + "&select=*&order=leg_no.asc").then(function (r) {
+        if (r.ok && Array.isArray(r.data)) {
+            setLegs(r.data);
+            var key = "pl_autolegs_" + job.id, tried = false; try { tried = !!sessionStorage.getItem(key); if (!r.data.length && job.origin && job.status !== "Cancelled" && !tried) { sessionStorage.setItem(key, "1"); calc(); } } catch (e) { }
+        }
+    }); }
+    React.useEffect(function () { load(); }, [job.id]);
+    function calc() {
+        setBusy(true); setMsg("Measuring road miles…");
+        plBuildLegs(job, trips).then(function (l) {
+            if (!l) { setBusy(false); setMsg("BOOKING REVIEW REQUIRED — an address could not be verified. Nothing was saved."); return; }
+            plSaveLegs(job.id, l).then(function (r) { setBusy(false); setMsg(r.ok ? "Saved " + l.length + " legs." : "Could not save: " + r.error); load(); });
+        });
+    }
+    var cfg = plProfitCfg();
+    var total = legs.reduce(function (a, l) { return a + (Number(l.miles) || 0); }, 0);
+    var pc = legs.length ? plProfitCalc(cfg, { dh1: total, loaded: 0, dh2: 0 }, job.finalPrice) : null;
+    return React.createElement("div", { style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 10, padding: "10px 12px", marginTop: 10 } },
+        React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 800, letterSpacing: 1.3, textTransform: "uppercase", marginBottom: 6 } }, "🗺 Route legs"),
+        legs.length === 0 && React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 6 } }, "No legs saved for this job yet."),
+        legs.map(function (l) {
+            return React.createElement("div", { key: l.id || l.leg_no, style: { display: "flex", justifyContent: "space-between", fontSize: 11, padding: "3px 0", borderBottom: "1px solid " + C.border, color: C.dim } },
+                React.createElement("span", null, "T" + l.trip_no + " · " + l.purpose.replace(/_/g, " ")), React.createElement("span", { style: { color: C.white, fontWeight: 700 } }, l.miles + " mi" + (l.provider === "estimate" ? " (est.)" : "")));
+        }),
+        pc && React.createElement("div", { style: { fontSize: 11, marginTop: 6, color: pc.covers ? C.green : C.red, fontWeight: 800 } }, total + " mi · gas $" + pc.gasCost.toFixed(2) + " · profit $" + pc.profit.toFixed(2) + (pc.covers ? " · covers bills" : " · SHORT $" + Math.abs(pc.gap).toFixed(2))),
+        plOpsCanDecide() && React.createElement("div", { style: { display: "flex", gap: 6, alignItems: "center", marginTop: 8 } },
+            React.createElement("select", { value: trips, onChange: function (e) { setTrips(Number(e.target.value)); }, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 6, color: C.white, padding: "5px", fontSize: 11 } }, [1, 2, 3, 4].map(function (n) { return React.createElement("option", { key: n, value: n }, n + (n === 1 ? " trip" : " trips")); })),
+            React.createElement("button", { onClick: calc, disabled: busy, style: { background: C.orange, color: "#000", border: "none", borderRadius: 7, padding: "6px 12px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, legs.length ? "Recalculate legs" : "Calculate & save legs")),
+        msg && React.createElement("div", { style: { fontSize: 11, color: msg.indexOf("REVIEW") >= 0 ? C.red : C.dim, marginTop: 6 } }, msg));
+}
+var CLOCK_STAGES = [["ARRIVED", "Arrived"], ["LOADING_START", "Loading started"], ["LOADING_END", "Loading finished"], ["DEPARTED", "Departed"], ["DELIVERY_ARRIVED", "Arrived at drop-off"], ["UNLOADING_START", "Unloading started"], ["UNLOADING_END", "Unloading finished"], ["JOB_COMPLETE", "Job complete"]];
+var CLOCK_EXCEPTIONS = [["WAITING", "Waiting"], ["CUSTOMER_NOT_READY", "Customer not ready"], ["ACCESS_PROBLEM", "Access problem"], ["DAMAGE", "Damage"], ["DISPOSAL_ISSUE", "Disposal issue"], ["OTHER", "Other"]];
+// ── REQUIRED PHOTOS PER STAGE ─────────────────────────────────────────
+// A stage cannot be logged without a photo for it. Owner/dispatch can skip with a recorded reason; drivers cannot.
+var PHOTO_STAGES = { ARRIVED: ["arrival", "arrival at the pickup"], LOADING_START: ["before", "the items before loading"], LOADING_END: ["loaded", "the loaded truck"], UNLOADING_END: ["dropoff", "the drop-off or the dump ticket"], JOB_COMPLETE: ["complete", "the finished site"] };
+function plUploadStagePhoto(jobId, file, stage) {
+    return compressImage(file).then(function (blob) {
+        var name = jobId + "-" + stage + "-" + Date.now() + ".jpg";
+        return fetch(SUPABASE_URL + "/storage/v1/object/job-photos/" + name, { method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "image/jpeg" }, body: blob })
+            .then(function (res) { return res.ok ? res.json() : null; })
+            .then(function (data) {
+                if (!data || !data.Key) return { ok: false, error: "Upload failed. Check your connection and try again." };
+                var url = SUPABASE_URL + "/storage/v1/object/public/job-photos/" + data.Key.split("/").slice(1).join("/");
+                var who = ""; try { who = (loadCurrentUser() || {}).name || ""; } catch (e) { }
+                return plOps("job_photos", "POST", "", { job_id: jobId, url: url, photo_type: "stage", stage: stage, uploaded_by: who || "Staff" }).then(function (r) { return r.ok ? { ok: true, url: url } : { ok: false, error: r.error || "Not saved" }; });
+            });
+    }).catch(function () { return { ok: false, error: "Upload failed." }; });
+}
+// Which stages were logged without their photo (for the Command Center).
+function plPhotoGaps(events, photos) {
+    var have = {}; (photos || []).forEach(function (p) { if (p.stage) have[p.job_id + "|" + p.stage] = true; });
+    var out = {};
+    (events || []).forEach(function (e) {
+        var ps = PHOTO_STAGES[e.event]; if (!ps) return;
+        if (!have[e.job_id + "|" + ps[0]]) { (out[e.job_id] = out[e.job_id] || {})[ps[0]] = true; }
+    });
+    return Object.keys(out).map(function (id) { return { job_id: id, missing: Object.keys(out[id]) }; });
+}
+function plClockStats(events) {
+    var first = {}; (events || []).forEach(function (e) { if (!first[e.event]) first[e.event] = new Date(e.created_at).getTime(); });
+    var d = function (a, b) { return first[a] && first[b] && first[b] >= first[a] ? Math.round((first[b] - first[a]) / 60000) : null; };
+    return { loading: d("LOADING_START", "LOADING_END"), driving: d("DEPARTED", "DELIVERY_ARRIVED"), unloading: d("UNLOADING_START", "UNLOADING_END"), total: d("ARRIVED", "JOB_COMPLETE"), waiting: d("ARRIVED", "LOADING_START") };
+}
+function JobClockPanel(props) {
+    var job = props.job;
+    var s = React.useState([]); var ev = s[0], setEv = s[1];
+    var ns = React.useState(""); var note = ns[0], setNote = ns[1];
+    var ms = React.useState(""); var msg = ms[0], setMsg = ms[1];
+    function load() { plOps("job_events", "GET", "job_id=eq." + encodeURIComponent(job.id) + "&select=*&order=created_at.asc").then(function (r) { if (r.ok && Array.isArray(r.data)) setEv(r.data); }); }
+    React.useEffect(function () { load(); }, [job.id]);
+    var phs = React.useState([]); var photos = phs[0], setPhotos = phs[1];
+    var nds = React.useState(null); var need = nds[0], setNeed = nds[1];
+    var ups = React.useState(false); var uploading = ups[0], setUploading = ups[1];
+    function loadPhotos() { plOps("job_photos", "GET", "job_id=eq." + encodeURIComponent(job.id) + "&select=id,stage,url,created_at").then(function (r) { if (r.ok && Array.isArray(r.data)) setPhotos(r.data); }); }
+    React.useEffect(function () { loadPhotos(); }, [job.id]);
+    function post(code, kind, extraNote) {
+        plOps("job_events", "POST", "", { job_id: job.id, event: code, kind: kind, note: (note || "") + (extraNote ? (note ? " · " : "") + extraNote : "") || null }).then(function (r) { if (r.ok) { setNote(""); setMsg(""); setNeed(null); load(); } else setMsg("Not saved: " + r.error); });
+    }
+    function log(code, kind) {
+        var ps = kind === "stage" ? PHOTO_STAGES[code] : null;
+        if (ps && !photos.some(function (p) { return p.stage === ps[0]; })) { setNeed(code); setMsg(""); return; }
+        post(code, kind);
+    }
+    function onPhoto(file) {
+        if (!file || !need) return;
+        setUploading(true);
+        plUploadStagePhoto(job.id, file, PHOTO_STAGES[need][0]).then(function (r) { setUploading(false); if (!r.ok) { setMsg(r.error); return; } loadPhotos(); post(need, "stage", "photo taken"); });
+    }
+    var done = {}; ev.forEach(function (e) { done[e.event] = true; });
+    var st = plClockStats(ev);
+    var btn = function (code, label, kind, hot) { return React.createElement("button", { key: code, onClick: function () { log(code, kind); }, style: { background: done[code] ? C.green + "22" : hot ? C.orange : C.card, color: done[code] ? C.green : hot ? "#000" : C.white, border: "1px solid " + (done[code] ? C.green : C.border), borderRadius: 7, padding: "7px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, (done[code] ? "✓ " : "") + label); };
+    var nextStage = CLOCK_STAGES.find(function (x) { return !done[x[0]]; });
+    return React.createElement("div", { style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 10, padding: "10px 12px", marginTop: 10 } },
+        React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 800, letterSpacing: 1.3, textTransform: "uppercase", marginBottom: 6 } }, "⏱ Job clock"),
+        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 } }, CLOCK_STAGES.map(function (x) { return btn(x[0], x[1], "stage", nextStage && nextStage[0] === x[0]); })),
+        React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 700, margin: "6px 0 4px" } }, "PROBLEMS"),
+        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 } }, CLOCK_EXCEPTIONS.map(function (x) { return React.createElement("button", { key: x[0], onClick: function () { log(x[0], "exception"); }, style: { background: C.card, color: C.red, border: "1px solid " + C.red + "55", borderRadius: 7, padding: "6px 9px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, x[1]); })),
+        need && React.createElement("div", { style: { background: C.orange + "18", border: "1px solid " + C.orange, borderRadius: 8, padding: "10px 12px", margin: "8px 0" } },
+            React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.orange, marginBottom: 6 } }, "📷 Photo required: " + PHOTO_STAGES[need][1]),
+            React.createElement("input", { type: "file", accept: "image/*", capture: "environment", disabled: uploading, onChange: function (e) { onPhoto(e.target.files && e.target.files[0]); }, style: { fontSize: 12, color: C.white } }),
+            uploading && React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 4 } }, "Uploading…"),
+            React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8 } },
+                plOpsCanDecide() && React.createElement("button", { onClick: function () { post(need, "stage", "PHOTO SKIPPED by " + plOpsRole()); }, style: { background: "transparent", border: "1px solid " + C.border, color: C.dim, borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontFamily: "inherit" } }, "Skip photo (office only)"),
+                React.createElement("button", { onClick: function () { setNeed(null); }, style: { background: "transparent", border: "none", color: C.dim, fontSize: 11, cursor: "pointer", fontFamily: "inherit" } }, "Cancel"))),
+        React.createElement("input", { value: note, onChange: function (e) { setNote(e.target.value); }, placeholder: "Note for the next tap (optional)", style: { width: "100%", background: C.card, border: "1px solid " + C.border, borderRadius: 6, color: C.white, padding: "6px 8px", fontSize: 11, fontFamily: "inherit", boxSizing: "border-box" } }),
+        msg && React.createElement("div", { style: { fontSize: 11, color: C.red, marginTop: 4 } }, msg),
+        (st.total !== null || st.loading !== null || st.driving !== null || st.unloading !== null) && React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 10, fontSize: 11, color: C.dim, marginTop: 8 } },
+            [["Waiting", st.waiting], ["Loading", st.loading], ["Driving", st.driving], ["Unloading", st.unloading], ["Total", st.total]].filter(function (x) { return x[1] !== null; }).map(function (x) { return React.createElement("span", { key: x[0] }, x[0] + ": ", React.createElement("b", { style: { color: C.white } }, x[1] + " min")); })),
+        ev.length > 0 && React.createElement("div", { style: { marginTop: 8, maxHeight: 130, overflowY: "auto" } }, ev.map(function (e) {
+            return React.createElement("div", { key: e.id || e.created_at + e.event, style: { fontSize: 10, color: e.kind === "exception" ? C.red : C.dim, padding: "2px 0" } }, plFmtTime(e.created_at) + " · " + e.event.replace(/_/g, " ") + (e.note ? " — " + e.note : "") + (e.actor ? " (" + e.actor + ")" : ""));
+        })));
+}
+var SCOPE_KINDS = ["More items / furniture", "More pallets", "Higher weight", "Larger dimensions", "Additional stop", "Customer not ready", "Access problem", "Load does not fit", "Different material", "Additional disposal"];
+function ScopeChangePanel(props) {
+    var job = props.job;
+    var s = React.useState([]); var rows = s[0], setRows = s[1];
+    var fs = React.useState({ kind: SCOPE_KINDS[0], submitted: "", actual: "", notes: "" }); var f = fs[0], setF = fs[1];
+    var ps = React.useState({}); var price = ps[0], setPrice = ps[1];
+    var ms = React.useState(""); var msg = ms[0], setMsg = ms[1];
+    function load() { plOps("job_scope_changes", "GET", "job_id=eq." + encodeURIComponent(job.id) + "&select=*&order=created_at.desc").then(function (r) { if (r.ok && Array.isArray(r.data)) setRows(r.data); }); }
+    React.useEffect(function () { load(); }, [job.id]);
+    function submit() {
+        if (!f.actual.trim() && !f.notes.trim()) { setMsg("Describe what is different first."); return; }
+        plOps("job_scope_changes", "POST", "", { job_id: job.id, kind: f.kind, submitted: f.submitted, actual: f.actual, notes: f.notes, old_price: Number(job.finalPrice) || null }).then(function (r) {
+            if (!r.ok) { setMsg("Not saved: " + r.error); return; }
+            plOps("job_events", "POST", "", { job_id: job.id, event: "SCOPE_DIFFERENCE", kind: "exception", note: f.kind }).then(function () { });
+            setF({ kind: SCOPE_KINDS[0], submitted: "", actual: "", notes: "" }); setMsg("Sent. PAUSE the job until the office authorizes it."); load();
+        });
+    }
+    function decide(row, status) {
+        var np = Number(price[row.id]);
+        if (status === "authorized" && !(np > 0)) { setMsg("Enter the revised total the customer agreed to."); return; }
+        if (!window.confirm(status === "authorized" ? "Confirm the customer authorized the revised total of $" + np + "?" : "Decline the extra scope? The job continues at the original scope and price.")) return;
+        plOps("job_scope_changes", "PATCH", "id=eq." + row.id, status === "authorized" ? { status: status, new_price: np } : { status: status }).then(function (r) {
+            if (r.ok) { plOps("job_events", "POST", "", { job_id: job.id, event: status === "authorized" ? "SCOPE_AUTHORIZED" : "SCOPE_DECLINED", kind: "stage", note: status === "authorized" ? "$" + np : "" }); setMsg(""); load(); } else setMsg("Not saved: " + r.error);
+        });
+    }
+    var pending = rows.filter(function (r) { return r.status === "pending"; });
+    var inp = { width: "100%", background: C.card, border: "1px solid " + C.border, borderRadius: 6, color: C.white, padding: "6px 8px", fontSize: 11, fontFamily: "inherit", boxSizing: "border-box", marginBottom: 5 };
+    return React.createElement("div", { style: { background: C.surface, border: "1px solid " + (pending.length ? C.red : C.border), borderRadius: 10, padding: "10px 12px", marginTop: 10 } },
+        React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 800, letterSpacing: 1.3, textTransform: "uppercase", marginBottom: 6 } }, "⚠ Scope difference"),
+        pending.length > 0 && React.createElement("div", { style: { background: C.red + "22", color: C.red, fontWeight: 800, fontSize: 11, padding: "6px 8px", borderRadius: 7, marginBottom: 6 } }, "SCOPE DIFFERENCE DETECTED — pause until the office authorizes or declines."),
+        rows.map(function (r) {
+            var col = r.status === "authorized" ? C.green : r.status === "declined" ? C.dim : C.red;
+            return React.createElement("div", { key: r.id, style: { borderBottom: "1px solid " + C.border, padding: "6px 0", fontSize: 11, color: C.dim } },
+                React.createElement("div", null, React.createElement("b", { style: { color: C.white } }, r.kind), " · ", React.createElement("span", { style: { color: col, fontWeight: 800 } }, r.status.toUpperCase()), r.new_price ? " · revised $" + r.new_price + " (was $" + (r.old_price || "?") + ")" : ""),
+                (r.submitted || r.actual) && React.createElement("div", null, "Submitted: " + (r.submitted || "—") + " → Actual: " + (r.actual || "—")),
+                r.notes && React.createElement("div", null, r.notes),
+                r.status === "pending" && plOpsCanDecide() && React.createElement("div", { style: { display: "flex", gap: 6, marginTop: 5, alignItems: "center" } },
+                    React.createElement("input", { type: "number", placeholder: "Revised total $", value: price[r.id] || "", onChange: function (e) { var n = Object.assign({}, price); n[r.id] = e.target.value; setPrice(n); }, style: Object.assign({}, inp, { width: 110, marginBottom: 0 }) }),
+                    React.createElement("button", { onClick: function () { decide(r, "authorized"); }, style: { background: C.green, color: "#000", border: "none", borderRadius: 6, padding: "6px 9px", fontSize: 10, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Customer authorized"),
+                    React.createElement("button", { onClick: function () { decide(r, "declined"); }, style: { background: "transparent", color: C.dim, border: "1px solid " + C.border, borderRadius: 6, padding: "6px 9px", fontSize: 10, cursor: "pointer", fontFamily: "inherit" } }, "Decline")));
+        }),
+        React.createElement("div", { style: { marginTop: 8 } },
+            React.createElement("select", { value: f.kind, onChange: function (e) { setF(Object.assign({}, f, { kind: e.target.value })); }, style: inp }, SCOPE_KINDS.map(function (k) { return React.createElement("option", { key: k, value: k }, k); })),
+            React.createElement("input", { value: f.submitted, onChange: function (e) { setF(Object.assign({}, f, { submitted: e.target.value })); }, placeholder: "What was submitted / booked", style: inp }),
+            React.createElement("input", { value: f.actual, onChange: function (e) { setF(Object.assign({}, f, { actual: e.target.value })); }, placeholder: "What is actually there", style: inp }),
+            React.createElement("input", { value: f.notes, onChange: function (e) { setF(Object.assign({}, f, { notes: e.target.value })); }, placeholder: "Notes (take photos too)", style: inp }),
+            React.createElement("button", { onClick: submit, style: { background: C.red, color: "#fff", border: "none", borderRadius: 7, padding: "7px 12px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Report scope difference"),
+            !plOpsCanDecide() && React.createElement("div", { style: { fontSize: 10, color: C.dim, marginTop: 4 } }, "Drivers report it; the office sets the price. Do not change the price yourself.")),
+        msg && React.createElement("div", { style: { fontSize: 11, color: msg.indexOf("Sent") === 0 ? C.green : C.red, marginTop: 6 } }, msg));
+}
+function JobOpsPanel(props) { return React.createElement("div", null, React.createElement(JobClockPanel, { job: props.job }), React.createElement(ScopeChangePanel, { job: props.job }), React.createElement(RouteLegsPanel, { job: props.job }), React.createElement(TermsRecordPanel, { job: props.job })); }
+
+// ── VENDOR COMMAND CENTER + DISPOSAL FACILITIES ─────────────────────
+var VENDOR_CATS = [["CONTAINERS", "🗑 Containers"], ["OVERFLOW", "🚚 Overflow trucks"], ["LABOR", "💪 Labor"], ["SPECIALTY", "⭐ Specialty"]];
+var VENDOR_STATUS = ["VERIFIED", "NEEDS CONFIRMATION", "INACTIVE"];
+var VENDOR_FIELDS = [["name", "Name"], ["phone", "Phone"], ["email", "Email"], ["service_area", "Service area"], ["pricing", "Pricing (our cost)"], ["capacity", "Sizes / capacity"], ["accepted_materials", "Accepted materials"], ["prohibited_materials", "Prohibited materials"], ["availability", "Availability (same-day / emergency)"], ["notes", "Notes"]];
+var DISPOSAL_FIELDS = [["name", "Facility name"], ["address", "Address"], ["phone", "Phone"], ["website", "Website"], ["materials", "Materials accepted"], ["gate_fee", "Gate fee"], ["per_ton", "Per-ton rate"], ["min_charge", "Minimum charge"], ["hours", "Hours"], ["restrictions", "Restrictions"], ["service_area", "Service area"], ["notes", "Notes"]];
+function plStale(d) { if (!d) return true; var t = new Date(d).getTime(); return !t || (Date.now() - t) > 30 * 86400000; }
+function VendorCommandCenter() {
+    var cs = React.useState("CONTAINERS"); var cat = cs[0], setCat = cs[1];
+    var rs = React.useState([]); var rows = rs[0], setRows = rs[1];
+    var es = React.useState(null); var edit = es[0], setEdit = es[1];
+    var ms = React.useState(""); var msg = ms[0], setMsg = ms[1];
+    var isDisp = cat === "DISPOSAL", table = isDisp ? "disposal_facilities" : "vendors", fields = isDisp ? DISPOSAL_FIELDS : VENDOR_FIELDS;
+    var canWrite = plOpsCanDecide();
+    function load() { plOps(table, "GET", (isDisp ? "" : "category=eq." + cat + "&") + "select=*&order=name.asc").then(function (r) { if (r.ok && Array.isArray(r.data)) setRows(r.data); else setMsg(r.error || ""); }); }
+    React.useEffect(function () { setEdit(null); setRows([]); load(); }, [cat]);
+    function save() {
+        if (!edit || !String(edit.name || "").trim()) { setMsg("Name is required."); return; }
+        var body = Object.assign({}, edit); delete body.created_at; delete body.org_id;
+        if (!isDisp) body.category = cat;
+        var req = edit.id ? plOps(table, "PATCH", "id=eq." + edit.id, body) : plOps(table, "POST", "", body);
+        req.then(function (r) { if (r.ok) { setEdit(null); setMsg(""); load(); } else setMsg("Not saved: " + r.error); });
+    }
+    function verify(row) { plOps(table, "PATCH", "id=eq." + row.id, { last_verified: new Date().toISOString().slice(0, 10), status: "VERIFIED" }).then(load); }
+    var inp = { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "8px 10px", fontSize: 12, fontFamily: "inherit", boxSizing: "border-box" };
+    var allCats = VENDOR_CATS.concat([["DISPOSAL", "♻ Disposal facilities"]]);
+    return React.createElement("div", { style: { maxWidth: 760, margin: "0 auto" } },
+        React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "🚛 Vendors & Disposal"),
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 12 } }, "Containers are rented, not owned. Vendor costs stay in the office — customers never see them. Anything not re-verified in 30 days shows NEEDS CONFIRMATION."),
+        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 } }, allCats.map(function (c) { return React.createElement("button", { key: c[0], onClick: function () { setCat(c[0]); }, style: { background: cat === c[0] ? C.orange : C.card, color: cat === c[0] ? "#000" : C.white, border: "1px solid " + (cat === c[0] ? C.orange : C.border), borderRadius: 20, padding: "7px 13px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, c[1]); })),
+        canWrite && !edit && React.createElement("button", { onClick: function () { setEdit({ status: "NEEDS CONFIRMATION" }); }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "9px 14px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", marginBottom: 12 } }, "+ Add " + (isDisp ? "facility" : "vendor")),
+        edit && React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: 14, marginBottom: 12 } },
+            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 } }, fields.map(function (f) { return React.createElement("label", { key: f[0], style: { fontSize: 10, color: C.dim, gridColumn: (f[0] === "notes" || f[0] === "name" || f[0] === "address") ? "1 / 3" : "auto" } }, f[1], React.createElement("input", { value: edit[f[0]] || "", onChange: function (e) { var n = Object.assign({}, edit); n[f[0]] = e.target.value; setEdit(n); }, style: inp })); }),
+                React.createElement("label", { style: { fontSize: 10, color: C.dim } }, "Status", React.createElement("select", { value: edit.status || "NEEDS CONFIRMATION", onChange: function (e) { setEdit(Object.assign({}, edit, { status: e.target.value })); }, style: inp }, VENDOR_STATUS.map(function (x) { return React.createElement("option", { key: x, value: x }, x); }))),
+                React.createElement("label", { style: { fontSize: 10, color: C.dim } }, "Last verified", React.createElement("input", { type: "date", value: edit.last_verified || "", onChange: function (e) { setEdit(Object.assign({}, edit, { last_verified: e.target.value || null })); }, style: inp }))),
+            React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10 } },
+                React.createElement("button", { onClick: save, style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Save"),
+                React.createElement("button", { onClick: function () { setEdit(null); setMsg(""); }, style: { background: "transparent", color: C.dim, border: "1px solid " + C.border, borderRadius: 8, padding: "9px 14px", fontSize: 12, cursor: "pointer", fontFamily: "inherit" } }, "Cancel"))),
+        msg && React.createElement("div", { style: { fontSize: 12, color: C.red, marginBottom: 8 } }, msg),
+        rows.length === 0 && !edit && React.createElement("div", { style: { fontSize: 12, color: C.dim } }, "Nothing here yet. Add the vendors you call. Prices you type here are yours; nothing is made up."),
+        rows.length === 0 && !edit && canWrite && (cat === "CONTAINERS" || isDisp) && React.createElement("button", { onClick: function () {
+            var list = isDisp ? DISPOSAL_REFERENCE : VENDOR_REFERENCE.filter(function (v) { return v.category === "CONTAINERS"; });
+            var today = new Date().toISOString().slice(0, 10);
+            plOps(table, "POST", "", list.map(function (x) { var o = Object.assign({}, x); o.status = "NEEDS CONFIRMATION"; o.notes = (o.notes ? o.notes + " " : "") + "Imported from published web pricing on " + today + "."; return o; })).then(function (r) { if (r.ok) { setMsg(""); load(); } else setMsg("Not imported: " + r.error); });
+        }, style: { marginTop: 8, background: "transparent", color: C.orange, border: "1px solid " + C.orange, borderRadius: 8, padding: "8px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "Import the Georgia starter list (published prices, marked NEEDS CONFIRMATION)"),
+        rows.map(function (r) {
+            var stale = plStale(r.last_verified) && r.status === "VERIFIED";
+            var status = stale ? "NEEDS CONFIRMATION" : (r.status || "NEEDS CONFIRMATION");
+            var col = status === "VERIFIED" ? C.green : status === "INACTIVE" ? C.dim : C.orange;
+            return React.createElement("div", { key: r.id, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "12px 14px", marginBottom: 8 } },
+                React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 } },
+                    React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white } }, r.name),
+                    React.createElement("span", { style: { background: col + "22", color: col, borderRadius: 20, padding: "2px 9px", fontSize: 10, fontWeight: 800 } }, status)),
+                React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 4, lineHeight: 1.6 } },
+                    fields.filter(function (f) { return f[0] !== "name" && r[f[0]]; }).map(function (f) { return React.createElement("div", { key: f[0] }, f[1] + ": ", React.createElement("span", { style: { color: C.white } }, r[f[0]])); }),
+                    React.createElement("div", null, "Last verified: " + (r.last_verified || "never"))),
+                React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8 } },
+                    r.phone && React.createElement("a", { href: "tel:" + r.phone, style: { background: C.green, color: "#000", borderRadius: 7, padding: "7px 12px", fontSize: 11, fontWeight: 800, textDecoration: "none" } }, "📞 Call"),
+                    canWrite && React.createElement("button", { onClick: function () { verify(r); }, style: { background: "transparent", color: C.white, border: "1px solid " + C.border, borderRadius: 7, padding: "7px 10px", fontSize: 11, cursor: "pointer", fontFamily: "inherit" } }, "✓ Verified today"),
+                    canWrite && React.createElement("button", { onClick: function () { setEdit(Object.assign({}, r)); }, style: { background: "transparent", color: C.white, border: "1px solid " + C.border, borderRadius: 7, padding: "7px 10px", fontSize: 11, cursor: "pointer", fontFamily: "inherit" } }, "Edit")));
+        }));
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TERMS RECORDS, PROPERTIES (company -> property), COMMAND CENTER
+// ═══════════════════════════════════════════════════════════════════
+// Public booking: record the acceptance on the server (IP and device are added there, not by the browser).
+function plLogTerms(job) {
+    try {
+        fetch("/.netlify/functions/data-api?terms=1", { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ job_id: job.id, terms_version: TERMS_VERSION, tos_version: TOS_VERSION, customer_name: job.customer, customer_email: job.email || "", source: "booking" }) }).catch(function () { });
+    } catch (e) { }
+}
+function TermsRecordPanel(props) {
+    var s = React.useState(null); var rows = s[0], setRows = s[1];
+    React.useEffect(function () { plOps("quote_terms_acceptance", "GET", "job_id=eq." + encodeURIComponent(props.job.id) + "&select=*&order=accepted_at.desc").then(function (r) { setRows(r.ok && Array.isArray(r.data) ? r.data : []); }); }, [props.job.id]);
+    if (rows === null) return null;
+    var r0 = rows[0];
+    return React.createElement("div", { style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 10, padding: "10px 12px", marginTop: 10, fontSize: 11, color: C.dim } },
+        React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 800, letterSpacing: 1.3, textTransform: "uppercase", marginBottom: 4 } }, "📜 Terms accepted"),
+        r0 ? React.createElement("div", null, "Terms v" + r0.terms_version + " (agreement v" + r0.tos_version + ") · " + plFmtTime(r0.accepted_at) + (r0.ip ? " · IP " + r0.ip : ""))
+            : React.createElement("div", { style: { color: C.orange } }, "No acceptance record on file for this job" + (props.job.terms_version ? " (job says v" + props.job.terms_version + ")." : ".")));
+}
+var PROP_TYPES = ["Standard Commercial", "Recurring Account", "High Volume", "Project / Custom"];
+var PROP_FIELDS = [["company", "Company"], ["name", "Property name"], ["manager", "Manager / contact"], ["phone", "Phone"], ["email", "Email"], ["access_notes", "Access instructions"], ["loading_area", "Loading area"], ["delivery_area", "Delivery area"], ["hours", "Hours"], ["restrictions", "Restrictions"], ["parking", "Parking"], ["dock_info", "Dock information"], ["preferred_disposal", "Preferred disposal"], ["notes", "Notes"]];
+function PropertyPicker(props) {
+    var s = React.useState([]); var rows = s[0], setRows = s[1];
+    React.useEffect(function () { plOps("properties", "GET", "select=*&order=company.asc,name.asc").then(function (r) { if (r.ok && Array.isArray(r.data)) setRows(r.data); }); }, []);
+    if (!rows.length) return null;
+    return React.createElement("div", { style: { marginBottom: 10 } },
+        React.createElement("select", { defaultValue: "", onChange: function (e) { var p = rows.find(function (x) { return String(x.id) === e.target.value; }); if (p) props.onPick(p); },
+            style: { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, color: C.white, padding: "9px 10px", fontSize: 12, fontFamily: "inherit" } },
+            React.createElement("option", { value: "" }, "🏢 Use a saved property…"),
+            rows.map(function (p) { return React.createElement("option", { key: p.id, value: p.id }, (p.company ? p.company + " — " : "") + p.name); })));
+}
+function PropertiesManager() {
+    var rs = React.useState([]); var rows = rs[0], setRows = rs[1];
+    var es = React.useState(null); var edit = es[0], setEdit = es[1];
+    var ms = React.useState(""); var msg = ms[0], setMsg = ms[1];
+    var qs = React.useState(""); var q = qs[0], setQ = qs[1];
+    var canWrite = plOpsCanDecide();
+    function load() { plOps("properties", "GET", "select=*&order=company.asc,name.asc").then(function (r) { if (r.ok && Array.isArray(r.data)) setRows(r.data); else setMsg(r.error || ""); }); }
+    React.useEffect(function () { load(); }, []);
+    function save() {
+        if (!edit || !String(edit.name || "").trim() || !String(edit.address || "").trim()) { setMsg("Property name and address are required."); return; }
+        var body = Object.assign({}, edit); delete body.created_at; delete body.org_id;
+        (edit.id ? plOps("properties", "PATCH", "id=eq." + edit.id, body) : plOps("properties", "POST", "", body)).then(function (r) { if (r.ok) { setEdit(null); setMsg(""); load(); } else setMsg("Not saved: " + r.error); });
+    }
+    function del(p) { if (!window.confirm("Remove " + p.name + "? Past jobs keep their own addresses.")) return; plOps("properties", "DELETE", "id=eq." + p.id).then(load); }
+    var inp = { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "8px 10px", fontSize: 12, fontFamily: "inherit", boxSizing: "border-box" };
+    var shown = rows.filter(function (p) { var t = (q || "").toLowerCase(); return !t || JSON.stringify(p).toLowerCase().indexOf(t) >= 0; });
+    var groups = {}; shown.forEach(function (p) { var k = p.company || "(no company)"; (groups[k] = groups[k] || []).push(p); });
+    return React.createElement("div", { style: { maxWidth: 760, margin: "0 auto" } },
+        React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "🏢 Companies & Properties"),
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 12 } }, "Save each property once: verified address, access notes, loading area and hours. Then pick it when you quote. One company can have many properties."),
+        React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 12 } },
+            React.createElement("input", { value: q, onChange: function (e) { setQ(e.target.value); }, placeholder: "Search company, property, address…", style: Object.assign({}, inp, { flex: 1 }) }),
+            canWrite && !edit && React.createElement("button", { onClick: function () { setEdit({ account_type: PROP_TYPES[0] }); }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "9px 14px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" } }, "+ Add property")),
+        edit && React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: 14, marginBottom: 12 } },
+            React.createElement(AddressAutocompleteInput, { label: "Address (pick a suggestion so it is verified)", value: edit.address || "", onChange: function (v) { setEdit(Object.assign({}, edit, { address: v })); }, placeholder: "Start typing…" }),
+            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8 } }, PROP_FIELDS.map(function (f) { return React.createElement("label", { key: f[0], style: { fontSize: 10, color: C.dim, gridColumn: ["notes", "access_notes", "restrictions"].indexOf(f[0]) >= 0 ? "1 / 3" : "auto" } }, f[1], React.createElement("input", { value: edit[f[0]] || "", onChange: function (e) { var n = Object.assign({}, edit); n[f[0]] = e.target.value; setEdit(n); }, style: inp })); }),
+                React.createElement("label", { style: { fontSize: 10, color: C.dim } }, "Account type", React.createElement("select", { value: edit.account_type || PROP_TYPES[0], onChange: function (e) { setEdit(Object.assign({}, edit, { account_type: e.target.value })); }, style: inp }, PROP_TYPES.map(function (t) { return React.createElement("option", { key: t, value: t }, t); })))),
+            React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10 } },
+                React.createElement("button", { onClick: save, style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Save"),
+                React.createElement("button", { onClick: function () { setEdit(null); setMsg(""); }, style: { background: "transparent", color: C.dim, border: "1px solid " + C.border, borderRadius: 8, padding: "9px 14px", fontSize: 12, cursor: "pointer", fontFamily: "inherit" } }, "Cancel"))),
+        msg && React.createElement("div", { style: { fontSize: 12, color: C.red, marginBottom: 8 } }, msg),
+        rows.length === 0 && !edit && React.createElement("div", { style: { fontSize: 12, color: C.dim } }, "No properties saved yet."),
+        Object.keys(groups).map(function (co) {
+            return React.createElement("div", { key: co, style: { marginBottom: 14 } },
+                React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.orange, marginBottom: 6 } }, co + " · " + groups[co].length + (groups[co].length === 1 ? " property" : " properties")),
+                groups[co].map(function (p) {
+                    return React.createElement("div", { key: p.id, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "11px 14px", marginBottom: 6 } },
+                        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", gap: 8 } }, React.createElement("b", { style: { color: C.white, fontSize: 13 } }, p.name), React.createElement("span", { style: { fontSize: 10, color: C.dim } }, p.account_type)),
+                        React.createElement("div", { style: { fontSize: 11, color: C.dim, lineHeight: 1.6, marginTop: 3 } }, p.address,
+                            [["manager", "Contact"], ["phone", "Phone"], ["access_notes", "Access"], ["loading_area", "Loading"], ["delivery_area", "Delivery"], ["hours", "Hours"], ["restrictions", "Restrictions"], ["parking", "Parking"], ["dock_info", "Dock"], ["preferred_disposal", "Disposal"]].filter(function (f) { return p[f[0]]; }).map(function (f) { return React.createElement("div", { key: f[0] }, f[1] + ": ", React.createElement("span", { style: { color: C.white } }, p[f[0]])); })),
+                        canWrite && React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 6 } },
+                            React.createElement("button", { onClick: function () { setEdit(Object.assign({}, p)); }, style: { background: "transparent", color: C.white, border: "1px solid " + C.border, borderRadius: 7, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontFamily: "inherit" } }, "Edit"),
+                            React.createElement("button", { onClick: function () { del(p); }, style: { background: "transparent", color: C.dim, border: "1px solid " + C.border, borderRadius: 7, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontFamily: "inherit" } }, "Remove")));
+                }));
+        }));
+}
+// ── GROWTH TOOLS: rate cards (versioned), service zones, repeat-job templates, account profitability + customer view, alerts ──
+function plAccountStats(jobs, legs, cfg, nowMs) {
+    jobs = jobs || []; legs = legs || []; cfg = cfg || {};
+    var gas = Number(cfg.gasRate) || 0, perWeek = (Number(cfg.jobsPerWeek) || 0) * (Number(cfg.weeksPerMonth) || 4.33);
+    var needed = perWeek > 0 ? (Number(cfg.monthlyBills) || 0) / perWeek : 0;
+    var milesBy = {}; legs.forEach(function (l) { milesBy[l.job_id] = (milesBy[l.job_id] || 0) + (Number(l.miles) || 0); });
+    var by = {};
+    jobs.forEach(function (j) {
+        if (!j || j.status === "Cancelled") return;
+        var name = String(j.customer || "").trim(); if (!name) return;
+        var k = name.toLowerCase(); var a = by[k] = by[k] || { name: name, jobs: 0, revenue: 0, miles: 0, milesJobs: 0, revMeasured: 0, last: "", open: 0, list: [] };
+        var price = Number(j.finalPrice) || 0; a.jobs++; a.revenue += price; a.list.push(j);
+        if (milesBy[j.id] > 0) { a.miles += milesBy[j.id]; a.milesJobs++; a.revMeasured += price; }
+        if (String(j.date || "") > a.last) a.last = String(j.date || "");
+        if (["Completed", "Delivered", "Cancelled", "Paid"].indexOf(j.status) < 0) a.open++;
+    });
+    var now = nowMs || Date.now();
+    return {
+        needed: needed,
+        accounts: Object.keys(by).map(function (k) {
+            var a = by[k]; a.gas = a.miles * gas; a.profit = a.revMeasured - a.gas; a.measured = a.milesJobs;
+            a.avgProfit = a.milesJobs ? a.profit / a.milesJobs : null; a.avgRevenue = a.jobs ? a.revenue / a.jobs : 0;
+            a.belowNeed = a.avgProfit !== null && a.avgProfit < needed;
+            a.daysSince = a.last ? Math.floor((now - new Date(a.last).getTime()) / 86400000) : null;
+            return a;
+        }).sort(function (x, y) { return y.revenue - x.revenue; })
+    };
+}
+function plZoneFor(miles, zones) {
+    var m = Number(miles); if (!(m >= 0)) return null;
+    var list = (zones || []).filter(function (z) { return z.active !== false; }).sort(function (a, b) { return Number(a.from_miles) - Number(b.from_miles); });
+    for (var i = 0; i < list.length; i++) if (m >= Number(list[i].from_miles) && m < Number(list[i].to_miles)) return list[i];
+    return null;
+}
+// A rate card is never edited once active: "New version" copies it as the next draft; activating it retires the old one.
+function plRateCardNext(card, versions) {
+    var max = (versions || []).filter(function (c) { return c.name === card.name; }).reduce(function (m, c) { return Math.max(m, Number(c.version) || 0); }, 0);
+    return { name: card.name, version: max + 1, status: "draft", customer: card.customer || null, rates: card.rates || [], notes: card.notes || "", effective_date: null };
+}
+function plJobFromTemplate(tpl, makeId, todayStr) {
+    return { id: makeId(), customer: tpl.customer || tpl.name, phone: tpl.customer_phone || "", email: tpl.customer_email || "", origin: tpl.origin || "", destination: tpl.destination || "",
+        serviceType: tpl.service_type || "delivery", finalPrice: Number(tpl.price) || 0, status: "New", date: todayStr, notes: ((tpl.notes || "") + " [FROM TEMPLATE: " + tpl.name + "]").trim() };
+}
+// Historical job intelligence: averages from real jobs. Display only. It never changes a price, a capacity limit or a safety rule.
+function plJobIntel(jobs, legs, events, scopes, cfg) {
+    cfg = cfg || {}; var gas = Number(cfg.gasRate) || 0;
+    var live = (jobs || []).filter(function (j) { return j && j.status !== "Cancelled" && (Number(j.finalPrice) || 0) > 0; });
+    var milesBy = {}; (legs || []).forEach(function (l) { milesBy[l.job_id] = (milesBy[l.job_id] || 0) + (Number(l.miles) || 0); });
+    var evBy = {}; (events || []).forEach(function (e) { (evBy[e.job_id] = evBy[e.job_id] || []).push(e); });
+    var scoped = {}; (scopes || []).forEach(function (c) { scoped[c.job_id] = 1; });
+    var avg = function (a) { return a.length ? { value: a.reduce(function (t, x) { return t + x; }, 0) / a.length, n: a.length } : { value: null, n: 0 }; };
+    var rev = [], miles = [], rpm = [], rph = [], load = [], unload = [], drive = [], total = [], prof = [], gasA = [], sc = [], priceM = 0, profM = 0;
+    live.forEach(function (j) {
+        var price = Number(j.finalPrice) || 0, m = milesBy[j.id] || 0; rev.push(price);
+        if (m > 0) { miles.push(m); rpm.push(price / m); var g = m * gas; gasA.push(g); prof.push(price - g); priceM += price; profM += price - g; sc.push(scoped[j.id] ? 1 : 0); }
+        if (evBy[j.id]) { var c = plClockStats(evBy[j.id]); if (c.loading != null) load.push(c.loading); if (c.unloading != null) unload.push(c.unloading); if (c.driving != null) drive.push(c.driving); if (c.total != null && c.total > 0) { total.push(c.total); rph.push(price / (c.total / 60)); } }
+    });
+    return { jobs: live.length, revenuePerJob: avg(rev), miles: avg(miles), revenuePerMile: avg(rpm), revenuePerHour: avg(rph), loadingMin: avg(load), unloadingMin: avg(unload), drivingMin: avg(drive), totalMin: avg(total),
+        gas: avg(gasA), profit: avg(prof), marginPct: priceM > 0 ? { value: (profM / priceM) * 100, n: prof.length } : { value: null, n: 0 }, scopeVariancePct: sc.length ? { value: (sc.reduce(function (t, x) { return t + x; }, 0) / sc.length) * 100, n: sc.length } : { value: null, n: 0 } };
+}
+// Recurring schedule: every occurrence becomes its own job (never unlimited-service billing). next_run is the date of the next job to create.
+var PL_WEEKDAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+function plAddDays(str, n) { var d = new Date(str + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+function plAddMonth(str) { var y = Number(str.slice(0, 4)), m = Number(str.slice(5, 7)), day = Number(str.slice(8, 10)); m += 1; if (m > 12) { m = 1; y += 1; } var last = new Date(Date.UTC(y, m, 0)).getUTCDate(); return y + "-" + String(m).padStart(2, "0") + "-" + String(Math.min(day, last)).padStart(2, "0"); }
+function plFreqKind(f) { f = String(f || "").toLowerCase(); return /bi.?week|every other|every 2|2 week/.test(f) ? "biweekly" : /month/.test(f) ? "monthly" : /week/.test(f) ? "weekly" : ""; }
+function plFirstRun(freq, weekday, fromStr) {
+    if (!plFreqKind(freq)) return null;
+    var wd = PL_WEEKDAYS.indexOf(String(weekday || "").trim().slice(0, 3).toLowerCase());
+    if (wd < 0 || plFreqKind(freq) === "monthly") return fromStr;
+    var cur = new Date(fromStr + "T12:00:00Z").getUTCDay();
+    return plAddDays(fromStr, (wd - cur + 7) % 7);
+}
+function plAdvanceRun(freq, runStr) { var k = plFreqKind(freq); return k === "weekly" ? plAddDays(runStr, 7) : k === "biweekly" ? plAddDays(runStr, 14) : k === "monthly" ? plAddMonth(runStr) : null; }
+// Templates whose next job should exist now (due within `ahead` days). Returns the dates to create, oldest first, at most 4 per template.
+function plDueRuns(tpls, today, ahead) {
+    var limit = plAddDays(today, ahead == null ? 3 : ahead), out = [];
+    (tpls || []).forEach(function (t) {
+        if (!plFreqKind(t.frequency) || !t.next_run) return;
+        var first = String(t.next_run).slice(0, 10), run = first, n = 0, dates = [], g = 0;
+        while (run && run < today && g++ < 400) run = plAdvanceRun(t.frequency, run);   // skip dates that already passed
+        while (run && run <= limit && n < 4) { dates.push(run); run = plAdvanceRun(t.frequency, run); n++; }
+        if (dates.length || first < today) out.push({ tpl: t, dates: dates, nextAfter: run });
+    });
+    return out;
+}
+function plAlerts(jobs, acct, today, tpls) {
+    var out = [];
+    (jobs || []).forEach(function (j) {
+        if (!j || j.status === "Cancelled") return;
+        var d = String(j.date || "").slice(0, 10);
+        if (d === today && (j.status === "New" || j.status === "Confirmed") && !j.driver && !j.assignedDriver) out.push({ level: "warn", text: "Today's job " + j.id + " (" + j.customer + ") has no driver assigned." });
+        if ((j.status === "Quoted" || j.status === "New") && d && d < today && (Date.now() - new Date(d).getTime()) > 2 * 86400000) out.push({ level: "info", text: j.id + " (" + j.customer + ") has sat as " + j.status + " since " + d + ". Follow up or cancel." });
+    });
+    var dueN = plDueRuns(tpls, today).reduce(function (n, d) { return n + d.dates.length; }, 0);
+    if (dueN) out.push({ level: "warn", text: dueN + " repeat job" + (dueN > 1 ? "s are" : " is") + " due to be created. Open Repeat jobs and tap Create due jobs." });
+    ((acct && acct.accounts) || []).forEach(function (a) {
+        if (a.belowNeed && a.measured >= 2) out.push({ level: "warn", text: a.name + " averages $" + a.avgProfit.toFixed(0) + " profit per job, under the $" + acct.needed.toFixed(0) + " needed. Raise their rate card." });
+        if (a.jobs >= 3 && a.daysSince !== null && a.daysSince > 45) out.push({ level: "info", text: a.name + " has not booked in " + a.daysSince + " days. Call them." });
+    });
+    return out;
+}
+
+// ── BUSINESS RULES: the numbers the app uses, editable by the owner (Growth Tools > Rules) ──
+var PL_RULE_DEFAULTS = { onsiteFreeMin: 30, onsiteFlat: 50, freightFreeHrs: 2, lateFeePct: 1.5, netDays: 7, quoteValidDays: 14 };
+var PL_RULE_LABELS = [
+    ["onsiteFreeMin", "On-site free minutes", "Local jobs: minutes at the stop before a detention charge starts"],
+    ["onsiteFlat", "On-site detention charge ($)", "Flat charge once the free minutes are used"],
+    ["freightFreeHrs", "Freight free hours", "Freight loads: hours at shipper or receiver before detention (used in agreements)"],
+    ["lateFeePct", "Late fee (% per month)", "Shown on invoices for business accounts paying late"],
+    ["netDays", "Business invoice terms (days)", "Days a business account has to pay"],
+    ["quoteValidDays", "Quote valid for (days)", "Shown on quote emails"]
+];
+var _plRules = null, _plRulesLoading = false;
+function plRule(k) {
+    if (!_plRules && !_plRulesLoading && plTokenGet()) {
+        _plRulesLoading = true;
+        plOps("business_rules", "GET", "id=eq.rules&select=data").then(function (r) { _plRules = (r && r.ok && r.data && r.data[0] && r.data[0].data) || {}; _plRulesLoading = false; }).catch(function () { _plRulesLoading = false; });
+    }
+    var v = _plRules ? _plRules[k] : null;
+    return (v !== undefined && v !== null && v !== "" && !isNaN(Number(v))) ? Number(v) : PL_RULE_DEFAULTS[k];
+}
+function plRulesSet(obj) { _plRules = obj; }
+function plMoney(n) { return "$" + (Number(n) || 0).toFixed(2); }
+// Emails to the customer: quote ready, invoice
+function plQuoteMail(job) {
+    var brand = plBrandName();
+    return { subject: "Your quote from " + brand + " - " + job.id,
+        body: "Hi " + (job.customer || "there") + ",\n\nYour quote is ready.\n\nJob ID: " + job.id + "\nService: " + (job.serviceName || job.service || "Service") + "\nFrom: " + (job.origin || "") + (job.destination && job.destination !== job.origin ? "\nTo: " + job.destination : "") + (job.date ? "\nDate: " + job.date : "") +
+            "\nTotal: " + plMoney(job.finalPrice || job.basePrice) + "\n\nThis quote is good for " + plRule("quoteValidDays") + " days. Reply to this email" + (plIsTenant() ? "" : " or call " + PHONE_DISPLAY) + " to confirm and we will lock in your time.\n\nThank you,\n" + brand };
+}
+function plInvoiceMail(job) {
+    var brand = plBrandName();
+    var biz = job.isBusiness || job.customerType === "business";
+    var total = Number(job.finalPrice || job.basePrice) || 0, paid = Number(job.amountPaid) || 0;
+    var due = Math.max(0, total - paid);
+    var terms = biz ? "Net " + plRule("netDays") + " days. A late fee of " + plRule("lateFeePct") + "% per month applies to balances past due." : "Due on receipt.";
+    return { subject: "Invoice for job " + job.id + " - " + plMoney(due) + " due",
+        body: "Hi " + (job.customer || "there") + ",\n\nThank you for choosing " + brand + ". Your invoice:\n\nJob ID: " + job.id + "\nService: " + (job.serviceName || job.service || "Service") + "\nTotal: " + plMoney(total) + (paid > 0 ? "\nPaid: " + plMoney(paid) : "") + "\nAmount due: " + plMoney(due) + "\nTerms: " + terms +
+            "\n\nYou can pay by card or from your wallet on our website: open it, choose Track My Jobs and sign in with this email address.\n\nThank you,\n" + brand };
+}
+function plSendCustomerMail(kind, job) {
+    if (!job || !job.email) return Promise.resolve({ ok: false, error: "No email on file for this job." });
+    if (!(Number(job.finalPrice || job.basePrice) > 0)) return Promise.resolve({ ok: false, error: "This job has no price yet." });
+    var m = kind === "quote" ? plQuoteMail(job) : plInvoiceMail(job);
+    return plSendMail(job.email, m.subject, m.body, job.id).then(function (res) { return res.ok ? { ok: true } : { ok: false, error: "The email service refused it (" + res.status + ")." }; }).catch(function () { return { ok: false, error: "No connection" }; });
+}
+function plPayoutCall(action, body) {
+    return fetch("/.netlify/functions/data-api?payout=" + action, { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + plTokenGet() }, body: JSON.stringify(body || {}) })
+        .then(function (r) { return r.json().catch(function () { return { ok: false, error: "Server error" }; }); }).catch(function () { return { ok: false, error: "No connection" }; });
+}
+var PL_PAYOUT_METHODS = [["zelle", "Zelle (phone or email)"], ["cash_app", "Cash App ($cashtag)"], ["check", "Paper check (mailing address)"], ["stripe_connect", "Direct deposit through Stripe"], ["other", "Other (describe)"]];
+// Manage payout method: anyone signed in sets how they get paid. Bank numbers are never typed here; direct deposit is set up in Stripe's own secure form.
+function PayoutMethodCard(props) {
+    var s = React.useState({ method: "zelle", handle: "", address: "", note: "" }); var f = s[0], setF = s[1];
+    var ms = React.useState(""); var msg = ms[0], setMsg = ms[1];
+    var ls = React.useState(null); var list = ls[0], setList = ls[1];
+    var u = loadCurrentUser() || {};
+    function loadMine() { plPayoutCall("get").then(function (r) { if (r && r.ok && r.row) setF({ method: r.row.method || "zelle", handle: r.row.handle || "", address: r.row.address || "", note: r.row.note || "" }); }); }
+    function loadAll() { if (u.role !== "owner") return; plPayoutCall("list").then(function (r) { setList(r && r.ok ? r.rows : []); }); }
+    React.useEffect(function () { loadMine(); loadAll(); }, []);
+    function save() { setMsg("Saving..."); plPayoutCall("set", f).then(function (r) { setMsg(r && r.ok ? "Saved." : ((r && r.error) || "Could not save.")); loadAll(); }); }
+    function connect() { setMsg("Opening Stripe..."); plApi("connectstart").then(function (r) { if (r && r.url) window.location.href = r.url; else setMsg((r && r.error) || "Stripe setup is available for company owners."); }); }
+    var inp = { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "9px 10px", fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", marginBottom: 8 };
+    return React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: 14, marginBottom: 14 } },
+        React.createElement("div", { style: { fontSize: 14, fontWeight: 900, color: C.white, marginBottom: 2 } }, "Manage payout method"),
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 10 } }, "How you get paid. Never type a bank account or routing number here."),
+        React.createElement("select", { value: f.method, onChange: function (e) { setF(Object.assign({}, f, { method: e.target.value })); }, style: inp }, PL_PAYOUT_METHODS.map(function (m) { return React.createElement("option", { key: m[0], value: m[0] }, m[1]); })),
+        f.method !== "stripe_connect" && f.method !== "check" && React.createElement("input", { value: f.handle, placeholder: f.method === "zelle" ? "Phone or email on your Zelle" : f.method === "cash_app" ? "$yourcashtag" : "Details", onChange: function (e) { setF(Object.assign({}, f, { handle: e.target.value })); }, style: inp }),
+        f.method === "check" && React.createElement("input", { value: f.address, placeholder: "Mailing address for checks", onChange: function (e) { setF(Object.assign({}, f, { address: e.target.value })); }, style: inp }),
+        React.createElement("input", { value: f.note, placeholder: "Note for the office (optional)", onChange: function (e) { setF(Object.assign({}, f, { note: e.target.value })); }, style: inp }),
+        React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+            React.createElement("button", { onClick: save, style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 12, fontWeight: 800, cursor: "pointer" } }, "Save payout method"),
+            u.role === "owner" && React.createElement("button", { onClick: connect, style: { background: "transparent", color: C.white, border: "1px solid " + C.border, borderRadius: 8, padding: "9px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer" } }, "Set up direct deposit (Stripe)")),
+        msg && React.createElement("div", { style: { fontSize: 12, color: /Saved|Opening|Saving/.test(msg) ? C.green : C.red, marginTop: 8 } }, msg),
+        list && list.length > 0 && React.createElement("div", { style: { marginTop: 14, borderTop: "1px solid " + C.border, paddingTop: 10 } },
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, fontWeight: 800, marginBottom: 6, textTransform: "uppercase" } }, "Everyone's payout method (owner only)"),
+            list.map(function (r) { return React.createElement("div", { key: r.user_id, style: { fontSize: 12, color: C.white, padding: "5px 0", borderBottom: "1px solid " + C.border } }, (r.user_name || r.user_id) + " - " + (r.method || "") + " " + (r.handle || r.address || "") + (r.note ? " (" + r.note + ")" : "")); })));
+}
+function BusinessRulesPanel() {
+    var s = React.useState({}); var v = s[0], setV = s[1];
+    var ms = React.useState(""); var msg = ms[0], setMsg = ms[1];
+    var isOwner = plOpsRole() === "owner";
+    React.useEffect(function () { plOps("business_rules", "GET", "id=eq.rules&select=data").then(function (r) { if (r && r.ok && r.data && r.data[0]) setV(r.data[0].data || {}); }); }, []);
+    function save() {
+        var clean = {};
+        for (var i = 0; i < PL_RULE_LABELS.length; i++) { var k = PL_RULE_LABELS[i][0]; var n = Number(v[k] === undefined || v[k] === "" ? PL_RULE_DEFAULTS[k] : v[k]); if (!(n >= 0) || n > 100000) { setMsg("Not saved: " + PL_RULE_LABELS[i][1] + " must be a number."); return; } clean[k] = n; }
+        plOps("business_rules", "GET", "id=eq.rules&select=id").then(function (r) {
+            var go = r && r.ok && r.data && r.data[0] ? plOps("business_rules", "PATCH", "id=eq.rules", { data: clean, updated_at: new Date().toISOString() }) : plOps("business_rules", "POST", "", { id: "rules", data: clean });
+            go.then(function (x) { if (x.ok) { plRulesSet(clean); setV(clean); setMsg("Saved. New jobs and emails use these now."); } else setMsg("Not saved: " + ((x.data && x.data.error) || "try again")); });
+        });
+    }
+    var inp = { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "9px 10px", fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" };
+    return React.createElement("div", null,
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 10 } }, "These numbers drive detention charges, invoice terms and the quote and invoice emails. The written agreements (legal pages) are separate: if you change a number that appears there, tell your lawyer and update the agreement text."),
+        PL_RULE_LABELS.map(function (r) {
+            return React.createElement("label", { key: r[0], style: { display: "block", fontSize: 11, color: C.dim, marginBottom: 10 } }, r[1], React.createElement("input", { type: "number", step: "any", disabled: !isOwner, value: v[r[0]] === undefined ? PL_RULE_DEFAULTS[r[0]] : v[r[0]], onChange: function (e) { var o = Object.assign({}, v); o[r[0]] = e.target.value; setV(o); }, style: inp }), React.createElement("span", { style: { fontSize: 10, color: C.faint } }, r[2]));
+        }),
+        isOwner ? React.createElement("button", { onClick: save, style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "10px 18px", fontSize: 12, fontWeight: 800, cursor: "pointer" } }, "Save rules") : React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "Only the owner can change these."),
+        msg && React.createElement("div", { style: { fontSize: 12, color: msg.indexOf("Not saved") === 0 ? C.red : C.green, marginTop: 8 } }, msg));
+}
+function CustomerMailPanel(props) {
+    var ms = React.useState(""); var msg = ms[0], setMsg = ms[1];
+    var jobs = (props.jobs || []).filter(function (j) { return j.email && j.status !== "Cancelled"; }).slice(0, 60);
+    function send(kind, j) { setMsg("Sending..."); plSendCustomerMail(kind, j).then(function (r) { setMsg(r.ok ? (kind === "quote" ? "Quote" : "Invoice") + " sent to " + j.email + "." : "Not sent: " + r.error); }); }
+    var b = { background: "transparent", color: C.white, border: "1px solid " + C.border, borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", marginLeft: 6 };
+    return React.createElement("div", null,
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 8 } }, "Send the customer their quote or invoice. Invoices also go out automatically when a job is marked Completed and is not already paid."),
+        msg && React.createElement("div", { style: { fontSize: 12, color: msg.indexOf("Not sent") === 0 ? C.red : C.green, marginBottom: 8 } }, msg),
+        jobs.length === 0 && React.createElement("div", { style: { fontSize: 12, color: C.dim } }, "No jobs with an email address yet."),
+        jobs.map(function (j) { return React.createElement("div", { key: j.id, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "9px 12px", marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" } },
+            React.createElement("span", { style: { fontSize: 12, color: C.white } }, j.id + " - " + (j.customer || "") + " - " + plMoney(j.finalPrice || j.basePrice) + " - " + j.status),
+            React.createElement("span", null, React.createElement("button", { onClick: function () { send("quote", j); }, style: b }, "Send quote"), React.createElement("button", { onClick: function () { send("invoice", j); }, style: b }, "Send invoice"))); }));
+}
+function GrowthTools(props) {
+    var tabS = React.useState("accounts"); var tab = tabS[0], setTab = tabS[1];
+    var dS = React.useState({ cards: [], zones: [], tpls: [], legs: [], events: [], scopes: [] }); var d = dS[0], setD = dS[1];
+    var msS = React.useState(""); var msg = msS[0], setMsg = msS[1];
+    var edS = React.useState(null); var edit = edS[0], setEdit = edS[1];
+    var selS = React.useState(null); var sel = selS[0], setSel = selS[1];
+    var testS = React.useState({ addr: "", out: "" }); var test = testS[0], setTest = testS[1];
+    var canWrite = plOpsCanDecide();
+    var cfg = plProfitCfg();
+    function load() {
+        Promise.all([plOps("rate_cards", "GET", "select=*&order=name.asc,version.desc"), plOps("service_zones", "GET", "select=*&order=from_miles.asc"), plOps("job_templates", "GET", "select=*&order=name.asc"), plOps("job_route_legs", "GET", "select=job_id,miles"), plOps("job_events", "GET", "kind=eq.stage&select=job_id,event,created_at&order=created_at.asc&limit=3000"), plOps("job_scope_changes", "GET", "select=job_id&limit=2000")]).then(function (r) {
+            var a = function (x) { return x && x.ok && Array.isArray(x.data) ? x.data : []; };
+            setD({ cards: a(r[0]), zones: a(r[1]), tpls: a(r[2]), legs: a(r[3]), events: a(r[4]), scopes: a(r[5]) });
+        });
+    }
+    React.useEffect(function () { load(); }, []);
+    var acct = plAccountStats(props.jobs, d.legs, cfg);
+    var today = new Date().toISOString().slice(0, 10);
+    var alerts = plAlerts(props.jobs, acct, today, d.tpls);
+    var inp = { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "8px 10px", fontSize: 12, fontFamily: "inherit", boxSizing: "border-box" };
+    var btn = function (label, fn, primary) { return React.createElement("button", { onClick: fn, style: { background: primary ? C.orange : "transparent", color: primary ? "#000" : C.white, border: primary ? "none" : "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", fontSize: 11, fontWeight: primary ? 800 : 600, cursor: "pointer", fontFamily: "inherit" } }, label); };
+    var card = function (k, kids) { return React.createElement("div", { key: k, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "11px 14px", marginBottom: 8, fontSize: 12, color: C.dim } }, kids); };
+    var field = function (k, label, type) { return React.createElement("label", { key: k, style: { fontSize: 10, color: C.dim } }, label, React.createElement("input", { type: type || "text", step: "any", value: edit[k] == null ? "" : edit[k], onChange: function (e) { var n = Object.assign({}, edit); n[k] = e.target.value; setEdit(n); }, style: inp })); };
+    function save(table, body, after) {
+        var b = Object.assign({}, body); delete b.created_at; delete b.org_id;
+        (b.id ? plOps(table, "PATCH", "id=eq." + b.id, b) : plOps(table, "POST", "", b)).then(function (r) { if (r.ok) { setEdit(null); setMsg(""); load(); if (after) after(r); } else setMsg("Not saved: " + r.error); });
+    }
+    var tabs = [["accounts", "Accounts"], ["insights", "Insights"], ["alerts", "Alerts" + (alerts.length ? " (" + alerts.length + ")" : "")], ["cards", "Rate cards"], ["zones", "Zones"], ["tpls", "Repeat jobs"], ["send", "Quotes & invoices"], ["payout", "Payout method"], ["rules", "Rules"]];
+    var body = null;
+    if (tab === "accounts") {
+        if (sel) {
+            var a = acct.accounts.find(function (x) { return x.name.toLowerCase() === sel.toLowerCase(); });
+            body = !a ? btn("Back", function () { setSel(null); }) : React.createElement("div", null, btn("← All accounts", function () { setSel(null); }),
+                card("h", [React.createElement("div", { key: "n", style: { fontSize: 15, fontWeight: 800, color: C.white } }, a.name),
+                    React.createElement("div", { key: "s" }, a.jobs + " jobs · $" + a.revenue.toFixed(0) + " revenue · avg $" + a.avgRevenue.toFixed(0) + " per job · " + a.open + " open" + (a.last ? " · last job " + a.last : "")),
+                    React.createElement("div", { key: "p", style: { color: a.belowNeed ? C.red : C.green, fontWeight: 700 } }, a.measured ? "Profit after gas on " + a.measured + " measured jobs: $" + a.profit.toFixed(0) + " (avg $" + a.avgProfit.toFixed(0) + ", need $" + acct.needed.toFixed(0) + ")" : "No road miles saved yet for this account's jobs, so profit can't be measured.")]),
+                a.list.slice().sort(function (x, y) { return String(y.date).localeCompare(String(x.date)); }).slice(0, 25).map(function (j) { return card(j.id, React.createElement("div", { style: { display: "flex", justifyContent: "space-between" } }, React.createElement("span", null, j.id + " · " + (j.date || "") + " · " + (j.status || "")), React.createElement("b", { style: { color: C.white } }, "$" + (Number(j.finalPrice) || 0).toFixed(0)))); }));
+        } else body = React.createElement("div", null,
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 8 } }, "Every customer ranked by revenue. Profit = price − gas on jobs that have saved road miles. Needed per job right now: $" + acct.needed.toFixed(0) + "."),
+            acct.accounts.length === 0 ? React.createElement("div", { style: { color: C.dim } }, "No jobs yet.") : acct.accounts.slice(0, 60).map(function (a) {
+                return React.createElement("div", { key: a.name, onClick: function () { setSel(a.name); }, style: { cursor: "pointer" } }, card(a.name, React.createElement("div", { style: { display: "flex", justifyContent: "space-between", gap: 8 } },
+                    React.createElement("span", null, React.createElement("b", { style: { color: C.white } }, a.name), "  " + a.jobs + " jobs"), React.createElement("span", { style: { color: a.belowNeed ? C.red : C.white, fontWeight: 700 } }, "$" + a.revenue.toFixed(0) + (a.avgProfit !== null ? " · $" + a.avgProfit.toFixed(0) + "/job profit" : "")))));
+            }));
+    } else if (tab === "insights") {
+        var I = plJobIntel(props.jobs, d.legs, d.events, d.scopes, cfg);
+        var row = function (label, m, fmt) { return card(label, React.createElement("div", { style: { display: "flex", justifyContent: "space-between" } }, React.createElement("span", null, label), React.createElement("span", { style: { color: C.white, fontWeight: 700 } }, m.value == null ? "not enough data yet" : fmt(m.value) + "  (" + m.n + " job" + (m.n === 1 ? "" : "s") + ")"))); };
+        var usd = function (v) { return "$" + v.toFixed(2); }, mn = function (v) { return Math.round(v) + " min"; };
+        body = React.createElement("div", null,
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 8 } }, "Averages from your real jobs. Each line shows how many jobs it is based on. These numbers are for your information; they never change a price, a capacity limit or a safety rule."),
+            row("Revenue per job", I.revenuePerJob, usd), row("Miles per job", I.miles, function (v) { return v.toFixed(1) + " mi"; }), row("Revenue per mile", I.revenuePerMile, usd), row("Revenue per hour on site", I.revenuePerHour, usd),
+            row("Loading time", I.loadingMin, mn), row("Unloading time", I.unloadingMin, mn), row("Driving time", I.drivingMin, mn), row("Total job time", I.totalMin, mn),
+            row("Gas per job", I.gas, usd), row("Profit per job after gas", I.profit, usd), row("Margin after gas", I.marginPct, function (v) { return v.toFixed(0) + "%"; }), row("Jobs with a scope change", I.scopeVariancePct, function (v) { return v.toFixed(0) + "%"; }));
+    } else if (tab === "alerts") {
+        body = alerts.length ? alerts.map(function (x, i) { return card("a" + i, React.createElement("span", { style: { color: x.level === "warn" ? C.orange : C.dim } }, (x.level === "warn" ? "⚠ " : "ℹ ") + x.text)); }) : React.createElement("div", { style: { color: C.dim } }, "Nothing needs attention right now.");
+    } else if (tab === "cards") {
+        var names = {}; d.cards.forEach(function (c) { (names[c.name] = names[c.name] || []).push(c); });
+        body = React.createElement("div", null,
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 8 } }, "A rate card is a named price list (for example, a customer's contract rates). An active card is never edited: make a new version, review it, then activate it. Old versions stay on record."),
+            canWrite && !edit && btn("+ New rate card", function () { setEdit({ name: "", version: 1, status: "draft", rates: [] }); }, true),
+            edit && card("edit", React.createElement("div", null,
+                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 } }, field("name", "Card name"), field("customer", "Customer (optional)"), field("effective_date", "Effective date", "date")),
+                React.createElement("div", { style: { fontSize: 10, color: C.dim, margin: "8px 0 4px" } }, "Rates (service, unit, price)"),
+                (edit.rates || []).map(function (r, i) { return React.createElement("div", { key: i, style: { display: "grid", gridTemplateColumns: "2fr 1fr 1fr 28px", gap: 6, marginBottom: 4 } },
+                    ["service", "unit", "price"].map(function (f) { return React.createElement("input", { key: f, placeholder: f, value: r[f] == null ? "" : r[f], onChange: function (e) { var rr = (edit.rates || []).slice(); rr[i] = Object.assign({}, rr[i]); rr[i][f] = e.target.value; setEdit(Object.assign({}, edit, { rates: rr })); }, style: inp }); }),
+                    React.createElement("button", { onClick: function () { var rr = edit.rates.slice(); rr.splice(i, 1); setEdit(Object.assign({}, edit, { rates: rr })); }, style: { background: "transparent", border: "none", color: C.dim, cursor: "pointer" } }, "✕")); }),
+                btn("+ Add rate line", function () { setEdit(Object.assign({}, edit, { rates: (edit.rates || []).concat([{ service: "", unit: "", price: "" }]) })); }),
+                React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10 } }, btn("Save", function () { if (!String(edit.name || "").trim()) { setMsg("Card name is required."); return; } var b = Object.assign({}, edit); if (!b.effective_date) b.effective_date = null; if (b.id && b.status !== "draft") { setMsg("Active and retired cards can't be edited. Make a new version."); return; } save("rate_cards", b); }, true), btn("Cancel", function () { setEdit(null); setMsg(""); })))),
+            Object.keys(names).map(function (n) {
+                return card(n, React.createElement("div", null, React.createElement("div", { style: { color: C.white, fontWeight: 800, fontSize: 13 } }, n),
+                    names[n].map(function (c) {
+                        return React.createElement("div", { key: c.id, style: { borderTop: "1px solid " + C.border, marginTop: 6, paddingTop: 6 } },
+                            React.createElement("div", { style: { display: "flex", justifyContent: "space-between", gap: 6, flexWrap: "wrap" } },
+                                React.createElement("span", null, "v" + c.version + " · ", React.createElement("b", { style: { color: c.status === "active" ? C.green : C.dim } }, c.status), c.effective_date ? " · from " + c.effective_date : "", c.customer ? " · " + c.customer : ""),
+                                canWrite && React.createElement("span", { style: { display: "flex", gap: 6 } },
+                                    c.status === "draft" && btn("Edit", function () { setEdit(Object.assign({}, c)); }),
+                                    c.status === "draft" && btn("Activate", function () {
+                                        if (!window.confirm("Activate v" + c.version + " of " + c.name + "? The current active version is retired.")) return;
+                                        Promise.all(names[n].filter(function (o) { return o.status === "active"; }).map(function (o) { return plOps("rate_cards", "PATCH", "id=eq." + o.id, { status: "retired" }); }))
+                                            .then(function () { return plOps("rate_cards", "PATCH", "id=eq." + c.id, { status: "active", effective_date: c.effective_date || today }); }).then(load); }, true),
+                                    btn("New version", function () { setEdit(plRateCardNext(c, d.cards)); }))),
+                            (c.rates || []).map(function (r, i) { return React.createElement("div", { key: i, style: { display: "flex", justifyContent: "space-between" } }, React.createElement("span", null, r.service + (r.unit ? " (" + r.unit + ")" : "")), React.createElement("span", { style: { color: C.white } }, r.price === "" || r.price == null ? "" : "$" + r.price)); }));
+                    })));
+            }));
+    } else if (tab === "zones") {
+        body = React.createElement("div", null,
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 8 } }, "Zones are distance bands from your base. Each can add a surcharge and a rush multiplier. Check any address below to see which zone it falls in."),
+            React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 10 } },
+                React.createElement("input", { value: test.addr, placeholder: "Address to check", onChange: function (e) { setTest({ addr: e.target.value, out: "" }); }, style: Object.assign({}, inp, { flex: 1 }) }),
+                btn("Check", function () { if (!test.addr.trim()) return; setTest({ addr: test.addr, out: "Measuring…" }); calcRealMilesAndETA(cfg.base, test.addr).then(function (r) { if (!r) { setTest({ addr: test.addr, out: "Could not verify that address." }); return; } var z = plZoneFor(r.miles, d.zones); setTest({ addr: test.addr, out: r.miles + " road miles from base. " + (z ? "Zone: " + z.name + ", surcharge $" + Number(z.surcharge).toFixed(0) + (Number(z.rush_multiplier) > 1 ? ", rush x" + z.rush_multiplier : "") : "Outside every zone. Review before booking.") + (r.source !== "osrm" ? " (estimate)" : "") }); }); }, true)),
+            test.out && card("t", React.createElement("span", { style: { color: C.white } }, test.out)),
+            canWrite && !edit && btn("+ Add zone", function () { setEdit({ name: "", from_miles: 0, to_miles: 25, surcharge: 0, rush_multiplier: 1, active: true }); }, true),
+            edit && card("ez", React.createElement("div", null, React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 } }, field("name", "Zone name"), field("surcharge", "Surcharge $", "number"), field("from_miles", "From miles", "number"), field("to_miles", "Up to miles", "number"), field("rush_multiplier", "Rush multiplier (1 = none)", "number")),
+                React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10 } }, btn("Save", function () { if (!String(edit.name || "").trim()) { setMsg("Zone name is required."); return; } if (!(Number(edit.to_miles) > Number(edit.from_miles))) { setMsg("'Up to miles' must be bigger than 'From miles'."); return; } save("service_zones", edit); }, true), btn("Cancel", function () { setEdit(null); setMsg(""); })))),
+            d.zones.map(function (z) { return card("z" + z.id, React.createElement("div", { style: { display: "flex", justifyContent: "space-between", gap: 8 } }, React.createElement("span", null, React.createElement("b", { style: { color: C.white } }, z.name), " · " + z.from_miles + "–" + z.to_miles + " mi · +$" + Number(z.surcharge).toFixed(0) + (Number(z.rush_multiplier) > 1 ? " · rush x" + z.rush_multiplier : "")),
+                canWrite && React.createElement("span", { style: { display: "flex", gap: 6 } }, btn("Edit", function () { setEdit(Object.assign({}, z)); }), btn("Delete", function () { if (window.confirm("Delete zone " + z.name + "?")) plOps("service_zones", "DELETE", "id=eq." + z.id).then(load); })))); }));
+    } else {
+        body = React.createElement("div", null,
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 8 } }, "Save a job you repeat (weekly route, standing customer). One tap creates a new job from it for today."),
+            canWrite && !edit && btn("+ New template", function () { setEdit({ name: "", service_type: "delivery" }); }, true),
+            canWrite && !edit && props.onAddJob && plDueRuns(d.tpls, today).length > 0 && btn("Create due jobs", function () {
+                var runs = plDueRuns(d.tpls, today), made = 0;
+                runs.forEach(function (r) {
+                    r.dates.forEach(function (dt) { var j = plJobFromTemplate(r.tpl, makeJobId, dt); j.date = dt; j.recurringTemplate = r.tpl.id; props.onAddJob(j); made++; });
+                    plOps("job_templates", "PATCH", "id=eq." + r.tpl.id, { next_run: r.nextAfter, last_used: new Date().toISOString() });
+                });
+                setMsg(made + " job" + (made === 1 ? "" : "s") + " created from repeat templates."); setTimeout(load, 400);
+            }, true),
+            edit && card("et", React.createElement("div", null, React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 } }, field("name", "Template name"), field("customer", "Customer"), field("customer_phone", "Phone"), field("customer_email", "Email"), field("origin", "Pickup address"), field("destination", "Drop-off address"), field("price", "Price $", "number"), field("frequency", "How often (weekly, biweekly, monthly)"), field("weekday", "Day (Mon…)"), field("next_run", "Next job date", "date"), field("notes", "Notes")),
+                React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10 } }, btn("Save", function () { if (!String(edit.name || "").trim()) { setMsg("Template name is required."); return; } var b = Object.assign({}, edit); if (b.price === "") b.price = null; if (!b.next_run) b.next_run = b.frequency ? plFirstRun(b.frequency, b.weekday, today) : null; if (b.frequency && !plFreqKind(b.frequency)) { setMsg("How often must say weekly, biweekly or monthly."); return; } save("job_templates", b); }, true), btn("Cancel", function () { setEdit(null); setMsg(""); })))),
+            d.tpls.length === 0 && !edit && React.createElement("div", { style: { color: C.dim } }, "No templates yet."),
+            d.tpls.map(function (t) { return card("t" + t.id, React.createElement("div", { style: { display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" } },
+                React.createElement("span", null, React.createElement("b", { style: { color: C.white } }, t.name), (t.customer ? " · " + t.customer : "") + (t.price ? " · $" + t.price : "") + (t.frequency ? " · " + t.frequency + (t.weekday ? " " + t.weekday : "") + (t.next_run ? " · next " + String(t.next_run).slice(0, 10) : "") : ""), React.createElement("div", null, (t.origin || "") + (t.destination ? " → " + t.destination : ""))),
+                React.createElement("span", { style: { display: "flex", gap: 6 } },
+                    props.onAddJob && btn("Create job", function () { props.onAddJob(plJobFromTemplate(t, makeJobId, today)); plOps("job_templates", "PATCH", "id=eq." + t.id, { last_used: new Date().toISOString() }); setMsg("Job created from " + t.name + "."); }, true),
+                    canWrite && btn("Edit", function () { setEdit(Object.assign({}, t)); }),
+                    canWrite && btn("Delete", function () { if (window.confirm("Delete template " + t.name + "?")) plOps("job_templates", "DELETE", "id=eq." + t.id).then(load); })))); }));
+    }
+    if (tab === "send") body = React.createElement(CustomerMailPanel, { jobs: props.jobs });
+    if (tab === "payout") body = React.createElement(PayoutMethodCard, null);
+    if (tab === "rules") body = React.createElement(BusinessRulesPanel, null);
+    return React.createElement("div", { style: { maxWidth: 760, margin: "0 auto" } },
+        React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "📈 Growth Tools"),
+        React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", margin: "8px 0 12px" } }, tabs.map(function (t) { return React.createElement("button", { key: t[0], onClick: function () { setTab(t[0]); setEdit(null); setMsg(""); setSel(null); }, style: { background: tab === t[0] ? C.orange : C.card, color: tab === t[0] ? "#000" : C.white, border: "1px solid " + C.border, borderRadius: 18, padding: "6px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, t[1]); })),
+        msg && React.createElement("div", { style: { fontSize: 12, color: msg.indexOf("Not saved") === 0 || /required|can't|bigger/.test(msg) ? C.red : C.green, marginBottom: 8 } }, msg),
+        body);
+}
+// Numbers for the command center. Pure so it can be tested.
+function plCommandStats(jobs, legs, cfg, today, scopePending, exceptionsToday, vendorList, disposalList) {
+    jobs = jobs || []; legs = legs || [];
+    var live = jobs.filter(function (j) { return j.status !== "Cancelled"; });
+    var isToday = function (j) { return String(j.date || "").slice(0, 10) === today; };
+    var ym = today.slice(0, 7);
+    var inMonth = live.filter(function (j) { return String(j.date || "").slice(0, 7) === ym; });
+    var rev = function (a) { return a.reduce(function (s, j) { return s + (Number(j.finalPrice) || 0); }, 0); };
+    var ACTIVE = ["En Route", "Arrived", "In Progress", "Loading", "In Transit"];
+    var milesBy = {}; legs.forEach(function (l) { milesBy[l.job_id] = (milesBy[l.job_id] || 0) + (Number(l.miles) || 0); });
+    var withLegs = live.filter(function (j) { return milesBy[j.id] > 0; });
+    var revL = rev(withLegs), miles = withLegs.reduce(function (s, j) { return s + milesBy[j.id]; }, 0);
+    var gas = miles * (Number(cfg.gasRate) || 0), perWeek = (Number(cfg.jobsPerWeek) || 0) * 4.33, needed = perWeek > 0 ? (Number(cfg.monthlyBills) || 0) / perWeek : 0;
+    var short = withLegs.map(function (j) { var p = (Number(j.finalPrice) || 0) - milesBy[j.id] * (Number(cfg.gasRate) || 0); return { id: j.id, customer: j.customer, profit: p, gap: p - needed }; }).filter(function (x) { return x.gap < 0; });
+    var needsConf = function (v) { return v.status !== "INACTIVE" && (v.status !== "VERIFIED" || plStale(v.last_verified)); };
+    var byStatus = {}; live.forEach(function (j) { byStatus[j.status] = (byStatus[j.status] || 0) + 1; });
+    return {
+        todayJobs: live.filter(isToday).length, todayRevenue: rev(live.filter(isToday)), active: live.filter(function (j) { return ACTIVE.indexOf(j.status) >= 0; }).length,
+        scopePending: scopePending || 0, exceptionsToday: exceptionsToday || 0,
+        vendorsToConfirm: (vendorList || []).filter(needsConf).length, disposalToConfirm: (disposalList || []).filter(needsConf).length,
+        monthJobs: inMonth.length, monthRevenue: rev(inMonth), avgJob: inMonth.length ? rev(inMonth) / inMonth.length : 0,
+        legJobs: withLegs.length, legRevenue: revL, legMiles: miles, gas: gas, profit: revL - gas, margin: revL ? (revL - gas) / revL : 0, revPerMile: miles ? revL / miles : 0,
+        needed: needed, short: short, byStatus: byStatus
+    };
+}
+// Job requests: drivers ask to take a job; dispatch approves or declines. The newest event for a job decides if it is still open.
+function plPendingClaims(events) {
+    var by = {};
+    (events || []).forEach(function (e) {
+        var b = by[e.job_id] = by[e.job_id] || { job_id: e.job_id, requesters: [], open: false, first_at: null };
+        if (e.event === "CLAIM_REQUEST") { if (b.requesters.indexOf(e.note) < 0) b.requesters.push(e.note); b.open = true; if (!b.first_at) b.first_at = e.created_at; }
+        else if (e.event === "CLAIM_APPROVED" || e.event === "CLAIM_DECLINED") { b.open = false; b.requesters = []; b.first_at = null; }
+    });
+    return Object.keys(by).map(function (k) { return by[k]; }).filter(function (b) { return b.open; });
+}
+function JobRequestsPanel(props) {
+    var s = React.useState(null); var d = s[0], setD = s[1];
+    var ms = React.useState(""); var msg = ms[0], setMsg = ms[1];
+    function load() {
+        plOps("job_events", "GET", "event=in.(CLAIM_REQUEST,CLAIM_APPROVED,CLAIM_DECLINED)&select=job_id,event,note,created_at&order=created_at.asc&limit=500").then(function (r) {
+            var pend = plPendingClaims(r.ok && Array.isArray(r.data) ? r.data : []);
+            if (!pend.length) { setD([]); return; }
+            plOps("junk_jobs", "GET", "id=in.(" + pend.map(function (p) { return p.job_id; }).join(",") + ")&select=id,customer_name,customer_address,price_total,scheduled_window").then(function (jr) {
+                var by = {}; (jr.ok && Array.isArray(jr.data) ? jr.data : []).forEach(function (j) { by[j.id] = j; });
+                setD(pend.map(function (p) { return Object.assign({}, p, { job: by[p.job_id] || null }); }));
+            });
+        });
+    }
+    React.useEffect(function () { load(); }, []);
+    if (d === null) return null;
+    function approve(p, who) {
+        plOps("junk_jobs", "PATCH", "id=eq." + encodeURIComponent(p.job_id), { assigned_driver: who, status: "assigned" }).then(function (r) {
+            if (!r.ok) { setMsg("Not assigned: " + r.error); return; }
+            plOps("job_events", "POST", "", { job_id: p.job_id, event: "CLAIM_APPROVED", kind: "claim", note: who }).then(function () { setMsg(""); load(); });
+        });
+    }
+    function decline(p) { plOps("job_events", "POST", "", { job_id: p.job_id, event: "CLAIM_DECLINED", kind: "claim", note: "declined" }).then(function () { load(); }); }
+    return React.createElement("div", { style: { background: d.length ? C.orange + "15" : C.card, border: "1px solid " + (d.length ? C.orange : C.border), borderRadius: 12, padding: "12px 14px", marginBottom: 16 } },
+        React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 } }, "🙋 Drivers asking for jobs (" + d.length + ")"),
+        d.length === 0 && React.createElement("div", { style: { fontSize: 12, color: C.dim } }, "No open requests. Every request and approval is saved in the job's history."),
+        d.map(function (p) {
+            return React.createElement("div", { key: p.job_id, style: { borderTop: "1px solid " + C.border, padding: "8px 0" } },
+                React.createElement("div", { style: { fontSize: 12, color: C.white, fontWeight: 700 } }, p.job_id + (p.job ? " — " + p.job.customer_name + " · $" + p.job.price_total : "")),
+                p.job && React.createElement("div", { style: { fontSize: 11, color: C.dim } }, p.job.customer_address + (p.job.scheduled_window ? " · " + p.job.scheduled_window : "")),
+                React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 } },
+                    p.requesters.map(function (w) { return React.createElement("button", { key: w, onClick: function () { approve(p, w); }, style: { background: C.green, color: "#000", border: "none", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Give to " + w); }),
+                    React.createElement("button", { onClick: function () { decline(p); }, style: { background: "transparent", color: C.dim, border: "1px solid " + C.border, borderRadius: 6, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontFamily: "inherit" } }, "Decline")));
+        }),
+        msg && React.createElement("div", { style: { fontSize: 11, color: C.red, marginTop: 4 } }, msg));
+}
+function PhotoGapsPanel() {
+    var s = React.useState(null); var gaps = s[0], setGaps = s[1];
+    React.useEffect(function () {
+        Promise.all([plOps("job_events", "GET", "kind=eq.stage&select=job_id,event&order=created_at.desc&limit=2000"), plOps("job_photos", "GET", "stage=not.is.null&select=job_id,stage&limit=3000")]).then(function (r) {
+            setGaps(plPhotoGaps(r[0].ok && Array.isArray(r[0].data) ? r[0].data : [], r[1].ok && Array.isArray(r[1].data) ? r[1].data : []));
+        });
+    }, []);
+    if (gaps === null || !gaps.length) return null;
+    return React.createElement("div", { style: { background: C.red + "15", border: "1px solid " + C.red + "55", borderRadius: 12, padding: "12px 14px", marginBottom: 16 } },
+        React.createElement("div", { style: { fontSize: 11, color: C.red, fontWeight: 800, marginBottom: 6 } }, "📷 " + gaps.length + " job(s) logged a step without its photo (skipped by the office)"),
+        gaps.slice(0, 10).map(function (g) { return React.createElement("div", { key: g.job_id, style: { fontSize: 12, color: C.white } }, g.job_id + " — missing: " + g.missing.join(", ")); }));
+}
+function CommandCenter(props) {
+    var s = React.useState(null); var d = s[0], setD = s[1];
+    React.useEffect(function () {
+        var today = new Date().toLocaleDateString("en-CA");
+        Promise.all([plOps("job_scope_changes", "GET", "status=eq.pending&select=id"), plOps("job_events", "GET", "kind=eq.exception&select=created_at&order=created_at.desc&limit=300"),
+            plOps("vendors", "GET", "select=status,last_verified"), plOps("disposal_facilities", "GET", "select=status,last_verified"), plOps("job_route_legs", "GET", "select=job_id,miles&limit=3000")]).then(function (r) {
+            var arr = function (x) { return x.ok && Array.isArray(x.data) ? x.data : []; };
+            var exToday = arr(r[1]).filter(function (e) { return new Date(e.created_at).toLocaleDateString("en-CA") === today; }).length;
+            setD(plCommandStats(props.jobs, arr(r[4]), plProfitCfg(), today, arr(r[0]).length, exToday, arr(r[2]), arr(r[3])));
+        });
+    }, [(props.jobs || []).length]);
+    if (!d) return React.createElement("div", { style: { color: C.dim, fontSize: 12 } }, "Loading…");
+    var money = function (n) { return "$" + Math.round(n).toLocaleString(); };
+    var Tile = function (label, val, col, sub) { return React.createElement("div", { key: label, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "12px 14px" } },
+        React.createElement("div", { style: { fontSize: 9, color: C.dim, letterSpacing: 1.2, textTransform: "uppercase", fontWeight: 700 } }, label),
+        React.createElement("div", { style: { fontSize: 22, fontWeight: 900, color: col || C.white, marginTop: 2 } }, val), sub && React.createElement("div", { style: { fontSize: 10, color: C.dim } }, sub)); };
+    var Sec = function (t, kids) { return React.createElement("div", { style: { marginBottom: 16 } }, React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 8 } }, t), React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 8 } }, kids)); };
+    return React.createElement("div", { style: { maxWidth: 760, margin: "0 auto" } },
+        React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 12 } }, "🎛 Command Center"),
+        React.createElement(JobRequestsPanel, null),
+        React.createElement(PhotoGapsPanel, null),
+        Sec("Today", [Tile("Jobs", d.todayJobs), Tile("Revenue", money(d.todayRevenue), C.green), Tile("Active now", d.active), Tile("Scope differences", d.scopePending, d.scopePending ? C.red : C.white, "waiting on the office"), Tile("Open problems today", d.exceptionsToday, d.exceptionsToday ? C.red : C.white), Tile("Vendors to confirm", d.vendorsToConfirm, d.vendorsToConfirm ? C.orange : C.white), Tile("Disposal to confirm", d.disposalToConfirm, d.disposalToConfirm ? C.orange : C.white)]),
+        Sec("This month", [Tile("Jobs", d.monthJobs), Tile("Revenue", money(d.monthRevenue), C.green), Tile("Average job", money(d.avgJob))]),
+        Sec("Profit (jobs with saved route legs: " + d.legJobs + ")", d.legJobs ? [Tile("Revenue", money(d.legRevenue)), Tile("Gas", money(d.gas)), Tile("Profit", money(d.profit), d.profit > 0 ? C.green : C.red), Tile("Margin", Math.round(d.margin * 100) + "%"), Tile("Revenue / mile", "$" + d.revPerMile.toFixed(2)), Tile("Needed per job", money(d.needed), C.dim, "to cover monthly bills")] : [React.createElement("div", { key: "n", style: { fontSize: 12, color: C.dim, gridColumn: "1 / -1" } }, "No route legs saved yet. Open a job and tap Calculate & save legs, or book from the quote screen.")]),
+        d.short.length > 0 && React.createElement("div", { style: { background: C.red + "15", border: "1px solid " + C.red + "55", borderRadius: 12, padding: "12px 14px", marginBottom: 16 } },
+            React.createElement("div", { style: { fontSize: 11, color: C.red, fontWeight: 800, marginBottom: 6 } }, "⚠ " + d.short.length + " job(s) below their share of the bills"),
+            d.short.slice(0, 8).map(function (x) { return React.createElement("div", { key: x.id, style: { fontSize: 12, color: C.white } }, x.id + " — " + x.customer + " · profit " + money(x.profit) + " (short " + money(Math.abs(x.gap)) + ")"); })),
+        Sec("Operations", Object.keys(d.byStatus).map(function (k) { return Tile(k, d.byStatus[k], STATUS_COLOR[k]); })));
+}
+
+function calcJunkRemovalQuote(loadSizeId, payId, emergencyAddonIds, heavy) {
     var load = LOAD_SIZES.find(function (l) { return l.id === loadSizeId; }) || LOAD_SIZES[0];
     var pay = PAYMENTS.find(function (p) { return p.id === payId; }) || PAYMENTS[0];
     var addonFees = (emergencyAddonIds || []).reduce(function (sum, id) {
         var a = EMERGENCY_ADDONS.find(function (e) { return e.id === id; });
         return sum + (a ? a.fee : 0);
     }, 0);
+    var hv = plHeavyFee(heavy, false);
     var subtotal = load.price + addonFees;
     var cashDisc = pay.discount ? Math.round(subtotal * 0.10) : 0;
-    var total = subtotal - cashDisc;
-    return { base: load.price, load: load, addonFees: addonFees, subtotal: subtotal, cashDisc: cashDisc, total: total, pay: pay };
+    var total = subtotal - cashDisc + hv.fee; // heavy fee is never discounted
+    return { base: load.price, load: load, addonFees: addonFees, heavyFee: hv.fee, heavyLbs: hv.lbs, subtotal: subtotal, cashDisc: cashDisc, total: total, pay: pay };
 }
 // ── PROPERTY CLEANOUT QUOTE — starting estimate only; commercial/hoarder route to custom quote ──
 function calcCleanoutQuote(tierId, payId, extraTruckloads) {
@@ -1830,8 +3681,8 @@ function sendEmail(job) {
         var message = "New booking:\n\nJob ID: " + job.id + "\nCustomer: " + job.customer + "\nPhone: " + job.phone +
             "\nService: " + job.serviceName + "\nOrigin: " + job.origin + "\nDestination: " + job.destination +
             "\nTotal: $" + job.finalPrice + "\nPayment: " + job.payment + "\nDate: " + job.date + "\nNotes: " + (job.notes || "None");
-        return fetch("/.netlify/functions/send-email", { method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ to: BUSINESS_EMAIL, subject: "New Job Booked — " + job.id, message: message }) });
+        var notifyTo = plNotifyEmail(); if (!notifyTo) return Promise.resolve();
+        return plSendMail(notifyTo, "New Job Booked — " + job.id, message, job.id);
     }
     catch (e) { return Promise.reject(e); }
 }
@@ -1902,27 +3753,36 @@ function sendLeadEmail(lead, templateKey, senderName) {
 // check (same haversine function used for job pricing), not a real
 // routing ETA, so the "close" threshold is intentionally generous.
 var ETA_ALERT_MILES = 3;
+// ── COMPANY-BRANDED EMAIL ─────────────────────────────────────────────
+// POTENT's own account sends as POTENT Logistics. A company that licenses POTENT OS sends under its own name,
+// with its own reply-to, through company-mail. Customers of that company never see "POTENT Logistics".
+function plIsTenant() { try { var u = loadCurrentUser(); return !!((u && u.orgId) || PL_BRAND); } catch (e) { return !!PL_BRAND; } }
+function plBrandName() {
+    if (!plIsTenant()) return "POTENT Logistics";
+    try { var u = loadCurrentUser(); return (PL_BRAND && PL_BRAND.name) || (u && u.branding && u.branding.name) || "our team"; } catch (e) { return (PL_BRAND && PL_BRAND.name) || "our team"; }
+}
+function plSendMail(to, subject, message, jobId) {
+    var tok = plTokenGet();
+    var url = plIsTenant() ? "/.netlify/functions/company-mail" : "/.netlify/functions/send-email";
+    var body = { to: to, subject: subject, message: message };
+    if (plIsTenant() && !tok) { body.org_slug = PL_ORG_SLUG; body.job_id = jobId || ""; }   // signed-out customer of a company: the server checks the address belongs to that job
+    var headers = { "Content-Type": "application/json" }; if (tok) headers.Authorization = "Bearer " + tok;
+    return fetch(url, { method: "POST", headers: headers, body: JSON.stringify(body) });
+}
 function sendETAAlert(job) {
     if (!job || !job.email)
         return Promise.reject(new Error("No email on file for this job."));
-    var subject = "Your POTENT Logistics truck is almost there!";
+    var brand = plBrandName();
+    var subject = "Your " + brand + " truck is almost there!";
     var body = "Hi " + (job.customer || "there") + ",\n\n" +
         "Good news \u2014 your driver is getting close to " + (job.destination || "your delivery address") + ".\n\n" +
         "Job ID: " + job.id + "\n\n" +
-        "If you have any last-minute access instructions (gate code, parking, etc.), reply to this email or call us at " + PHONE_DISPLAY + ".\n\n" +
-        "Best,\nPOTENT Logistics";
-    var params = {
-        to_email: job.email, to_name: job.customer || "",
-        subject: subject, message: body, message_html: body.replace(/\n/g, "<br>"),
-        from_name: "POTENT Logistics", reply_to: BUSINESS_EMAIL,
-    };
-    return fetch("/.netlify/functions/send-email", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to: job.email, subject: subject, message: body })
-    }).then(function(res){
+        "If you have any last-minute access instructions (gate code, parking, etc.), reply to this email" + (plIsTenant() ? "." : " or call us at " + PHONE_DISPLAY + ".") + "\n\n" +
+        "Best,\n" + brand;
+    return plSendMail(job.email, subject, body, job.id).then(function(res){
         if (res.ok) return res;
         return res.text().then(function(errText){
-            throw new Error("Mailjet rejected the request (status " + res.status + "): " + errText);
+            throw new Error("The email service rejected the request (status " + res.status + "): " + errText);
         });
     });
 }
@@ -2367,6 +4227,11 @@ function StripeCardForm(props) {
             React.createElement(Btn, { variant: "ghost", onClick: props.onCancel, style: { flex: 1 }, disabled: processing }, "Cancel"),
             React.createElement(Btn, { onClick: handlePay, style: { flex: 2 }, disabled: processing || !ready }, processing ? "Processing..." : "Pay $" + props.amount + " Now")));
 }
+// A company that licenses POTENT OS shows its own name to its own customers (the legal text names POTENT Logistics).
+function plTenantLegal(txt) {
+    try { var u = loadCurrentUser(); var nm = (PL_BRAND && PL_BRAND.name) || (u && u.orgId && u.branding && u.branding.name) || ""; if (nm) return String(txt).replace(/POTENT LOGISTICS LLC/g, nm).replace(/POTENT/g, nm); } catch (e) { }
+    return txt;
+}
 function TermsOfServiceModal(props) {
     return React.createElement("div", { onClick: function (e) { if (e.target === e.currentTarget)
             props.onClose(); }, style: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "#000000CC", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 } },
@@ -2374,12 +4239,13 @@ function TermsOfServiceModal(props) {
             React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 } },
                 React.createElement("div", { style: { fontSize: 18, fontWeight: 800, color: C.white } }, "Terms of Service"),
                 React.createElement("button", { onClick: props.onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer" } }, "\u2715")),
-            React.createElement("div", { style: { fontSize: 11, color: C.faint, marginBottom: 18 } }, "© 2026 ANTHONY EMMANUEL FIGUEROA MENDES® · POTENT PRÄDƏKT® · Version " + TOS_VERSION),
+            React.createElement("div", { style: { fontSize: 11, color: C.faint, marginBottom: 18 } }, "© 2026 ANTHONY EMMANUEL FIGUEROA MENDES® · POTENT PRÄDƏKT® · Version " + TOS_VERSION + " · Updated " + LEGAL_UPDATED),
             TOS_SECTIONS.map(function (s) {
                 return React.createElement("div", { key: s.title, style: { marginBottom: 16 } },
-                    React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.orange, marginBottom: 4 } }, s.title),
-                    React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.7 } }, s.body));
+                    React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.orange, marginBottom: 4 } }, s.num + ". " + s.title),
+                    React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.7 } }, plTenantLegal(s.body)));
             }),
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 10 } }, "Full privacy policy: ", React.createElement("a", { href: "/privacy.html", target: "_blank", style: { color: C.orange } }, "Privacy Policy"), " · ", React.createElement("a", { href: "/terms.html", target: "_blank", style: { color: C.orange } }, "All agreements")),
             React.createElement(Btn, { onClick: props.onClose, style: { width: "100%", marginTop: 6 } }, "Close")));
 }
 function TosCheckbox(props) {
@@ -2418,11 +4284,13 @@ function StepBar(props) {
 // ── LOGO SVG ──────────────────────────────────────────────────────
 function Logo(props) {
     var sz = props.size || 22;
+    if (PL_BRAND && PL_BRAND.logo) return React.createElement("img", { src: PL_BRAND.logo, alt: "", width: sz, height: sz, style: { objectFit: "contain", borderRadius: 4 } });
     return React.createElement("svg", { width: sz, height: sz, viewBox: "0 0 40 40", fill: "none" },
         React.createElement("polygon", { points: "20,2 24,14 37,14 27,22 31,35 20,27 9,35 13,22 3,14 16,14", fill: "#C8962A", opacity: "0.9" }),
         React.createElement("polygon", { points: "20,8 23,17 32,17 25,22 28,31 20,26 12,31 15,22 8,17 17,17", fill: "#F0E000", opacity: "0.7" }));
 }
 function BrandName() {
+    if (PL_BRAND && PL_BRAND.companyName) return React.createElement("span", { style: { color: C.white } }, PL_BRAND.companyName);
     return React.createElement("span", null,
         React.createElement("span", { style: { color: C.white } }, "POTENT"),
         React.createElement("span", { style: { color: C.orange } }, " LOGISTICS"));
@@ -2510,8 +4378,11 @@ function TruckMap(props) {
             if (cancelled || !mapElRef.current)
                 return;
             mapRef.current = L.map(mapElRef.current, { zoomControl: true, attributionControl: true }).setView([33.749, -84.388], 10);
-            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                attribution: "\u00A9 OpenStreetMap contributors", maxZoom: 19
+            // Real fix — switched from default light OpenStreetMap tiles to
+            // CartoDB Dark Matter, free and keyless, genuinely different
+            // visual style matching the real black/gold brand.
+            L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+                attribution: "\u00A9 OpenStreetMap contributors \u00A9 CARTO", maxZoom: 20, subdomains: "abcd"
             }).addTo(mapRef.current);
             function fetchRealRoute(from, to) {
                 // OSRM — real, free, public road-routing engine. No API key.
@@ -2627,8 +4498,8 @@ function FleetMap() {
             if (cancelled || !mapElRef.current)
                 return;
             mapRef.current = L.map(mapElRef.current).setView([33.749, -84.388], 9);
-            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                attribution: "\u00A9 OpenStreetMap contributors", maxZoom: 19
+            L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+                attribution: "\u00A9 OpenStreetMap contributors \u00A9 CARTO", maxZoom: 20, subdomains: "abcd"
             }).addTo(mapRef.current);
             setMapReady(true);
             function poll() {
@@ -2850,7 +4721,7 @@ function BookingView(props) {
     function doQuote() {
         var q;
         if (isLoadSizeSvc)
-            q = calcJunkRemovalQuote(form.loadSize, form.payment, form.emergencyAddons);
+            q = calcJunkRemovalQuote(form.loadSize, form.payment, form.emergencyAddons, form.heavy);
         else if (isCleanoutSvc)
             q = calcCleanoutQuote(form.cleanoutTier, form.payment, form.extraTruckloads);
         else
@@ -2861,7 +4732,7 @@ function BookingView(props) {
     function doBook(paymentIntentId) {
         var q;
         if (isLoadSizeSvc)
-            q = calcJunkRemovalQuote(form.loadSize, form.payment, form.emergencyAddons);
+            q = calcJunkRemovalQuote(form.loadSize, form.payment, form.emergencyAddons, form.heavy);
         else if (isCleanoutSvc)
             q = calcCleanoutQuote(form.cleanoutTier, form.payment, form.extraTruckloads);
         else
@@ -2870,7 +4741,7 @@ function BookingView(props) {
         var statusForJob = isCleanoutSvc ? "Pending Quote" : "Confirmed";
         var notesForJob;
         if (isLoadSizeSvc)
-            notesForJob = form.loadSize + " load" + (form.notes ? " — " + form.notes : "");
+            notesForJob = form.loadSize + " load" + plHeavyNote(form.heavy) + (form.notes ? " — " + form.notes : "");
         else if (isCleanoutSvc)
             notesForJob = (form.cleanoutSubtype ? CLEANOUT_SUBTYPES.find(function (s) { return s.id === form.cleanoutSubtype; }).label + " — " : "") + q.tier.label + (q.isCustomQuote ? " — CUSTOM QUOTE NEEDED" : " (starting estimate, confirm by phone)") + (form.notes ? " — " + form.notes : "");
         else
@@ -2889,7 +4760,9 @@ function BookingView(props) {
             paymentIntentId: paymentIntentId || null, paidOnline: !!paymentIntentId,
             booking_photos: bookingPhotos, // real photos, now genuinely saved with the booking, not just captured and discarded
             terms_version: TERMS_VERSION, terms_accepted_at: new Date().toISOString() }; // real terms versioning — reproducible even after terms change
+        if (isLoadSizeSvc) Object.assign(job, plJunkFields(q, form.heavy, form.loadSize));
         props.onBook(job);
+        plLogTerms(job);
         sendEmail(job);
         setJobId(id);
         setQuote(q);
@@ -2969,7 +4842,7 @@ function BookingView(props) {
                         React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
                             React.createElement("span", { style: { fontSize: 18 } }, "\uD83D\uDD01"),
                             React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.white } }, "Recurring / Dedicated")),
-                        React.createElement("span", { style: { color: C.orange, fontSize: 13, fontWeight: 700 } }, "$150\u2013$3,400/wk \u2192")),
+                        React.createElement("span", { style: { color: C.orange, fontSize: 13, fontWeight: 700 } }, "$250\u2013$3,400/wk \u2192")),
                     React.createElement("div", { style: { fontSize: 11, color: C.dim, marginLeft: 28 } }, "Locked rate, no call required \u2014 by load size or a dedicated route"))));
     }
     if (step === 2)
@@ -3109,6 +4982,7 @@ function BookingView(props) {
                                 React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 2 } }, l.sub)),
                             React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: form.loadSize === l.id ? C.orange : C.dim } }, "$" + l.price));
                     })),
+                    React.createElement(HeavyPicker, { heavy: form.heavy, onChange: function (v) { set("heavy", v); }, loadId: form.loadSize, loadLbs: (LOAD_SIZES.find(function (l) { return l.id === form.loadSize; }) || {}).estWeightLbs }),
                     React.createElement(Lbl, null, "Rush / Emergency Add-Ons (optional)"),
                     React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 } }, EMERGENCY_ADDONS.map(function (a) {
                         var on = form.emergencyAddons.indexOf(a.id) > -1;
@@ -3139,11 +5013,11 @@ function BookingView(props) {
                     
                     React.createElement(Toggle, { label: "Extra stop needed", sub: "+$" + EXTRA_STOP_FEE + " fee", value: form.extraStop, onChange: function (v) { set("extraStop", v); } }),
                     React.createElement(Lbl, null, "Dispatch Speed"),
-                    React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 } }, SPEEDS.map(function (sp) {
+                    React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 } }, visibleSpeeds().map(function (sp) {
                         return React.createElement("div", { key: sp.id, onClick: function () { set("speed", sp.id); }, style: { border: "1.5px solid " + (form.speed === sp.id ? sp.color : C.border), borderRadius: 9, padding: "10px 12px", cursor: "pointer", background: form.speed === sp.id ? sp.color + "15" : "transparent" } },
                             React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: form.speed === sp.id ? sp.color : C.white } }, sp.icon + " " + sp.label),
                             React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 2 } }, sp.sub),
-                            React.createElement("div", { style: { fontSize: 11, color: form.speed === sp.id ? sp.color : C.faint, marginTop: 2, fontWeight: 600 } }, sp.mult === 1 ? "Base rate" : "x" + sp.mult + " rate"));
+                            React.createElement("div", { style: { fontSize: 11, color: form.speed === sp.id ? sp.color : C.faint, marginTop: 2, fontWeight: 600 } }, speedNote(sp)));
                     })),
                     form.speed === "overnight" && React.createElement("div", { style: { background: "#9F7AEA12", border: "1px solid #9F7AEA33", borderRadius: 9, padding: "10px 12px", marginBottom: 14 } },
                         React.createElement("div", { style: { fontSize: 11, color: "#9F7AEA", fontWeight: 700, marginBottom: 2 } }, "\uD83C\uDF03 Overnight Run \u2014 Subject to Availability"),
@@ -3184,6 +5058,9 @@ function BookingView(props) {
                                 React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.white } }, isLoadSizeSvc ? quote.load.label : quote.tier.label),
                                 React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 2 } }, isLoadSizeSvc ? quote.load.sub : "Starting estimate")),
                             React.createElement("div", { style: { fontSize: 16, fontWeight: 900, color: C.white } }, "$" + quote.base))),
+                    isLoadSizeSvc && quote.heavyFee > 0 && React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "9px 14px", borderBottom: "1px solid " + C.border } },
+                        React.createElement("span", { style: { fontSize: 13, color: C.white, fontWeight: 600 } }, "Heavy items (about " + quote.heavyLbs + " lbs)"),
+                        React.createElement("span", { style: { fontSize: 14, fontWeight: 700, color: C.orange } }, "+$" + quote.heavyFee)),
                     isLoadSizeSvc && quote.addonFees > 0 && React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "9px 14px", borderBottom: "1px solid " + C.border } },
                         React.createElement("span", { style: { fontSize: 13, color: C.white, fontWeight: 600 } }, "Rush / Emergency Add-Ons"),
                         React.createElement("span", { style: { fontSize: 14, fontWeight: 700, color: C.purple } }, "+$" + quote.addonFees)),
@@ -3238,7 +5115,7 @@ function BookingView(props) {
                     quote.speedFee > 0 && React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 14px", borderBottom: "1px solid " + C.border } },
                         React.createElement("div", null,
                             React.createElement("div", { style: { fontSize: 13, color: C.white, fontWeight: 600 } }, quote.spd.label + " speed"),
-                            React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "x" + quote.spd.mult + " on base")),
+                            React.createElement("div", { style: { fontSize: 11, color: C.dim } }, speedNote(quote.spd))),
                         React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: quote.spd.color } }, "+" + "$" + quote.speedFee)),
                     quote.helperFee > 0 && React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "9px 14px", borderBottom: "1px solid " + C.border } },
                         React.createElement("span", { style: { fontSize: 13, color: C.white, fontWeight: 600 } }, "Helper"),
@@ -3509,7 +5386,7 @@ function NewJobModal(props) {
     var miles = isMileageSvc ? (f.manualMilesOn ? (Number(f.miles) || 0) : (autoMiles != null ? autoMiles : (Number(f.miles) || 0))) : 0;
     var q;
     if (isLoadSizeSvc)
-        q = calcJunkRemovalQuote(f.loadSize, f.payment, []);
+        q = calcJunkRemovalQuote(f.loadSize, f.payment, [], f.heavy);
     else if (isCleanoutSvc)
         q = calcCleanoutQuote(f.cleanoutTier, f.payment, f.extraTruckloads);
     else
@@ -3532,7 +5409,9 @@ function NewJobModal(props) {
             weightTier: f.weightTier, miles: isMileageSvc ? miles : null, priceTier: f.priceTier,
             vehicleId: f.vehicleId || null, vehicleLabel: selectedVehicle ? (selectedVehicle.year + " " + selectedVehicle.make + " " + selectedVehicle.model) : "",
             assignedDriverName: f.assignedDriverName || "", assignedTo: f.assignedDriverName || null };
+        if (isLoadSizeSvc) Object.assign(job, plJunkFields(q, f.heavy, f.loadSize));
         props.onAdd(job);
+        plAutoLegs(job);
         props.onClose();
     }
     return React.createElement("div", { onClick: function (e) { if (e.target === e.currentTarget)
@@ -3574,6 +5453,7 @@ function NewJobModal(props) {
                         React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: f.loadSize === l.id ? C.orange : C.white } }, l.label),
                         React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: f.loadSize === l.id ? C.orange : C.dim } }, "$" + l.price));
                 })),
+                React.createElement(HeavyPicker, { heavy: f.heavy, onChange: function (v) { set("heavy", v); }, loadId: f.loadSize, loadLbs: (LOAD_SIZES.find(function (l) { return l.id === f.loadSize; }) || {}).estWeightLbs }),
                 React.createElement("div", { style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 9, padding: "10px 12px", marginBottom: 14 } },
                     React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 } }, "Dump Fee Reference (admin only \u2014 3x suggested markup)"),
                     React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 } }, DUMP_FEES.map(function (d) { return React.createElement("div", { key: d.id, style: { fontSize: 10, color: C.dim, display: "flex", justifyContent: "space-between" } },
@@ -3622,7 +5502,7 @@ function NewJobModal(props) {
                     t.badge && React.createElement("span", { style: { background: t.color + "22", color: t.color, borderRadius: 5, padding: "2px 7px", fontSize: 9, fontWeight: 700 } }, t.badge));
             })),
             React.createElement(Lbl, null, "Speed"),
-            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 14 } }, SPEEDS.map(function (sp) {
+            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 14 } }, visibleSpeeds().map(function (sp) {
                 return React.createElement("div", { key: sp.id, onClick: function () { set("speed", sp.id); }, style: { border: "1.5px solid " + (f.speed === sp.id ? sp.color : C.border), borderRadius: 9, padding: "8px 4px", cursor: "pointer", background: f.speed === sp.id ? sp.color + "15" : "transparent", textAlign: "center" } },
                     React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: f.speed === sp.id ? sp.color : C.white } }, sp.icon + " " + sp.label));
             })),
@@ -3852,6 +5732,7 @@ function JobsDashboard(props) {
                         React.createElement(PartialDeliveryPanel, { job: j }),
                         React.createElement(DeliveryRefusedPanel, { job: j }),
                         React.createElement(SlaPanel, { job: j }),
+                        React.createElement(JobOpsPanel, { job: j }),
                         React.createElement(RouteCalculationPanel, { jobId: j.id }),
                         React.createElement(PaymentAuthCapturePanel, { job: j }),
                         React.createElement(SitePhotoMemory, { address: j.destination }),
@@ -4013,6 +5894,7 @@ function OOSBookingView(props) {
                 React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 } },
                     React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.orange } }, "\uD83D\uDCCD One-Way Pricing"),
                     React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "Pickup + drop-off = 2 separate jobs")),
+                React.createElement(JobOpsPanel, { job: job }),
                 React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 } }, [["Standard Rate", "$6.50 / mile"], ["Same-Day Rate", "$8.50 / mile"], ["No Minimum", "Price = miles × rate"], ["Deposit Required", "None"]].map(function (row) {
                     return React.createElement("div", { key: row[0] },
                         React.createElement("div", { style: { fontSize: 10, color: C.dim, textTransform: "uppercase", letterSpacing: 1 } }, row[0]),
@@ -4045,7 +5927,7 @@ function OOSBookingView(props) {
                         React.createElement("option", { value: "" }, "\u2014 Select destination \u2014"),
                         destKeys.sort().map(function (c) { return React.createElement("option", { key: c, value: c }, c); }))),
                 React.createElement(Lbl, null, "Dispatch Speed"),
-                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 } }, SPEEDS.filter(function (sp) { return sp.id !== "overnight"; }).map(function (sp) {
+                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 } }, visibleSpeeds().map(function (sp) {
                     return React.createElement("div", { key: sp.id, onClick: function () { set("speed", sp.id); }, style: { border: "1.5px solid " + (form.speed === sp.id ? sp.color : C.border), borderRadius: 9, padding: "10px 12px", cursor: "pointer", background: form.speed === sp.id ? sp.color + "15" : "transparent" } },
                         React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: form.speed === sp.id ? sp.color : C.white } }, sp.icon + " " + sp.label),
                         React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 2 } }, sp.sub),
@@ -4251,7 +6133,7 @@ function PhoneQuotePanelInner(props) {
     // Live quote — recalculates on every field change
     var q = form.isOOS
         ? (form.destCity ? calcOOSQuote(form.originCity, form.destCity, form.speed, form.helper, form.weightTier, form.priceTier) : null)
-        : isLoadSizeSvc ? calcJunkRemovalQuote(form.loadSize, form.payment, form.emergencyAddons)
+        : isLoadSizeSvc ? calcJunkRemovalQuote(form.loadSize, form.payment, form.emergencyAddons, form.heavy)
             : isCleanoutSvc ? calcCleanoutQuote(form.cleanoutTier, form.payment, form.extraTruckloads)
                 : calcQuote(form.serviceId, form.zone, form.speed, form.payment, form.helper, form.discreet, form.weightTier, form.extraStop, instMiles, form.priceTier);
     var payObj = PAYMENTS.find(function (p) { return p.id === form.payment; }) || PAYMENTS[0];
@@ -4259,6 +6141,14 @@ function PhoneQuotePanelInner(props) {
     var calculatedTotal = form.isOOS
         ? (q ? (q.total - oosPayDisc) : 0)
         : (q ? q.total : 0);
+    // Service zones (set up in Growth Tools): the distance band adds its surcharge, and its rush multiplier applies on non-standard speeds
+    var [plZones, setPlZones] = useState([]);
+    useEffect(function () { if (!plTokenGet()) return; plOps("service_zones", "GET", "select=*&active=eq.true&order=from_miles.asc").then(function (r) { if (r && r.ok && Array.isArray(r.data)) setPlZones(r.data); }); }, []);
+    var zoneHit = (!form.isOOS && q && instMiles > 0 && !(form.customPriceOn && Number(form.customPrice) > 0)) ? plZoneFor(instMiles, plZones) : null;
+    if (zoneHit && calculatedTotal > 0) {
+        var zMult = form.speed && form.speed !== "standard" ? (Number(zoneHit.rush_multiplier) || 1) : 1;
+        calculatedTotal = Math.round(calculatedTotal * zMult + (Number(zoneHit.surcharge) || 0));
+    }
     var displayTotal = (form.customPriceOn && Number(form.customPrice) > 0) ? Number(form.customPrice) : calculatedTotal;
     var referralDiscountAmt = form.referralApplied ? Math.round(displayTotal * (form.referralApplied.discountPct / 100)) : 0;
     displayTotal = Math.max(0, displayTotal - referralDiscountAmt);
@@ -4291,7 +6181,7 @@ function PhoneQuotePanelInner(props) {
             var statusForJob = isCleanoutSvc ? "Pending Quote" : "Confirmed";
             var notesForJob;
             if (isLoadSizeSvc)
-                notesForJob = form.loadSize + " load" + customNote + (form.notes ? " — " + form.notes : "");
+                notesForJob = form.loadSize + " load" + plHeavyNote(form.heavy) + customNote + (form.notes ? " — " + form.notes : "");
             else if (isCleanoutSvc)
                 notesForJob = (form.cleanoutSubtype ? CLEANOUT_SUBTYPES.find(function (s) { return s.id === form.cleanoutSubtype; }).label + " — " : "") + q.tier.label + customNote + (form.notes ? " — " + form.notes : "");
             else
@@ -4321,8 +6211,9 @@ function PhoneQuotePanelInner(props) {
                 setSavedJob(job);
                 return;
             }
-            var taggedJob = Object.assign({}, job, { salesperson: props.currentUser ? props.currentUser.name : "Unknown", createdBy: props.currentUser ? props.currentUser.id : "unknown" });
+            var taggedJob = Object.assign({}, job, isLoadSizeSvc ? plJunkFields(q, form.heavy, form.loadSize) : {}, { salesperson: props.currentUser ? props.currentUser.name : "Unknown", createdBy: props.currentUser ? props.currentUser.id : "unknown" });
             onAddJob(taggedJob);
+            plAutoLegs(taggedJob);
             sendEmail(taggedJob);
             setSavedJob(taggedJob);
             setConfirmed(true);
@@ -4378,6 +6269,7 @@ function PhoneQuotePanelInner(props) {
                 // isOOS is permanently false here; nothing in the UI can set it to true.
                 React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "14px 16px", marginBottom: 10 } },
                     React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 10 } }, "\uD83D\uDC64 Customer"),
+                    React.createElement(PropertyPicker, { onPick: function (p) { set("origin", p.address || ""); if (p.manager && !form.name) set("name", p.manager); if (p.phone && !form.phone) set("phone", p.phone); var bits = [p.company && p.name ? p.company + " / " + p.name : p.name, p.access_notes && "Access: " + p.access_notes, p.loading_area && "Loading: " + p.loading_area, p.hours && "Hours: " + p.hours, p.restrictions && "Restrictions: " + p.restrictions].filter(Boolean).join(" \u00B7 "); set("notes", bits); } }),
                     React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 10px" } },
                         React.createElement(TxtIn, { label: "Name", value: form.name, onChange: function (v) { set("name", v); }, placeholder: "First Last", voice: true }),
                         React.createElement(TxtIn, { label: "Phone", value: form.phone, onChange: function (v) { set("phone", v); }, type: "tel", placeholder: "404-000-0000" })),
@@ -4419,6 +6311,7 @@ function PhoneQuotePanelInner(props) {
                                     React.createElement("div", { style: { fontSize: 10, color: C.dim } }, l.sub)),
                                 React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: form.loadSize === l.id ? C.orange : C.dim } }, "$" + l.price));
                         }))),
+                    React.createElement(HeavyPicker, { heavy: form.heavy, onChange: function (v) { set("heavy", v); }, loadId: form.loadSize, loadLbs: (LOAD_SIZES.find(function (l) { return l.id === form.loadSize; }) || {}).estWeightLbs }),
                     React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "14px 16px", marginBottom: 10 } },
                         React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 10 } }, "\uD83D\uDEA8 Rush / Emergency Add-Ons"),
                         React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, EMERGENCY_ADDONS.map(function (a) {
@@ -4459,7 +6352,7 @@ function PhoneQuotePanelInner(props) {
                 (!isLoadSizeSvc && !isCleanoutSvc) && React.createElement("div", null,
                     React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "14px 16px", marginBottom: 10 } },
                         React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 10 } }, "\u26A1 Dispatch Speed"),
-                        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 } }, (form.isOOS ? SPEEDS.filter(function (sp) { return sp.id !== "overnight"; }) : SPEEDS).map(function (sp) {
+                        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 } }, visibleSpeeds().map(function (sp) {
                             return React.createElement("button", { key: sp.id, onClick: function () { set("speed", sp.id); }, style: { border: "1.5px solid " + (form.speed === sp.id ? sp.color : C.border), borderRadius: 9, padding: "9px 10px", cursor: "pointer", background: form.speed === sp.id ? sp.color + "18" : "transparent", fontFamily: "inherit", textAlign: "left" } },
                                 React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: form.speed === sp.id ? sp.color : C.white } }, sp.icon + " " + sp.label),
                                 React.createElement("div", { style: { fontSize: 10, color: C.dim, marginTop: 2 } }, form.isOOS ? (sp.id === "urgent" || sp.id === "emergency" ? "$8.50/mi" : "$6.50/mi") : "x" + sp.mult));
@@ -4513,6 +6406,7 @@ function PhoneQuotePanelInner(props) {
                     !form.isOOS && q && React.createElement("div", { style: { textAlign: "left", marginTop: 12, borderTop: "1px solid " + C.border, paddingTop: 10 } }, [
                         [q.isMileage ? (instMiles + " mi × $" + INSTATE_RATE_PER_MILE + "/mi") : "Base", q.base],
                         q.speedFee > 0 && ["Speed", "+$" + q.speedFee],
+                        q.heavyFee > 0 && ["Heavy items", "+$" + q.heavyFee],
                         q.helperFee > 0 && ["Helper", "+$" + q.helperFee],
                         q.weightFee > 0 && [q.weightTier && q.weightTier.label || "Weight", "+$" + q.weightFee],
                         q.extraStopFee > 0 && ["Extra Stop", "+$" + q.extraStopFee],
@@ -4547,6 +6441,8 @@ function PhoneQuotePanelInner(props) {
                         : React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", background: C.green + "18", border: "1px solid " + C.green + "44", borderRadius: 7, padding: "8px 12px" } },
                             React.createElement("span", { style: { fontSize: 12, color: C.green, fontWeight: 700 } }, "✅ " + form.referralApplied.code + " — " + form.referralApplied.discountPct + "% off applied"),
                             React.createElement("button", { onClick: function(){ set("referralApplied", null); set("referralCode", ""); }, style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 11, fontFamily: "inherit" } }, "Remove"))),
+                zoneHit && displayTotal > 0 && React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 6, textAlign: "center" } }, "Zone: " + zoneHit.name + (Number(zoneHit.surcharge) ? " (+$" + Number(zoneHit.surcharge) + ")" : "") + (form.speed !== "standard" && Number(zoneHit.rush_multiplier) > 1 ? " x" + zoneHit.rush_multiplier + " rush" : "") + " is included in the price"),
+                React.createElement(ProfitGuardCard, { pickup: form.isOOS ? "" : form.origin, dropoff: form.isOOS ? "" : form.destination, bid: displayTotal }),
                 displayTotal > 0 && React.createElement("div", { style: { background: C.orangeSoft, border: "1px solid " + C.orange + "44", borderRadius: 10, padding: "12px 14px", marginBottom: 10, fontSize: 12, textAlign: "center" } },
                     React.createElement("div", { style: { color: C.dim, marginBottom: 4 } }, "Tell the customer:"),
                     React.createElement("div", { style: { color: C.white, fontWeight: 800, fontSize: 15 } }, "Your total is $" + displayTotal.toLocaleString()),
@@ -4611,10 +6507,8 @@ function getDeviceInfo() {
     } catch(e) { return "Unknown device"; }
 }
 function alertLoginEmail(subject, message) {
-    fetch("/.netlify/functions/send-email", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to: "potentlogistics@pm.me", subject: subject, message: message })
-    }).catch(function () {});
+    var alertTo = plNotifyEmail(); if (!alertTo) return;
+    plSendMail(alertTo, subject, message, "").catch(function () {});
 }
 function logAdminAction(action, details, actorName) {
     var entries = loadAudit();
@@ -4747,8 +6641,13 @@ function ReviewModal(props) {
         var jobs = props.jobs || [];
         var matchedJob = jobs.find(function(j){ return (j.id||"").toUpperCase() === cleanId; });
         var isMasterCode = cleanId === getReviewMasterCode();
-        if (!matchedJob && !isMasterCode) { setJobErr("We could not find that Job ID. Please check your confirmation email and try again."); return; }
         setSubmitting(true);
+        // the job list on this device may be empty for a customer, so ask the server whether the Job ID exists
+        (matchedJob || isMasterCode ? Promise.resolve(true) :
+            fetch("/.netlify/functions/data-api?bol=1", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ job_id: cleanId, check: true }) })
+                .then(function (r) { return r.json(); }).then(function (j) { return !!(j && j.ok); }).catch(function () { return false; })
+        ).then(function (found) {
+        if (!found) { setJobErr("We could not find that Job ID. Please check your confirmation email and try again."); setSubmitting(false); return; }
         fetch(SUPABASE_URL + "/rest/v1/reviews?job_id=eq." + encodeURIComponent(cleanId), {
             headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
         }).then(function (r) { return r.json(); }).then(function (existing) {
@@ -4757,13 +6656,14 @@ function ReviewModal(props) {
             return fetch(SUPABASE_URL + "/rest/v1/reviews", {
                 method: "POST",
                 headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
-                body: JSON.stringify({ name: f.name, job_id: cleanId, rating: f.rating, comment: f.comment })
+                body: JSON.stringify({ name: f.name, job_id: cleanId, rating: f.rating, comment: f.comment, org_id: PL_TENANT_ID || undefined })
             }).then(function (res) {
                 setSubmitting(false);
                 if (!res.ok) { setJobErr("Your review could not be saved (server error). Please try again."); return; }
                 setSent(true);
             });
         }).catch(function () { setJobErr("Something went wrong submitting your review. Please try again."); setSubmitting(false); });
+        });
     }
     return React.createElement("div", { onClick: function (e) { if (e.target === e.currentTarget)
             props.onClose(); }, style: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "#000000CC", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 } },
@@ -5414,8 +7314,10 @@ function ReviewsSection(props) {
     var [showModal, setShowModal] = useState(qrTriggered);
 
     function refetch() {
-        fetch(SUPABASE_URL + "/rest/v1/reviews?select=*&order=created_at.desc&limit=50", {
-            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
+        getOrgId().then(function (oid) {
+            return fetch(SUPABASE_URL + "/rest/v1/reviews?select=*&order=created_at.desc&limit=50" + (oid && oid !== "from-login" ? "&org_id=eq." + encodeURIComponent(oid) : ""), {
+                headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
+            });
         }).then(function (r) { return r.json(); })
           .then(function (data) { setReviews(Array.isArray(data) ? data : []); })
           .catch(function () { setLoadErr(true); setReviews([]); });
@@ -5455,14 +7357,203 @@ function ReviewsSection(props) {
                         r.job_id));
             })));
 }
+// ── TEAM ACCOUNTS — company owner adds/removes their own dispatchers & drivers, within plan limits ──
+function TeamAccounts(props) {
+    var [staff, setStaff] = useState([]);
+    var [loading, setLoading] = useState(true);
+    var [limits, setLimits] = useState((props.currentUser && props.currentUser.limits) || null);
+    var [counts, setCounts] = useState({ dispatch: 0, driver: 0 });
+    var [adding, setAdding] = useState(null); // "dispatch" | "driver" | null
+    var [form, setForm] = useState({ name: "", email: "", phone: "" });
+    var [busy, setBusy] = useState(false);
+    var [msg, setMsg] = useState("");
+    var [temp, setTemp] = useState(null);
+    function load() {
+        setLoading(true);
+        plApi("liststaff").then(function (r) {
+            setLoading(false);
+            if (r && r.ok) {
+                setStaff(r.staff || []); setLimits(r.limits || null); setCounts(r.counts || { dispatch: 0, driver: 0 });
+                try { var u = loadCurrentUser(); if (u && r.limits) { u.limits = r.limits; saveCurrentUser(u); } } catch (e) { }
+            } else setMsg((r && r.error) || "Could not load.");
+        });
+    }
+    useEffect(function () { load(); }, []);
+    function add() {
+        if (!form.name.trim() || !form.email.trim()) { setMsg("Name and email are required."); return; }
+        setBusy(true); setMsg("");
+        plApi("addstaff", Object.assign({ role: adding }, form)).then(function (r) {
+            setBusy(false);
+            if (r && r.ok) { setTemp({ who: form.name + " (" + form.email + ")", pw: r.tempPassword }); setForm({ name: "", email: "", phone: "" }); setAdding(null); load(); }
+            else setMsg((r && r.error) || "Could not add.");
+        });
+    }
+    function remove(m) {
+        if (!window.confirm("Remove " + m.name + "'s login?")) return;
+        plApi("removestaff", { id: m.id }).then(function (r) { if (r && r.ok) load(); else setMsg((r && r.error) || "Could not remove."); });
+    }
+    function reset(m) {
+        plApi("resetstaff", { id: m.id }).then(function (r) { if (r && r.ok) setTemp({ who: m.name + " (" + m.email + ")", pw: r.tempPassword }); else setMsg((r && r.error) || "Could not reset."); });
+    }
+    var inp = { background: C.surface, border: "1px solid " + C.border, borderRadius: 8, color: C.white, padding: "10px 12px", fontSize: 13, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box", marginBottom: 8 };
+    function meter(label, used, cap, role) {
+        var full = cap !== null && used >= cap;
+        return React.createElement("div", { style: { flex: 1, background: C.card, border: "1px solid " + (full ? C.red + "88" : C.border), borderRadius: 10, padding: 12 } },
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 } }, label),
+            React.createElement("div", { style: { fontSize: 22, fontWeight: 900, color: full ? C.red : C.white, margin: "2px 0 8px" } }, used + (cap !== null ? " / " + cap : "")),
+            React.createElement(Btn, { onClick: function () { setAdding(adding === role ? null : role); setMsg(""); }, disabled: full, style: { width: "100%", padding: "8px", fontSize: 12 } }, full ? "Limit reached" : "+ Add " + (role === "driver" ? "Driver" : "Dispatcher")));
+    }
+    return React.createElement("div", { style: { maxWidth: 560, margin: "0 auto", padding: 16 } },
+        React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "👥 Team Accounts"),
+        React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 14 } }, limits ? "Plan: " + limits.tier.toUpperCase() + " · up to " + limits.trucks + " trucks. Staff sign in with their email at the company sign-in screen." : "Staff sign in with their email at the company sign-in screen."),
+        temp && React.createElement("div", { style: { background: C.green + "18", border: "1px solid " + C.green + "66", borderRadius: 10, padding: 12, marginBottom: 14 } },
+            React.createElement("div", { style: { fontSize: 12, color: C.white, fontWeight: 700 } }, "Temporary password for " + temp.who),
+            React.createElement("div", { style: { fontFamily: "monospace", fontSize: 20, color: C.green, fontWeight: 900, margin: "6px 0" } }, temp.pw),
+            React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "Shown once. Give it to them now.")),
+        limits && React.createElement("div", { style: { display: "flex", gap: 10, marginBottom: 14 } },
+            meter("Dispatchers", counts.dispatch, limits.dispatch, "dispatch"),
+            meter("Drivers", counts.driver, limits.drivers, "driver")),
+        adding && React.createElement(Card, null,
+            React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.white, marginBottom: 8 } }, adding === "driver" ? "Add Driver" : "Add Dispatcher"),
+            React.createElement("input", { placeholder: "Full name", value: form.name, onChange: function (e) { setForm(Object.assign({}, form, { name: e.target.value })); }, style: inp }),
+            React.createElement("input", { placeholder: "Email (their login)", type: "email", value: form.email, onChange: function (e) { setForm(Object.assign({}, form, { email: e.target.value })); }, style: inp }),
+            React.createElement("input", { placeholder: "Phone (optional)", value: form.phone, onChange: function (e) { setForm(Object.assign({}, form, { phone: e.target.value })); }, style: inp }),
+            msg && React.createElement("div", { style: { color: C.red, fontSize: 12, marginBottom: 8 } }, "⚠ " + msg),
+            React.createElement("div", { style: { display: "flex", gap: 8 } },
+                React.createElement(Btn, { variant: "ghost", onClick: function () { setAdding(null); setMsg(""); }, style: { flex: 1 } }, "Cancel"),
+                React.createElement(Btn, { onClick: add, disabled: busy, style: { flex: 2 } }, busy ? "Adding…" : "Create Login"))),
+        !adding && msg && React.createElement("div", { style: { color: C.red, fontSize: 12, marginBottom: 8 } }, "⚠ " + msg),
+        React.createElement("div", { style: { marginTop: 16 } },
+            loading ? React.createElement("div", { style: { color: C.dim, fontSize: 12 } }, "Loading…") :
+            staff.map(function (m) {
+                var off = m.status && m.status !== "active";
+                return React.createElement("div", { key: m.id, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "10px 12px", marginBottom: 8, opacity: off ? 0.5 : 1 } },
+                    React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 } },
+                        React.createElement("div", null,
+                            React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.white } }, m.name + (m.role === "owner" ? " 👑" : "")),
+                            React.createElement("div", { style: { fontSize: 11, color: C.dim } }, m.email + " · " + m.role + (off ? " · removed" : ""))),
+                        m.role !== "owner" && !off && React.createElement("div", { style: { display: "flex", gap: 6 } },
+                            React.createElement("button", { onClick: function () { reset(m); }, style: { background: C.surface, border: "1px solid " + C.border, color: C.white, borderRadius: 6, padding: "5px 9px", fontSize: 11, cursor: "pointer", fontFamily: "inherit" } }, "Reset PW"),
+                            React.createElement("button", { onClick: function () { remove(m); }, style: { background: C.red + "22", border: "1px solid " + C.red + "66", color: C.red, borderRadius: 6, padding: "5px 9px", fontSize: 11, cursor: "pointer", fontFamily: "inherit" } }, "Remove"))));
+            })));
+}
+// ── PRICING SETUP — each company builds its own services & prices (POTENT's stay locked in code) ──
+function PricingSetup(props) {
+    var u = props.currentUser || {};
+    function initial() {
+        var p = u.pricing;
+        if (p && p.services && p.services.length) {
+            var c = JSON.parse(JSON.stringify(p));
+            c.singleItem = c.singleItem || { enabled: false, scheduled: "", sameday: "", rush: "" };
+            c.speeds = (c.speeds && c.speeds.length) ? c.speeds : [{ label: "Standard", mult: 1 }];
+            if (c.extraStopFee == null) c.extraStopFee = "";
+            if (c.cashDiscountPct == null) c.cashDiscountPct = "";
+            return c;
+        }
+        return { services: [{ name: "", model: "zone", local: "", regional: "", longdist: "", flat: "", perMile: "", minimum: "" }], speeds: [{ label: "Standard", mult: 1 }], singleItem: { enabled: false, scheduled: "", sameday: "", rush: "" }, extraStopFee: "", cashDiscountPct: "" };
+    }
+    var [cfg, setCfg] = useState(initial);
+    var [busy, setBusy] = useState(false);
+    var [msg, setMsg] = useState("");
+    function upd(fn) { setCfg(function (p) { var n = JSON.parse(JSON.stringify(p)); fn(n); return n; }); setMsg(""); }
+    function save() {
+        if (!cfg.services.length || cfg.services.some(function (s) { return !String(s.name || "").trim(); })) { setMsg("Every service needs a name."); return; }
+        setBusy(true);
+        plApi("savepricing", { config: cfg }).then(function (r) {
+            setBusy(false);
+            if (!r || !r.ok) { setMsg((r && r.error) || "Could not save."); return; }
+            try { var cu = loadCurrentUser(); if (cu) { cu.pricing = r.pricing; saveCurrentUser(cu); } } catch (e) { }
+            window.location.reload();
+        });
+    }
+    var inp = { background: C.surface, border: "1px solid " + C.border, borderRadius: 8, color: C.white, padding: "9px 11px", fontSize: 13, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box" };
+    function field(label, val, onCh, ph) {
+        return React.createElement("div", { style: { flex: 1, minWidth: 90 } },
+            React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 700, textTransform: "uppercase", marginBottom: 3 } }, label),
+            React.createElement("input", { value: val === undefined || val === null ? "" : val, placeholder: ph || "", inputMode: "decimal", onChange: function (e) { onCh(e.target.value); }, style: inp }));
+    }
+    var h = { fontSize: 13, fontWeight: 900, color: C.white, margin: "18px 0 8px" };
+    return React.createElement("div", { style: { maxWidth: 600, margin: "0 auto", padding: 16 } },
+        React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "💲 Pricing Setup"),
+        React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 6 } }, "Set up the services you offer and what you charge. Your quotes and booking use these numbers. Nothing here affects any other company."),
+        !(u.pricing && u.pricing.services && u.pricing.services.length) && React.createElement("div", { style: { background: C.orange + "18", border: "1px solid " + C.orange + "66", borderRadius: 10, padding: 10, fontSize: 12, color: C.white, marginTop: 8 } }, "You have not set your pricing yet. Quotes show $0 until you save it."),
+        React.createElement("div", { style: h }, "Your services"),
+        cfg.services.map(function (sv, i) {
+            return React.createElement(Card, { key: i },
+                React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 8 } },
+                    React.createElement("input", { value: sv.name || "", placeholder: "Service name (e.g. Local Delivery)", onChange: function (e) { var v = e.target.value; upd(function (n) { n.services[i].name = v; }); }, style: Object.assign({}, inp, { flex: 1 }) }),
+                    cfg.services.length > 1 && React.createElement("button", { onClick: function () { upd(function (n) { n.services.splice(i, 1); }); }, style: { background: C.red + "22", border: "1px solid " + C.red + "66", color: C.red, borderRadius: 8, padding: "0 12px", cursor: "pointer", fontFamily: "inherit" } }, "✕")),
+                React.createElement("select", { value: sv.model || "zone", onChange: function (e) { var v = e.target.value; upd(function (n) { n.services[i].model = v; }); }, style: Object.assign({}, inp, { marginBottom: 8 }) },
+                    React.createElement("option", { value: "zone" }, "Price by distance zone (local / regional / long distance)"),
+                    React.createElement("option", { value: "flat" }, "One flat price"),
+                    React.createElement("option", { value: "permile" }, "Price per mile (with a minimum)")),
+                React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+                    (sv.model || "zone") === "zone" && [field("Local $", sv.local, function (v) { upd(function (n) { n.services[i].local = v; }); }), field("Regional $", sv.regional, function (v) { upd(function (n) { n.services[i].regional = v; }); }), field("Long dist $", sv.longdist, function (v) { upd(function (n) { n.services[i].longdist = v; }); })],
+                    sv.model === "flat" && field("Flat price $", sv.flat, function (v) { upd(function (n) { n.services[i].flat = v; }); }),
+                    sv.model === "permile" && [field("Per mile $", sv.perMile, function (v) { upd(function (n) { n.services[i].perMile = v; }); }), field("Minimum $", sv.minimum, function (v) { upd(function (n) { n.services[i].minimum = v; }); })]));
+        }),
+        React.createElement(Btn, { variant: "ghost", onClick: function () { upd(function (n) { n.services.push({ name: "", model: "zone", local: "", regional: "", longdist: "", flat: "", perMile: "", minimum: "" }); }); }, style: { width: "100%" } }, "+ Add a service"),
+        React.createElement("div", { style: h }, "Speed options"),
+        React.createElement(Card, null,
+            cfg.speeds.map(function (sp, i) {
+                return React.createElement("div", { key: i, style: { display: "flex", gap: 8, marginBottom: 8, alignItems: "flex-end" } },
+                    React.createElement("div", { style: { flex: 2 } }, React.createElement("input", { value: sp.label || "", disabled: i === 0, onChange: function (e) { var v = e.target.value; upd(function (n) { n.speeds[i].label = v; }); }, style: inp })),
+                    React.createElement("div", { style: { flex: 1 } }, i === 0 ? React.createElement("div", { style: { fontSize: 12, color: C.dim, padding: "10px 0" } }, "×1 (base)") : React.createElement("input", { value: sp.mult === undefined ? "" : sp.mult, inputMode: "decimal", placeholder: "× 1.25", onChange: function (e) { var v = e.target.value; upd(function (n) { n.speeds[i].mult = v; }); }, style: inp })),
+                    i > 0 && React.createElement("button", { onClick: function () { upd(function (n) { n.speeds.splice(i, 1); }); }, style: { background: "none", border: "none", color: C.red, cursor: "pointer", fontSize: 16 } }, "✕"));
+            }),
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 8 } }, "A rush option with ×1.25 charges 25% more than the base price."),
+            React.createElement(Btn, { variant: "ghost", onClick: function () { upd(function (n) { n.speeds.push({ label: "Rush", mult: 1.25 }); }); }, style: { width: "100%", padding: 8, fontSize: 12 } }, "+ Add speed option")),
+        React.createElement("div", { style: h }, "Single item pricing (optional)"),
+        React.createElement(Card, null,
+            React.createElement("label", { style: { display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: C.white, marginBottom: 8, cursor: "pointer" } },
+                React.createElement("input", { type: "checkbox", checked: !!cfg.singleItem.enabled, onChange: function (e) { var v = e.target.checked; upd(function (n) { n.singleItem.enabled = v; }); } }), "Offer a flat single-item price"),
+            cfg.singleItem.enabled && React.createElement("div", { style: { display: "flex", gap: 8 } },
+                field("Scheduled $", cfg.singleItem.scheduled, function (v) { upd(function (n) { n.singleItem.scheduled = v; }); }),
+                field("Same-day $", cfg.singleItem.sameday, function (v) { upd(function (n) { n.singleItem.sameday = v; }); }),
+                field("Rush $", cfg.singleItem.rush, function (v) { upd(function (n) { n.singleItem.rush = v; }); }))),
+        React.createElement("div", { style: h }, "Extras"),
+        React.createElement("div", { style: { display: "flex", gap: 8 } },
+            field("Extra stop fee $", cfg.extraStopFee, function (v) { upd(function (n) { n.extraStopFee = v; }); }),
+            field("Cash discount %", cfg.cashDiscountPct, function (v) { upd(function (n) { n.cashDiscountPct = v; }); }, "0")),
+        msg && React.createElement("div", { style: { color: C.red, fontSize: 12, marginTop: 12 } }, "⚠ " + msg),
+        React.createElement(Btn, { onClick: save, disabled: busy, style: { width: "100%", marginTop: 16 } }, busy ? "Saving…" : "Save my pricing"));
+}
+// POTENT-side editor: change a company's plan and seat limits
+function OrgLimitsEditor(props) {
+    var org = props.org;
+    var [plan, setPlan] = useState(org.plan || "starter");
+    var [mt, setMt] = useState(org.max_trucks == null ? "" : org.max_trucks);
+    var [md, setMd] = useState(org.max_drivers == null ? "" : org.max_drivers);
+    var [mx, setMx] = useState(org.max_dispatch == null ? "" : org.max_dispatch);
+    var [msg, setMsg] = useState("");
+    var DEF = { starter: [10, 10, 100], growth: [50, 50, 100], fleet: [150, 150, 100], enterprise: [300, 300, "Unlimited"] };
+    var d = DEF[plan] || DEF.starter;
+    var inp = { background: C.surface, border: "1px solid " + C.border, borderRadius: 6, color: C.white, padding: "6px 8px", fontSize: 12, width: "100%", boxSizing: "border-box", fontFamily: "inherit" };
+    function save() {
+        plApi("setorg", { id: org.id, fields: { plan: plan, plan_price: PLAN_PRICES[plan], max_trucks: mt, max_drivers: md, max_dispatch: mx } }).then(function (r) {
+            setMsg(r && r.ok ? "Saved" : ((r && r.error) || "Failed")); if (r && r.ok && props.onSaved) props.onSaved();
+        });
+    }
+    return React.createElement("div", { style: { marginTop: 10, borderTop: "1px solid " + C.border, paddingTop: 10 } },
+        React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 700, textTransform: "uppercase", marginBottom: 6 } }, "Plan & seat limits (blank = plan default)"),
+        React.createElement("select", { value: plan, onChange: function (e) { setPlan(e.target.value); }, style: Object.assign({}, inp, { marginBottom: 6 }) },
+            ["starter", "growth", "fleet", "enterprise"].map(function (k) { return React.createElement("option", { key: k, value: k }, k.charAt(0).toUpperCase() + k.slice(1) + " — $" + PLAN_PRICES[k].toLocaleString()); })),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 } },
+            React.createElement("input", { value: mt, placeholder: "Trucks " + d[0], inputMode: "numeric", onChange: function (e) { setMt(e.target.value); }, style: inp }),
+            React.createElement("input", { value: md, placeholder: "Drivers " + d[1], inputMode: "numeric", onChange: function (e) { setMd(e.target.value); }, style: inp }),
+            React.createElement("input", { value: mx, placeholder: "Dispatch " + d[2], inputMode: "numeric", onChange: function (e) { setMx(e.target.value); }, style: inp })),
+        React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", marginTop: 6 } },
+            React.createElement(Btn, { onClick: save, style: { padding: "6px 12px", fontSize: 11 } }, "Save limits"),
+            msg && React.createElement("span", { style: { fontSize: 11, color: msg === "Saved" ? C.green : C.red } }, msg)));
+}
 // ── TAB NAVIGATION — Uber-style bottom nav + clean "More" sheet ──
 function getTabGroups() {
     return [
-        { label: "📋 Jobs", color: "#4299E1", tabs: [["quickquote", "\u26A1 Quick Quote"], ["workqueue", "\uD83D\uDCE5 Work Queue"], ["jobs", "📋 " + t("jobs")], ["junknewjob", "\uD83D\uDDD1\uFE0F New Junk Job"], ["junkdriverjobs", "\uD83D\uDDD1\uFE0F Junk Driver Jobs"], ["nextjobengine", "\uD83D\uDD0D Find My Next Job"], ["exceptions", "🚨 " + t("alerts")], ["calendar", "📅 " + t("calendar")], ["driver", "🚐 " + t("driver")], ["driverapp", "🚐 " + t("driverApp")]] },
-        { label: "📞 Sales", color: "#1DB954", tabs: [["leads", "📋 " + t("leads")], ["activity", "👥 " + t("activity")], ["leaderboard", "🏆 " + t("board")], ["ospipeline", "🎯 Pipeline"], ["ostraining", "📚 Training"], ["flexpay", "📅 Flex Pay"], ["rebuttals", "📞 Rebuttal Cards"], ["recurring", "🔁 Recurring Routes"], ["realcapacity", "\uD83D\uDCC5 Real Capacity Calendar"], ["capacityforecast", "\uD83D\uDCCA Forecasted Capacity"], ["whatif", "\uD83E\uDDEE What-If Mode"], ["potentwallet", "\uD83E\uDE99 POTENT Coins Wallet"], ["fitcheck", "\uD83D\uDCE6 Real Fit Check"], ["savannah", "\uD83C\uDF0A Savannah Flat Rate"], ["b2bpricing", "\u2699\uFE0F B2B Pricing Controls"], ["griffin", "\uD83E\uDDD9 Griffin"], ["livecall", "📞 Live Call Screen"], ["companyonboard", "🤝 Company Onboarding"], ["pendingapps", "\uD83D\uDCCB Pending Applications"], ["incomingloads", "📦 Incoming Loads"], ["loadanalysis", "\uD83D\uDCF8 Load Analysis"], ["costprofile", "\u2699 Cost Profile"], ["carriercourse", "\uD83C\uDF93 Carrier Authority Course"], ["truckpricing", "\uD83D\uDCB2 Truck Job Pricing"], ["voiceroom", "\uD83C\uDF99\uFE0F Voice Room"]] },
-        { label: "🚗 Fleet", color: "#F6AD55", tabs: [["fleet", "🚗 Fleet"], ["fleetmap", "🗺️ Live Map"], ["driveravail", "\uD83D\uDC65 Driver Availability"], ["vehicleavail", "\uD83D\uDE9B Vehicle Availability"], ["storagepartners", "\uD83D\uDCE6 Storage Partners"], ["compliance", "🛡 Compliance"], ["documents", "📁 Documents"], ["docpackages", "\uD83D\uDCC1 Document Packages"], ["safetyscore", "🛡️ Safety Scores"], ["geofence", "📍 Geofencing"], ["carriers", "🤝 " + t("carriers")], ["safety", "🔒 Safety Alerts"]] },
-        { label: "💰 Money", color: C.orange, tabs: [["reports", "📊 " + t("reports")], ["advanced", "📈 " + t("analytics")], ["sales", "🏆 " + t("sales")], ["expenses", "💸 " + t("expenses")], ["accounts", "🏢 " + t("accounts")], ["payroll", "💰 " + t("payroll")], ["ceodash", "📊 CEO Dashboard"], ["referrals", "🎟️ Referral Codes"], ["marketrates", "📊 Market Rates"], ["claims", "⚠ Claims & Recovery"], ["ratecards", "\uD83D\uDCB2 Rate Cards"], ["deadlines", "\u23F0 Deadlines"], ["ledger", "\uD83D\uDCD2 Accounting Ledger"], ["marginleak", "\uD83D\uDCB0 Margin Leak Detector"]] },
-        { label: "⚙ Team", color: "#FC8181", tabs: [["ownerSettings", "⚙ Settings"], ["audit", "👁 " + t("audit")], ["loginActivity", "🔐 Login Activity"], ["loginimages", "\uD83D\uDCF8 Login Images"], ["shifthandoff", "\uD83D\uDD04 Shift Handoff"], ["ai", "🤖 " + t("aiDocs")], ["demo", "🎬 " + t("demo")]] },
+        { label: "📋 Jobs", color: "#4299E1", tabs: [["commandcenter", "\uD83C\uDF9B Command Center"], ["quickquote", "\u26A1 Quick Quote"], ["workqueue", "\uD83D\uDCE5 Work Queue"], ["jobs", "📋 " + t("jobs")], ["junknewjob", "\uD83D\uDDD1\uFE0F New Junk Job"], ["junkdriverjobs", "\uD83D\uDDD1\uFE0F Junk Driver Jobs"], ["nextjobengine", "\uD83D\uDD0D Find My Next Job"], ["exceptions", "🚨 " + t("alerts")], ["calendar", "📅 " + t("calendar")], ["driver", "🚐 " + t("driver")], ["driverapp", "🚐 " + t("driverApp")]] },
+        { label: "📞 Sales", color: "#1DB954", tabs: [["leads", "📋 " + t("leads")], ["activity", "👥 " + t("activity")], ["leaderboard", "🏆 " + t("board")], ["ospipeline", "🎯 Pipeline"], ["ostraining", "📚 Training"], ["flexpay", "📅 Flex Pay"], ["rebuttals", "📞 Rebuttal Cards"], ["recurring", "🔁 Recurring Routes"], ["realcapacity", "\uD83D\uDCC5 Real Capacity Calendar"], ["capacityforecast", "\uD83D\uDCCA Forecasted Capacity"], ["whatif", "\uD83E\uDDEE What-If Mode"], ["potentwallet", "\uD83E\uDE99 POTENT Coins Wallet"], ["fitcheck", "\uD83D\uDCE6 Real Fit Check"], ["savannah", "\uD83C\uDF0A Savannah Flat Rate"], ["b2bpricing", "\u2699\uFE0F B2B Pricing Controls"], ["griffin", "\uD83E\uDDD9 Griffin"], ["livecall", "📞 Live Call Screen"], ["companyonboard", "🤝 Company Onboarding"], ["pendingapps", "\uD83D\uDCCB Pending Applications"], ["incomingloads", "📦 Incoming Loads"], ["loadanalysis", "\uD83D\uDCF8 Load Analysis"], ["costprofile", "\u2699 Cost Profile"], ["carriercourse", "\uD83C\uDF93 Carrier Authority Course"], ["truckpricing", "\uD83D\uDCB2 Truck Job Pricing"], ["voiceroom", "\uD83D\uDCAC Team Chat Room"], ["dispatchroom", "\uD83D\uDCDE Dispatch"]] },
+        { label: "🚗 Fleet", color: "#F6AD55", tabs: [["fleet", "🚗 Fleet"], ["fleetmap", "🗺️ Live Map"], ["vendors", "\uD83D\uDE9B Vendors & Disposal"], ["properties", "\uD83C\uDFE2 Properties"], ["driveravail", "\uD83D\uDC65 Driver Availability"], ["vehicleavail", "\uD83D\uDE9B Vehicle Availability"], ["storagepartners", "\uD83D\uDCE6 Storage Partners"], ["compliance", "🛡 Compliance"], ["documents", "📁 Documents"], ["docpackages", "\uD83D\uDCC1 Document Packages"], ["safetyscore", "🛡️ Safety Scores"], ["geofence", "📍 Geofencing"], ["carriers", "🤝 " + t("carriers")], ["safety", "🔒 Safety Alerts"]] },
+        { label: "💰 Money", color: C.orange, tabs: [["reports", "📊 " + t("reports")], ["advanced", "📈 " + t("analytics")], ["sales", "🏆 " + t("sales")], ["expenses", "💸 " + t("expenses")], ["accounts", "🏢 " + t("accounts")], ["payroll", "💰 " + t("payroll")], ["growthtools", "📈 Growth Tools"], ["ceodash", "📊 CEO Dashboard"], ["referrals", "🎟️ Referral Codes"], ["marketrates", "📊 Market Rates"], ["claims", "⚠ Claims & Recovery"], ["ratecards", "\uD83D\uDCB2 Rate Cards"], ["deadlines", "\u23F0 Deadlines"], ["ledger", "\uD83D\uDCD2 Accounting Ledger"], ["marginleak", "\uD83D\uDCB0 Margin Leak Detector"]] },
+        { label: "⚙ Team", color: "#FC8181", tabs: [["setup", "\uD83D\uDE80 Get Started"], ["ownerSettings", "⚙ Settings"], ["licenses", "\uD83C\uDFE2 Customers & Licenses"], ["mycompany", "\uD83C\uDFE2 My Company"], ["datatools", "\uD83D\uDCE6 Data & Imports"], ["teamaccts", "\uD83D\uDC65 Team Accounts"], ["pricingsetup", "\uD83D\uDCB2 Pricing Setup"], ["audit", "👁 " + t("audit")], ["loginActivity", "🔐 Login Activity"], ["loginimages", "\uD83D\uDCF8 Login Images"], ["shifthandoff", "\uD83D\uDD04 Shift Handoff"], ["ai", "🤖 " + t("aiDocs")], ["demo", "🎬 " + t("demo")]] },
     ];
 }
 // ── TAB NAVIGATION — dropdown "More" sheet, 5 simplified groups ──
@@ -5539,20 +7630,20 @@ function CategoryNav({ tab, setTab, currentUser }) {
 }
 
 function AdminDashboard(props) {
-    var tabState = useBackableTab(props.role === ROLES.DRIVER ? "driver" : "quote", "mainTab");
+    var tabState = useBackableTab(props.role === ROLES.DRIVER ? "driver" : (props.role === ROLES.OWNER && props.currentUser && props.currentUser.orgId && !plSetupSeen() ? "setup" : "quote"), "mainTab");
     var tab = tabState[0], setTab = tabState[1];
     var langObj = useLang();
     var adminLang = langObj.lang;
     var tA = langObj.t;
     return React.createElement("div", { style: { minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
-        React.createElement(RealBackButton, null),
+        props.currentUser && props.currentUser.assist && React.createElement(AssistBanner, { user: props.currentUser }),
         React.createElement("div", { style: { borderBottom: "1px solid " + C.border, padding: "13px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: C.black, zIndex: 100 } },
             React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 7 } },
                 React.createElement(Logo, { size: 18 }),
                 React.createElement("div", null,
                     React.createElement("div", { style: { fontSize: 14, fontWeight: 900 } },
                         React.createElement(BrandName, null)),
-                    React.createElement("div", { style: { fontSize: 8, color: C.gold, letterSpacing: 1.5, textTransform: "uppercase" } }, "POTENT OS \u00B7 A POTENT PR\u00C4D\u018FKT\u00AE PRODUCT")),
+                    React.createElement("div", { style: { fontSize: 8, color: C.gold, letterSpacing: 1.5, textTransform: "uppercase" } }, props.currentUser && props.currentUser.orgId ? ((PL_BRAND && PL_BRAND.tagline) || "Powered by POTENT OS") : "POTENT OS \u00B7 A POTENT PR\u00C4D\u018FKT\u00AE PRODUCT")),
                 React.createElement(LangSwitcher, { lang: adminLang, changeLang: changeGlobalLang })),
             React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center" } },
                 React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1 } },
@@ -5588,6 +7679,16 @@ function AdminDashboard(props) {
             tab === "ai" && React.createElement(AIDocumentExtractor, { onAddJob: props.onAddJob }),
             tab === "demo" && React.createElement(DemoDataLoader, { onAddJob: props.onAddJob }),
             tab === "leads" && React.createElement(LeadsBoard, { currentUser: props.currentUser }),
+            tab === "licenses" && props.role === ROLES.OWNER && !(props.currentUser && props.currentUser.orgId) && React.createElement(LicenseManager, { embedded: true }),
+            tab === "mycompany" && props.currentUser && props.currentUser.orgId && React.createElement(MyCompany, { currentUser: props.currentUser }),
+            tab === "datatools" && props.role === ROLES.OWNER && React.createElement(DataTools, { jobs: props.jobs }),
+            tab === "vendors" && React.createElement(VendorCommandCenter, null),
+            tab === "properties" && React.createElement(PropertiesManager, null),
+            tab === "growthtools" && React.createElement(GrowthTools, { jobs: props.jobs, onAddJob: props.onAddJob }),
+            tab === "commandcenter" && React.createElement(CommandCenter, { jobs: props.jobs }),
+            tab === "setup" && props.role === ROLES.OWNER && React.createElement(SetupChecklist, { onGo: setTab, isTenant: !!(props.currentUser && props.currentUser.orgId) }),
+            tab === "teamaccts" && React.createElement(TeamAccounts, { currentUser: props.currentUser }),
+            tab === "pricingsetup" && React.createElement(PricingSetup, { currentUser: props.currentUser }),
             tab === "activity" && React.createElement(ActivityDashboard, null),
             tab === "leaderboard" && React.createElement(LeaderBoard, { currentUser: props.currentUser }),
             tab === "payroll" && React.createElement(PayrollDashboard, { currentUser: props.currentUser, users: USERS }),
@@ -5611,7 +7712,7 @@ function AdminDashboard(props) {
             tab === "realcapacity" && React.createElement(RealCapacityCalendar, null),
             tab === "capacityforecast" && React.createElement(ForecastedCapacityPanel, null),
             tab === "whatif" && React.createElement(WhatIfPanel, null),
-            tab === "potentwallet" && React.createElement(PotentWalletPanel, { email: props.currentUser && props.currentUser.id, name: props.currentUser && props.currentUser.name }),
+            tab === "potentwallet" && React.createElement(PotentWalletPanel, null),
             tab === "fitcheck" && React.createElement(CapacityCheckPanel, null),
             tab === "savannah" && React.createElement(SavannahPricingPanel, null),
             tab === "b2bpricing" && React.createElement(AdminB2BPricingControls, null),
@@ -5625,7 +7726,8 @@ function AdminDashboard(props) {
             tab === "costprofile" && React.createElement(CostProfileSettings, null),
             tab === "carriercourse" && React.createElement(CarrierAuthorityCourse, null),
             tab === "truckpricing" && React.createElement(TruckJobPricingPanel, null),
-            tab === "voiceroom" && React.createElement(VoiceRoom, { currentUser: props.currentUser, role: props.role }),
+            tab === "voiceroom" && React.createElement(VoiceRoom, { currentUser: props.currentUser, role: props.role, room: "team" }),
+            tab === "dispatchroom" && React.createElement(VoiceRoom, { currentUser: props.currentUser, role: props.role, room: "dispatch" }),
             tab === "ratecards" && React.createElement(RateCardsView, null),
             tab === "deadlines" && React.createElement(DeadlinesView, null),
             tab === "ledger" && React.createElement(AccountingLedgerView, { jobs: props.jobs }),
@@ -5752,6 +7854,7 @@ function AdminLogin(props) {
     var [editingName, setEditingName] = useState(false);
     var [editValue, setEditValue] = useState("");
     var [revokedErr, setRevokedErr] = useState(false);
+    var [srvErr, setSrvErr] = useState("");
     var [camConsent, setCamConsent] = useState(function () {
         try { return localStorage.getItem("pl_cam_consent") === "yes"; } catch (e) { return false; }
     });
@@ -5838,6 +7941,24 @@ function AdminLogin(props) {
             next();
         });
     }
+    // ── COMPANY LOGIN (Shopify-style): email + password against org_users ──
+    var [companyMode, setCompanyMode] = useState(false);
+    var [coEmail, setCoEmail] = useState("");
+    var [coBusy, setCoBusy] = useState(false);
+    var [coErr, setCoErr] = useState("");
+    function companyGo() {
+        var email = coEmail.trim().toLowerCase();
+        if (!email || !pw) return;
+        setCoBusy(true); setCoErr("");
+        plApi("company", { email: email, password: pw }).then(function (res) {
+            setCoBusy(false);
+            if (!res || !res.ok) { setCoErr(res && res.error === "network" ? "Can't reach the server. Check your connection." : ((res && res.error) || "Wrong email or password.")); return; }
+            plTokenSet(res.token);
+            var cuser = plBuildCompanyUser(res);
+            logAdminAction("Company Login", "Signed in from " + getDeviceInfo(), (res.org.name || res.org.slug) + " / " + res.user.name);
+            props.onLogin(cuser);
+        });
+    }
     function go() {
         if (!selected)
             return;
@@ -5873,7 +7994,13 @@ function AdminLogin(props) {
         }
 
         capturePhoto().then(function (photoUrl) {
-            if (user && checkPassword(user.id, pw)) {
+          return plApi("staff", { userId: selected, password: pw }).then(function (authRes) {
+            if (authRes && authRes.error === "network") { setSrvErr("Can't reach the server. Check your connection and try again."); setPw(""); return; }
+            if (authRes && authRes.error === "revoked") { setRevokedErr(true); setPw(""); return; }
+            if (authRes && authRes.error && /not configured|Too many/i.test(authRes.error)) { setSrvErr(authRes.error); setPw(""); return; }
+            setSrvErr("");
+            if (user && authRes && authRes.ok) {
+                plTokenSet(authRes.token);
                 var device = getDeviceInfo();
                 var name = getDisplayName(user);
                 logAdminAction("Login", "Signed in from " + device, name + " (" + user.role + ")");
@@ -5896,6 +8023,7 @@ function AdminLogin(props) {
                 setTimeout(function () { setErr(false); }, 2000);
                 setPw("");
             }
+          });
         });
     }
     var selectedUser = USERS.find(function (u) { return u.id === selected; });
@@ -5911,6 +8039,20 @@ function AdminLogin(props) {
         saveNameOverride(selectedUser.id, editValue.trim());
         setEditingName(false);
         setNameVersion(function (v) { return v + 1; });
+    }
+    if (companyMode) {
+        return React.createElement("div", { style: { minHeight: "100vh", background: C.black, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
+            React.createElement("div", { style: { width: "100%", maxWidth: 380 } },
+                React.createElement("div", { style: { textAlign: "center", marginBottom: 24 } },
+                    React.createElement("div", { style: { fontSize: 20, fontWeight: 900 } }, React.createElement(BrandName, null)),
+                    React.createElement("div", { style: { color: C.dim, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", marginTop: 8 } }, "Company Sign In")),
+                React.createElement(Card, null,
+                    React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 14 } }, "Sign in with the email and password for your company account."),
+                    React.createElement(TxtIn, { label: "Email", value: coEmail, onChange: function (v) { setCoEmail(v); }, type: "email", placeholder: "you@company.com" }),
+                    React.createElement(TxtIn, { label: "Password", value: pw, onChange: function (v) { setPw(v); }, type: "password", placeholder: "Enter your password" }),
+                    coErr && React.createElement("div", { style: { color: C.red, fontSize: 12, marginBottom: 10 } }, "⚠ " + coErr),
+                    React.createElement(Btn, { onClick: companyGo, disabled: !coEmail || !pw || coBusy, style: { width: "100%" } }, coBusy ? "Signing in…" : "Sign In →"),
+                    React.createElement("div", { onClick: function () { setCompanyMode(false); setCoErr(""); setPw(""); }, style: { textAlign: "center", marginTop: 14, fontSize: 11, color: C.orange, cursor: "pointer", textDecoration: "underline" } }, "← POTENT team sign in"))));
     }
     return React.createElement("div", { style: { minHeight: "100vh", background: C.black, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
         React.createElement("video", { ref: videoRef, autoPlay: true, muted: true, playsInline: true, style: { position: "absolute", width: 1, height: 1, opacity: 0, pointerEvents: "none" } }),
@@ -5941,6 +8083,7 @@ function AdminLogin(props) {
                 selected && React.createElement("div", null,
                     React.createElement(TxtIn, { label: "Your Password", value: pw, onChange: function (v) { setPw(v); }, type: "password", placeholder: "Enter your password" }),
                     err && React.createElement("div", { style: { color: C.red, fontSize: 12, marginBottom: 10 } }, "\u26A0 Wrong password. Try again or contact POTENT."),
+                    srvErr && React.createElement("div", { style: { color: C.red, fontSize: 12, marginBottom: 10 } }, "\u26A0 " + srvErr),
                     revokedErr && React.createElement("div", { style: { color: C.red, fontSize: 12, marginBottom: 10, fontWeight: 700 } }, "\uD83D\uDEAB This account no longer has access. Contact the owner."),
                     React.createElement(Btn, {
                         onClick: function () {
@@ -5951,11 +8094,12 @@ function AdminLogin(props) {
                         disabled: !pw, style: { width: "100%" }
                     }, !camConsent ? "Allow Camera To Continue" : camError ? "\u26A0 Camera Needed \u2014 Try Again" : "Sign In \u2192"),
                     camError && React.createElement("div", { style: { color: C.red, fontSize: 11, marginTop: 8, textAlign: "center" } }, "Camera access is needed for documents, BOL uploads, and photo verification inside the app. Please allow it in your browser and try again."),
-                    React.createElement("div", { style: { fontSize: 9, color: "#444", textAlign: "center", marginTop: 8 } }, "By clicking Sign In, you accept the Terms of Access.")))));
+                    React.createElement("div", { style: { fontSize: 9, color: "#444", textAlign: "center", marginTop: 8 } }, "By clicking Sign In, you accept the Terms of Access.")),
+                React.createElement("div", { onClick: function () { setCompanyMode(true); setPw(""); setErr(false); }, style: { textAlign: "center", marginTop: 14, fontSize: 11, color: C.orange, cursor: "pointer", textDecoration: "underline" } }, "Have a company account? Sign in with email →"))));
 }
 // ── PUBLIC APP ────────────────────────────────────────────────────
 function PublicApp(props) {
-    var [tab, setTab] = useState("home");
+    var _bt_publicTab = useBackableTab("home", "publicTab"); var tab = _bt_publicTab[0], setTab = _bt_publicTab[1];
     var [bookCity, setBookCity] = useState(null);
     var [showCustomQuote, setShowCustomQuote] = useState(false);
     var [showPartnerApp, setShowPartnerApp] = useState(false);
@@ -6134,10 +8278,9 @@ function PublicApp(props) {
                         React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.orange, marginBottom: 4 } }, "\uD83D\uDC7B What Ghost Mode Actually Means"),
                         React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.65)", lineHeight: 1.6, marginBottom: 12 } }, "Installs like a real app \u2014 Android, iPhone, or any desktop. No app store needed. Once installed, dispatch keeps working with zero signal: dead zones, warehouses, basements, anywhere. Every job saves locally and syncs automatically the second you're back online."),
                         React.createElement("img", { src: "/app-mockup.jpg", alt: "POTENT OS Ghost Mode offline dispatch screen", style: { width: "100%", borderRadius: 8, border: "1px solid " + C.border } })),
-                    React.createElement("div", { style: { background: "#111", border: "1px solid " + C.border, borderRadius: 10, padding: "14px 16px", maxWidth: 500, margin: "24px auto 0", textAlign: "center" } },
-                        React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.orange, marginBottom: 10 } }, "\uD83C\uDFAC The POTENT Story"),
-                        React.createElement("video", { controls: true, playsInline: true, style: { width: "100%", borderRadius: 8, background: "#000" } },
-                            React.createElement("source", { src: "/potent-logo-reveal.mp4", type: "video/mp4" }))),
+                    React.createElement("div", { style: { maxWidth: 500, margin: "24px auto 0", textAlign: "center" } },
+                        React.createElement("a", { href: "?apply#demo", style: { textDecoration: "none" } },
+                            React.createElement("button", { style: { background: "transparent", color: C.orange, border: "1.5px solid " + C.orange, borderRadius: 9, padding: "13px 26px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "\u25B6 Click here to see demo"))),
                     React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" } },
                         React.createElement("a", { href: "/POTENT-OS-Landing-Page.html", style: { textDecoration: "none" } },
                             React.createElement("button", { style: { background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: "13px 32px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCBB See POTENT OS Pricing")),
@@ -6303,20 +8446,18 @@ tr:nth-child(even){background:#f9f9f9;}
 
 <h2>PRICING QUICK REFERENCE</h2>
 <table><tr><th>Service</th><th>Pricing Model</th><th>Base Rate</th></tr>
-<tr><td>Delivery</td><td>Per mile</td><td>$4.50/mile</td></tr>
-<tr><td>Freight Transport</td><td>Fixed zone</td><td>Local $400 · Regional $750 · Long Dist $1,500</td></tr>
+<tr><td>Delivery / Freight</td><td>Fixed zone (same price)</td><td>Local $400 · Regional $750 · Long Dist $1,500</td></tr>
+<tr><td>Single Item (truck move)</td><td>Flat</td><td>Scheduled $250 · Same-Day $225 · Rush $350</td></tr>
 <tr><td>Event Drop-Off</td><td>Flat + overage</td><td>$1,000 flat under 150mi · +$1/mi beyond</td></tr>
 <tr><td>Discreet/High-Value</td><td>Fixed zone</td><td>Local $500 · Regional $900 · Long Dist $1,800</td></tr>
 <tr><td>Junk Removal</td><td>Load size</td><td>$179 / $250 / $350-400 / $500-600 / $750-850</td></tr>
 <tr><td>Property Cleanouts</td><td>Property size</td><td>$1,200–$8,000+ (Pending Quote)</td></tr></table>
 
-<h2>SPEED MULTIPLIERS</h2>
-<table><tr><th>Speed</th><th>Multiplier</th><th>When to Use</th></tr>
-<tr><td>Standard</td><td>×1.0</td><td>Normal scheduled dispatch</td></tr>
-<tr><td>Urgent</td><td>×1.3</td><td>Priority same-day</td></tr>
-<tr><td>After-Hours</td><td>×1.6</td><td>Late night / early morning</td></tr>
-<tr><td>Overnight</td><td>×1.8</td><td>Drives overnight, arrives by morning</td></tr>
-<tr><td>Emergency</td><td>×2.0</td><td>Urgent + after-hours combined</td></tr></table>
+<h2>SPEED OPTIONS</h2>
+<table><tr><th>Speed</th><th>Single Item</th><th>When to Use</th></tr>
+<tr><td>Scheduled</td><td>$250</td><td>Normal scheduled dispatch</td></tr>
+<tr><td>Same-Day</td><td>$225</td><td>Anytime that day, customer saves $25</td></tr>
+<tr><td>Rush</td><td>$350</td><td>Priority, we move fast</td></tr></table>
 
 <h2>PRICING TIERS (SET FIRST ON EVERY CALL)</h2>
 <table><tr><th>Tier</th><th>Discount</th><th>When to Apply</th></tr>
@@ -6326,14 +8467,7 @@ tr:nth-child(even){background:#f9f9f9;}
 
 <h2>ADD-ONS QUICK REFERENCE</h2>
 <table><tr><th>Add-On</th><th>Fee</th></tr>
-<tr><td>Helper needed</td><td>+$100</td></tr>
 <tr><td>Extra stop</td><td>+$40</td></tr>
-<tr><td>Medium weight (50–150 lbs)</td><td>+$50</td></tr>
-<tr><td>Heavy weight (150–300 lbs)</td><td>+$100</td></tr>
-<tr><td>Piano-class (300+ lbs)</td><td>+$200</td></tr>
-<tr><td>24/7 Emergency Dispatch</td><td>+$250</td></tr>
-<tr><td>Same-Day Guaranteed</td><td>+$150</td></tr>
-<tr><td>Holiday Service</td><td>+$300</td></tr>
 <tr><td>Cash payment</td><td>−10%</td></tr></table>
 
 <h2>JOB STATUS FLOW</h2>
@@ -6534,6 +8668,13 @@ function WaitlistPage() {
     var [err, setErr] = useState(false);
     var [showQuiz, setShowQuiz] = useState(false);
     var [activeSection, setActiveSection] = useState("home");
+    // Deep links like ?apply#demo: React renders after load, so scroll to the section ourselves.
+    React.useEffect(function () {
+        var h = (window.location.hash || "").replace("#", "");
+        if (!h) return;
+        var t = setTimeout(function () { var el = document.getElementById(h); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 350);
+        return function () { clearTimeout(t); };
+    }, []);
     function set(k, v) { setF(function (p) { var n = Object.assign({}, p); n[k] = v; return n; }); }
     function submit() {
         if (!f.company_name || !f.contact_name || !f.email)
@@ -6558,7 +8699,7 @@ function WaitlistPage() {
     var ff = "'DM Sans','Segoe UI',sans-serif";
     var ALL_FEATURES = [
         { cat: "📦 Booking & Dispatch", items: ["Public customer booking wizard (5-step)", "Admin phone quote panel", "Manual job creation", "Instant online quotes", "Save pending quote for follow-up", "13-step job status tracking", "Job search and filtering", "Job notes", "Job tagged with booking employee", "Extra stop tracking", "Helper needed tracking", "Item weight tracking (4 tiers)", "Custom Price Override", "Load cloning", "Bulk status changes", "Bulk assignment", "Multi-stop load planning", "Deadhead tracking", "Lane history"] },
-        { cat: "💲 Pricing Engine", items: ["6 service types with distinct pricing", "Distance-based pricing ($4.50/mile)", "Fixed zone pricing (Freight & Discreet)", "Load size pricing (Junk Removal)", "Property size pricing (Cleanouts)", "Speed multipliers (×1 to ×2)", "Weight add-ons (4 tiers)", "Helper add-on (+$100)", "Extra stop fee (+$40)", "Emergency add-ons (3 types)", "Pricing tiers (Standard/Loyalty/Floor)", "Cash discount (10%)", "Custom Price Override", "Live real-time quote updates", "Line-item quote breakdown", "Fuel cost shown in quote", "Price guarantee language"] },
+        { cat: "💲 Pricing Engine", items: ["6 service types with distinct pricing", "Fixed zone pricing (Delivery, Freight & Discreet)", "Single Item pricing ($250 / $225 same-day / $350 rush)", "Pop-Up Event flat pricing ($1,000 under 150mi, +$1/mi beyond)", "Load size pricing (Junk Removal)", "Property size pricing (Cleanouts)", "Extra stop fee (+$40)", "Pricing tiers (Standard/Loyalty/Floor)", "Cash discount (10%)", "Custom Price Override", "Live real-time quote updates", "Line-item quote breakdown", "Fuel cost shown in quote", "Price guarantee language"] },
         { cat: "⛽ Fuel & Gas Tracking", items: ["Gas price updates every 5 minutes", "All 50 states coverage", "Live fuel cost per trip", "Fuel cost shown in customer quote", "Fuel cost feeds job profitability", "Automatic fuel cost calculation"] },
         { cat: "⏱ Stop Timer & Job Cost", items: ["Built-in job timer", "Start/Pause functionality", "Tracks total job time", "Feeds into job cost calculation", "True profit per job (revenue − fuel − labor − expenses)"] },
         { cat: "📅 Calendar & Anti-Overbooking", items: ["Monthly calendar view", "Color-coded availability", "Block/Unblock days", "Prevents overbooking", "Driver availability tracking", "Equipment availability tracking"] },
@@ -6611,6 +8752,8 @@ function WaitlistPage() {
                 "POTENT ",
                 React.createElement("span", { style: { color: C2.orange } }, "OS")),
             React.createElement("div", { style: { display: "flex", gap: 8 } },
+                React.createElement("a", { href: "#demo", style: { textDecoration: "none" } },
+                    React.createElement("button", { style: { background: "transparent", color: C2.dim, border: "1px solid " + C2.border, borderRadius: 7, padding: "6px 12px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: ff } }, "Demo")),
                 React.createElement("a", { href: "#free-tools", style: { textDecoration: "none" } },
                     React.createElement("button", { style: { background: "transparent", color: C2.dim, border: "1px solid " + C2.border, borderRadius: 7, padding: "6px 12px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: ff } }, "Free Tools")),
                 React.createElement("a", { href: "#apply", style: { textDecoration: "none" } },
@@ -6634,6 +8777,35 @@ function WaitlistPage() {
                     React.createElement("button", { style: { background: C2.orange, color: "#000", border: "none", borderRadius: 9, padding: "15px 36px", fontSize: 15, fontWeight: 900, cursor: "pointer", fontFamily: ff } }, "Apply for Early Access \uD83D\uDE80")),
                 React.createElement("a", { href: "#free-tools", style: { textDecoration: "none" } },
                     React.createElement("button", { style: { background: "transparent", color: C2.white, border: "1.5px solid " + C2.border, borderRadius: 9, padding: "15px 28px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: ff } }, "Get Free Tools First \u2192")))),
+        React.createElement("div", { id: "demo", style: { padding: "56px 20px", borderBottom: "1px solid " + C2.border, background: "linear-gradient(180deg,#080808,#0c0f0a)", scrollMarginTop: 60 } },
+            React.createElement("div", { style: { maxWidth: 900, margin: "0 auto" } },
+                React.createElement("div", { style: { textAlign: "center", marginBottom: 26 } },
+                    React.createElement("div", { style: { fontSize: 11, color: C2.orange, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 8 } }, "See It Work"),
+                    React.createElement("div", { style: { fontSize: 30, fontWeight: 900, color: C2.white, marginBottom: 8 } }, "👻 Ghost Mode — dispatch with zero signal"),
+                    React.createElement("div", { style: { fontSize: 14, color: C2.dim, maxWidth: 560, margin: "0 auto", lineHeight: 1.7 } }, "Watch a real job get booked with no internet, then sync itself the moment the phone reconnects. This is the real app, not a mockup.")),
+                React.createElement("div", { style: { display: "flex", justifyContent: "center", marginBottom: 34 } },
+                    React.createElement("video", { controls: true, playsInline: true, preload: "metadata", style: { width: "100%", maxWidth: 340, aspectRatio: "9 / 16", borderRadius: 14, background: "#000", border: "1px solid " + C2.orange + "55", boxShadow: "0 0 40px " + C2.orange + "22" } },
+                        React.createElement("source", { src: "/potent-logo-reveal.mp4", type: "video/mp4" }))),
+                React.createElement("div", { style: { textAlign: "center", fontSize: 12, color: C2.orange, fontWeight: 800, letterSpacing: 2, textTransform: "uppercase", marginBottom: 14 } }, "The 3 colors you will see"),
+                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 14, marginBottom: 34 } }, [
+                    ["/mi-offline-orange.jpg", "#ED8936", "🟠 Orange — Offline", "No signal. Jobs save on the phone and nothing is lost."],
+                    ["/mi-syncing-blue.jpg", "#4299E1", "🔵 Blue — Syncing", "Back online. Waiting jobs are sending to the cloud."],
+                    ["/mi-synced-green.jpg", "#1DB954", "🟢 Green — Synced", "Done. Every job is saved and visible to the whole team."]
+                ].map(function (c) {
+                    return React.createElement("div", { key: c[1], style: { background: C2.card, border: "1px solid " + c[1] + "66", borderRadius: 14, overflow: "hidden" } },
+                        React.createElement("img", { src: c[0], alt: c[2], loading: "lazy", style: { width: "100%", display: "block", aspectRatio: "1 / 1", objectFit: "cover" } }),
+                        React.createElement("div", { style: { padding: "12px 14px" } },
+                            React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: c[1], marginBottom: 4 } }, c[2]),
+                            React.createElement("div", { style: { fontSize: 12, color: C2.dim, lineHeight: 1.6 } }, c[3])));
+                })),
+                React.createElement("div", { style: { background: C2.card, border: "1px solid " + C2.orange + "44", borderRadius: 14, padding: "20px 22px", marginBottom: 26 } },
+                    React.createElement("div", { style: { fontSize: 15, fontWeight: 900, color: C2.orange, marginBottom: 6 } }, "🎬 Demo Mode"),
+                    React.createElement("div", { style: { fontSize: 13, color: C2.dim, lineHeight: 1.7 } }, "Want to click around before you decide? Demo Mode fills the app with sample jobs, drivers, carriers, brokers and expenses so you can try every screen. Nothing real is touched, and you can clear it in one tap.")),
+                React.createElement("div", { style: { display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" } },
+                    React.createElement("a", { href: "#free-tools", style: { textDecoration: "none" } },
+                        React.createElement("button", { style: { background: C2.orange, color: "#000", border: "none", borderRadius: 9, padding: "14px 30px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: ff } }, "📥 Get Free Tools")),
+                    React.createElement("a", { href: "#apply", style: { textDecoration: "none" } },
+                        React.createElement("button", { style: { background: "transparent", color: C2.orange, border: "1.5px solid " + C2.orange, borderRadius: 9, padding: "14px 30px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: ff } }, "Apply for Access →"))))),
         React.createElement("div", { style: { padding: "50px 20px", borderBottom: "1px solid " + C2.border } },
             React.createElement("div", { style: { maxWidth: 720, margin: "0 auto" } },
                 React.createElement("div", { style: { textAlign: "center", marginBottom: 30 } },
@@ -6835,231 +9007,695 @@ function WaitlistPage() {
                     " \u00B7 ",
                     React.createElement("a", { href: "mailto:potentlogistics@pm.me", style: { color: C2.orange, textDecoration: "none" } }, "potentlogistics@pm.me")))));
 }
-// ── POTENT OS LICENSE MANAGER ─────────────────────────────────────────
-// Access at: yourdomain.com?potent-os-admin
-// Password protected — owner eyes only
-var POS_ADMIN_PW = "POTENTOS_ADMIN_2026";
+// ── POTENT OS CUSTOMERS & LICENSES — owner only ───────────────────────────
+// One place for everything about a customer: tier, license + monthly-support
+// status, invoices, billing, seat limits, owner-login reset, suspend.
+// All data comes through the server (auth.js). Nothing here touches Supabase.
 var PLAN_PRICES = { starter: 4995, growth: 9995, fleet: 19995, enterprise: 34995 };
-var PLAN_LIMITS = { starter: "1-10 users", growth: "11-50 users", fleet: "51-150+ users" };
-var PLAN_SUPPORT = { starter: 149, growth: 249, fleet: 399 };
-function LicenseManager() {
-    var [authed, setAuthed] = useState(function () { try {
-        return localStorage.getItem("pos_authed") === "1";
-    }
-    catch (e) {
-        return false;
-    } });
-    var [pw, setPw] = useState("");
-    var [err, setErr] = useState(false);
-    var [orgs, setOrgs] = useState([]);
-    var [waitlist, setWaitlist] = useState([]);
-    var [loading, setLoading] = useState(false);
-    var [tab, setTab] = useState("dashboard");
-    var [showAdd, setShowAdd] = useState(false);
-    var [showOnboard, setShowOnboard] = useState(null);
-    // Auto-load data when already authenticated
-    useEffect(function () {
-        if (authed)
-            loadData();
-    }, [authed]);
-    function sbFetch(table, query) {
-        return fetch(SUPABASE_URL + "/rest/v1/" + table + "?" + (query || "order=created_at.desc"), {
-            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
-        }).then(function (r) { return r.json(); });
-    }
-    function sbInsert(table, data) {
-        return fetch(SUPABASE_URL + "/rest/v1/" + table, {
-            method: "POST",
-            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=representation" },
-            body: JSON.stringify(data)
-        }).then(function (r) { return r.json(); });
-    }
-    function sbUpdate(table, id, data) {
-        return fetch(SUPABASE_URL + "/rest/v1/" + table + "?id=eq." + id, {
-            method: "PATCH",
-            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json" },
-            body: JSON.stringify(data)
+var PLAN_LIMITS = { starter: "1-10 users", growth: "11-50 users", fleet: "51-150 users", enterprise: "151-300 users" };
+var PLAN_SUPPORT = { starter: 149, growth: 249, fleet: 399, enterprise: 599 };
+function licColor(s) { return s === "paid" || s === "active" || s === "complete" ? C.green : s === "flex_active" ? C.blue : s === "past_due" ? "#ED8936" : s === "suspended" || s === "cancelled" || s === "failed" || s === "void" ? C.red : C.dim; }
+function licLabel(s) { return ({ paid: "License paid", flex_active: "Flex Pay (current)", past_due: "Past due", unpaid: "Not paid", suspended: "Suspended" })[s] || s || "—"; }
+function supLabel(s) { return ({ active: "Support active", past_due: "Support past due", cancelled: "Support cancelled", none: "No support" })[s] || "No support"; }
+function licBadge(text, color) { return React.createElement("span", { style: { background: color + "22", color: color, borderRadius: 20, padding: "2px 9px", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap", display: "inline-block" } }, text); }
+function licMoney(n) { return "$" + Number(n || 0).toLocaleString(); }
+function licSel(value, onChange, options) {
+    return React.createElement("select", { value: value == null ? "" : value, onChange: function (e) { onChange(e.target.value); }, style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "7px 8px", fontSize: 12, width: "100%", fontFamily: "inherit", boxSizing: "border-box" } },
+        options.map(function (o) { return React.createElement("option", { key: o[0], value: o[0] }, o[1]); }));
+}
+var licInput = { background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "8px 10px", fontSize: 12, width: "100%", fontFamily: "inherit", boxSizing: "border-box" };
+
+function LicenseCustomerDetail(props) {
+    var [d, setD] = useState(null);
+    var [msg, setMsg] = useState("");
+    var [ls, setLs] = useState("unpaid");
+    var [ss, setSs] = useState("none");
+    var [fs, setFs] = useState("");
+    var [sp, setSp] = useState("");
+    var [notes, setNotes] = useState("");
+    var [temp, setTemp] = useState(null);
+    var [inv, setInv] = useState({ kind: "license", description: "", amount: "", status: "paid", provider: "square" });
+    function load() {
+        plApi("orgdetail", { id: props.orgId }).then(function (r) {
+            if (r && r.ok) {
+                setD(r); setLs(r.org.billing.license_status); setSs(r.org.billing.support_status); setFs(r.org.billing.flex_status || "");
+                setSp(r.org.support_price == null ? "" : r.org.support_price); setNotes(r.org.billing_notes || "");
+            } else setMsg((r && r.error) || "Could not load.");
         });
     }
-    function loadData() {
-        setLoading(true);
-        Promise.all([
-            sbFetch("organizations"),
-            sbFetch("waitlist"),
-        ]).then(function (res) {
-            setOrgs(Array.isArray(res[0]) ? res[0] : []);
-            setWaitlist(Array.isArray(res[1]) ? res[1] : []);
-            setLoading(false);
-        }).catch(function () { setLoading(false); });
+    useEffect(function () { load(); }, [props.orgId]);
+    function saveStatus() {
+        var f = { license_status: ls, support_status: ss, support_price: sp === "" ? "" : Number(sp), billing_notes: notes };
+        if (fs) f.flex_status = fs;
+        plApi("setorg", { id: props.orgId, fields: f }).then(function (r) { setMsg(r && r.ok ? "Saved." : ((r && r.error) || "Failed")); if (r && r.ok) { load(); props.onChanged(); } });
     }
-    function doLogin() {
-        if (pw === POS_ADMIN_PW) {
-            try {
-                localStorage.setItem("pos_authed", "1");
-            }
-            catch (e) { }
-            setAuthed(true);
-            loadData();
-        }
-        else {
-            setErr(true);
-            setTimeout(function () { setErr(false); }, 2000);
-            setPw("");
-        }
+    function setStatus(status) {
+        plApi("setorg", { id: props.orgId, fields: { status: status } }).then(function (r) { if (r && r.ok) { load(); props.onChanged(); } else setMsg((r && r.error) || "Failed"); });
     }
-    function doLogout() {
-        try {
-            localStorage.removeItem("pos_authed");
-        }
-        catch (e) { }
-        setAuthed(false);
+    function startAssist() {
+        if (!window.confirm("Open this customer's account for 60 minutes to set it up for them? It is logged, and they see a banner while you are in.")) return;
+        plApi("assist", { orgId: props.orgId }).then(function (r) {
+            if (!r || !r.ok) { setMsg((r && r.error) || "Could not open the account."); return; }
+            try { localStorage.setItem("pl_assist_return", JSON.stringify({ token: plTokenGet(), user: loadCurrentUser() })); } catch (e) { }
+            plTokenSet(r.token);
+            var u = plBuildCompanyUser(r);
+            if (window.__plLogin) window.__plLogin(u); else window.location.reload();
+        });
     }
-    var totalRevenue = orgs.reduce(function (s, o) { return s + (o.plan_price || 0); }, 0);
-    var activeOrgs = orgs.filter(function (o) { return o.status === "active"; }).length;
-    var pendingWaitlist = waitlist.filter(function (w) { return w.status === "pending"; }).length;
-    if (!authed)
-        return React.createElement("div", { style: { minHeight: "100vh", background: C.black, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
-            React.createElement("div", { style: { width: "100%", maxWidth: 360 } },
-                React.createElement("div", { style: { textAlign: "center", marginBottom: 24 } },
-                    React.createElement("div", { style: { fontSize: 32, fontWeight: 900, color: C.white } },
-                        "POTENT ",
-                        React.createElement("span", { style: { color: C.orange } }, "OS")),
-                    React.createElement("div", { style: { fontSize: 10, color: C.dim, letterSpacing: 2, textTransform: "uppercase", marginTop: 4 } }, "License Management")),
-                React.createElement(Card, null,
-                    React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white, marginBottom: 4 } }, "\uD83D\uDD10 Owner Access Only"),
-                    React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 14 } }, "This panel is for managing POTENT OS customer licenses."),
-                    React.createElement(TxtIn, { label: "Password", value: pw, onChange: function (v) { setPw(v); }, type: "password", placeholder: "Enter owner password" }),
-                    err && React.createElement("div", { style: { color: C.red, fontSize: 12, marginBottom: 10 } }, "\u26A0 Incorrect password."),
-                    React.createElement(Btn, { onClick: doLogin, disabled: !pw, style: { width: "100%" } }, "Enter License Manager \u2192"))));
-    if (loading)
-        return React.createElement("div", { style: { minHeight: "100vh", background: C.black, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: C.dim, fontFamily: "'DM Sans','Segoe UI',sans-serif", gap: 16 } },
-            React.createElement("img", { src: "/potent-griffin-icon.png", alt: "POTENT", style: { width: 72, height: 72 } }),
-            React.createElement(LoadingSpinner, { label: "" }));
-    return React.createElement("div", { style: { minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
-        React.createElement("div", { style: { borderBottom: "1px solid " + C.border, padding: "12px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: C.black, zIndex: 100 } },
-            React.createElement("div", null,
-                React.createElement("div", { style: { fontSize: 16, fontWeight: 900 } },
-                    "POTENT ",
-                    React.createElement("span", { style: { color: C.orange } }, "OS")),
-                React.createElement("div", { style: { fontSize: 9, color: C.dim, letterSpacing: 1.5, textTransform: "uppercase" } }, "License Manager")),
-            React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center" } },
-                React.createElement(Btn, { onClick: function () { setShowAdd(true); }, style: { padding: "7px 14px", fontSize: 11 } }, "+ New Customer"),
-                React.createElement(Btn, { variant: "ghost", onClick: doLogout, style: { padding: "6px 10px", fontSize: 10 } }, "Sign Out"))),
-        React.createElement("div", { style: { display: "flex", gap: 4, padding: "8px 12px", borderBottom: "1px solid " + C.border, overflowX: "auto" } }, [["dashboard", "📊 Dashboard"], ["customers", "🏢 Customers"], ["waitlist", "📋 Waitlist (" + pendingWaitlist + ")"]].map(function (t) {
-            return React.createElement("button", { key: t[0], onClick: function () { setTab(t[0]); }, style: { border: "none", borderRadius: 7, padding: "6px 12px", cursor: "pointer", background: tab === t[0] ? C.orange : "transparent", color: tab === t[0] ? "#000" : C.dim, fontWeight: 700, fontFamily: "inherit", fontSize: 11, whiteSpace: "nowrap" } }, t[1]);
-        })),
-        React.createElement("div", { style: { padding: "20px 16px 60px", maxWidth: 720, margin: "0 auto" } },
-            tab === "dashboard" && React.createElement("div", null,
-                React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.white, marginBottom: 4 } }, "Platform Overview"),
-                React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 20 } }, "Your POTENT OS customer base at a glance."),
-                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10, marginBottom: 24 } }, [["Active Customers", activeOrgs, C.green], ["Waitlist", pendingWaitlist, C.orange], ["Total Licenses", orgs.length, C.blue], ["License Revenue", "$" + totalRevenue.toLocaleString(), C.purple]].map(function (s) {
-                    return React.createElement(Card, { key: s[0], style: { padding: "14px 16px" } },
-                        React.createElement("div", { style: { fontSize: 10, color: C.dim, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 } }, s[0]),
-                        React.createElement("div", { style: { fontSize: 22, fontWeight: 900, color: s[2] } }, s[1]));
-                })),
-                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 20 } }, [["starter", "🟢 Starter", "$4,995"], ["growth", "🔵 Growth", "$9,995"], ["fleet", "🟣 Fleet", "$19,995"], ["enterprise", "🟠 Enterprise", "$34,995"]].map(function (p) {
-                    var count = orgs.filter(function (o) { return o.plan === p[0]; }).length;
-                    return React.createElement(Card, { key: p[0], style: { textAlign: "center", padding: "14px" } },
-                        React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.white, marginBottom: 4 } }, p[1]),
-                        React.createElement("div", { style: { fontSize: 24, fontWeight: 900, color: C.orange, marginBottom: 2 } }, count),
-                        React.createElement("div", { style: { fontSize: 10, color: C.dim } },
-                            p[2],
-                            " each"),
-                        React.createElement("div", { style: { fontSize: 10, color: C.faint } }, PLAN_LIMITS[p[0]]));
-                }))),
-            tab === "customers" && React.createElement("div", null,
-                React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 16 } }, "\uD83C\uDFE2 Active Customers"),
-                orgs.length === 0 ? React.createElement("div", { style: { textAlign: "center", padding: "40px 0", color: C.dim, fontSize: 13 } }, "No customers yet. Add your first customer or approve a waitlist application.")
-                    : orgs.map(function (org) {
-                        return React.createElement(Card, { key: org.id, style: { marginBottom: 10 } },
-                            React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 } },
-                                React.createElement("div", null,
-                                    React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white } }, org.name),
-                                    React.createElement("div", { style: { fontSize: 11, color: C.dim } },
-                                        org.owner_email,
-                                        " \u00B7 ",
-                                        org.owner_phone),
-                                    React.createElement("div", { style: { fontSize: 10, color: C.faint } },
-                                        org.state,
-                                        " \u00B7 Slug: ",
-                                        org.slug)),
-                                React.createElement("div", { style: { textAlign: "right" } },
-                                    React.createElement("div", { style: { fontSize: 16, fontWeight: 900, color: C.orange } },
-                                        "$",
-                                        (org.plan_price || 0).toLocaleString()),
-                                    React.createElement("div", { style: { background: (org.plan === "fleet" ? C.purple : org.plan === "growth" ? C.blue : C.green) + "22", color: (org.plan === "fleet" ? C.purple : org.plan === "growth" ? C.blue : C.green), borderRadius: 20, padding: "2px 10px", fontSize: 10, fontWeight: 700, display: "inline-block", marginTop: 4 } }, org.plan?.toUpperCase()))),
-                            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 8 } },
-                                React.createElement("div", { style: { fontSize: 10, color: C.dim } },
-                                    "Max Users: ",
-                                    React.createElement("span", { style: { color: C.white } }, org.max_users)),
-                                React.createElement("div", { style: { fontSize: 10, color: C.dim } },
-                                    "Support: ",
-                                    React.createElement("span", { style: { color: org.support_plan ? C.green : C.faint } }, org.support_plan ? "✓ $" + org.support_price + "/mo" : "None")),
-                                React.createElement("div", { style: { fontSize: 10, color: C.dim } },
-                                    "Status: ",
-                                    React.createElement("span", { style: { color: org.status === "active" ? C.green : C.red } }, org.status)),
-                                React.createElement("div", { style: { fontSize: 10, color: C.dim } },
-                                    "Since: ",
-                                    React.createElement("span", { style: { color: C.white } }, org.created_at ? org.created_at.split("T")[0] : "—"))),
-                            org.notes && React.createElement("div", { style: { fontSize: 10, color: C.faint, marginTop: 6, borderTop: "1px solid " + C.border, paddingTop: 6 } }, org.notes),
-                            React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10 } },
-                                React.createElement(Btn, { onClick: async function () { await sbUpdate("organizations", org.id, { status: org.status === "active" ? "suspended" : "active" }); loadData(); }, variant: org.status === "active" ? "ghost" : "success", style: { flex: 1, padding: "6px", fontSize: 10 } }, org.status === "active" ? "⏸ Suspend" : "▶ Reactivate")));
-                    })),
-            tab === "waitlist" && React.createElement("div", null,
-                React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 16 } }, "\uD83D\uDCCB Waitlist Applications"),
-                waitlist.length === 0 ? React.createElement("div", { style: { textAlign: "center", padding: "40px 0", color: C.dim, fontSize: 13 } }, "No waitlist applications yet. Share your waitlist link to start collecting applications.")
-                    : waitlist.map(function (w) {
-                        return React.createElement(Card, { key: w.id, style: { marginBottom: 10 } },
-                            React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 } },
-                                React.createElement("div", null,
-                                    React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white } }, w.company_name),
-                                    React.createElement("div", { style: { fontSize: 11, color: C.dim } },
-                                        w.contact_name,
-                                        " \u00B7 ",
-                                        w.email,
-                                        " \u00B7 ",
-                                        w.phone),
-                                    React.createElement("div", { style: { fontSize: 10, color: C.faint, marginTop: 2 } },
-                                        w.truck_count,
-                                        " trucks \u00B7 ",
-                                        w.driver_count,
-                                        " drivers \u00B7 ",
-                                        w.state,
-                                        " \u00B7 ",
-                                        w.monthly_revenue)),
-                                React.createElement("div", { style: { background: (w.status === "pending" ? C.orange : w.status === "converted" ? C.green : C.red) + "22", color: (w.status === "pending" ? C.orange : w.status === "converted" ? C.green : C.red), borderRadius: 20, padding: "2px 10px", fontSize: 10, fontWeight: 700 } }, w.status)),
-                            w.notes && React.createElement("div", { style: { fontSize: 11, color: C.dim, fontStyle: "italic", marginBottom: 8 } },
-                                "\"",
-                                w.notes,
-                                "\""),
-                            w.status === "pending" && React.createElement("div", { style: { display: "flex", gap: 8 } },
-                                React.createElement(Btn, { onClick: function () { setShowOnboard(w); }, variant: "success", style: { flex: 2, padding: "8px", fontSize: 11 } }, "\u2705 Approve & Onboard"),
-                                React.createElement(Btn, { onClick: async function () { await sbUpdate("waitlist", w.id, { status: "rejected" }); loadData(); }, variant: "danger", style: { flex: 1, padding: "8px", fontSize: 11 } }, "\u274C Reject")));
-                    }))),
-        showAdd && React.createElement(AddCustomerModal, { onClose: function () { setShowAdd(false); }, onSave: async function (data) {
-                var res = await sbInsert("organizations", data);
-                if (Array.isArray(res) && res[0]) {
-                    await sbInsert("org_users", { org_id: res[0].id, name: data.owner_name, email: data.owner_email, phone: data.owner_phone, role: "owner", password_hash: data.slug.toUpperCase() + "2026", status: "active" });
-                }
-                setShowAdd(false);
-                loadData();
-            } }),
-        showOnboard && React.createElement(AddCustomerModal, { entry: showOnboard, onClose: function () { setShowOnboard(null); }, onSave: async function (data) {
-                var res = await sbInsert("organizations", data);
-                if (Array.isArray(res) && res[0]) {
-                    await sbInsert("org_users", { org_id: res[0].id, name: data.owner_name, email: data.owner_email, phone: data.owner_phone, role: "owner", password_hash: data.slug.toUpperCase() + "2026", status: "active" });
-                    await sbUpdate("waitlist", showOnboard.id, { status: "converted" });
-                }
-                setShowOnboard(null);
-                loadData();
-            } }));
+    function resetOwner() {
+        if (!window.confirm("Reset the owner's password? A new temporary one will be shown once.")) return;
+        plApi("resetowner", { orgId: props.orgId }).then(function (r) { if (r && r.ok) setTemp({ email: r.email, pw: r.tempPassword }); else setMsg((r && r.error) || "Failed"); });
+    }
+    function invAction(row, status) {
+        plApi("setinvoice", { id: row.id, status: status }).then(function (r) { if (r && r.ok) { load(); props.onChanged(); } else setMsg((r && r.error) || "Failed"); });
+    }
+    function addInvoice() {
+        if (!inv.amount) { setMsg("Enter an amount."); return; }
+        plApi("addinvoice", Object.assign({ orgId: props.orgId }, inv, { amount: Number(inv.amount) })).then(function (r) {
+            if (r && r.ok) { setInv({ kind: "license", description: "", amount: "", status: "paid", provider: "square" }); setMsg("Invoice recorded. Status updated."); load(); props.onChanged(); }
+            else setMsg((r && r.error) || "Failed");
+        });
+    }
+    if (!d) return React.createElement("div", { style: { color: C.dim, fontSize: 12, padding: 10 } }, msg || "Loading…");
+    var o = d.org, b = o.billing;
+    var secTitle = { fontSize: 10, color: C.dim, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, margin: "14px 0 6px" };
+    return React.createElement("div", { style: { borderTop: "1px solid " + C.border, marginTop: 10, paddingTop: 4 } },
+        temp && React.createElement("div", { style: { background: C.green + "18", border: "1px solid " + C.green + "66", borderRadius: 10, padding: 12, margin: "10px 0" } },
+            React.createElement("div", { style: { fontSize: 12, color: C.white, fontWeight: 700 } }, "New temporary password for " + temp.email),
+            React.createElement("div", { style: { fontFamily: "monospace", fontSize: 20, color: C.green, fontWeight: 900, margin: "6px 0" } }, temp.pw),
+            React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "Shown once. Send it to them now.")),
+        React.createElement("div", { style: secTitle }, "Account"),
+        React.createElement("div", { style: { fontSize: 12, color: C.white, lineHeight: 1.7 } },
+            o.owner_email || "no owner email", " · ", d.users.filter(function (u) { return !u.status || u.status === "active"; }).length, " active logins",
+            React.createElement("br"), "Stripe customer: ", o.stripe_customer_id || "—", " · Payout account: ", o.stripe_account_id ? (b.payout_status) : "not connected", " · Branding: ", o.branding ? "set" : "default"),
+        React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" } },
+            React.createElement(Btn, { onClick: startAssist, style: { padding: "6px 12px", fontSize: 11 } }, "\uD83D\uDEE0 Set up for this customer"),
+            React.createElement(Btn, { variant: "ghost", onClick: resetOwner, style: { padding: "6px 12px", fontSize: 11 } }, "Reset owner password"),
+            React.createElement(Btn, { variant: o.status === "active" ? "ghost" : "primary", onClick: function () { setStatus(o.status === "active" ? "suspended" : "active"); }, style: { padding: "6px 12px", fontSize: 11 } }, o.status === "active" ? "Suspend account" : "Reactivate account")),
+        React.createElement("div", { style: secTitle }, "License & monthly support"),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 } },
+            React.createElement("div", null, React.createElement("div", { style: { fontSize: 10, color: C.dim, marginBottom: 3 } }, "License"), licSel(ls, setLs, [["unpaid", "Not paid"], ["paid", "Paid in full"], ["flex_active", "Flex Pay (current)"], ["past_due", "Past due"], ["suspended", "Suspended"]])),
+            React.createElement("div", null, React.createElement("div", { style: { fontSize: 10, color: C.dim, marginBottom: 3 } }, "Monthly support"), licSel(ss, setSs, [["none", "None"], ["active", "Active"], ["past_due", "Past due"], ["cancelled", "Cancelled"]])),
+            React.createElement("div", null, React.createElement("div", { style: { fontSize: 10, color: C.dim, marginBottom: 3 } }, "Support $/month (blank = " + licMoney(PLAN_SUPPORT[b.plan]) + ")"), React.createElement("input", { value: sp, inputMode: "numeric", onChange: function (e) { setSp(e.target.value); }, style: licInput })),
+            React.createElement("div", null, React.createElement("div", { style: { fontSize: 10, color: C.dim, marginBottom: 3 } }, "Flex Pay"), licSel(fs, setFs, [["", b.flex_status ? "Keep (" + b.flex_status + ")" : "Not on Flex Pay"], ["active", "Active"], ["past_due", "Past due"], ["complete", "Paid off"]]))),
+        b.flex_total > 0 && React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 6 } }, "Flex Pay progress: " + licMoney(b.flex_paid) + " of " + licMoney(b.flex_total)),
+        React.createElement("textarea", { value: notes, placeholder: "Billing notes (private)", rows: 2, onChange: function (e) { setNotes(e.target.value); }, style: Object.assign({}, licInput, { marginTop: 8, resize: "vertical" }) }),
+        React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", marginTop: 8 } },
+            React.createElement(Btn, { onClick: saveStatus, style: { padding: "6px 14px", fontSize: 11 } }, "Save"),
+            msg && React.createElement("span", { style: { fontSize: 11, color: /^(Saved|Invoice)/.test(msg) ? C.green : C.red } }, msg)),
+        React.createElement(OrgLimitsEditor, { org: { id: o.id, plan: o.plan, max_trucks: o.max_trucks, max_drivers: o.max_drivers, max_dispatch: o.max_dispatch }, onSaved: function () { load(); props.onChanged(); } }),
+        React.createElement("div", { style: secTitle }, "Invoices & payments"),
+        d.invoices.length === 0 && React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "No invoices yet."),
+        d.invoices.map(function (r) {
+            return React.createElement("div", { key: r.id, style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: "1px solid " + C.border } },
+                React.createElement("div", { style: { minWidth: 0 } },
+                    React.createElement("div", { style: { fontSize: 12, color: C.white, fontWeight: 700 } }, licMoney(r.amount) + " · " + (r.description || r.kind)),
+                    React.createElement("div", { style: { fontSize: 10, color: C.dim } }, r.kind + " · " + (r.provider || "") + " · " + String(r.paid_at || r.created_at || "").slice(0, 10))),
+                React.createElement("div", { style: { display: "flex", gap: 5, alignItems: "center", flexShrink: 0 } },
+                    licBadge(r.status, licColor(r.status)),
+                    r.status !== "paid" && React.createElement("button", { onClick: function () { invAction(r, "paid"); }, style: { background: C.green + "22", border: "1px solid " + C.green + "66", color: C.green, borderRadius: 6, padding: "3px 7px", fontSize: 10, cursor: "pointer", fontFamily: "inherit" } }, "Mark paid"),
+                    r.status !== "void" && React.createElement("button", { onClick: function () { invAction(r, "void"); }, style: { background: "transparent", border: "1px solid " + C.border, color: C.dim, borderRadius: 6, padding: "3px 7px", fontSize: 10, cursor: "pointer", fontFamily: "inherit" } }, "Void")));
+        }),
+        React.createElement("div", { style: secTitle }, "Record a payment or invoice (Square, check, wire, Stripe)"),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 } },
+            licSel(inv.kind, function (v) { setInv(Object.assign({}, inv, { kind: v })); }, [["license", "License (full)"], ["flex_down", "Flex Pay down payment"], ["flex_installment", "Flex Pay installment"], ["support", "Monthly support"], ["other", "Other"]]),
+            licSel(inv.provider, function (v) { setInv(Object.assign({}, inv, { provider: v })); }, [["square", "Square"], ["stripe", "Stripe"], ["manual", "Check / wire / cash"]]),
+            React.createElement("input", { placeholder: "Amount $", inputMode: "decimal", value: inv.amount, onChange: function (e) { setInv(Object.assign({}, inv, { amount: e.target.value })); }, style: licInput }),
+            licSel(inv.status, function (v) { setInv(Object.assign({}, inv, { status: v })); }, [["paid", "Paid"], ["open", "Open (not paid yet)"], ["failed", "Failed"]])),
+        React.createElement("input", { placeholder: "Description (optional)", value: inv.description, onChange: function (e) { setInv(Object.assign({}, inv, { description: e.target.value })); }, style: Object.assign({}, licInput, { marginTop: 8 }) }),
+        React.createElement("div", { style: { marginTop: 8 } }, React.createElement(Btn, { onClick: addInvoice, style: { padding: "6px 14px", fontSize: 11 } }, "Record")));
 }
+
+function LicenseManager(props) {
+    var [authed, setAuthed] = useState(null); // null = checking
+    var [loginId, setLoginId] = useState("potent");
+    var [pw, setPw] = useState("");
+    var [err, setErr] = useState("");
+    var [orgs, setOrgs] = useState([]);
+    var [unlinked, setUnlinked] = useState([]);
+    var [waitlist, setWaitlist] = useState([]);
+    var [q, setQ] = useState("");
+    var [openId, setOpenId] = useState(null);
+    var _bt = useBackableTab("customers", "licTab"); var tab = _bt[0], setTab = _bt[1];
+    var [showAdd, setShowAdd] = useState(false);
+    var [showOnboard, setShowOnboard] = useState(null);
+    var [linkFor, setLinkFor] = useState(null);
+    function sbWaitlist() {
+        return fetch(SUPABASE_URL + "/rest/v1/waitlist?order=created_at.desc", { headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY } })
+            .then(function (r) { return r.json(); }).then(function (d) { return Array.isArray(d) ? d : []; }).catch(function () { return []; });
+    }
+    function load() {
+        return plApi("listorgs").then(function (r) {
+            if (r && r.ok) { setOrgs(r.orgs || []); setUnlinked(r.unlinked || []); setAuthed(true); sbWaitlist().then(setWaitlist); }
+            else setAuthed(false);
+        });
+    }
+    useEffect(function () { load(); }, []);
+    function doLogin() {
+        setErr("");
+        plApi("staff", { userId: loginId.trim(), password: pw }).then(function (res) {
+            if (res && res.ok && res.role === "owner") { plTokenSet(res.token); setPw(""); load(); }
+            else setErr(res && res.error === "network" ? "Can't reach the server." : "Owner sign-in failed.");
+        });
+    }
+    function created(cr, afterOk) {
+        if (cr && cr.ok) {
+            try { window.alert("Company created.\n\nLogin email: " + cr.ownerEmail + "\nTemporary password: " + cr.ownerPassword + "\n\nCopy this now. It is shown once." + (cr.status && cr.status.license_status === "paid" ? "\n\nLinked to their paid license automatically." : "")); } catch (e) { }
+            if (afterOk) afterOk();
+        } else { try { window.alert((cr && cr.error) || "Could not create company."); } catch (e) { } }
+        load();
+    }
+    var wrap = function (kids) { return React.createElement("div", { style: props.embedded ? { color: C.white } : { minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'DM Sans','Segoe UI',sans-serif" } }, kids); };
+    if (authed === null) return wrap(React.createElement("div", { style: { padding: 40, textAlign: "center", color: C.dim } }, "Loading…"));
+    if (!authed) {
+        return wrap(React.createElement("div", { style: { maxWidth: 360, margin: "0 auto", padding: props.embedded ? 20 : "80px 20px" } },
+            React.createElement(Card, null,
+                React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white, marginBottom: 4 } }, "🔐 Owner sign-in"),
+                React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 14 } }, "Customer licenses and billing. Use your POTENT owner login."),
+                React.createElement(TxtIn, { label: "User", value: loginId, onChange: setLoginId }),
+                React.createElement(TxtIn, { label: "Password", value: pw, onChange: setPw, type: "password" }),
+                err && React.createElement("div", { style: { color: C.red, fontSize: 12, marginBottom: 10 } }, "⚠ " + err),
+                React.createElement(Btn, { onClick: doLogin, disabled: !pw, style: { width: "100%" } }, "Sign in →"))));
+    }
+    var paidCount = orgs.filter(function (o) { return o.billing.paid; }).length;
+    var supActive = orgs.filter(function (o) { return o.billing.support_status === "active"; });
+    var mrr = supActive.reduce(function (s, o) { return s + (o.billing.support_price || 0); }, 0);
+    var pastDue = orgs.filter(function (o) { return o.billing.license_status === "past_due" || o.billing.support_status === "past_due"; }).length;
+    var pendingWaitlist = waitlist.filter(function (w) { return w.status === "pending"; }).length;
+    var needle = q.trim().toLowerCase();
+    var shown = orgs.filter(function (o) { return !needle || (o.name + " " + (o.owner_email || "") + " " + (o.slug || "")).toLowerCase().indexOf(needle) > -1; });
+    var tabs = [["customers", "🏢 Customers (" + orgs.length + ")"], ["unlinked", "💳 Paid, no account (" + unlinked.length + ")"], ["waitlist", "📋 Waitlist (" + pendingWaitlist + ")"]];
+    return wrap(React.createElement("div", null,
+        !props.embedded && React.createElement("div", { style: { borderBottom: "1px solid " + C.border, padding: "12px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" } },
+            React.createElement("div", { style: { fontSize: 16, fontWeight: 900 } }, "POTENT ", React.createElement("span", { style: { color: C.orange } }, "OS"), React.createElement("span", { style: { fontSize: 10, color: C.dim, marginLeft: 8, letterSpacing: 1.5, textTransform: "uppercase" } }, "Customers & Licenses")),
+            React.createElement(Btn, { variant: "ghost", onClick: function () { plTokenSet(""); setAuthed(false); }, style: { padding: "6px 10px", fontSize: 10 } }, "Sign out")),
+        React.createElement("div", { style: { padding: "16px 14px 60px", maxWidth: 720, margin: "0 auto" } },
+            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: 8, marginBottom: 14 } },
+                [["Customers", orgs.length, C.blue], ["Licenses paid", paidCount, C.green], ["Support active", supActive.length + " · " + licMoney(mrr) + "/mo", C.orange], ["Needs attention", pastDue, pastDue ? "#ED8936" : C.dim]].map(function (s) {
+                    return React.createElement(Card, { key: s[0], style: { padding: "10px 12px" } },
+                        React.createElement("div", { style: { fontSize: 9, color: C.dim, textTransform: "uppercase", letterSpacing: 1 } }, s[0]),
+                        React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: s[2] } }, s[1]));
+                })),
+            React.createElement("div", { style: { display: "flex", gap: 4, marginBottom: 12, overflowX: "auto", alignItems: "center" } },
+                tabs.map(function (t2) {
+                    return React.createElement("button", { key: t2[0], onClick: function () { setTab(t2[0]); }, style: { border: "none", borderRadius: 7, padding: "6px 12px", cursor: "pointer", background: tab === t2[0] ? C.orange : "transparent", color: tab === t2[0] ? "#000" : C.dim, fontWeight: 700, fontFamily: "inherit", fontSize: 11, whiteSpace: "nowrap" } }, t2[1]);
+                }),
+                React.createElement("div", { style: { flex: 1 } }),
+                React.createElement(Btn, { onClick: function () { setShowAdd(true); }, style: { padding: "6px 12px", fontSize: 11, whiteSpace: "nowrap" } }, "+ New customer")),
+            tab === "customers" && React.createElement("div", null,
+                React.createElement("input", { placeholder: "Search by company, email or slug", value: q, onChange: function (e) { setQ(e.target.value); }, style: Object.assign({}, licInput, { marginBottom: 10, padding: "10px 12px", fontSize: 13 }) }),
+                shown.length === 0 && React.createElement("div", { style: { textAlign: "center", padding: "30px 0", color: C.dim, fontSize: 13 } }, orgs.length ? "No match." : "No customers yet."),
+                shown.map(function (o) {
+                    var open = openId === o.id;
+                    return React.createElement(Card, { key: o.id, style: { marginBottom: 10, padding: "14px 16px" } },
+                        React.createElement("div", { onClick: function () { setOpenId(open ? null : o.id); }, style: { cursor: "pointer" } },
+                            React.createElement("div", { style: { display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" } },
+                                React.createElement("div", { style: { minWidth: 0 } },
+                                    React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white } }, o.name),
+                                    React.createElement("div", { style: { fontSize: 11, color: C.dim } }, (o.owner_email || "") + (o.slug ? " · " + o.slug : ""))),
+                                React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, textTransform: "uppercase" } }, o.billing.plan + " " + (open ? "▲" : "▼"))),
+                            React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 } },
+                                licBadge(licLabel(o.billing.license_status), licColor(o.billing.license_status)),
+                                licBadge(supLabel(o.billing.support_status) + (o.billing.support_status === "active" ? " " + licMoney(o.billing.support_price) + "/mo" : ""), licColor(o.billing.support_status)),
+                                o.billing.flex_status && o.billing.flex_status !== "complete" && licBadge("Flex " + licMoney(o.billing.flex_paid) + "/" + licMoney(o.billing.flex_total), licColor(o.billing.flex_status)),
+                                licBadge("Payouts: " + (o.billing.payout_status === "active" ? "on" : o.billing.payout_status.replace("_", " ")), o.billing.payout_status === "active" ? C.green : C.dim),
+                                o.status !== "active" && licBadge(o.status, C.red))),
+                        open && React.createElement(LicenseCustomerDetail, { orgId: o.id, onChanged: load }));
+                })),
+            tab === "unlinked" && React.createElement("div", null,
+                React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 10 } }, "People who paid on the sign-up page but don't have a company login yet. Create their company and the payments attach automatically."),
+                unlinked.length === 0 && React.createElement("div", { style: { textAlign: "center", padding: "30px 0", color: C.dim, fontSize: 13 } }, "Everyone who paid has an account."),
+                unlinked.map(function (u) {
+                    return React.createElement(Card, { key: u.email, style: { marginBottom: 10, padding: "12px 16px" } },
+                        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 } },
+                            React.createElement("div", null,
+                                React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white } }, u.company || u.email),
+                                React.createElement("div", { style: { fontSize: 11, color: C.dim } }, u.email + " · paid " + licMoney(u.paid) + " · " + u.invoices + " payment" + (u.invoices === 1 ? "" : "s"))),
+                            React.createElement(Btn, { onClick: function () { setShowOnboard({ company_name: u.company, email: u.email }); }, style: { padding: "7px 12px", fontSize: 11 } }, "Create account")));
+                })),
+            tab === "waitlist" && React.createElement("div", null,
+                waitlist.length === 0 && React.createElement("div", { style: { textAlign: "center", padding: "30px 0", color: C.dim, fontSize: 13 } }, "No waitlist applications."),
+                waitlist.map(function (w) {
+                    return React.createElement(Card, { key: w.id, style: { marginBottom: 10, padding: "12px 16px" } },
+                        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", gap: 8 } },
+                            React.createElement("div", null,
+                                React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white } }, w.company_name || w.company),
+                                React.createElement("div", { style: { fontSize: 11, color: C.dim } }, [w.contact_name || w.contact, w.email, w.phone].filter(Boolean).join(" · ")),
+                                React.createElement("div", { style: { fontSize: 10, color: C.faint, marginTop: 2 } }, [w.truck_count && w.truck_count + " trucks", w.driver_count && w.driver_count + " drivers", w.state].filter(Boolean).join(" · "))),
+                            licBadge(w.status || "pending", licColor(w.status === "pending" ? "past_due" : w.status === "converted" ? "paid" : "failed"))),
+                        w.status === "pending" && React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8 } },
+                            React.createElement(Btn, { onClick: function () { setShowOnboard(w); }, style: { flex: 2, padding: "7px", fontSize: 11 } }, "✅ Approve & onboard"),
+                            React.createElement(Btn, { variant: "ghost", onClick: function () { fetch(SUPABASE_URL + "/rest/v1/waitlist?id=eq." + w.id, { method: "PATCH", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ status: "rejected" }) }).then(load); }, style: { flex: 1, padding: "7px", fontSize: 11 } }, "Reject")));
+                }))),
+        showAdd && React.createElement(AddCustomerModal, { onClose: function () { setShowAdd(false); }, onSave: async function (data) { var cr = await plApi("createorg", { org: data }); setShowAdd(false); created(cr); } }),
+        showOnboard && React.createElement(AddCustomerModal, { entry: showOnboard, onClose: function () { setShowOnboard(null); }, onSave: async function (data) {
+                var w = showOnboard; var cr = await plApi("createorg", { org: data }); setShowOnboard(null);
+                created(cr, function () { if (w.id) fetch(SUPABASE_URL + "/rest/v1/waitlist?id=eq." + w.id, { method: "PATCH", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ status: "converted" }) }); });
+            } })));
+}
+
+// ── MY COMPANY — what a paying customer manages themselves (no backend access) ──
+function plBrandApply(b) {
+    // Colors/logo/name for a customer company. POTENT's own look is untouched (no orgId).
+    PL_BRAND = b && typeof b === "object" ? b : null;
+    if (PL_BRAND && /^#[0-9a-fA-F]{6}$/.test(PL_BRAND.primaryColor || "")) { C.orange = PL_BRAND.primaryColor; C.yellow = PL_BRAND.primaryColor; C.orangeSoft = PL_BRAND.primaryColor + "14"; }
+    if (PL_BRAND && /^#[0-9a-fA-F]{6}$/.test(PL_BRAND.accentColor || "")) { C.gold = PL_BRAND.accentColor; }
+}
+function plLum(hex) {
+    var n = parseInt(String(hex).slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    function f(v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
+    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+}
+function plLogoToDataUrl(file, cb) {
+    var fr = new FileReader();
+    fr.onerror = function () { cb(null); };
+    fr.onload = function () {
+        var img = new Image();
+        img.onerror = function () { cb(null); };
+        img.onload = function () {
+            function draw(max) {
+                var k = Math.min(1, max / Math.max(img.width, img.height));
+                var cv = document.createElement("canvas"); cv.width = Math.max(1, Math.round(img.width * k)); cv.height = Math.max(1, Math.round(img.height * k));
+                cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+                return cv.toDataURL("image/png");
+            }
+            var out = draw(256); if (out.length > 240000) out = draw(160);
+            cb(out.length <= 240000 ? out : null);
+        };
+        img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+}
+// ═══════════════════════════════════════════════════════════════════
+// DATA & IMPORTS — every company can download ONLY its own data, and bring
+// trucks and drivers in from a spreadsheet, Motive, Samsara or Highway (CSV).
+// The server reads the company from the login; nothing here can name another company.
+// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+// GET STARTED — the setup checklist for a trucking company (Shopify-style).
+// Progress comes from what is really in the account (trucks, drivers, payouts...),
+// not from ticks, except the few things only the owner can confirm.
+// ═══════════════════════════════════════════════════════════════════
+function plSetupSeen() { try { return localStorage.getItem("pl_setup_seen") === "1"; } catch (e) { return false; } }
+var PL_SETUP_TEXT = {
+    profile: ["Add your USDOT and MC numbers", "These go on your paperwork and prove who you are to shippers."],
+    authority: ["Confirm your operating authority is active", "Check it on FMCSA SAFER (safer.fmcsa.dot.gov). Tick when it shows Authorized."],
+    insurance: ["Insurance on file", "Liability and cargo certificates current. Shippers and brokers ask for the COI."],
+    branding: ["Add your logo and colors", "Your name, logo and colors replace POTENT's across your app."],
+    email: ["Set the email customers reply to", "Quotes and receipts go out under your company name; replies come to you."],
+    trucks: ["Add your trucks", "Import from a spreadsheet, Motive or Samsara, or add them one by one."],
+    drivers: ["Add your drivers", "Each driver gets a login for the Driver app."],
+    compliance: ["Enter CDL and medical card dates", "So the app warns you before anything expires."],
+    dispatch: ["Add a dispatcher", "Optional, but it lets you step away from the phone."],
+    pricing: ["Set your rates", "Check your per-mile and minimum rates in Pricing Setup."],
+    payouts: ["Connect payouts", "So customers pay you directly. The money goes to your account."],
+    firstquote: ["Run a test quote", "Make one quote end to end before your first real customer."]
+};
+var PL_SETUP_GO = { branding: ["mycompany", "Open"], trucks: ["datatools", "Import"], drivers: ["datatools", "Import"], compliance: ["compliance", "Open"], dispatch: ["teamaccts", "Open"], pricing: ["pricingsetup", "Open"], payouts: ["mycompany", "Open"], firstquote: ["quote", "Open"] };
+function SetupChecklist(props) {
+    var [st, setSt] = useState(null);
+    var [f, setF] = useState({ dot_number: "", mc_number: "", mail_from_name: "", mail_reply_to: "" });
+    var [msg, setMsg] = useState("");
+    var [busy, setBusy] = useState("");
+    function load() {
+        plApi("setupstatus").then(function (r) {
+            if (!r || !r.ok) { setSt({ error: (r && r.error) || "Could not load." }); return; }
+            setSt(r); setF({ dot_number: r.profile.dot_number, mc_number: r.profile.mc_number, mail_from_name: r.profile.mail_from_name, mail_reply_to: r.profile.mail_reply_to });
+        });
+    }
+    useEffect(function () { try { localStorage.setItem("pl_setup_seen", "1"); } catch (e) { } load(); }, []);
+    function save(fields, ok) {
+        setBusy("save"); setMsg("");
+        plApi("saveprofile", fields).then(function (r) { setBusy(""); setMsg(r && r.ok ? (ok || "Saved.") : ((r && r.error) || "Could not save.")); if (r && r.ok) load(); });
+    }
+    function mark(key, done) { plApi("setupmark", { key: key, done: done }).then(function () { load(); }); }
+    function sendTest() {
+        setBusy("test"); setMsg("");
+        plDataMail({ test: true }).then(function (r) { setBusy(""); setMsg(r.ok ? "Test sent. Check " + f.mail_reply_to + "." : (r.error || "Could not send.")); });
+    }
+    if (!st) return React.createElement(LoadingSpinner, { padding: 40 });
+    if (st.error) return React.createElement("div", { style: { color: "#E53E3E", fontSize: 13, padding: 20 } }, st.error);
+    var steps = st.steps.filter(function (x) { return props.isTenant || (x.id !== "branding" && x.id !== "payouts"); });
+    var done = steps.filter(function (x) { return x.done; }).length, pct = Math.round(done * 100 / steps.length);
+    var groups = []; steps.forEach(function (x) { if (groups.indexOf(x.group) < 0) groups.push(x.group); });
+    var inp = function (k, ph, w) { return React.createElement("input", { value: f[k], placeholder: ph, onChange: function (e) { var v = e.target.value; setF(function (o) { var n = Object.assign({}, o); n[k] = v; return n; }); }, style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 8, color: C.white, padding: "9px 11px", fontSize: 13, fontFamily: "inherit", width: w || "100%", boxSizing: "border-box" } }); };
+    return React.createElement("div", { style: { maxWidth: 640, margin: "0 auto" } },
+        React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.white, marginBottom: 2 } }, "🚀 Get Started" + (st.profile.company ? " · " + st.profile.company : "")),
+        React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 12 } }, done + " of " + steps.length + " done. Do them in any order."),
+        React.createElement("div", { style: { height: 8, background: C.border, borderRadius: 6, overflow: "hidden", marginBottom: 18 } }, React.createElement("div", { style: { width: pct + "%", height: "100%", background: pct === 100 ? C.green : C.orange } })),
+        msg && React.createElement("div", { style: { fontSize: 12, color: /^(Saved|Test sent)/.test(msg) ? C.green : "#E53E3E", marginBottom: 10 } }, msg),
+        groups.map(function (g) {
+            return React.createElement(Card, { key: g, style: { marginBottom: 14 } },
+                React.createElement(Lbl, null, g),
+                steps.filter(function (x) { return x.group === g; }).map(function (x) {
+                    var t = PL_SETUP_TEXT[x.id] || [x.id, ""], go = PL_SETUP_GO[x.id];
+                    return React.createElement("div", { key: x.id, style: { padding: "10px 0", borderTop: "1px solid " + C.border } },
+                        React.createElement("div", { style: { display: "flex", alignItems: "flex-start", gap: 10 } },
+                            React.createElement("div", { style: { width: 20, height: 20, borderRadius: 10, flexShrink: 0, marginTop: 1, background: x.done ? C.green : "transparent", border: "2px solid " + (x.done ? C.green : C.border), color: "#000", fontSize: 12, fontWeight: 900, textAlign: "center", lineHeight: "16px" } }, x.done ? "✓" : ""),
+                            React.createElement("div", { style: { flex: 1 } },
+                                React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: x.done ? C.dim : C.white } }, t[0]),
+                                React.createElement("div", { style: { fontSize: 11, color: C.dim, lineHeight: 1.45 } }, t[1])),
+                            x.manual && React.createElement("button", { onClick: function () { mark(x.id, !x.done); }, style: { background: "transparent", color: C.orange, border: "1px solid " + C.border, borderRadius: 8, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, x.done ? "Undo" : "Mark done"),
+                            go && !x.done && React.createElement("button", { onClick: function () { props.onGo(go[0]); }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, go[1])),
+                        x.id === "profile" && React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" } }, inp("dot_number", "USDOT #", 140), inp("mc_number", "MC #", 140),
+                            React.createElement(Btn, { onClick: function () { save({ dot_number: f.dot_number, mc_number: f.mc_number }); }, disabled: busy === "save", style: { padding: "8px 14px", fontSize: 12 } }, "Save")),
+                        x.id === "email" && React.createElement("div", { style: { marginTop: 10 } },
+                            React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 } }, inp("mail_from_name", "Name customers see (your company)", 220), inp("mail_reply_to", "Reply-to email (yours)", 240)),
+                            React.createElement("div", { style: { display: "flex", gap: 8 } },
+                                React.createElement(Btn, { onClick: function () { save({ mail_from_name: f.mail_from_name, mail_reply_to: f.mail_reply_to }); }, disabled: busy === "save", style: { padding: "8px 14px", fontSize: 12 } }, "Save"),
+                                x.done && React.createElement(Btn, { variant: "ghost", onClick: sendTest, disabled: busy === "test", style: { padding: "8px 14px", fontSize: 12 } }, busy === "test" ? "Sending..." : "Send me a test")),
+                            React.createElement("div", { style: { fontSize: 10, color: C.faint, marginTop: 8, lineHeight: 1.5 } }, "Want a mailbox like dispatch@yourcompany.com? Get one from Google Workspace or Zoho Mail (a few dollars a month per person), then put that address here.")));
+                }));
+        }),
+        props.isTenant && React.createElement(Card, null,
+            React.createElement(Lbl, null, "Help from POTENT"),
+            React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.5, marginBottom: 10 } }, "POTENT can set things up for you: logo, trucks, drivers, rates. They get one hour inside your account, you see a banner while they are in, and each visit is logged. Turn this off any time."),
+            React.createElement(Btn, { variant: st.profile.assist_blocked ? "primary" : "ghost", onClick: function () { save({ assist_blocked: !st.profile.assist_blocked }, st.profile.assist_blocked ? "POTENT can help you again." : "POTENT can no longer open your account."); }, style: { padding: "8px 14px", fontSize: 12 } }, st.profile.assist_blocked ? "Allow POTENT to help" : "Turn off POTENT help")));
+}
+function plDataMail(body) {
+    return fetch("/.netlify/functions/company-mail", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + plTokenGet() }, body: JSON.stringify(body) })
+        .then(function (r) { return r.json().catch(function () { return { ok: false, error: "Server error" }; }); }).catch(function () { return { ok: false, error: "No connection." }; });
+}
+function AssistBanner(props) {
+    var [left, setLeft] = useState(Math.max(0, Math.round(((props.user.assistUntil || 0) - Date.now()) / 60000)));
+    function exit() {
+        var back = null; try { back = JSON.parse(localStorage.getItem("pl_assist_return") || "null"); localStorage.removeItem("pl_assist_return"); } catch (e) { }
+        if (back && back.token && back.user) { plTokenSet(back.token); if (window.__plLogin) window.__plLogin(back.user); else window.location.reload(); }
+        else { plTokenSet(""); window.location.reload(); }
+    }
+    useEffect(function () {
+        var iv = setInterval(function () { var m = Math.round(((props.user.assistUntil || 0) - Date.now()) / 60000); setLeft(Math.max(0, m)); if (m <= 0) exit(); }, 30000);
+        return function () { clearInterval(iv); };
+    }, []);
+    return React.createElement("div", { style: { background: C.orange, color: "#000", padding: "8px 14px", fontSize: 12, fontWeight: 800, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 } },
+        React.createElement("span", null, "🛠 POTENT is helping set up " + (props.user.orgName || "this account") + " · " + left + " min left"),
+        React.createElement("button", { onClick: exit, style: { background: "#000", color: C.orange, border: "none", borderRadius: 7, padding: "5px 11px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Exit and go back"));
+}
+function plBuildCompanyUser(res) {
+    var isOwner = res.user.role === "owner";
+    var tplId = isOwner ? "potent" : res.user.role === "driver" ? "driver" : "dispatch1";
+    var base = (USERS.find(function (u) { return u.id === tplId; }) || {}).access || ["quote", "jobs"];
+    var BLOCK = ["leads", "activity", "leaderboard", "ospipeline", "ostraining", "rebuttals", "livecall", "companyonboard", "pendingapps", "incomingloads", "b2bpricing", "loginActivity", "loginimages", "demo", "voiceroom", "dispatchroom", "griffin", "junknewjob", "junkdriverjobs", "recurring", "savannah", "flexpay", "potentwallet", "truckpricing", "carriercourse", "marketrates", "referrals", "ratecards", "licenses"];
+    var access = base.filter(function (id) { return BLOCK.indexOf(id) === -1; });
+    if (isOwner) { access.push("setup"); access.push("teamaccts"); access.push("pricingsetup"); access.push("mycompany"); access.push("datatools"); }
+    if (isOwner || res.user.role !== "driver") { access.push("vendors"); access.push("properties"); access.push("growthtools"); access.push("commandcenter"); }
+    return { id: res.user.id, name: res.user.name, role: res.user.role, emoji: isOwner ? "\uD83D\uDC51" : "\uD83D\uDCDE", access: access, commission: 0, orgId: res.org.id, orgSlug: res.org.slug, orgName: res.org.name, limits: res.limits, pricing: res.pricing || null, billing: res.billing || null, branding: res.branding || null, assist: res.assist === true, assistUntil: res.until || null };
+}
+
+function plCsvParse(text) {
+    var rows = [], row = [], cur = "", q = false, i, ch;
+    text = String(text || "").replace(/^﻿/, "");
+    for (i = 0; i < text.length; i++) {
+        ch = text[i];
+        if (q) { if (ch === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+        else if (ch === '"') q = true;
+        else if (ch === ",") { row.push(cur); cur = ""; }
+        else if (ch === "\n" || ch === "\r") { if (ch === "\r" && text[i + 1] === "\n") i++; row.push(cur); cur = ""; if (row.some(function (c) { return String(c).trim() !== ""; })) rows.push(row); row = []; }
+        else cur += ch;
+    }
+    row.push(cur); if (row.some(function (c) { return String(c).trim() !== ""; })) rows.push(row);
+    return rows;
+}
+function plCsvCell(v) {
+    if (v === null || v === undefined) return "";
+    if (typeof v === "object") v = JSON.stringify(v);
+    v = String(v);
+    if (/^[=+\-@]/.test(v)) v = "'" + v; // stops spreadsheet formulas from running
+    return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+}
+function plCsvBuild(rows) {
+    var cols = []; rows.forEach(function (r) { Object.keys(r).forEach(function (k) { if (cols.indexOf(k) < 0) cols.push(k); }); });
+    return cols.map(plCsvCell).join(",") + "\n" + rows.map(function (r) { return cols.map(function (c) { return plCsvCell(r[c]); }).join(","); }).join("\n");
+}
+function plDownload(name, text, type) {
+    try {
+        var blob = new Blob([text], { type: type || "text/csv;charset=utf-8" });
+        var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+        document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    } catch (e) { alert("Your browser blocked the download."); }
+}
+var PL_IMPORT_FIELDS = {
+    trucks: { make: ["make", "manufacturer"], model: ["model"], year: ["year", "modelyear"], plate: ["plate", "licenseplate", "licenseplatenumber", "tag", "platenumber"], vin: ["vin", "vehicleidentificationnumber"], color: ["color", "colour"] },
+    drivers: { name: ["name", "drivername", "driver", "fullname"], first: ["firstname", "first"], last: ["lastname", "last"], email: ["email", "emailaddress"], phone: ["phone", "mobile", "cell", "phonenumber"] }
+};
+function plMapCsv(kind, text) {
+    var rows = plCsvParse(text); if (rows.length < 2) return [];
+    var norm = function (h) { return String(h || "").toLowerCase().replace(/[^a-z0-9]/g, ""); };
+    var heads = rows[0].map(norm), spec = PL_IMPORT_FIELDS[kind], idx = {};
+    Object.keys(spec).forEach(function (f) { for (var i = 0; i < heads.length; i++) { if (spec[f].indexOf(heads[i]) >= 0) { idx[f] = i; break; } } });
+    return rows.slice(1).map(function (r) {
+        var o = {}; Object.keys(idx).forEach(function (f) { o[f] = String(r[idx[f]] || "").trim(); });
+        if (kind === "drivers" && !o.name) o.name = ((o.first || "") + " " + (o.last || "")).trim();
+        return o;
+    }).filter(function (o) { return Object.keys(o).some(function (k) { return o[k]; }); });
+}
+function plDataApi(body) {
+    return fetch("/.netlify/functions/company-data", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + plTokenGet() }, body: JSON.stringify(body) })
+        .then(function (r) { return r.json().catch(function () { return { ok: false, error: "Server error" }; }); }).catch(function () { return { ok: false, error: "No connection." }; });
+}
+// Jobs as a QuickBooks Online invoice import file (Invoices > Import). One line per job.
+function plQuickBooksRows(jobs, onlyUnbilled) {
+    var H = ["InvoiceNo", "Customer", "InvoiceDate", "DueDate", "Terms", "Memo", "Item(Product/Service)", "ItemDescription", "ItemQuantity", "ItemRate", "ItemAmount"];
+    var rows = [];
+    (jobs || []).forEach(function (j) {
+        var amt = Number(j.finalPrice || j.basePrice) || 0;
+        if (!j.id || amt <= 0 || j.status === "Cancelled") return;
+        if (onlyUnbilled && (j.status !== "Completed" || j.paymentStatus === "paid")) return;
+        var d = (j.date || new Date().toISOString().slice(0, 10)).slice(0, 10);
+        var vals = ([j.id, j.companyName || j.customer || "Customer", d, d, "Due on receipt", "Job " + j.id, j.serviceName || j.service || "Service",
+            [j.serviceName || j.service, j.origin, j.destination && j.destination !== j.origin ? "to " + j.destination : ""].filter(Boolean).join(" "), 1, amt.toFixed(2), amt.toFixed(2)]);
+        var o = {}; H.forEach(function (h, i) { o[h] = vals[i]; }); rows.push(o);
+    });
+    return rows;
+}
+function DataTools(props) {
+    var [exp, setExp] = useState(null);
+    var [busy, setBusy] = useState("");
+    var [msg, setMsg] = useState("");
+    var [kind, setKind] = useState("trucks");
+    var [src, setSrc] = useState("csv");
+    var [csv, setCsv] = useState("");
+    var [key, setKey] = useState("");
+    var [rows, setRows] = useState([]);
+    var [result, setResult] = useState(null);
+    var box = { background: C.surface, border: "1px solid " + C.border, borderRadius: 10, padding: 14, marginBottom: 14 };
+    function doExport() {
+        setBusy("export"); setMsg(""); setExp(null);
+        plDataApi({ action: "export" }).then(function (r) {
+            setBusy("");
+            if (!r.ok) { setMsg(r.error || "Could not export."); return; }
+            setExp(r.export);
+            plDownload("my-company-data-" + new Date().toISOString().slice(0, 10) + ".json", JSON.stringify(r.export, null, 2), "application/json");
+        });
+    }
+    function readFile(e) {
+        var f = e.target.files && e.target.files[0]; if (!f) return;
+        if (f.size > 2000000) { setMsg("That file is over 2 MB. Split it into smaller files."); return; }
+        var fr = new FileReader(); fr.onload = function () { setCsv(String(fr.result || "")); setRows(plMapCsv(kind, fr.result)); setResult(null); setMsg(""); }; fr.readAsText(f);
+    }
+    function preview() { setRows(plMapCsv(kind, csv)); setResult(null); setMsg(""); }
+    function pull() {
+        setBusy("pull"); setMsg(""); setResult(null);
+        plDataApi(src === "samsara" ? { action: "pull_samsara", apiToken: key } : { action: "pull_motive", apiKey: key }).then(function (r) {
+            setBusy("");
+            if (!r.ok) { setMsg(r.error || "Could not connect."); return; }
+            setKey(""); // the key is used once and is never saved
+            var list = kind === "trucks" ? r.trucks : r.drivers; setRows(list || []);
+            setMsg((list || []).length ? "Found " + list.length + ". Review, then import." : "Connected, but nothing found for " + kind + ".");
+        });
+    }
+    function doImport() {
+        if (!rows.length) return;
+        setBusy("import"); setMsg("");
+        plDataApi({ action: kind === "trucks" ? "import_trucks" : "import_drivers", rows: rows }).then(function (r) {
+            setBusy(""); setResult(r);
+            if (r.ok) { setRows([]); setCsv(""); if (kind === "trucks") { try { loadFleetFromCloud(); } catch (e) { } } }
+            else setMsg(r.error || "Import failed.");
+        });
+    }
+    var tabBtn = function (id, label, cur, set) {
+        return React.createElement("button", { key: id, onClick: function () { set(id); setRows([]); setResult(null); setMsg(""); }, style: { background: cur === id ? C.orange : "transparent", color: cur === id ? "#000" : C.dim, border: "1px solid " + (cur === id ? C.orange : C.border), borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", marginRight: 6, marginBottom: 6 } }, label);
+    };
+    var tmpl = kind === "trucks" ? "make,model,year,plate,vin,color\nIsuzu,NPR,2021,GA1234,1HGCM82633A004352,White" : "name,email,phone\nJoe Driver,joe@example.com,404-555-0100";
+    return React.createElement("div", { style: { maxWidth: 640, margin: "0 auto" } },
+        React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.white, marginBottom: 4 } }, "📦 Data & Imports"),
+        React.createElement("div", { style: box },
+            React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.white, marginBottom: 4 } }, "QuickBooks export"),
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 10 } }, "Download your jobs as invoices. In QuickBooks Online: Settings > Import data > Invoices, upload the file."),
+            React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+                React.createElement(Btn, { onClick: function () { var r = plQuickBooksRows(props.jobs, true); if (!r.length) { setMsg("No completed, unpaid jobs to export."); return; } plDownload("quickbooks-invoices-unpaid.csv", plCsvBuild(r)); } }, "Unpaid completed jobs"),
+                React.createElement(Btn, { variant: "ghost", onClick: function () { var r = plQuickBooksRows(props.jobs, false); if (!r.length) { setMsg("No jobs to export."); return; } plDownload("quickbooks-invoices-all.csv", plCsvBuild(r)); } }, "All jobs"))),
+
+        React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 18, lineHeight: 1.5 } }, "Your data is yours. Download it any time. Only your company's data is ever included."),
+        React.createElement(Card, { style: { marginBottom: 16 } },
+            React.createElement(Lbl, null, "Export my data"),
+            React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 12, lineHeight: 1.5 } }, "Jobs, junk jobs, recurring routes, trucks, maintenance, compliance, team list and more, in one file. Passwords are never included."),
+            React.createElement(Btn, { onClick: doExport, disabled: busy === "export" }, busy === "export" ? "Preparing..." : "Download everything (JSON)"),
+            exp && React.createElement("div", { style: { marginTop: 14 } },
+                React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 8 } }, "Or one spreadsheet (CSV) at a time:"),
+                Object.keys(exp.tables).length === 0 && React.createElement("div", { style: { fontSize: 12, color: C.faint } }, "Nothing to export yet."),
+                Object.keys(exp.tables).map(function (t) {
+                    return React.createElement("button", { key: t, onClick: function () { plDownload(t + ".csv", plCsvBuild(exp.tables[t])); }, style: { background: "transparent", color: C.orange, border: "1px solid " + C.border, borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", marginRight: 6, marginBottom: 6 } }, t.replace(/_/g, " ") + " (" + exp.tables[t].length + ")");
+                })),
+            msg && !rows.length && !result && React.createElement("div", { style: { fontSize: 12, color: "#E53E3E", marginTop: 10 } }, msg)),
+        React.createElement(Card, null,
+            React.createElement(Lbl, null, "Bring your data in"),
+            React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 12, lineHeight: 1.5 } }, "Skip retyping. Import trucks or driver logins from a spreadsheet, or connect Samsara or Motive for a one-time read. Highway and most other systems let you export a CSV; drop that file here."),
+            React.createElement("div", null, tabBtn("trucks", "Trucks", kind, setKind), tabBtn("drivers", "Drivers", kind, setKind)),
+            React.createElement("div", null, tabBtn("csv", "Spreadsheet / CSV", src, setSrc), tabBtn("samsara", "Samsara", src, setSrc), tabBtn("motive", "Motive", src, setSrc)),
+            src === "csv" ? React.createElement("div", { style: box },
+                React.createElement("input", { type: "file", accept: ".csv,text/csv,text/plain", onChange: readFile, style: { color: C.white, fontSize: 12, marginBottom: 10 } }),
+                React.createElement(TxtIn, { rows: 4, value: csv, onChange: setCsv, placeholder: "...or paste rows here. First row = column names." }),
+                React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+                    React.createElement(Btn, { onClick: preview, disabled: !csv.trim() }, "Preview"),
+                    React.createElement(Btn, { variant: "ghost", onClick: function () { plDownload(kind + "-template.csv", tmpl); } }, "Download template")))
+            : React.createElement("div", { style: box },
+                React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 10, lineHeight: 1.5 } }, src === "samsara"
+                    ? "In Samsara: Settings > API Tokens > Add. Give it read access to Vehicles and Drivers. Paste the token below."
+                    : "In Motive: Fleet Dashboard > Company > API keys. Paste a key with read access below."),
+                React.createElement(TxtIn, { value: key, onChange: setKey, placeholder: src === "samsara" ? "Samsara API token" : "Motive API key", type: "password" }),
+                React.createElement(Btn, { onClick: pull, disabled: !key.trim() || busy === "pull" }, busy === "pull" ? "Connecting..." : "Read my " + kind),
+                React.createElement("div", { style: { fontSize: 10, color: C.faint, marginTop: 8 } }, "Read-only. We use the key once to copy your list and do not store it.")),
+            msg && (rows.length > 0 || src !== "csv") && React.createElement("div", { style: { fontSize: 12, color: rows.length ? C.green : "#E53E3E", marginBottom: 10 } }, msg),
+            rows.length > 0 && React.createElement("div", { style: box },
+                React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.white, marginBottom: 8 } }, rows.length + " " + kind + " ready"),
+                rows.slice(0, 5).map(function (r, i) {
+                    return React.createElement("div", { key: i, style: { fontSize: 11, color: C.dim, padding: "3px 0", borderBottom: "1px solid " + C.border } },
+                        kind === "trucks" ? [r.year, r.make, r.model, r.plate, r.vin].filter(Boolean).join(" · ") : [r.name, r.email, r.phone].filter(Boolean).join(" · "));
+                }),
+                rows.length > 5 && React.createElement("div", { style: { fontSize: 11, color: C.faint, marginTop: 4 } }, "+ " + (rows.length - 5) + " more"),
+                kind === "drivers" && React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 8 } }, "Each driver gets a login with a one-time password. Drivers need an email address."),
+                React.createElement("div", { style: { marginTop: 10 } }, React.createElement(Btn, { onClick: doImport, disabled: busy === "import" }, busy === "import" ? "Importing..." : "Import " + rows.length + " " + kind))),
+            result && result.ok && React.createElement("div", { style: Object.assign({}, box, { borderColor: C.green + "88" }) },
+                React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.green } }, "Added " + result.added + (result.skipped && result.skipped.length ? " · skipped " + result.skipped.length : "")),
+                (result.skipped || []).slice(0, 8).map(function (s, i) { return React.createElement("div", { key: i, style: { fontSize: 11, color: C.dim } }, "Row " + s.row + ": " + s.why); }),
+                result.created && result.created.length > 0 && React.createElement("div", { style: { marginTop: 10 } },
+                    React.createElement("div", { style: { fontSize: 11, color: "#F0E000", marginBottom: 8 } }, "Save these logins now. The passwords are shown only once."),
+                    React.createElement(Btn, { onClick: function () { plDownload("new-driver-logins.csv", plCsvBuild(result.created.map(function (c) { return { name: c.name, email: c.email, temporary_password: c.tempPassword }; }))); } }, "Download driver logins"))),
+            result && !result.ok && React.createElement("div", { style: { fontSize: 12, color: "#E53E3E" } }, result.error || "Import failed.")));
+}
+function MyCompany(props) {
+    var u = props.currentUser || {};
+    var [bill, setBill] = useState(u.billing || null);
+    var [invoices, setInvoices] = useState([]);
+    var [paid, setPaid] = useState(!!(u.billing && u.billing.paid));
+    var [b, setB] = useState(Object.assign({ companyName: "", tagline: "", phone: "", email: "", website: "", address: "", welcomeMessage: "", primaryColor: "", accentColor: "", logo: "" }, u.branding || {}));
+    var [msg, setMsg] = useState("");
+    var [payMsg, setPayMsg] = useState("");
+    var [payout, setPayout] = useState((u.billing && u.billing.payout_status) || "not_connected");
+    var [pl, setPl] = useState({ amount: "", description: "", email: "" });
+    var [link, setLink] = useState("");
+    var [busy, setBusy] = useState(false);
+    function persistUser(patch) { try { var cu = loadCurrentUser(); if (cu) { saveCurrentUser(Object.assign(cu, patch)); } } catch (e) { } }
+    useEffect(function () {
+        plApi("mybilling").then(function (r) {
+            if (r && r.ok) { setBill(r.billing); setInvoices(r.invoices || []); setPaid(!!r.billing.paid); setPayout(r.billing.payout_status); persistUser({ billing: r.billing }); }
+        });
+        if (/connect=(return|refresh)/.test(window.location.search)) checkPayout();
+    }, []);
+    function checkPayout() {
+        plApi("connectstatus").then(function (r) { if (r && r.ok) { setPayout(r.status); setPayMsg(r.status === "active" ? "Payouts are on. You can collect payments." : "Setup isn't finished yet. Tap Connect to continue."); } });
+    }
+    function connect() {
+        setBusy(true); setPayMsg("");
+        plApi("connectstart").then(function (r) {
+            setBusy(false);
+            if (r && r.ok && r.url) window.location.href = r.url; else setPayMsg((r && r.error) || "Could not start.");
+        });
+    }
+    function makeLink() {
+        setBusy(true); setPayMsg(""); setLink("");
+        plApi("paylink", { amount: pl.amount, description: pl.description, email: pl.email }).then(function (r) {
+            setBusy(false);
+            if (r && r.ok) setLink(r.url); else setPayMsg((r && r.error) || "Could not create the link.");
+        });
+    }
+    function save() {
+        var pc = b.primaryColor;
+        if (pc && plLum(pc) < 0.12) { setMsg("That main color is too dark to read on the dark theme. Pick a brighter one."); return; }
+        setBusy(true); setMsg("");
+        plApi("savebranding", { branding: b }).then(function (r) {
+            setBusy(false);
+            if (r && r.ok) { persistUser({ branding: r.branding }); setMsg("Saved. Reloading to apply…"); setTimeout(function () { window.location.reload(); }, 700); }
+            else setMsg((r && r.error) || "Could not save.");
+        });
+    }
+    function pickLogo(e) {
+        var f = e.target.files && e.target.files[0]; if (!f) return;
+        if (!/^image\/(png|jpeg|webp)$/.test(f.type)) { setMsg("Use a PNG, JPG or WebP image."); return; }
+        plLogoToDataUrl(f, function (url) { if (!url) setMsg("Could not read that image. Try a smaller one."); else { setMsg(""); setB(Object.assign({}, b, { logo: url })); } });
+    }
+    var inp = { background: C.surface, border: "1px solid " + C.border, borderRadius: 8, color: C.white, padding: "10px 12px", fontSize: 13, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box", marginBottom: 8 };
+    function field(label, key, ph) { return React.createElement("div", null, React.createElement(Lbl, null, label), React.createElement("input", { value: b[key] || "", placeholder: ph || "", onChange: function (e) { var o = {}; o[key] = e.target.value; setB(Object.assign({}, b, o)); }, style: inp })); }
+    var locked = function (what) { return React.createElement(Card, { style: { marginBottom: 14, opacity: 0.85 } },
+        React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white, marginBottom: 4 } }, "🔒 " + what),
+        React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.6 } }, "Included with a paid POTENT OS license. Contact POTENT to activate it: (770) 648-4228.")); };
+    function colorRow(label, key) {
+        var val = /^#[0-9a-fA-F]{6}$/.test(b[key] || "") ? b[key] : (key === "primaryColor" ? "#F0E000" : "#C8962A");
+        return React.createElement("div", { style: { flex: 1 } },
+            React.createElement(Lbl, null, label),
+            React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center" } },
+                React.createElement("input", { type: "color", value: val, onChange: function (e) { var o = {}; o[key] = e.target.value; setB(Object.assign({}, b, o)); }, style: { width: 44, height: 38, border: "1px solid " + C.border, borderRadius: 8, background: "transparent", padding: 2 } }),
+                React.createElement("input", { value: b[key] || "", placeholder: "#RRGGBB", onChange: function (e) { var o = {}; o[key] = e.target.value; setB(Object.assign({}, b, o)); }, style: Object.assign({}, inp, { marginBottom: 0 }) })));
+    }
+    var statusLine = bill ? [licLabel(bill.license_status), supLabel(bill.support_status) + (bill.support_status === "active" ? " (" + licMoney(bill.support_price) + "/mo)" : "")] : [];
+    return React.createElement("div", { style: { maxWidth: 560, margin: "0 auto", padding: 16 } },
+        React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "🏢 My Company"),
+        React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 14 } }, "Run your account here. You never need to touch any database or backend."),
+        React.createElement(Card, { style: { marginBottom: 14 } },
+            React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white, marginBottom: 8 } }, "Plan & billing"),
+            bill && React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 } },
+                licBadge(bill.plan.toUpperCase(), C.orange), licBadge(statusLine[0], licColor(bill.license_status)), licBadge(statusLine[1], licColor(bill.support_status)),
+                bill.flex_total > 0 && licBadge("Flex Pay " + licMoney(bill.flex_paid) + " of " + licMoney(bill.flex_total), licColor(bill.flex_status))),
+            bill && bill.support_status !== "active" && React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.6, marginBottom: 8 } }, "Monthly Support (" + licMoney(bill.support_price) + "/month) adds 24/7 support, setup and customization help, and ongoing assistance. Call POTENT to add it: (770) 648-4228."),
+            invoices.length === 0 ? React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "No invoices on file yet.") :
+                invoices.slice(0, 12).map(function (r) {
+                    return React.createElement("div", { key: r.id, style: { display: "flex", justifyContent: "space-between", fontSize: 12, padding: "6px 0", borderTop: "1px solid " + C.border } },
+                        React.createElement("span", { style: { color: C.white } }, String(r.paid_at || r.created_at || "").slice(0, 10) + " · " + (r.description || r.kind)),
+                        React.createElement("span", { style: { color: licColor(r.status), fontWeight: 700 } }, licMoney(r.amount) + " " + r.status));
+                })),
+        !paid ? locked("Branding & company settings") : React.createElement(Card, { style: { marginBottom: 14 } },
+            React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white, marginBottom: 10 } }, "Branding & company info"),
+            React.createElement(Lbl, null, "Logo"),
+            React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, marginBottom: 12 } },
+                React.createElement("div", { style: { width: 64, height: 64, borderRadius: 10, background: C.surface, border: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" } },
+                    b.logo ? React.createElement("img", { src: b.logo, alt: "logo", style: { maxWidth: "100%", maxHeight: "100%" } }) : React.createElement("span", { style: { fontSize: 10, color: C.dim } }, "No logo")),
+                React.createElement("div", null,
+                    React.createElement("input", { type: "file", accept: "image/png,image/jpeg,image/webp", onChange: pickLogo, style: { fontSize: 11, color: C.dim } }),
+                    b.logo && React.createElement("div", null, React.createElement("button", { onClick: function () { setB(Object.assign({}, b, { logo: "" })); }, style: { marginTop: 6, background: "none", border: "none", color: C.red, fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0 } }, "Remove logo")))),
+            field("Company name", "companyName", u.orgName || ""), field("Tagline", "tagline"), field("Welcome message", "welcomeMessage", "Shown to your team on sign-in"),
+            React.createElement("div", { style: { display: "flex", gap: 10, marginBottom: 8 } }, colorRow("Main color", "primaryColor"), colorRow("Accent color", "accentColor")),
+            field("Company phone", "phone"), field("Company email", "email"), field("Website", "website"), field("Address", "address"),
+            msg && React.createElement("div", { style: { color: /^Saved/.test(msg) ? C.green : C.red, fontSize: 12, marginBottom: 8 } }, msg),
+            React.createElement(Btn, { onClick: save, disabled: busy, style: { width: "100%" } }, busy ? "Saving…" : "Save branding")),
+        !paid ? locked("Get paid by your customers") : React.createElement(Card, { style: { marginBottom: 14 } },
+            React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white, marginBottom: 4 } }, "💵 Get paid by your customers"),
+            React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.6, marginBottom: 10 } }, "Connect your own Stripe account. Your customers' payments go straight to your bank. POTENT never holds your money and takes no cut."),
+            React.createElement("div", { style: { marginBottom: 10 } }, licBadge(payout === "active" ? "Payouts on" : payout === "pending_review" ? "Stripe is reviewing" : payout === "pending" ? "Setup not finished" : "Not connected", payout === "active" ? C.green : payout === "not_connected" ? C.dim : "#ED8936")),
+            payout !== "active" && React.createElement("div", { style: { display: "flex", gap: 8 } },
+                React.createElement(Btn, { onClick: connect, disabled: busy, style: { flex: 2 } }, payout === "not_connected" ? "Connect my Stripe account" : "Continue setup"),
+                payout !== "not_connected" && React.createElement(Btn, { variant: "ghost", onClick: checkPayout, style: { flex: 1 } }, "Check status")),
+            payout === "active" && React.createElement("div", null,
+                React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.white, margin: "4px 0 8px" } }, "Create a payment link"),
+                React.createElement("input", { placeholder: "Amount ($)", inputMode: "decimal", value: pl.amount, onChange: function (e) { setPl(Object.assign({}, pl, { amount: e.target.value })); }, style: inp }),
+                React.createElement("input", { placeholder: "What is it for? (e.g. Delivery #1042)", value: pl.description, onChange: function (e) { setPl(Object.assign({}, pl, { description: e.target.value })); }, style: inp }),
+                React.createElement("input", { placeholder: "Customer email (optional, for receipt)", type: "email", value: pl.email, onChange: function (e) { setPl(Object.assign({}, pl, { email: e.target.value })); }, style: inp }),
+                React.createElement(Btn, { onClick: makeLink, disabled: busy || !pl.amount, style: { width: "100%" } }, busy ? "Creating…" : "Create link"),
+                link && React.createElement("div", { style: { marginTop: 10, background: C.surface, border: "1px solid " + C.green + "66", borderRadius: 9, padding: 10 } },
+                    React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 4 } }, "Send this to your customer:"),
+                    React.createElement("div", { style: { fontSize: 12, color: C.green, wordBreak: "break-all", marginBottom: 8 } }, link),
+                    React.createElement("div", { style: { display: "flex", gap: 8 } },
+                        React.createElement(Btn, { variant: "ghost", onClick: function () { try { navigator.clipboard.writeText(link); setPayMsg("Copied."); } catch (e) { setPayMsg("Press and hold the link to copy."); } }, style: { flex: 1, padding: "7px" } }, "Copy"),
+                        React.createElement("a", { href: "sms:?&body=" + encodeURIComponent("Here is your secure payment link: " + link), style: { flex: 1, textDecoration: "none" } }, React.createElement(Btn, { variant: "ghost", style: { width: "100%", padding: "7px" } }, "Text it"))))),
+            payMsg && React.createElement("div", { style: { color: /^(Payouts|Copied)/.test(payMsg) ? C.green : C.red, fontSize: 12, marginTop: 8 } }, payMsg)));
+}
+
 function AddCustomerModal(props) {
     var entry = props.entry || {};
     var [f, setF] = useState({
         name: entry.company_name || "",
         slug: (entry.company_name || "").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
-        plan: "starter", plan_price: 3500, support_plan: false, support_price: 149, max_users: 10,
+        plan: "starter", plan_price: 4995, support_plan: false, support_price: 149, max_users: 10,
         owner_name: entry.contact_name || "", owner_email: entry.email || "", owner_phone: entry.phone || "",
         state: entry.state || "GA", dot_number: "", mc_number: "", notes: "", status: "active"
     });
@@ -7086,7 +9722,7 @@ function AddCustomerModal(props) {
                 React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" } },
                     React.createElement(TxtIn, { label: "License Price ($)", value: f.plan_price, onChange: function (v) { set("plan_price", Number(v)); }, type: "number" }),
                     React.createElement(TxtIn, { label: "Support Price ($/mo)", value: f.support_price, onChange: function (v) { set("support_price", Number(v)); }, type: "number" })),
-                React.createElement("div", { style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 9, padding: "10px 14px", marginBottom: 14, fontSize: 11, color: C.dim } }, "\uD83D\uDCA1 Support plan ($149-$399/mo) is optional \u2014 discuss with customer separately if they want ongoing updates and support."),
+                React.createElement("div", { style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 9, padding: "10px 14px", marginBottom: 14, fontSize: 11, color: C.dim } }, "\uD83D\uDCA1 Monthly Support is optional ($149 / $249 / $399 / $599 per month by tier). Record it from the customer's Licenses screen once they pay."),
                 React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" } },
                     React.createElement(TxtIn, { label: "Owner Name *", value: f.owner_name, onChange: function (v) { set("owner_name", v); } }),
                     React.createElement(TxtIn, { label: "Owner Email", value: f.owner_email, onChange: function (v) { set("owner_email", v); }, type: "email" })),
@@ -7097,13 +9733,10 @@ function AddCustomerModal(props) {
                     React.createElement(TxtIn, { label: "DOT Number", value: f.dot_number, onChange: function (v) { set("dot_number", v); } }),
                     React.createElement(TxtIn, { label: "MC Number", value: f.mc_number, onChange: function (v) { set("mc_number", v); } })),
                 React.createElement(TxtIn, { label: "Notes", value: f.notes, onChange: function (v) { set("notes", v); }, rows: 2 }),
-                React.createElement("div", { style: { background: C.surface, borderRadius: 9, padding: "10px 14px", marginBottom: 14, fontSize: 11, color: C.dim } },
-                    "Default owner password will be: ",
-                    React.createElement("strong", { style: { color: C.orange } }, f.slug.toUpperCase() + "2026"),
-                    " \u2014 share this with the customer when you onboard them."),
+                React.createElement("div", { style: { background: C.surface, borderRadius: 9, padding: "10px 14px", marginBottom: 14, fontSize: 11, color: C.dim } }, "A temporary owner password is generated when you create the company. It is shown once, so copy it then. If this person already paid on the sign-up page, their payments attach automatically."),
                 React.createElement("div", { style: { display: "flex", gap: 8 } },
                     React.createElement(Btn, { variant: "ghost", onClick: props.onClose, style: { flex: 1 } }, "Cancel"),
-                    React.createElement(Btn, { onClick: function () { props.onSave(Object.assign({}, f, { status: "active", license_activated_at: new Date().toISOString() })); }, disabled: !f.name || !f.owner_name || !f.slug, style: { flex: 2 } }, "Create Customer \u2713")))));
+                    React.createElement(Btn, { onClick: function () { props.onSave(Object.assign({}, f, { status: "active" })); }, disabled: !f.name || !f.owner_name || !f.slug, style: { flex: 2 } }, "Create Customer \u2713")))));
 }
 // ── REAL UNIVERSAL BACK BUTTON — wraps a real tab-state useState with
 // genuine browser history tracking, so every page that uses it gets a
@@ -7216,6 +9849,25 @@ function Root() {
         }
     });
     useEffect(function () { saveJobs(jobs); }, [jobs]);
+    // Customer bookings made on the website or portal live on the server. Pull them into this device's job list every two minutes while staff are signed in.
+    useEffect(function () {
+        function pull() {
+            if (!plTokenGet() || !isAdmin) return;
+            plOps("jobs", "GET", "select=*&order=date.desc&limit=100").then(function (r) {
+                if (!r.ok || !Array.isArray(r.data)) return;
+                var seen = []; try { seen = JSON.parse(localStorage.getItem("pl_web_seen") || "[]"); } catch (e) { }
+                var fresh = plNewWebBookings(r.data, loadJobs(), seen);
+                if (!fresh.length) return;
+                try { localStorage.setItem("pl_web_seen", JSON.stringify(seen.concat(fresh.map(function (x) { return x.id; })).slice(-1000))); } catch (e) { }
+                setJobs(function (prev) { return fresh.map(plJobFromRow).concat(prev); });
+                setSyncMsg(fresh.length + " new web booking" + (fresh.length > 1 ? "s" : "") + " added to your jobs.");
+                setTimeout(function () { setSyncMsg(""); }, 8000);
+            });
+        }
+        pull();
+        var iv = setInterval(pull, 120000);
+        return function () { clearInterval(iv); };
+    }, [isAdmin]);
     // Pull the latest synced display names once on load so any renames made
     // on other devices show up here too. nameSyncVersion is a dummy counter
     // used purely to force a re-render once the fetch resolves — getDisplayName()
@@ -7266,11 +9918,13 @@ function Root() {
             if(!q.length) return;
             setSyncing(true); setSyncMsg("Syncing "+q.length+" offline job"+(q.length!==1?"s":"")+"...");
             Promise.all(q.map(function(job){
-                var clean=Object.assign({},job); delete clean._offlineId; delete clean._offlinePending;
-                return fetch(SUPABASE_URL+"/rest/v1/jobs",{
+                return getOrgId().then(function(orgId){
+                  if(!orgId) return {ok:false};
+                  return fetch(SUPABASE_URL+"/rest/v1/jobs",{
                     method:"POST",
-                    headers:{apikey:SUPABASE_ANON_KEY,Authorization:"Bearer "+SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=representation"},
-                    body:JSON.stringify(clean)
+                    headers:Object.assign({},sbHeaders(),{Prefer:"resolution=merge-duplicates,return=minimal"}),
+                    body:JSON.stringify(plJobToRow(job,orgId))
+                  });
                 }).then(function(r){ if(r.ok){removeFromOfflineQueue(job.id);return true;} return false; })
                   .catch(function(){ return false; });
             })).then(function(results){
@@ -7321,8 +9975,8 @@ function Root() {
     // were sitting. Past a free-time threshold, it auto-drafts a detention
     // charge as a flagged expense — dispatch reviews and approves it
     // rather than it just disappearing into "the driver was slow today."
-    var DETENTION_FREE_MINUTES = 30; // 30 minutes free, then flat detention charge kicks in
-    var DETENTION_FLAT_CHARGE = 50; // flat $50 charge once free time is exceeded — not hourly
+    var DETENTION_FREE_MINUTES = plRule("onsiteFreeMin"); // 30 minutes free, then flat detention charge kicks in
+    var DETENTION_FLAT_CHARGE = plRule("onsiteFlat"); // flat $50 charge once free time is exceeded — not hourly
     function updateJobPaymentStatus(id, ps, amountPaid) {
         // Same real pattern as updateJob — update local state immediately so the
         // dashboard reflects it, and sync to Supabase in the background.
@@ -7371,8 +10025,8 @@ function Root() {
                         if (!orgId) return;
                         fetch(SUPABASE_URL + "/rest/v1/jobs?id=eq." + id + "&org_id=eq." + orgId, {
                             method: "PATCH", headers: sbHeaders(),
-                            body: JSON.stringify({ finalPrice: totalCost })
-                        }).catch(function () { });
+                            body: JSON.stringify({ final_price: totalCost })
+                        }).then(function () { return plWalletAutoCharge(Object.assign({}, oldJob, { finalPrice: totalCost })); }).then(plAutoChargeDone).catch(function () { });
                     });
                 }).catch(function () { });
             }
@@ -7393,19 +10047,21 @@ function Root() {
         }
         setJobs(function (p) { return p.map(function (j) { return j.id === id ? Object.assign({}, j, { status: s }, timestampPatch) : j; }); });
         syncStatusToSupabase(id, s, timestampPatch);
+        // Finished job + customer has autopay on + wallet covers it => paid from the wallet on the server. Hourly route jobs wait for their final price (above).
+        var hourlyWait = s === "Delivered" && oldJob && oldJob.recurringRouteId && oldJob.assignedAt;
+        var autoPaid = ((s === "Delivered" || s === "Completed") && oldJob && oldJob.status !== s && !hourlyWait) ? plWalletAutoCharge(oldJob).then(function (d) { plAutoChargeDone(d); return d; }) : Promise.resolve(null);
         // Real automated review request — fires once, the moment a job
         // genuinely completes, not on every status touch. Confirmed via
         // real competitive research this was a standard feature POTENT
         // was missing; every other platform in the space has this.
         var justCompleted = (s === "Completed" || s === "Paid") && oldJob && oldJob.status !== "Completed" && oldJob.status !== "Paid";
+        // invoice email once, when the job completes and the wallet did not already pay it
+        if (justCompleted && oldJob.email && s === "Completed" && oldJob.paymentStatus !== "paid" && !oldJob.paidOnline) {
+            autoPaid.then(function (d) { if (!d) plSendCustomerMail("invoice", oldJob); });
+        }
         if (justCompleted && oldJob.email) {
-            fetch("/.netlify/functions/send-email", {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    to: oldJob.email, subject: "How did we do? \u2014 " + id,
-                    message: "<p>Hi " + (oldJob.customer || "there") + ",</p><p>Your job with POTENT Logistics is complete. If you have a minute, we'd genuinely appreciate a real review \u2014 it helps us and helps other customers know what to expect.</p><p><a href=\"https://potentoperations.netlify.app/?leavereview=1&job=" + id + "\">Leave a review \u2192</a></p><p>Thank you for your business.</p><p>\u2014 POTENT Logistics</p>"
-                })
-            }).catch(function () {});
+            plSendMail(oldJob.email, "How did we do? \u2014 " + id,
+                "Hi " + (oldJob.customer || "there") + ",\n\nYour job with " + plBrandName() + " is complete. If you have a minute, we'd genuinely appreciate a real review \u2014 it helps us and helps other customers know what to expect.\n\nLeave a review: " + window.location.origin + "/?leavereview=1&job=" + id + "\n\nThank you for your business.\n\n\u2014 " + plBrandName(), id).catch(function () {});
         }
     }
     // Applies an approved accessorial charge (detention, layover, etc.) to
@@ -7419,19 +10075,34 @@ function Root() {
         var newPrice = (oldJob.finalPrice || 0) + amount;
         addAuditEntry("Accessorial Charge Applied", jobId, "finalPrice", "$" + (oldJob.finalPrice || 0), "$" + newPrice + " (+" + label + " $" + amount + ")", adminRole);
         setJobs(function (p) { return p.map(function (j) { return j.id === jobId ? Object.assign({}, j, { finalPrice: newPrice, notes: (j.notes || "") + " · " + label + " +$" + amount }) : j; }); });
+        // the server copy must change too, or the customer portal and wallet charge would still use the old price
+        fetch(SUPABASE_URL + "/rest/v1/jobs?id=eq." + encodeURIComponent(jobId), { method: "PATCH", headers: sbHeaders(), body: JSON.stringify({ final_price: newPrice, notes: (oldJob.notes || "") + " · " + label + " +$" + amount }) }).catch(function () { });
+    }
+    function plAutoChargeDone(d) {
+        if (!d) return;
+        setJobs(function (p) { return p.map(function (j) { return j.id === d.job_id ? Object.assign({}, j, { paymentStatus: "paid", amountPaid: j.finalPrice, payment: "wallet" }) : j; }); });
+        setSyncMsg("Paid from the customer's wallet: $" + Number(d.charged).toFixed(2) + ".");
+        setTimeout(function () { setSyncMsg(""); }, 8000);
     }
     function login(user) {
+        window.__plLogin = login;
+        setActiveOrg(user && user.orgId ? user.orgId : null);
         setIsAdmin(true);
         setCurrentUser(user);
         saveAuth(true);
         saveCurrentUser(user);
         setShowLogin(false);
+        if (plSwapNamespace(user && user.orgId ? "org_" + user.orgId : "potent")) window.location.reload();
     }
+    window.__plLogin = login;
     function logout() {
+        plTokenSet("");
+        setActiveOrg(null);
         setIsAdmin(false);
         setCurrentUser(null);
         saveAuth(false);
         saveCurrentUser(null);
+        if (plSwapNamespace("potent")) window.location.reload();
     }
     var [showFooterTos, setShowFooterTos] = useState(false);
     // ── POTENT OS LICENSE MANAGER — hidden route (?potent-os-admin) ────
@@ -7742,7 +10413,7 @@ function loadBrokersFromServer() {
     }).catch(function () { return []; });
 }
 function CarrierBrokerManager(props) {
-    var [tab, setTab] = useState("carriers");
+    var _bt_carrierTab = useBackableTab("carriers", "carrierTab"); var tab = _bt_carrierTab[0], setTab = _bt_carrierTab[1];
     var [carriers, setCarriers] = useState(loadCarriers);
     var [brokers, setBrokers] = useState(loadBrokers);
     useEffect(function () {
@@ -7899,6 +10570,16 @@ function AddBrokerModal(props) {
 // ═══════════════════════════════════════════════════════════════════
 // PHASE 12 — CUSTOMER PORTAL
 // ═══════════════════════════════════════════════════════════════════
+// Customer portal talks only to the server's customer door: it returns this customer's own jobs, and confirms payments with Stripe.
+function plPortalCall(action, token, method, body) {
+    return fetch("/.netlify/functions/data-api?portal=" + encodeURIComponent(action), { method: method || "GET", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: body ? JSON.stringify(body) : undefined })
+        .then(function (r) { return r.json().catch(function () { return { error: "Server error" }; }); }).catch(function () { return { error: "network" }; });
+}
+function plPortalJob(r) {
+    return { id: r.id, customer: r.customer, phone: r.phone, email: r.email, service: r.service, serviceName: r.service_name || r.service || "Service", origin: r.origin, destination: r.destination || r.origin,
+        date: r.date, timeSlot: r.time_slot, status: r.status, basePrice: Number(r.base_price) || 0, finalPrice: Number(r.final_price) || 0, heavyFee: Number(r.heavy_fee) || 0, payment: r.payment,
+        paymentStatus: (r.payment_status === "paid" || r.paid_online) ? "paid" : "pending", amountPaid: Number(r.amount_paid) || 0, companyName: r.company_name, isBusiness: !!r.is_business, customerType: r.customer_type };
+}
 function CustomerPortal(props) {
     var jobs = props.jobs || [];
     var [email, setEmail] = useState("");
@@ -7907,8 +10588,9 @@ function CustomerPortal(props) {
     var [loginErr, setLoginErr] = useState("");
     var [authed, setAuthed] = useState(false);
     var [customerJobs, setCustomerJobs] = useState([]);
-    var [tab, setTab] = useState("jobs");
+    var _bt_custPortalTab = useBackableTab("jobs", "custPortalTab"); var tab = _bt_custPortalTab[0], setTab = _bt_custPortalTab[1];
     var [payingJob, setPayingJob] = useState(null);
+    var [custToken, setCustToken] = useState("");
     var [historySearch, setHistorySearch] = useState("");
     var [selectedForPayment, setSelectedForPayment] = useState([]);
     var [autopayEnabled, setAutopayEnabled] = useState(false);
@@ -7919,44 +10601,84 @@ function CustomerPortal(props) {
     var [historyStatusFilter, setHistoryStatusFilter] = useState("all");
     var [showQuote, setShowQuote] = useState(false);
     var [qf, setQf] = useState({ name: "", phone: "", service: "", from: "", to: "", notes: "" });
+    var [portalX, setPortalX] = useState({ photos: [], rate_cards: [], properties: [] });
+    var [portalMsg, setPortalMsg] = useState("");
+    var [wallet, setWallet] = useState(null);
+    var [fundAmt, setFundAmt] = useState(0);
+    var [onlinePay, setOnlinePay] = useState(true);   // false for a company's customers: card payment is handled by that company
+    var [repeatFor, setRepeatFor] = useState(null);
+    var [repeatDate, setRepeatDate] = useState("");
+    var [repeatSlot, setRepeatSlot] = useState("");
 
-    function finishLogin() {
-        var found = jobs.filter(function (j) { return j.email && j.email.toLowerCase() === email.toLowerCase(); });
-        setCustomerJobs(found);
+    function loadPortal(tok) {
+        return plPortalCall("data", tok).then(function (d) {
+            if (d && d.ok) { setOnlinePay(d.online_pay !== false); setCustomerJobs((d.jobs || []).map(plPortalJob)); setPortalX({ photos: d.photos || [], rate_cards: d.rate_cards || [], properties: d.properties || [] }); setPortalMsg(""); }
+            else setPortalMsg(d && d.error === "network" ? "Can't reach the server. Pull down to retry." : "We couldn't load your jobs. Please sign in again.");
+        });
+    }
+    function finishLogin(tok) {
+        setCustomerJobs([]);
         setAuthed(true);
+        loadWallet(tok);
+        return loadPortal(tok);
+    }
+    function loadWallet(tok) {
+        return plPortalCall("wallet", tok || custToken).then(function (d) { if (d && d.ok) setWallet(d); });
+    }
+    function fundWallet(piId) {
+        return plPortalCall("walletfund", custToken, "POST", { payment_intent_id: piId }).then(function (d) {
+            if (d && d.ok) { setFundAmt(0); setPortalMsg("Added to your wallet. New balance $" + Number(d.balance).toFixed(2) + "."); return loadWallet(); }
+            setPortalMsg((d && d.error) || "We could not add the money to your wallet. Do not pay again; call us.");
+        });
+    }
+    function payFromWallet(ids) {
+        return plPortalCall("walletpay", custToken, "POST", { job_ids: ids }).then(function (d) {
+            if (d && d.ok) { setCustomerJobs(function (prev) { return prev.map(function (jb) { return ids.indexOf(jb.id) > -1 ? Object.assign({}, jb, { paymentStatus: "paid", amountPaid: jb.finalPrice }) : jb; }); }); setSelectedForPayment([]); setPortalMsg("Paid $" + Number(d.charged).toFixed(2) + " from your wallet."); return loadWallet(); }
+            setPortalMsg(d && d.error === "Not enough wallet balance" ? "Your wallet balance ($" + Number(d.balance || 0).toFixed(2) + ") is not enough. Add money below or pay by card." : ((d && d.error) || "Could not pay from your wallet."));
+        });
+    }
+    function sendRepeat() {
+        if (!repeatFor || !repeatDate) { setPortalMsg("Pick a date first."); return; }
+        plPortalCall("repeat", custToken, "POST", { job_id: repeatFor.id, date: repeatDate, time_slot: repeatSlot }).then(function (d) {
+            if (d && d.ok) { setRepeatFor(null); setRepeatDate(""); setRepeatSlot(""); loadPortal(custToken).then(function () { setPortalMsg("Request sent as " + d.id + ". We will confirm the date and price shortly."); }); }
+            else setPortalMsg((d && d.error) || "Could not send the request.");
+        });
+    }
+    function confirmPaid(ids, piId) {
+        return plPortalCall("paid", custToken, "POST", { job_ids: ids, payment_intent_id: piId }).then(function (d) {
+            if (d && d.ok) { setCustomerJobs(function (prev) { return prev.map(function (jb) { return ids.indexOf(jb.id) > -1 ? Object.assign({}, jb, { paymentStatus: "paid", amountPaid: jb.finalPrice }) : jb; }); }); return true; }
+            setPortalMsg((d && d.error) || "We could not confirm your payment. Do not pay again; call us.");
+            return false;
+        });
     }
     function toggleAutopay() {
         var newVal = !autopayEnabled;
         setAutopaySaving(true);
-        fetch(SUPABASE_URL + "/rest/v1/customer_accounts?email=eq." + encodeURIComponent(email.toLowerCase()), {
-            method: "PATCH", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
-            body: JSON.stringify({ autopay_enabled: newVal, autopay_authorized_at: newVal ? new Date().toISOString() : null })
-        }).then(function (res) {
+        plApi("custautopay", { token: custToken, enabled: newVal }).then(function (res) {
             setAutopaySaving(false);
-            if (!res.ok) { alert("Failed to update autopay setting (server error)."); return; }
+            if (!res || !res.ok) { alert("Failed to update autopay setting. Please sign in again and retry."); return; }
             setAutopayEnabled(newVal);
-        }).catch(function () { setAutopaySaving(false); alert("Something went wrong. Please try again."); });
+        });
     }
     function login() {
         if (!email || !pw) { setLoginErr("Enter your email and password."); return; }
         setLoginErr("");
-        fetch(SUPABASE_URL + "/rest/v1/customer_accounts?email=eq." + encodeURIComponent(email.toLowerCase()) + "&select=*", {
-            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
-        }).then(function (r) { return r.json(); }).then(function (data) {
-            var acct = Array.isArray(data) && data[0];
-            if (!acct || acct.password !== pw) { setLoginErr("Wrong email or password."); return; }
-            setAutopayEnabled(!!acct.autopay_enabled);
-            setAccountRole(acct.account_role || "admin");
-            finishLogin();
-        }).catch(function () { setLoginErr("Something went wrong. Please try again."); });
+        plApi("custlogin", { token: "", email: email, password: pw, org_slug: PL_ORG_SLUG }).then(function (res) {
+            if (!res || !res.ok) { setLoginErr(res && res.error === "network" ? "Can't reach the server. Try again." : ((res && res.error) || "Wrong email or password.")); return; }
+            setCustToken(res.token);
+            setAutopayEnabled(!!res.autopay_enabled);
+            setAccountRole(res.account_role || "admin");
+            finishLogin(res.token);
+        });
     }
     function createAccount() {
         if (!email || !pw || pw.length < 6) { setLoginErr("Enter your email and a password (at least 6 characters)."); return; }
         setLoginErr("");
-        fetch(SUPABASE_URL + "/rest/v1/customer_accounts", {
-            method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates" },
-            body: JSON.stringify({ email: email.toLowerCase(), password: pw })
-        }).then(function () { finishLogin(); }).catch(function () { setLoginErr("Something went wrong creating your account."); });
+        plApi("custsignup", { token: "", email: email, password: pw, org_slug: PL_ORG_SLUG }).then(function (res) {
+            if (!res || !res.ok) { setLoginErr(res && res.error === "network" ? "Can't reach the server. Try again." : ((res && res.error) || "Something went wrong creating your account.")); return; }
+            setCustToken(res.token);
+            finishLogin(res.token);
+        });
     }
     function submitQuote() {
         sendEmail({ id: "QUOTE-" + Date.now(), customer: qf.name, phone: qf.phone, serviceName: "CUSTOMER PORTAL QUOTE REQUEST", origin: qf.from, destination: qf.to, finalPrice: 0, payment: "tbd", date: new Date().toISOString().split("T")[0], notes: qf.service + " — " + qf.notes });
@@ -8015,9 +10737,15 @@ function CustomerPortal(props) {
                                 React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
                                     actionItems.length > 1 && React.createElement("input", { type: "checkbox", checked: isSelected, onChange: function () { setSelectedForPayment(isSelected ? selectedForPayment.filter(function (id) { return id !== a.job.id; }) : selectedForPayment.concat([a.job.id])); }, style: { width: 15, height: 15, accentColor: C.orange } }),
                                     React.createElement("div", { style: { fontSize: 12, color: C.white } }, a.label)),
-                                React.createElement("button", { onClick: function () { setPayingJob(a.job); }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 6, padding: "5px 12px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Pay Now"));
+                                React.createElement("div", { style: { display: "flex", gap: 6 } },
+                                    wallet && Number(wallet.balance) >= ((Number(a.job.finalPrice) || 0) - (Number(a.job.amountPaid) || 0)) && React.createElement("button", { onClick: function () { payFromWallet([a.job.id]); }, style: { background: C.green, color: "#000", border: "none", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Pay from wallet"),
+                                    onlinePay && React.createElement("button", { onClick: function () { setPayingJob(a.job); }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 6, padding: "5px 12px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Pay Now")));
                         }),
-                        selectedForPayment.length > 1 && React.createElement("button", {
+                        selectedForPayment.length > 1 && wallet && Number(wallet.balance) >= actionItems.filter(function (a) { return selectedForPayment.indexOf(a.job.id) > -1; }).reduce(function (t, a) { return t + ((Number(a.job.finalPrice) || 0) - (Number(a.job.amountPaid) || 0)); }, 0) && React.createElement("button", {
+                            onClick: function () { payFromWallet(selectedForPayment.slice()); },
+                            style: { width: "100%", marginTop: 8, background: C.orange, color: "#000", border: "none", borderRadius: 6, padding: "8px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }
+                        }, "Pay " + selectedForPayment.length + " selected from wallet"),
+                        onlinePay && selectedForPayment.length > 1 && React.createElement("button", {
                             onClick: function () { setPayingBulk(true); },
                             style: { width: "100%", marginTop: 8, background: C.green, color: "#000", border: "none", borderRadius: 6, padding: "8px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }
                         }, "Pay " + selectedForPayment.length + " Selected \u2014 $" + actionItems.filter(function (a) { return selectedForPayment.indexOf(a.job.id) > -1; }).reduce(function (s, a) { return s + ((Number(a.job.finalPrice) || 0) - (Number(a.job.amountPaid) || 0)); }, 0))),
@@ -8030,18 +10758,8 @@ function CustomerPortal(props) {
                             React.createElement(StripeCardForm, {
                                 amount: bulkTotal, jobId: jobsToPay.map(function (jb) { return jb.id; }).join("+"), customerName: jobsToPay[0].customer,
                                 onCancel: function () { setPayingBulk(false); },
-                                onSuccess: function () {
-                                    var updates = jobsToPay.map(function (jb) {
-                                        return fetch(SUPABASE_URL + "/rest/v1/jobs?id=eq." + encodeURIComponent(jb.id), {
-                                            method: "PATCH", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
-                                            body: JSON.stringify({ payment_status: "paid", amount_paid: jb.finalPrice, payment_verified_at: new Date().toISOString() })
-                                        });
-                                    });
-                                    Promise.all(updates).then(function () {
-                                        var paidIds = jobsToPay.map(function (jb) { return jb.id; });
-                                        setCustomerJobs(function (prev) { return prev.map(function (jb) { return paidIds.indexOf(jb.id) > -1 ? Object.assign({}, jb, { paymentStatus: "paid", amountPaid: jb.finalPrice }) : jb; }); });
-                                        setSelectedForPayment([]); setPayingBulk(false);
-                                    });
+                                onSuccess: function (piId) {
+                                    confirmPaid(jobsToPay.map(function (jb) { return jb.id; }), piId).then(function (okp) { if (okp) { setSelectedForPayment([]); setPayingBulk(false); } });
                                 }
                             }));
                     })(),
@@ -8058,17 +10776,48 @@ function CustomerPortal(props) {
                             amount: (Number(payingJob.finalPrice) || 0) - (Number(payingJob.amountPaid) || 0),
                             jobId: payingJob.id, customerName: payingJob.customer,
                             onCancel: function () { setPayingJob(null); },
-                            onSuccess: function () {
-                                fetch(SUPABASE_URL + "/rest/v1/jobs?id=eq." + encodeURIComponent(payingJob.id), {
-                                    method: "PATCH", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
-                                    body: JSON.stringify({ payment_status: "paid", amount_paid: payingJob.finalPrice, payment_verified_at: new Date().toISOString() })
-                                }).then(function () {
-                                    setCustomerJobs(function (prev) { return prev.map(function (j) { return j.id === payingJob.id ? Object.assign({}, j, { paymentStatus: "paid", amountPaid: payingJob.finalPrice }) : j; }); });
-                                    downloadReceipt(payingJob, (Number(payingJob.finalPrice) || 0) - (Number(payingJob.amountPaid) || 0));
-                                    setPayingJob(null);
-                                });
+                            onSuccess: function (piId) {
+                                var pj = payingJob;
+                                confirmPaid([pj.id], piId).then(function (okp) { if (okp) { downloadReceipt(pj, (Number(pj.finalPrice) || 0) - (Number(pj.amountPaid) || 0)); setPayingJob(null); } });
                             }
                         })));
+            })(),
+            (function () {
+                var box = { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "12px 14px", marginBottom: 12, fontSize: 12, color: C.dim };
+                var inp = { background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "8px 10px", fontSize: 12, fontFamily: "inherit" };
+                return React.createElement("div", null,
+                    portalMsg && React.createElement("div", { style: Object.assign({}, box, { color: /sent|Request/.test(portalMsg) ? C.green : C.orange }) }, portalMsg),
+                    repeatFor && React.createElement("div", { style: Object.assign({}, box, { borderColor: C.orange + "88" }) },
+                        React.createElement("div", { style: { color: C.white, fontWeight: 800, marginBottom: 6 } }, "Repeat " + repeatFor.id + " \u2014 " + repeatFor.serviceName),
+                        React.createElement("div", { style: { marginBottom: 8 } }, repeatFor.origin + (repeatFor.destination && repeatFor.destination !== repeatFor.origin ? " \u2192 " + repeatFor.destination : "")),
+                        React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+                            React.createElement("input", { type: "date", value: repeatDate, min: new Date().toISOString().slice(0, 10), onChange: function (e) { setRepeatDate(e.target.value); }, style: inp }),
+                            React.createElement("select", { value: repeatSlot, onChange: function (e) { setRepeatSlot(e.target.value); }, style: inp }, ["", "Morning", "Midday", "Afternoon", "Anytime"].map(function (o) { return React.createElement("option", { key: o, value: o }, o || "Time window"); })),
+                            React.createElement("button", { onClick: sendRepeat, style: { background: C.orange, color: "#000", border: "none", borderRadius: 7, padding: "8px 14px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Send request"),
+                            React.createElement("button", { onClick: function () { setRepeatFor(null); }, style: { background: "transparent", color: C.dim, border: "1px solid " + C.border, borderRadius: 7, padding: "8px 12px", fontSize: 12, cursor: "pointer", fontFamily: "inherit" } }, "Cancel")),
+                        React.createElement("div", { style: { marginTop: 6, fontSize: 10 } }, "This sends a request. Nothing is booked until the office confirms the date and price.")),
+                    wallet && React.createElement("div", { style: Object.assign({}, box, { borderColor: C.orange + "66" }) },
+                        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline" } },
+                            React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 800, letterSpacing: 1.3, textTransform: "uppercase" } }, "\uD83E\uDE99 Your wallet"),
+                            React.createElement("div", { style: { fontSize: 24, fontWeight: 900, color: C.white } }, "$" + Number(wallet.balance).toFixed(2))),
+                        React.createElement("div", { style: { fontSize: 10, margin: "4px 0 8px" } }, "Prepaid. Add money once, and your jobs are paid from it. 1 coin = $1." + (autopayEnabled ? " Autopay is on: finished jobs are paid from your wallet automatically when it has enough." : "")),
+                        onlinePay && !fundAmt && React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } }, [100, 250, 500, 1000, 2500].map(function (a) { return React.createElement("button", { key: a, onClick: function () { setFundAmt(a); }, style: { background: C.surface, color: C.white, border: "1px solid " + C.border, borderRadius: 7, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "+ $" + a); }),
+                            React.createElement("input", { type: "number", min: "10", placeholder: "Other amount", onChange: function (e) { var v = Math.floor(Number(e.target.value)); if (v >= 10 && v <= 10000) setFundAmt(v); }, onKeyDown: function () { }, style: { width: 110, background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "7px 8px", fontSize: 12, fontFamily: "inherit" } })),
+                        fundAmt > 0 && React.createElement(StripeCardForm, { amount: fundAmt, jobId: "WALLET", customerName: email, onCancel: function () { setFundAmt(0); }, onSuccess: function (piId) { fundWallet(piId); } }),
+                        wallet.txns && wallet.txns.length > 0 && React.createElement("div", { style: { marginTop: 10, fontSize: 11 } }, wallet.txns.slice(0, 5).map(function (x, i) {
+                            return React.createElement("div", { key: i, style: { display: "flex", justifyContent: "space-between", padding: "3px 0", borderTop: "1px solid " + C.border } }, React.createElement("span", null, (x.type === "PURCHASE" ? "Added" : x.type === "BOOKING_CAPTURE" ? "Paid" : x.type === "CREDIT" ? "Credit" : x.type === "REFUND" ? "Refund" : x.type) + (x.note ? " \u2014 " + x.note : "") + " \u00b7 " + String(x.created_at || "").slice(0, 10)), React.createElement("span", { style: { color: Number(x.amount) >= 0 ? C.green : C.red, fontWeight: 700 } }, (Number(x.amount) >= 0 ? "+" : "-") + "$" + Math.abs(Number(x.amount)).toFixed(2)));
+                        }))),
+                    portalX.rate_cards.length > 0 && React.createElement("div", { style: box },
+                        React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 800, letterSpacing: 1.3, textTransform: "uppercase", marginBottom: 6 } }, "Your rate card"),
+                        portalX.rate_cards.map(function (c) {
+                            return React.createElement("div", { key: c.name + c.version, style: { marginBottom: 6 } },
+                                React.createElement("div", { style: { color: C.white, fontWeight: 700 } }, c.name + " \u00b7 v" + c.version + (c.effective_date ? " \u00b7 effective " + c.effective_date : "")),
+                                (c.rates || []).map(function (r, i) { return React.createElement("div", { key: i, style: { display: "flex", justifyContent: "space-between" } }, React.createElement("span", null, r.service + (r.unit ? " (" + r.unit + ")" : "")), React.createElement("span", { style: { color: C.white } }, r.price === "" || r.price == null ? "" : "$" + r.price)); }),
+                                c.notes && React.createElement("div", { style: { fontSize: 10, marginTop: 2 } }, c.notes));
+                        })),
+                    portalX.properties.length > 0 && React.createElement("div", { style: box },
+                        React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 800, letterSpacing: 1.3, textTransform: "uppercase", marginBottom: 6 } }, "Your properties"),
+                        portalX.properties.map(function (pr, i) { return React.createElement("div", { key: i }, React.createElement("span", { style: { color: C.white, fontWeight: 700 } }, pr.name), " \u2014 " + (pr.address || "")); })));
             })(),
             (function () {
                 var delivered = customerJobs.filter(function (j) { return j.status === "Delivered"; });
@@ -8094,7 +10843,7 @@ function CustomerPortal(props) {
                 React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.orange } }, "\uD83D\uDCCA Business Dashboard"),
                 React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 2 } }, "Orders, Route Planner, Overview map, real Metrics \u2014 all in one place")),
             (accountRole === "admin" || accountRole === "billing") && React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: 14, marginBottom: 16, textAlign: "center" } },
-                React.createElement(GriffinVoiceButton, { userEmail: email, userRole: "customer" })),
+                React.createElement(GriffinVoiceButton, { userEmail: email, userRole: "customer", token: custToken })),
             React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "Your Jobs"),
             React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 12 } },
                 React.createElement("input", { value: historySearch, onChange: function (e) { setHistorySearch(e.target.value); }, placeholder: "Search by Job ID or address...", style: { flex: 1, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, color: C.white, padding: "8px 12px", fontSize: 12, outline: "none", fontFamily: "inherit" } }),
@@ -8151,6 +10900,13 @@ function CustomerPortal(props) {
                                 i < 7 && React.createElement("div", { style: { flex: 1, height: 1.5, background: i < idx ? C.green : C.border, margin: "0 2px", marginBottom: 12 } }));
                         }))),
                     (j.status === "Assigned" || j.status === "En Route" || j.status === "Arrived" || j.status === "In Progress" || j.status === "Loading" || j.status === "In Transit") && React.createElement("div", { style: { marginTop: 10, marginBottom: 8 } }, React.createElement(TruckMap, { jobId: j.id, job: j })),
+                    (function () {
+                        var ph = portalX.photos.filter(function (x) { return String(x.job_id) === String(j.id); });
+                        return ph.length > 0 && React.createElement("div", { style: { marginTop: 8 } },
+                            React.createElement("div", { style: { fontSize: 10, color: C.dim, marginBottom: 4 } }, "Photos from your job"),
+                            React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } }, ph.map(function (x, i) { return React.createElement("a", { key: i, href: x.url, target: "_blank", rel: "noopener" }, React.createElement("img", { src: x.url, alt: x.stage || "job photo", style: { width: 64, height: 64, objectFit: "cover", borderRadius: 7, border: "1px solid " + C.border } })); })));
+                    })(),
+                    j.status !== "Cancelled" && React.createElement("button", { onClick: function () { setRepeatFor(j); setRepeatDate(""); setPortalMsg(""); }, style: { marginTop: 8, background: "transparent", color: C.orange, border: "1px solid " + C.orange + "66", borderRadius: 7, padding: "6px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDD01 Repeat this job"),
                     React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8 } },
                         React.createElement("a", { href: "tel:" + PHONE_NUMBER, style: { textDecoration: "none", flex: 1 } },
                             React.createElement(Btn, { variant: "ghost", style: { width: "100%", padding: "7px", fontSize: 11 } }, "\uD83D\uDCDE Call Us")),
@@ -8158,7 +10914,7 @@ function CustomerPortal(props) {
                             React.createElement(Btn, { variant: "ghost", style: { width: "100%", padding: "7px", fontSize: 11 } }, "\uD83D\uDCAC Text Us")),
                         React.createElement("a", { href: "?upload-bol", style: { textDecoration: "none", flex: 1 } },
                             React.createElement(Btn, { variant: "ghost", style: { width: "100%", padding: "7px", fontSize: 11 } }, "\uD83D\uDCCB Upload BOL")),
-                    React.createElement(CommunicationLogPanel, { job: j, author: "Customer" })));
+                    React.createElement(CommunicationLogPanel, { job: j, author: "Customer", portalToken: custToken })));
             })),
         showQuote && React.createElement("div", { onClick: function (e) { if (e.target === e.currentTarget)
                 setShowQuote(false); }, style: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "#000000CC", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 } },
@@ -8654,7 +11410,7 @@ function AIDocumentExtractor(props) {
         try {
             var res = await fetch("/.netlify/functions/extract-document", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "application/json", Authorization: "Bearer " + plTokenGet() },
                 body: JSON.stringify({ imageBase64: preview, docType: docType })
             });
             var data = await res.json();
@@ -8989,9 +11745,8 @@ function LeadEmailPanel(props){
         if(!tempEmail||!tempEmail.includes("@")){alert("Enter a valid email address.");return;}
         setSaving(true);
         try{
-            await fetch(SUPABASE_URL+"/rest/v1/leads?id=eq."+lead.id,{
-                method:"PATCH",
-                headers:{apikey:SUPABASE_ANON_KEY,Authorization:"Bearer "+SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=representation"},
+            await plLeadsFetch("?id=eq."+lead.id,{
+                method:"PATCH", prefer:"return=representation",
                 body:JSON.stringify({email:tempEmail})
             });
             if(onSave)onSave(Object.assign({},lead,{email:tempEmail}));
@@ -9011,9 +11766,8 @@ function LeadEmailPanel(props){
                     React.createElement("button",{onClick:function(){
                         if(!confirm("Remove this email from the lead?")) return;
                         setSaving(true);
-                        fetch(SUPABASE_URL+"/rest/v1/leads?id=eq."+lead.id,{
-                            method:"PATCH",
-                            headers:{apikey:SUPABASE_ANON_KEY,Authorization:"Bearer "+SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"return=representation"},
+                        plLeadsFetch("?id=eq."+lead.id,{
+                            method:"PATCH", prefer:"return=representation",
                             body:JSON.stringify({email:null})
                         }).then(function(){
                             if(props.onSave)props.onSave(Object.assign({},lead,{email:null}));
@@ -9061,12 +11815,9 @@ function LeadEmailPanel(props){
 }
 
 function sbLeads(method, data, filter) {
-    var url = SUPABASE_URL + "/rest/v1/leads";
-    if (filter)
-        url += "?" + filter;
-    return fetch(url, {
-        method: method || "GET",
-        headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=representation" },
+    var qs = filter ? "?" + filter : "";
+    return plLeadsFetch(qs, {
+        method: method || "GET", prefer: "return=representation",
         body: data ? JSON.stringify(data) : undefined
     }).then(function (r) { return r.json(); });
 }
@@ -9088,7 +11839,7 @@ function LeadsBoard(props) {
     // cycles only through leads due for follow-up. "view" controls which
     // screen shows: dashboard (stat tiles + Next Lead), list (search/filter,
     // existing behavior), or detail (a specific lead, existing behavior).
-    var [view, setView] = useState("dashboard");
+    var _bt_leadsView = useBackableTab("dashboard", "leadsView"); var view = _bt_leadsView[0], setView = _bt_leadsView[1];
     var [queueMode, setQueueMode] = useState(""); // "" | "followups"
     var [queueIds, setQueueIds] = useState([]);
     var [queuePos, setQueuePos] = useState(0);
@@ -9207,9 +11958,8 @@ function LeadsBoard(props) {
         var entry = { ts: Date.now(), author: callerName, outcome: outcomeKey, text: note.trim(), followUpDate: outcomeKey === "follow_up" ? followDate : "" };
         var newLog = Array.isArray(lead.notes_log) ? lead.notes_log.concat([entry]) : [entry];
         var updated = { status: STATUS_FROM_OUTCOME[outcomeKey] || lead.status, stage: STAGE_FROM_OUTCOME[outcomeKey] || lead.stage, notes_log: newLog, follow_up_date: outcomeKey === "follow_up" ? followDate : lead.follow_up_date };
-        fetch(SUPABASE_URL + "/rest/v1/leads?id=eq." + lead.id, {
+        plLeadsFetch("?id=eq." + lead.id, {
             method: "PATCH",
-            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json" },
             body: JSON.stringify(updated)
         }).then(function () {
             setLeads(function (prev) { return prev.map(function (l) { return l.id === lead.id ? Object.assign({}, l, updated) : l; }); });
@@ -9515,7 +12265,20 @@ function ActivityDashboard() {
                 repStats[name].lastActivity = entry.ts;
         });
     });
-    var reps = Object.values(repStats).map(function (r) { return Object.assign({}, r, { leadsContacted: r.leadsContacted.size }); }).sort(function (a, b) { return b.calls - a.calls; });
+    // Real fix — old/former employees still show here because they're
+    // genuinely in real historical job/lead data, not hardcoded. Real
+    // business records shouldn't be deleted, so this is a real persisted
+    // hide list instead — removes them from view without touching the
+    // underlying real data.
+    var [hiddenReps, setHiddenReps] = useState(function () {
+        try { return JSON.parse(localStorage.getItem("pl_hidden_reps") || "[]"); } catch (e) { return []; }
+    });
+    function hideRep(name) {
+        var next = hiddenReps.concat([name]);
+        setHiddenReps(next);
+        try { localStorage.setItem("pl_hidden_reps", JSON.stringify(next)); } catch (e) {}
+    }
+    var reps = Object.values(repStats).map(function (r) { return Object.assign({}, r, { leadsContacted: r.leadsContacted.size }); }).filter(function (r) { return hiddenReps.indexOf(r.name) === -1; }).sort(function (a, b) { return b.calls - a.calls; });
     var totalCalls = reps.reduce(function (s, r) { return s + r.calls; }, 0);
     var totalBooked = reps.reduce(function (s, r) { return s + r.booked; }, 0);
     var totalInterested = reps.reduce(function (s, r) { return s + r.interested; }, 0);
@@ -9602,7 +12365,7 @@ function ActivityDashboard() {
                     var isInactive = range === "today" && rep.calls === 0;
                     var lastActiveMs = rep.lastActivity;
                     var noActivityToday = range === "today" && rep.calls === 0;
-                    return React.createElement("div", { key: rep.name, onClick: function () { setSelected(rep.name); }, style: { display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr 1fr 1fr 1.2fr", gap: 8, padding: "12px", background: noActivityToday ? C.red + "08" : C.card, border: "1px solid " + (noActivityToday ? C.red + "33" : C.border), borderRadius: 9, marginBottom: 6, cursor: "pointer", alignItems: "center" } },
+                    return React.createElement("div", { key: rep.name, onClick: function () { setSelected(rep.name); }, style: { display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr 1fr 1fr 1.2fr auto", gap: 8, padding: "12px", background: noActivityToday ? C.red + "08" : C.card, border: "1px solid " + (noActivityToday ? C.red + "33" : C.border), borderRadius: 9, marginBottom: 6, cursor: "pointer", alignItems: "center" } },
                         React.createElement("div", null,
                             React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: noActivityToday ? C.red : C.white } }, rep.name),
                             noActivityToday && React.createElement("div", { style: { fontSize: 9, color: C.red, fontWeight: 700 } }, "\u26A0 NO ACTIVITY")),
@@ -9611,7 +12374,8 @@ function ActivityDashboard() {
                         React.createElement("div", { style: { fontSize: 16, fontWeight: 700, color: rep.followUps > 0 ? C.orange : C.faint } }, rep.followUps),
                         React.createElement("div", { style: { fontSize: 16, fontWeight: 700, color: rep.interested > 0 ? C.green : C.faint } }, rep.interested),
                         React.createElement("div", { style: { fontSize: 16, fontWeight: 700, color: rep.booked > 0 ? "#1DB954" : C.faint } }, rep.booked),
-                        React.createElement("div", { style: { fontSize: 11, color: lastActiveMs > Date.now() - 3600000 ? C.green : lastActiveMs > Date.now() - 86400000 ? C.orange : C.faint } }, timeAgo(lastActiveMs)));
+                        React.createElement("div", { style: { fontSize: 11, color: lastActiveMs > Date.now() - 3600000 ? C.green : lastActiveMs > Date.now() - 86400000 ? C.orange : C.faint } }, timeAgo(lastActiveMs)),
+                        React.createElement("button", { onClick: function (e) { e.stopPropagation(); if (window.confirm("Remove " + rep.name + " from this list? Real historical job/lead data is kept \u2014 this only hides them from the scoreboard.")) hideRep(rep.name); }, style: { background: "transparent", border: "1px solid " + C.border, borderRadius: 6, padding: "4px 8px", color: C.dim, fontSize: 10, cursor: "pointer", fontFamily: "inherit" } }, "\u2715"));
                 })),
         React.createElement("div", { style: { marginTop: 20 } },
             React.createElement(Card, null,
@@ -9659,9 +12423,7 @@ function removeBonus(name){
     useEffect(function () {
         setLoading(true);
         // Load leads from Supabase
-        fetch(SUPABASE_URL + "/rest/v1/leads?select=*&limit=50000", {
-            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
-        }).then(function (r) { return r.json(); }).then(function (data) {
+        plLeadsFetch("?select=*&limit=50000").then(function (r) { return r.json(); }).then(function (data) {
             setLeads(Array.isArray(data) ? data : []);
         }).catch(function () { });
         // Load jobs from localStorage
@@ -10183,7 +12945,7 @@ function PayrollDashboard(props) {
                             u.emoji,
                             " ",
                             empName),
-                        React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.white, fontFamily: "monospace", marginBottom: 1 } }, u.password),
+                        React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.white, fontFamily: "monospace", marginBottom: 1 } }, "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"),
                         React.createElement("div", { style: { fontSize: 9, color: C.faint } },
                             u.role,
                             " \u00B7 potentoperations.netlify.app"));
@@ -10239,7 +13001,7 @@ function PayrollDashboard(props) {
                             " ",
                             u.role,
                             " \u00B7 Login: ",
-                            u.password),
+                            "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"),
                         emp.hireDate && React.createElement("span", { style: { fontSize: 10, color: C.dim } },
                             "Hired: ",
                             emp.hireDate),
@@ -10415,7 +13177,10 @@ async function loadFleetFromCloud(){
 }
 async function saveVehicleToCloud(veh){
   var payload={id:veh.id,make:veh.make||"",model:veh.model||"",year:veh.year||"",plate:veh.plate||"",color:veh.color||"",vin:veh.vin||"",ins_policy:veh.insPolicy||"",reg_expiry:veh.regExpiry||null,ins_expiry:veh.insExpiry||null,oil_next:veh.oilNext||null,tire_next:veh.tireNext||null,brake_next:veh.brakeNext||null,updated_at:new Date().toISOString()};
-  if(navigator.onLine)await sbUpsert("fleet_vehicles",payload);
+  if(navigator.onLine){
+    var r=await fetch(SUPABASE_URL+"/rest/v1/fleet_vehicles",{method:"POST",headers:{apikey:SUPABASE_ANON_KEY,Authorization:"Bearer "+SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates,return=representation"},body:JSON.stringify([payload])}).catch(function(){return null;});
+    if(r&&r.status===403){var t="";try{var j=await r.json();t=j&&j.error||"";}catch(e){}alert(t||"Truck limit reached for your plan.");try{await loadFleetFromCloud();}catch(e){}}
+  }
 }
 async function deleteVehicleFromCloud(id){
   if(navigator.onLine)await sbDelete2("fleet_vehicles","id",id);
@@ -10569,7 +13334,7 @@ function FleetMaintenance() {
             if(data.maintenance&&data.maintenance.length>0)setMaintenance(data.maintenance);
         });
     },[]);
-    var [view, setView] = useState("list"); // list | add | detail | addmaint
+    var _bt_fleetView = useBackableTab("list", "fleetView"); var view = _bt_fleetView[0], setView = _bt_fleetView[1];
     var [selected, setSelected] = useState(null);
     var [vForm, setVForm] = useState({ vin: "", make: "", model: "", year: "", plate: "", color: "", regExpiry: "", insExpiry: "", insPolicy: "", oilNext: "", tireNext: "", brakeNext: "" });
     var [mForm, setMForm] = useState({ type: "Oil Change", date: "", cost: "", notes: "", shop: "" });
@@ -10711,7 +13476,7 @@ function FleetMaintenance() {
     return React.createElement("div", { style: { maxWidth: 740, margin: "0 auto" } },
         React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 } },
             React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white } }, "\uD83D\uDE97 Fleet Maintenance"),
-            React.createElement(Btn, { onClick: function () { setVForm({ vin: "", make: "", model: "", year: "", plate: "", color: "", regExpiry: "", insExpiry: "", insPolicy: "", oilNext: "", tireNext: "", brakeNext: "" }); setView("add"); }, style: { fontSize: 12, padding: "8px 14px" } }, "+ Add Vehicle")),
+            React.createElement(Btn, { onClick: function () { if (plTruckLimitHit()) return; setVForm({ vin: "", make: "", model: "", year: "", plate: "", color: "", regExpiry: "", insExpiry: "", insPolicy: "", oilNext: "", tireNext: "", brakeNext: "" }); setView("add"); }, style: { fontSize: 12, padding: "8px 14px" } }, "+ Add Vehicle")),
         alerts.length > 0 && React.createElement("div", { style: { background: C.orange + "12", border: "1px solid " + C.orange + "44", borderRadius: 10, padding: "12px 14px", marginBottom: 16 } },
             React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.orange, marginBottom: 6 } },
                 "\u26A0 ",
@@ -11050,7 +13815,7 @@ function OSPipeline(props) {
     var currentUser = props.currentUser;
     var [prospects, setProspects] = useState([]);
     var [loading, setLoading] = useState(true);
-    var [view, setView] = useState("board");
+    var _bt_pipelineView = useBackableTab("board", "pipelineView"); var view = _bt_pipelineView[0], setView = _bt_pipelineView[1];
     var [selected, setSelected] = useState(null);
     var [stageFilter, setStageFilter] = useState("all");
     var [copied, setCopied] = useState("");
@@ -11901,7 +14666,7 @@ function EmployeeRenameList(props){
           onClick: function(){ save(u.id, u.name); },
           style:{background:C.green,color:"#000",border:"none",borderRadius:6,padding:"7px 12px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",flexShrink:0}
         }, saving[u.id] ? "..." : "Save"),
-        React.createElement("div",{style:{fontSize:9,color:C.dim,width:"100%",marginTop:2}}, u.role + " · " + u.password)
+        React.createElement("div",{style:{fontSize:9,color:C.dim,width:"100%",marginTop:2}}, u.role + " · password set on server")
       );
     })
   );
@@ -11979,6 +14744,26 @@ function LoginActivityView(){
     })
   );
 }
+
+// Customer companies price with their own setup; POTENT keeps its hardcoded pricing.
+try { var _bootUser = loadCurrentUser(); if (_bootUser && _bootUser.orgId) { applyTenantPricing(_bootUser.pricing); plBrandApply(_bootUser.branding); } } catch (e) { }
+// ── A company's own public page: yoursite/?c=their-slug ──
+// Customers see that company's name, colors and prices, book under that company, and sign in to a portal that shows only that company's jobs.
+var PL_TENANT_ID = null, PL_TENANT_FAIL = false;
+var plTenantReady = Promise.resolve();
+try {
+    var _tm = /[?&]c=([A-Za-z0-9\-]{2,60})/.exec(window.location.search);
+    var _ts = _tm ? _tm[1].toLowerCase() : "";
+    if (!_ts) { try { _ts = sessionStorage.getItem("pl_tenant") || ""; } catch (e) { } }
+    if (_ts && _ts !== "potent-logistics" && !(_bootUser && _bootUser.orgId)) {
+        try { sessionStorage.setItem("pl_tenant", _ts); } catch (e) { }
+        PL_ORG_SLUG = _ts;
+        plTenantReady = plApi("brand", { token: "", org_slug: _ts }).then(function (r) {
+            if (r && r.ok) { PL_TENANT_ID = r.org_id; _plOrgId = r.org_id; applyTenantPricing(r.pricing); plBrandApply(r.branding); try { document.title = (r.branding && r.branding.name) || document.title; } catch (e) { } }
+            else { PL_TENANT_FAIL = true; try { sessionStorage.removeItem("pl_tenant"); } catch (e) { } }
+        }).catch(function () { PL_TENANT_FAIL = true; });
+    }
+} catch (e) { }
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
 // [render relocated to end of file]
@@ -13225,6 +16010,7 @@ function RecurringRouteForm(props) {
             method: "POST",
             headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
             body: JSON.stringify({
+                org_id: PL_TENANT_ID || undefined,
                 customer_name: f.customerName, company: f.company, phone: f.phone, email: f.email,
                 origin: f.origin, destination: f.destination, service_type: f.serviceType,
                 days_of_week: f.days.join(","), start_date: f.startDate,
@@ -13374,34 +16160,24 @@ function RecurringRoutesView(props) {
                                 // bookings never actually touched the wallet.
                                 // Real customers use the wallet, not invoice.
                                 if (!r.email) { alert("This route has no real customer email on file — can't check the wallet. Add one first."); return; }
-                                getOrCreateWallet(r.email, r.customer_name).then(function (w) {
-                                    if (Number(w.available_balance) < realRunPrice) {
-                                        alert("Real wallet balance ($" + Number(w.available_balance).toFixed(2) + ") is less than this run's price ($" + realRunPrice + "). Booking blocked \u2014 the customer needs to add funds first.");
+                                (realRunPrice > 0 ? plWalletStaff("charge", { email: r.email, amount: realRunPrice, note: "Recurring run - " + r.origin + " to " + r.destination, job_id: "RR-" + r.id }) : Promise.resolve({ ok: true, balance: 0 })).then(function (d) {
+                                    if (!d || !d.ok) {
+                                        alert(d && d.error === "Not enough wallet balance" ? "Wallet balance ($" + Number(d.balance || 0).toFixed(2) + ") is less than this run's price ($" + realRunPrice + "). Booking blocked. The customer needs to add money to their wallet first." : ((d && d.error) || "Wallet charge failed.") + " Booking not created.");
                                         return;
                                     }
-                                    var newBalance = Number(w.available_balance) - realRunPrice;
-                                    fetch(SUPABASE_URL + "/rest/v1/potent_wallets?id=eq." + w.id, {
-                                        method: "PATCH", headers: sbHeaders(), body: JSON.stringify({ available_balance: newBalance, updated_at: new Date().toISOString() })
-                                    }).then(function () {
-                                        return fetch(SUPABASE_URL + "/rest/v1/wallet_transactions", {
-                                            method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
-                                            body: JSON.stringify({ wallet_id: w.id, type: "BOOKING_CAPTURE", amount: -realRunPrice, note: "Real recurring run — " + r.origin + " to " + r.destination })
-                                        });
-                                    }).then(function () {
-                                        props.onAddJob({
-                                            id: "RR-" + r.id + "-" + Date.now(),
-                                            customer: r.customer_name, phone: r.phone, email: r.email,
-                                            origin: r.origin, destination: r.destination,
-                                            serviceName: r.service_type || "Delivery",
-                                            finalPrice: realRunPrice,
-                                            payment: "wallet", status: "Assigned",
-                                            date: new Date().toISOString().split("T")[0],
-                                            notes: "Recurring route — " + r.origin + " to " + r.destination + " \u00b7 Real wallet deduction: $" + realRunPrice,
-                                            recurringRouteId: r.id
-                                        });
-                                        alert("Today's run booked \u2014 $" + realRunPrice + " deducted from real wallet. Find it in the Jobs tab.");
-                                    }).catch(function () { alert("Real wallet deduction failed \u2014 booking not created. Try again."); });
-                                }).catch(function () { alert("Couldn't look up the real wallet. Try again."); });
+                                    props.onAddJob({
+                                        id: "RR-" + r.id + "-" + Date.now(),
+                                        customer: r.customer_name, phone: r.phone, email: r.email,
+                                        origin: r.origin, destination: r.destination,
+                                        serviceName: r.service_type || "Delivery",
+                                        finalPrice: realRunPrice, paymentStatus: "paid", amountPaid: realRunPrice,
+                                        payment: "wallet", status: "Assigned",
+                                        date: new Date().toISOString().split("T")[0],
+                                        notes: "Recurring route - " + r.origin + " to " + r.destination + " - paid from wallet: $" + realRunPrice,
+                                        recurringRouteId: r.id
+                                    });
+                                    alert("Today's run booked. $" + realRunPrice + " paid from the customer's wallet. New balance $" + Number(d.balance).toFixed(2) + ".");
+                                });
                             },
                             style: { background: C.green, color: "#000", border: "none", borderRadius: 6, padding: "5px 12px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }
                         }, "Book Today's Run")));
@@ -13638,9 +16414,7 @@ function PublicRecurringRequest() {
         }
         setCheckingCapacity(true);
         setCapacityError("");
-        fetch(SUPABASE_URL + "/rest/v1/recurring_routes?status=eq.active&select=days_of_week,base_hours", {
-            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
-        }).then(function (r) { return r.json(); }).then(function (existing) {
+        fetch("/.netlify/functions/data-api?capacity=1" + (PL_TENANT_ID ? "&org_slug=" + encodeURIComponent(PL_ORG_SLUG) : "")).then(function (r) { return r.json(); }).then(function (existing) {
             var byDay = {};
             (Array.isArray(existing) ? existing : []).forEach(function (r) {
                 (r.days_of_week || "").split(",").filter(Boolean).forEach(function (d) {
@@ -13665,6 +16439,7 @@ function PublicRecurringRequest() {
             method: "POST",
             headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
             body: JSON.stringify({
+                org_id: PL_TENANT_ID || undefined,
                 customer_name: f.customerName, company: f.company, phone: f.phone, email: f.email,
                 origin: f.origin, destination: f.destination, service_type: f.serviceType,
                 days_of_week: f.days.join(","), start_date: f.startDate,
@@ -14395,10 +17170,7 @@ function CompanyOnboarding() {
             return;
         }
         setSubmitting(true);
-        fetch(SUPABASE_URL + "/rest/v1/carrier_profiles", {
-            method: "POST",
-            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
-            body: JSON.stringify({
+        plApi("partnersignup", { profile: {
                 dot_number: f.dotNumber, mc_number: f.mcNumber, company_name: f.legalName,
                 ein: f.ein, phone_number: f.phone, verification_status: "pending",
                 account_password: f.accountPassword,
@@ -14406,8 +17178,7 @@ function CompanyOnboarding() {
                 payment_method: f.factoringCompany ? "factoring" : "direct",
                 factoring_company_name: f.factoringCompany, noa_url: f.factoringNOA,
                 terms_agreed: f.termsAgreed, terms_agreed_at: new Date().toISOString(), terms_version: TOS_VERSION
-            })
-        }).then(function (res) {
+        } }).then(plAsResponse).then(function (res) {
             setSubmitting(false);
             if (!res.ok) {
                 return res.text().then(function (errText) {
@@ -14783,13 +17554,10 @@ function PartnerLogin() {
     function login() {
         if (!dotOrMc || !password) { setErr("Enter your DOT/MC number and password."); return; }
         setChecking(true); setErr("");
-        fetch(SUPABASE_URL + "/rest/v1/carrier_profiles?or=(dot_number.eq." + encodeURIComponent(dotOrMc) + ",mc_number.eq." + encodeURIComponent(dotOrMc) + ")&select=*", {
-            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
-        }).then(function (r) { return r.json(); }).then(function (data) {
+        plApi("partnerlogin", { dotOrMc: dotOrMc, password: password }).then(function (r) {
             setChecking(false);
-            var match = Array.isArray(data) ? data.find(function (p) { return p.account_password === password; }) : null;
-            if (!match) { setErr("No account found with that DOT/MC number and password."); return; }
-            setProfile(match);
+            if (!r || !r.ok || !r.profile) { setErr((r && r.error) || "No account found with that DOT/MC number and password."); return; }
+            setProfile(r.profile);
         }).catch(function () { setChecking(false); setErr("Something went wrong. Please try again."); });
     }
 
@@ -15273,6 +18041,7 @@ function CommunicationLogPanel(props) {
     var [saving, setSaving] = React.useState(false);
 
     function refetch() {
+        if (props.portalToken) { plPortalCall("notes", props.portalToken, "POST", { job_id: j.id, read: true }).then(function (d) { setMessages(d && Array.isArray(d.messages) ? d.messages : []); }); return; }
         fetch(SUPABASE_URL + "/rest/v1/job_communications?job_id=eq." + encodeURIComponent(j.id) + "&select=*&order=created_at.asc", {
             headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
         }).then(function (r) { return r.json(); }).then(function (data) { setMessages(Array.isArray(data) ? data : []); }).catch(function () { setMessages([]); });
@@ -15282,6 +18051,14 @@ function CommunicationLogPanel(props) {
     function addNote() {
         if (!newMsg.trim()) return;
         setSaving(true);
+        if (props.portalToken) {
+            plPortalCall("notes", props.portalToken, "POST", { job_id: j.id, message: newMsg }).then(function (d) {
+                setSaving(false);
+                if (!d || !d.ok) { alert((d && d.error) || "Message failed to save."); return; }
+                setNewMsg(""); refetch();
+            });
+            return;
+        }
         fetch(SUPABASE_URL + "/rest/v1/job_communications", {
             method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
             body: JSON.stringify({ job_id: j.id, author: props.author || "Staff", message: newMsg, source: props.author === "Customer" ? "customer_message" : "internal_note" })
@@ -15460,7 +18237,7 @@ function DetentionPanel(props) {
         var start = new Date(j.detentionStart);
         var end = new Date();
         var minutes = Math.round((end - start) / 60000);
-        var charge = minutes > 30 ? 50 : 0; // real policy: 30 min free, then flat $50
+        var charge = minutes > plRule("onsiteFreeMin") ? plRule("onsiteFlat") : 0; // owner-set rule (default 30 min free, then flat $50)
         fetch(SUPABASE_URL + "/rest/v1/jobs?id=eq." + encodeURIComponent(j.id), {
             method: "PATCH", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
             body: JSON.stringify({ detention_end: end.toISOString(), detention_minutes: minutes, detention_charge: charge })
@@ -15469,7 +18246,7 @@ function DetentionPanel(props) {
             if (!res.ok) { alert("Failed to save (server error)."); return; }
             setRunning(false);
             if (charge > 0) addAuditEntry("Detention Charge", j.id, "detention", "$0", "$" + charge + " (" + minutes + " min)", "Driver");
-            alert(minutes + " minutes on site. " + (charge > 0 ? "$" + charge + " detention charge applied (over 30 min free)." : "Under 30 minutes \u2014 no charge."));
+            alert(minutes + " minutes on site. " + (charge > 0 ? "$" + charge + " detention charge applied (over " + plRule("onsiteFreeMin") + " min free)." : "Within " + plRule("onsiteFreeMin") + " minutes \u2014 no charge."));
         }).catch(function () { setSaving(false); alert("Something went wrong."); });
     }
 
@@ -15667,7 +18444,9 @@ function downloadDispatchAgreement(load, rate) {
         "<tr><td><b>Agreed Rate</b></td><td>$" + rate + "</td></tr>" +
         "<tr><td><b>Payment Terms</b></td><td>Net 7 (maximum, verified accounts only)</td></tr></table>" +
 
-        "<h3>3. Effective Date</h3>" +
+        "<h3>3. Standing Terms</h3>" +
+        "<p>This rate confirmation incorporates the POTENT Dispatch / Carrier Agreement (version " + TOS_VERSION + ") accepted at onboarding, available at /terms.html. If they conflict, this rate confirmation controls for this load only.</p>" +
+        "<h3>3A. Effective Date</h3>" +
         "<p>This agreement is effective for the load described above only. A new rate confirmation is required for any future load.</p>" +
 
         "<h3>4. Statement of Work</h3>" +
@@ -15696,14 +18475,9 @@ function downloadBlankDispatchAgreementTemplate() {
         ".sig{margin-top:50px;} .sigline{border-top:1px solid #333;width:280px;padding-top:4px;font-size:11px;color:#555;} " +
         ".fill{border-bottom:1px solid #333;display:inline-block;min-width:220px;}</style></head><body>" +
         "<h1>Dispatch / Rate Confirmation Agreement \u2014 Template</h1>" +
-        "<h3>1. Recitals</h3>" +
-        "<p>This agreement is made as of <span class='fill'>&nbsp;</span> by and between <b>POTENT LOGISTICS LLC</b> (DOT# 9166689, EIN 42-2446741, 2089 Christian Cir SE, Conyers, GA 30013) and <span class='fill'>&nbsp;</span> (\"Dispatch Partner\").</p>" +
-        "<h3>2. Rate</h3>" +
-        "<p>Rate is confirmed per load, not as a standing commission. POTENT Logistics LLC retains 100% of the agreed rate for each load. Each load requires its own written rate confirmation before work begins.</p>" +
-        "<h3>3. Effective Date</h3>" +
-        "<p>This agreement establishes the relationship. Each individual load requires its own signed rate confirmation.</p>" +
-        "<h3>4. Statement of Work</h3>" +
-        "<p>POTENT Logistics LLC will pick up, transport, document (photos, signed BOL/POD), and invoice each accepted load. Payment terms for this account are Prepay or Quick Pay until POTENT completes account verification. Once verified, terms of up to Net 7 (never longer) may be extended at POTENT's discretion. Dispatch Partner will provide accurate load information and remit payment on the agreed terms.</p>" +
+        "<p>Version " + TOS_VERSION + " \u00b7 Updated " + LEGAL_UPDATED + ". This is the full agreement Dispatch Partner accepts at onboarding. Each load also needs its own signed rate confirmation.</p>" +
+        "<p>Made as of <span class='fill'>&nbsp;</span> between <b>POTENT LOGISTICS LLC</b> (DOT# 9166689, EIN 42-2446741, 2089 Christian Cir SE, Conyers, GA 30013) and <span class='fill'>&nbsp;</span> (\"Dispatch Partner\").</p>" +
+        POTENT_LOGISTICS_TOS_SECTIONS.map(function (x) { return "<h3>" + x.num + ". " + x.title + "</h3><p>" + x.body + "</p>"; }).join("") +
         "<div class='sig'><table style='border:none;'><tr style='border:none;'>" +
         "<td style='border:none;'><div class='sigline'>POTENT Logistics LLC \u2014 Authorized Representative</div></td>" +
         "<td style='border:none;'><div class='sigline'>Dispatch Partner \u2014 Authorized Representative</div></td>" +
@@ -16387,117 +19161,8 @@ function TruckJobPricingPanel() {
 // Real, verified property management companies — immediate cash-flow
 // target for bulk trash / apartment turnover junk removal. Real phone
 // numbers confirmed directly, local to your actual service area.
-var PROPERTY_MGMT_LEADS_IMPORT = [
-    ["PURE Property Management of Georgia", "Property Management / Apartments", "Conyers", "770-427-5711", ""],
-    ["PMC Realty Group", "Property Management / Apartments", "Conyers", "770-826-7592", "info@ga-pmc.com"],
-    ["Summit Management Group", "Property Management / Multi-Family", "Covington", "678-466-7000", "info@summitmgmtgroup.com"],
-    ["Vision Realty & Management", "Property Management / Residential & Commercial", "Conyers", "678-944-9471", ""],
-    ["Sovereign Realty & Management", "Property Management / Multi-Family", "Atlanta", "404-974-4694", ""],
-    ["Carter Mark Realty Group", "Property Management / Real Estate", "Tucker", "770-729-4808", ""],
-    ["Real Property Management Excel", "Property Management / Investment Properties", "Monroe", "678-999-4696", ""],
-    ["Quality Real Estate Rental Services", "Property Management", "Norcross", "770-527-7076", ""],
-];
-
-var BULK_LEADS_IMPORT = [
-    ["QuickBox","3PL / Fulfillment","College Park","470-945-0942","atlanta@quickbox.com"],
-    ["Fulton Warehouse","3PL / Warehousing","Atlanta","404-349-0091","customerservice@fultonwarehouse.com"],
-    ["One Step Logistics","3PL / Distribution","Atlanta","404-537-4488","info@onesteplogistics.com"],
-    ["All Points Third-Party Logistics","3PL / Fulfillment","Atlanta","404-352-5508","info@allpointsatl.com"],
-    ["MWD Logistics","3PL / Warehouse","Atlanta","419-544-0281","chidonna.stephens@mwdlogistics.com"],
-    ["Averitt Distribution & Fulfillment","Distribution / Fulfillment","Atlanta","877-339-3530","distribution@averitt.com"],
-    ["Porter Logistics","3PL / Warehouse","Atlanta","404-574-4641",""],
-    ["Warehouse Basics","3PL / Warehouse","Atlanta","404-346-1848",""],
-    ["PSI Media & Fulfillment Solutions","Fulfillment / Warehouse","Norcross","770-417-1115",""],
-    ["RMK Services","Warehouse / Freight Handling","Atlanta","678-794-9630",""],
-    ["ASD Logistics","3PL / Distribution","Atlanta","404-349-3800",""],
-    ["HWC Logistics","3PL / Distribution","College Park","678-705-6002","info@hwclogistics.com"],
-    ["HWC Logistics — Savannah","3PL / Distribution","Pooler","912-748-9506","savannah@hwclogistics.com"],
-    ["FSI — Fulfillment Strategies International","3PL / Fulfillment","Lithia Springs","800-979-9012",""],
-    ["East Coast Warehouse & Distribution","Temperature-Controlled / Warehouse","Savannah","912-348-4012","sales@eastcoastwarehouse.com"],
-    ["O'Neill Logistics","Warehouse / Distribution","Bloomingdale","912-400-8660",""],
-    ["STG USA — Savannah","3PL / Transload","Savannah","912-964-1736","SAVStationManager@stgusa.com"],
-    ["DX Print & Mail Fulfillment","Fulfillment / Distribution","Statesboro","770-815-5113","emcelveen@dxprintmail.com"],
-    ["Goggin Warehousing","Warehouse","Atlanta","404-699-5999","plangiotti@gogginwarehousing.com"],
-    ["M&W Distribution Services","Distribution","Atlanta","404-344-8902","jgarger@mwlgi.com"],
-    ["Peeples Industries","Warehouse / Distribution","Savannah","912-547-9964","jwestberry@peeplesind.com"],
-    ["RBW Logistics","Logistics / Warehouse","Augusta","877-724-0106","frank_anderson@rbwlogistics.com"],
-    ["Total Warehouse Logistics","Warehouse / Logistics","Atlanta","404-349-4450","wbrooks@twilogistics.com"],
-    ["Union Compress Warehouse","Warehouse","Cordele","864-516-1980","ecramer@ucwlogistics.com"],
-    ["CWC","Commercial Furniture / FF&E","Atlanta","770-493-8200","info@c-w-c.com"],
-    ["Corporate Environments","Commercial Furniture / Workplace","Atlanta","404-679-8999","info@ceofga.com"],
-    ["TriMarc Installation","FF&E Installation","Peachtree Corners","770-447-9308","customerService@atldesigngroup.com"],
-    ["Caudelle Interior Installations","FF&E / Installation","Atlanta","404-355-6878","easter@caudelle.com"],
-    ["Preferred Receiving & Installation","FF&E / Receiving","Atlanta","404-228-7260","jlong@preferredri.com"],
-    ["Atlanta Seating Concepts","Commercial Seating / FF&E","Atlanta","678-654-8316","atlseatingconcepts@gmail.com"],
-    ["Exact Distribution","FF&E / Distribution","Marietta","404-908-0192","info@exactdistribution.com"],
-    ["Arch Receiving","FF&E Receiving","Athens","706-543-7970",""],
-    ["Main Solutions","Commercial Office Furniture","Atlanta","678-244-8100",""],
-    ["Absolute FF&E","FF&E","Atlanta","702-772-5295","Tim@absoluteffe.com"],
-    ["5 Star Office Furniture","Contract Office Furniture","Avondale Estates","404-496-4182","info@5starofficefurniture.com"],
-    ["Atlanta Office Furniture","Commercial Office Furniture","Atlanta","770-734-9100","sales@atlofficefurniture.com"],
-    ["Georgia Office Interiors","Office Furniture / Installation","Dawsonville","678-851-6307",""],
-    ["Office Furniture Inc.","Office Furniture / Relocation","Atlanta","404-344-0340","Patrick@officefurnitureinc.com"],
-    ["Office Interiors Atlanta","Commercial Furniture","Atlanta","770-804-1589","info@oiatlanta.com"],
-    ["OED Reps","Corporate / Healthcare / Hospitality FF&E","Atlanta","770-984-9047","dana@oedreps.com"],
-    ["JR + Associates","Commercial Furnishings","Atlanta","404-274-5623","info@jrareps.com"],
-    ["CORT","Office Furniture / Production Furniture","Atlanta","678-909-0170",""],
-    ["Loy's Office Interiors","Office Furniture","LaGrange","706-884-1723","customerservice@loysoffice.com"],
-    ["First Office Furniture ATL","Office Furniture","Atlanta","770-841-2804","jcorc@fofatl.com"],
-    ["Atlanta Office Liquidators / AOLI","Office Furniture / Liquidation","Atlanta","404-505-9623","veevee@aoliatlanta.com"],
-    ["Advanced Office Solutions","Office Furniture","Gainesville","770-533-9595","bperry@aosonline.com"],
-    ["Advantage Office Solutions","Office Furniture","Villa Rica","770-830-6868","mark@usadvantage.net"],
-    ["Augusta Office Solutions","Office Furniture","Augusta","706-305-3971",""],
-    ["McGarity's","Office Furniture","Gainesville","770-536-9852","toddpennington@mcgartys.com"],
-    ["Minton Jones","Office Furniture","Norcross","770-449-4787","bpugh@mintonjones.com"],
-    ["Office Creations","Office Furniture","Norcross","404-392-2064","Jodi.borges-bradley@officecreations.net"],
-    ["Office Furniture Expo","Office Furniture","Atlanta","770-455-0440","karl@ofexpo.com"],
-    ["Perimeter Office Products","Office Furniture","Lawrenceville","770-689-1900","Ken.clark@perimeteroffice.com"],
-    ["Ponders O/S","Office Furniture","Thomasville","229-226-3341","roger@ponders.com"],
-    ["Russell Ventures","Office Furniture","Acworth","678-574-9805","richard@russellventures.com"],
-    ["Sheffield Office Products","Office Furniture","Duluth","770-623-4452","claires@sheffieldop.com"],
-    ["Office Interiors Atlanta — Eurotech Dealer","Office Furniture","Atlanta","770-804-1589","MKamenca@OIAtlanta.com"],
-    ["VIP Office","Office Furniture","Hinesville","912-877-5222","april@vipoffice.com"],
-    ["Complete Upholstery","Custom Automotive Upholstery","Commerce","770-318-3214",""],
-    ["Banister's Upholstery","Auto / Boat Upholstery","East Point","404-767-4396",""],
-    ["Marietta Auto Trim","Automotive Interiors","Marietta","770-590-8746",""],
-    ["Terry Taylor Custom Interiors","Custom Upholstery / Commercial","Atlanta","404-352-1893","TRTaylor@bellsouth.net"],
-    ["Atlanta Stitchworks","Custom Automotive Interiors","Atlanta","404-503-3949","atlantastitchworks@gmail.com"],
-    ["Romero's Auto Upholstery","Custom Automotive Interiors","Loganville","678-242-8570","Romeros1217@gmail.com"],
-    ["W.B. Custom Upholstery","Automotive Upholstery","Silver Creek","706-591-2265","WBCustomupholstery1@gmail.com"],
-    ["American Radio","Automotive Customization","Roswell","770-458-8585","sales@americanradio.net"],
-    ["Total Appearance","Automotive Interiors","Atlanta","770-717-0734",""],
-    ["MRT Group","Upholstery / Automotive / Marine","Atlanta","407-724-2164","mrtgroupga@gmail.com"],
-    ["Jean & Sons Upholsteryland","Automotive / Furniture Upholstery","Atlanta","404-244-9334","dcbowers55@msn.com"],
-    ["Mags Upholstery","Furniture / Auto / Marine Upholstery","Marietta","770-431-0105",""],
-    ["Kees Customz","Custom Auto Interiors","Mableton","478-777-6177",""],
-    ["Super Upholstery","Upholstery / Auto / Marine","Marietta","770-426-3165","upholsterysuperteam@gmail.com"],
-    ["SR Auto Upholstery","Automotive Upholstery","Norcross","678-707-0414",""],
-    ["Crush Customs Leather Seats","Automotive Upholstery","Marietta","770-989-1818",""],
-    ["Don Carleon Auto Upholstery","Automotive Upholstery","Morrow","404-822-6984",""],
-    ["Gulf Tire Distributors","Wholesale Tires / Wheels","Tucker","770-723-0089","info@gulftires.com"],
-    ["USA Wheel & Tire Outlet","Tires / Wheels","Morrow","770-892-6700","shawnusa.d@gmail.com"],
-    ["360 Tire Retail","Tire Distribution","Atlanta","470-418-0893","contact@360tireretail.com"],
-    ["Western Wheel & Tire","Wholesale Wheels / Tires","Atlanta","404-351-5176",""],
-    ["American Tire Distributors","Wholesale Tire Distribution","Tucker","770-414-9924",""],
-    ["NTW — National Tire Wholesale","Wholesale Tire Distribution","Norcross","770-447-1527",""],
-    ["Tireco Distributors","Wholesale Tires","Doraville","770-447-5110",""],
-    ["Harris Tire","Tire Distribution","Atlanta","404-696-3115",""],
-    ["Restaurant Equipment Market — REM","Restaurant Equipment / Furniture","Atlanta","770-455-0069","sales@rematlanta.com"],
-    ["Littco Restaurant Supply","Restaurant Equipment","Norcross","678-978-1210","order@littco.com"],
-    ["Restaurant Solutions Inc.","Restaurant Equipment","Marietta","770-421-1999","sales@restaurantsolutionsinc.com"],
-    ["NMB Restaurant Equipment","Restaurant Equipment","Atlanta","404-762-9906","contact@nmbrestaurantequipment.com"],
-    ["NES of Georgia","Restaurant Equipment","Lawrenceville","678-336-1672","sales@nesofga.com"],
-    ["Atlanta Culinary Equipment","Commercial Kitchen Equipment","Norcross","770-908-3838","info@atlequipment.com"],
-    ["Atlanta's Better Kitchen Equipment","Commercial Kitchen Equipment","Fayetteville","678-920-2739","atlantasbetterkitchenequipment@gmail.com"],
-    ["PDI Atlanta / Peachtree Distributing","Restaurant Parts / Distribution","Atlanta","404-351-6442","sales@pdiatlanta.com"],
-    ["USA Equipment Direct","Commercial Restaurant Equipment","Atlanta","404-863-9232","orders@usaequipmentdirect.com"],
-    ["Atlanta Restaurant Equipment","Used/New Restaurant Equipment","Norcross","770-925-4858","harry@atlantarestaurantequipment.net"],
-    ["Georgia Flooring Wholesale","Flooring Wholesale","Buford","678-691-3489","chrisj@georgiaflooringwholesale.com"],
-    ["Rustic Wood Floor Supply","Wholesale Flooring","Norcross","678-691-0533","norcross@rusticwoodfloorsupply.com"],
-    ["Perdomo Distributor — Atlanta","HVAC Wholesale","Atlanta","404-401-0483","atlanta@hvac-perdomo.com"],
-    ["JEDCO Supply","HVAC Supply / Distribution","Suwanee","678-608-2858","sales@jedcosupply.com"],
-];
-
+var PROPERTY_MGMT_LEADS_IMPORT = []; // lead data removed from the public bundle; see POTENT-leads-backup.json
+var BULK_LEADS_IMPORT = []; // lead data removed from the public bundle; see POTENT-leads-backup.json
 function BulkLeadImportButton() {
     var [importing, setImporting] = React.useState(false);
     var [result, setResult] = React.useState(null);
@@ -16507,8 +19172,8 @@ function BulkLeadImportButton() {
         var rows = BULK_LEADS_IMPORT.map(function (l) {
             return { name: l[0], company: l[0], category: l[1], city: l[2], state: "GA", phone: l[3], email: l[4] || null, source: "Master Lead List Import", priority: "New" };
         });
-        fetch(SUPABASE_URL + "/rest/v1/leads", {
-            method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
+        plLeadsFetch("", {
+            method: "POST", prefer: "return=minimal",
             body: JSON.stringify(rows)
         }).then(function (res) {
             setImporting(false);
@@ -16534,8 +19199,8 @@ function PropertyMgmtImportButton() {
         var rows = PROPERTY_MGMT_LEADS_IMPORT.map(function (l) {
             return { name: l[0], company: l[0], category: l[1], city: l[2], state: "GA", phone: l[3], email: l[4] || null, source: "Property Management Lead List", priority: "New" };
         });
-        fetch(SUPABASE_URL + "/rest/v1/leads", {
-            method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
+        plLeadsFetch("", {
+            method: "POST", prefer: "return=minimal",
             body: JSON.stringify(rows)
         }).then(function (res) {
             setImporting(false);
@@ -16721,7 +19386,7 @@ function subscribeToPushNotifications(userId, userName) {
                 applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
             }).then(function (subscription) {
                 return fetch(SUPABASE_URL + "/rest/v1/push_subscriptions", {
-                    method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates" },
+                    method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" },
                     body: JSON.stringify({ user_id: userId, user_name: userName, endpoint: subscription.endpoint, subscription: subscription.toJSON() })
                 }).then(function () { return { ok: true }; });
             });
@@ -16799,7 +19464,7 @@ function LoadingSpinner(props) {
 // Same real legal language as before, just readable like an actual
 // company's terms page, not a scanned PDF.
 // ═══════════════════════════════════════════════════════════════════
-var TOS_SECTIONS = [
+var ACCOUNT_TOS_SECTIONS = [
     { num: 1, title: "Payment Responsibility", body: "If this account fails to pay an invoice within the agreed terms (maximum Net 7), the responsible party is liable for the full amount owed, plus any collection costs and legal fees POTENT Logistics LLC incurs recovering payment. Unpaid balances accrue interest at 1.5% per month after the due date." },
     { num: 2, title: "Limitation of Liability", body: "POTENT Logistics LLC's liability for any loss, damage, or delay to freight is limited to the lesser of $0.50 per pound or $100,000 per shipment, unless a higher value is declared in writing and agreed to before pickup. POTENT is not liable for indirect, incidental, or consequential damages, including lost profits or business opportunity." },
     { num: 3, title: "Claims", body: "Any claim for loss or damage must be submitted in writing within 48 hours of the delivery date, or the claim is waived." },
@@ -16813,7 +19478,7 @@ function TermsOfServiceDisplay(props) {
     return React.createElement("div", { style: { marginTop: 16, marginBottom: 16 } },
         React.createElement("div", { style: { fontSize: 15, fontWeight: 900, color: C.white, marginBottom: 4 } }, "Terms of Service"),
         React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 14 } }, "5 sections. Tap each to read. All 5 apply regardless of which you've opened."),
-        TOS_SECTIONS.map(function (s) {
+        ACCOUNT_TOS_SECTIONS.map(function (s) {
             var isOpen = expanded === s.num;
             return React.createElement("div", { key: s.num, style: { border: "1px solid " + C.border, borderRadius: 10, marginBottom: 8, overflow: "hidden", background: C.card } },
                 React.createElement("button", {
@@ -16849,9 +19514,7 @@ function GettingStartedChecklist(props) {
     var [leadCount, setLeadCount] = React.useState(null);
 
     React.useEffect(function () {
-        fetch(SUPABASE_URL + "/rest/v1/leads?select=id&limit=1", {
-            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
-        }).then(function (r) { return r.json(); }).then(function (rows) { setLeadCount(Array.isArray(rows) ? rows.length : 0); }).catch(function () { setLeadCount(0); });
+        plLeadsFetch("?select=id&limit=1").then(function (r) { return r.json(); }).then(function (rows) { setLeadCount(Array.isArray(rows) ? rows.length : 0); }).catch(function () { setLeadCount(0); });
     }, []);
 
     if (dismissed) return null;
@@ -16968,6 +19631,7 @@ function DriverProfileTab(props) {
                 React.createElement("span", { style: { fontSize: 11, color: C.dim, textTransform: "uppercase" } }, r[0]),
                 React.createElement("span", { style: { fontSize: 13, color: C.white, fontWeight: 700 } }, r[1]));
         }),
+        React.createElement("div", { style: { marginTop: 20 } }, React.createElement(PayoutMethodCard, null)),
         React.createElement("div", { style: { marginTop: 20, fontSize: 11, color: C.dim, fontWeight: 800, textTransform: "uppercase" } }, "Your Vehicle"),
         React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: 14, marginTop: 8 } },
             [["Make/Model", "2022 Ford E-350"], ["Type", "16ft Dock-Height Box Truck"], ["Capacity", "4,500 lbs"], ["Equipment", "Ramp, E-tracks, moving blankets, load bars \u2014 no liftgate"]].map(function (r) {
@@ -16995,7 +19659,6 @@ function DriverAppShell(props) {
     var tab = tabState[0], setTab = tabState[1];
     var TABS = [["home", "\uD83C\uDFE0", "Home"], ["loads", "\uD83D\uDCE6", "Loads"], ["voice", "\uD83C\uDF99\uFE0F", "Voice"], ["earnings", "\uD83D\uDCB0", "Earnings"], ["profile", "\uD83D\uDC64", "Profile"], ["help", "\u2753", "Help"]];
     return React.createElement("div", { style: { minHeight: "100vh", background: "#000" } },
-        React.createElement(RealBackButton, null),
         React.createElement(FirstTimeTour, { tourId: "driver-app-shell", steps: DRIVER_APP_TOUR_STEPS }),
         React.createElement("div", { style: { borderBottom: "1px solid " + C.border, padding: "10px 16px", display: "flex", alignItems: "center", gap: 10 } },
             React.createElement("img", { src: "/potent-griffin-icon.png", style: { width: 28, height: 28 } }),
@@ -17078,7 +19741,7 @@ function BusinessPlannerTab(props) {
         setSaving(true);
         fetch(SUPABASE_URL + "/rest/v1/recurring_routes", {
             method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
-            body: JSON.stringify({ customer_name: props.customerName || "", phone: props.customerPhone || "", email: props.customerEmail || "", origin: f.startLoc, destination: f.endLoc, days_of_week: f.recurring ? "Mon,Tue,Wed,Thu,Fri" : "", status: "active", assigned_driver: f.driver, start_time: f.startTime })
+            body: JSON.stringify({ org_id: PL_TENANT_ID || undefined, customer_name: props.customerName || "", phone: props.customerPhone || "", email: props.customerEmail || "", origin: f.startLoc, destination: f.endLoc, days_of_week: f.recurring ? "Mon,Tue,Wed,Thu,Fri" : "", status: "active", assigned_driver: f.driver, start_time: f.startTime })
         }).then(function (res) {
             setSaving(false);
             if (!res.ok) { alert("Route creation failed \u2014 server error. Nothing was saved."); return; }
@@ -17193,35 +19856,12 @@ function BusinessDashboardShell(props) {
 // Curri's platform-pay), $750,000 AL / $100,000 Cargo (matching
 // POTENT's actual real COI on file), 48-hour documentation window.
 // ═══════════════════════════════════════════════════════════════════
-var POTENT_LOGISTICS_TOS_SECTIONS = [
-    { num: 1, title: "Term and Termination", body: "This Agreement may be terminated by either party immediately upon the other party's material breach, or at any time, for any reason, with written notice. Termination does not relieve either party of obligations incurred before termination. Sections 2, 6, 7, 8, 9, 10, and 14 through 21 survive termination." },
-    { num: 2, title: "Carrier's Operating Authority and Compliance", body: "POTENT represents that it is duly and legally qualified under all applicable federal, state, and local law to provide contract carrier transportation services, and does not have an unsatisfactory or unfit FMCSA safety rating. If any representation becomes untrue, or POTENT's insurance lapses, POTENT will immediately notify the Dispatch Partner and will not perform services until the issue is resolved." },
-    { num: 3, title: "Performance of Services", body: "POTENT is solely responsible for controlling the method, manner, and means of performing its services, including equipment, personnel, and route selection. POTENT retains full discretion over how a load is safely and legally performed." },
-    { num: 4, title: "Receipts and Bills of Lading", body: "POTENT will provide a signed Bill of Lading and, where applicable, a Proof of Delivery for each load, documenting condition, quantity, and delivery confirmation." },
-    { num: 5, title: "Carrier's Operations", body: "POTENT is solely responsible for its day-to-day operations, including compliance with Hours of Service, vehicle maintenance, and driver qualification requirements." },
-    { num: 6, title: "Rates and Payments", body: "POTENT will be compensated per the rate confirmed in writing (or through the POTENT platform) at the time a load is accepted. Payment terms do not exceed Net 7 from invoicing, and only for accounts POTENT has verified. No rate applies except what is confirmed in writing \u2014 accessorials included. Payment is contingent on POTENT providing a signed BOL, POD, and any other reasonably requested delivery documentation within 48 hours of delivery; failure to do so may delay payment." },
-    { num: 7, title: "Waiver of Carrier's Lien", body: "POTENT waives any lien rights against freight in its possession as security for payment, except as otherwise required by law." },
-    { num: 8, title: "Loss, Damage, or Delay", body: "POTENT's liability for loss, damage, or delay to freight is limited to the lesser of $0.50 per pound or $100,000 per shipment, unless a higher value is declared in writing and agreed to before pickup. Claims must be submitted in writing within 48 hours of delivery or are waived." },
-    { num: 9, title: "Insurance", body: "POTENT maintains Auto Liability insurance of at least $750,000 per occurrence and Motor Truck Cargo insurance of at least $100,000 per occurrence, matching its real current coverage on file. POTENT will provide a current Certificate of Insurance upon request and will give 30 days' written notice before any cancellation or material change." },
-    { num: 10, title: "Indemnity", body: "POTENT will defend, indemnify, and hold harmless the Dispatch Partner from claims arising out of POTENT's negligence, breach of this Agreement, or violation of applicable law in performing services." },
-    { num: 11, title: "Handling, Loading, and Unloading", body: "Unless otherwise agreed in writing, the shipper or receiver is responsible for loading and unloading freight. POTENT will document any discrepancy between described and actual freight condition, weight, or dimensions before departure." },
-    { num: 12, title: "Records, Confidentiality, and Non-Disclosure", body: "Each party will keep the other's confidential business information private and will not disclose it except as required by law or with written consent." },
-    { num: 13, title: "Sub-Contract Prohibition", body: "POTENT will not subcontract or re-broker any load accepted under this Agreement without the Dispatch Partner's prior written consent." },
-    { num: 14, title: "Dispatch Partner's Records", body: "Records provided by the Dispatch Partner in connection with a load are confidential and remain their property." },
-    { num: 15, title: "Right to Audit", body: "The Dispatch Partner, or its authorized representative, may audit records directly relevant to services performed under this Agreement upon reasonable written notice." },
-    { num: 16, title: "Assignment and Modification", body: "This Agreement may not be assigned by either party without the other's written consent, and may only be modified in writing signed by both parties." },
-    { num: 17, title: "Severability", body: "If any provision of this Agreement is found unenforceable, the remaining provisions remain in full effect." },
-    { num: 18, title: "Waiver", body: "Failure by either party to enforce any provision of this Agreement does not waive that party's right to enforce it later." },
-    { num: 19, title: "Notice", body: "All notices required under this Agreement must be in writing and delivered to the contact information on file for each party." },
-    { num: 20, title: "Governing Law and Dispute Resolution", body: "This Agreement is governed by the laws of the State of Georgia. Any dispute arising under this Agreement will first be addressed through good-faith negotiation between the parties before either party pursues other remedies." },
-    { num: 21, title: "Complete Agreement", body: "This Agreement, together with any signed rate confirmation, constitutes the entire agreement between the parties regarding the services described, superseding any prior discussions or agreements." },
-];
 
 function PotentLogisticsFullTOS(props) {
     var [expanded, setExpanded] = React.useState(1);
     return React.createElement("div", { style: { marginTop: 16, marginBottom: 16 } },
         React.createElement("div", { style: { fontSize: 15, fontWeight: 900, color: C.white, marginBottom: 4 } }, "POTENT Logistics \u2014 Dispatch / Carrier Agreement"),
-        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 14 } }, "21 real sections. Tap each to read."),
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 14 } }, POTENT_LOGISTICS_TOS_SECTIONS.length + " sections. Tap each to read."),
         POTENT_LOGISTICS_TOS_SECTIONS.map(function (s) {
             var isOpen = expanded === s.num;
             return React.createElement("div", { key: s.num, style: { border: "1px solid " + C.border, borderRadius: 10, marginBottom: 6, overflow: "hidden", background: C.card } },
@@ -17233,7 +19873,7 @@ function PotentLogisticsFullTOS(props) {
         }),
         React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.white, cursor: "pointer", marginTop: 8 } },
             React.createElement("input", { type: "checkbox", checked: props.agreed, onChange: function (e) { props.onAgree(e.target.checked); }, style: { width: 18, height: 18, accentColor: C.orange } }),
-            "I have read and agree to all 21 sections above"));
+            "I have read and agree to all " + POTENT_LOGISTICS_TOS_SECTIONS.length + " sections above"));
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -17242,35 +19882,12 @@ function PotentLogisticsFullTOS(props) {
 // freight. Real terms already established: one-time license, real
 // tier pricing, Flex Pay, perpetual ownership once paid in full.
 // ═══════════════════════════════════════════════════════════════════
-var POTENT_OS_TOS_SECTIONS = [
-    { num: 1, title: "Term and Termination", body: "This license is perpetual once paid in full. Prior to full payment (including active Flex Pay plans), POTENT Logistics LLC may suspend access for material breach, including non-payment, with written notice." },
-    { num: 2, title: "Grant of License", body: "POTENT Logistics LLC grants Licensee a non-exclusive, non-transferable license to use POTENT OS for Licensee's own fleet operations. This license does not permit resale, sublicensing, or use on behalf of unrelated third parties." },
-    { num: 3, title: "License Tier and Fleet Size", body: "License tier is determined by Licensee's disclosed fleet size at signup. Growth beyond the licensed tier's fleet size requires a tier upgrade at the then-current published rate." },
-    { num: 4, title: "Payment Terms", body: "License fees are due as stated at signup \u2014 full payment, or Flex Pay installments per the agreed schedule. Flex Pay accounts do not receive full ownership rights until the balance is paid in full." },
-    { num: 5, title: "Flex Pay Default", body: "A missed Flex Pay installment beyond 15 days may result in suspended access until the account is brought current. POTENT Logistics LLC will provide written notice before suspension." },
-    { num: 6, title: "Data Ownership", body: "Licensee retains ownership of all business data entered into POTENT OS \u2014 customer records, job history, financial data. POTENT Logistics LLC does not claim ownership of Licensee's operational data." },
-    { num: 7, title: "Data Export", body: "Licensee may request a full export of their data at any time. POTENT Logistics LLC will provide a reasonable export within 14 business days of a written request." },
-    { num: 8, title: "Updates and Maintenance", body: "POTENT Logistics LLC may release updates, bug fixes, and feature improvements to POTENT OS from time to time. Updates are included in the license; no separate maintenance fee applies." },
-    { num: 9, title: "Support", body: "Licensee is entitled to reasonable support for genuine defects in POTENT OS. Support does not include training, custom development, or third-party integration troubleshooting unless separately agreed in writing." },
-    { num: 10, title: "Indemnity", body: "Licensee will defend and indemnify POTENT Logistics LLC from claims arising out of Licensee's use of POTENT OS in violation of applicable law or this Agreement." },
-    { num: 11, title: "Limitation of Liability", body: "POTENT Logistics LLC's total liability under this Agreement is limited to the amount actually paid by Licensee for the license. POTENT Logistics LLC is not liable for indirect, incidental, or consequential damages, including lost profits." },
-    { num: 12, title: "Confidentiality", body: "Each party will keep the other's confidential business information private, including pricing, business data, and proprietary system details." },
-    { num: 13, title: "No Resale or Sublicensing", body: "Licensee may not resell, sublicense, or provide access to POTENT OS to any entity outside Licensee's own organization without POTENT Logistics LLC's prior written consent." },
-    { num: 14, title: "Licensee's Records", body: "Records and data Licensee enters into POTENT OS remain confidential and are not accessed by POTENT Logistics LLC except as needed to provide support or as required by law." },
-    { num: 15, title: "Right to Audit License Compliance", body: "POTENT Logistics LLC may audit Licensee's fleet size and usage upon reasonable written notice to confirm compliance with the licensed tier." },
-    { num: 16, title: "Assignment and Modification", body: "This Agreement may not be assigned by either party without the other's written consent, and may only be modified in writing signed by both parties." },
-    { num: 17, title: "Severability", body: "If any provision of this Agreement is found unenforceable, the remaining provisions remain in full effect." },
-    { num: 18, title: "Waiver", body: "Failure by either party to enforce any provision of this Agreement does not waive that party's right to enforce it later." },
-    { num: 19, title: "Notice", body: "All notices required under this Agreement must be in writing and delivered to the contact information on file for each party." },
-    { num: 20, title: "Governing Law and Dispute Resolution", body: "This Agreement is governed by the laws of the State of Georgia. Any dispute will first be addressed through good-faith negotiation before either party pursues other remedies." },
-    { num: 21, title: "Complete Agreement", body: "This Agreement, together with the signed license order confirming tier and price, constitutes the entire agreement between the parties, superseding any prior discussions." },
-];
 
 function PotentOSFullTOS(props) {
     var [expanded, setExpanded] = React.useState(1);
     return React.createElement("div", { style: { marginTop: 16, marginBottom: 16 } },
         React.createElement("div", { style: { fontSize: 15, fontWeight: 900, color: C.white, marginBottom: 4 } }, "POTENT OS \u2014 Software License Agreement"),
-        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 14 } }, "21 real sections. Tap each to read."),
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 14 } }, POTENT_OS_TOS_SECTIONS.length + " sections. Tap each to read."),
         POTENT_OS_TOS_SECTIONS.map(function (s) {
             var isOpen = expanded === s.num;
             return React.createElement("div", { key: s.num, style: { border: "1px solid " + C.border, borderRadius: 10, marginBottom: 6, overflow: "hidden", background: C.card } },
@@ -17282,7 +19899,7 @@ function PotentOSFullTOS(props) {
         }),
         React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.white, cursor: "pointer", marginTop: 8 } },
             React.createElement("input", { type: "checkbox", checked: props.agreed, onChange: function (e) { props.onAgree(e.target.checked); }, style: { width: 18, height: 18, accentColor: C.orange } }),
-            "I have read and agree to all 21 sections above"));
+            "I have read and agree to all " + POTENT_OS_TOS_SECTIONS.length + " sections above"));
 }
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
@@ -17306,51 +19923,88 @@ function ensureSplashCss() {
         "@keyframes ringPulse{0%{transform:scale(0.8);opacity:0.6;}100%{transform:scale(1.6);opacity:0;}}" +
         "@keyframes textIn{0%{opacity:0;transform:translateY(14px);}100%{opacity:1;transform:translateY(0);}}" +
         "@keyframes btnIn{0%{opacity:0;transform:translateY(30px);}100%{opacity:1;transform:translateY(0);}}" +
-        "@keyframes bgPulse{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}";
+        "@keyframes bgPulse{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}" +
+        // ── Futuristic chrome splash: one 1.2s heartbeat drives everything ──
+        "@keyframes pxBeat{0%{transform:scale(1);}7%{transform:scale(1.07);}16%{transform:scale(0.985);}26%{transform:scale(1.03);}42%,100%{transform:scale(1);}}" +
+        "@keyframes pxGlow{0%{filter:drop-shadow(0 0 28px rgba(170,205,255,.35)) drop-shadow(0 0 70px rgba(120,170,255,.2));}7%{filter:drop-shadow(0 0 60px rgba(235,246,255,.95)) drop-shadow(0 0 170px rgba(130,185,255,.75));}42%,100%{filter:drop-shadow(0 0 28px rgba(170,205,255,.35)) drop-shadow(0 0 70px rgba(120,170,255,.2));}}" +
+        "@keyframes pxShock{0%{transform:translate(-50%,-50%) scale(.12);opacity:.95;border-width:5px;}100%{transform:translate(-50%,-50%) scale(2.6);opacity:0;border-width:1px;}}" +
+        "@keyframes pxFlash{0%,100%{opacity:0;}6%{opacity:.2;}22%{opacity:0;}}" +
+        "@keyframes pxShake{0%,100%{transform:translate(0,0);}5%{transform:translate(-3px,2px);}9%{transform:translate(3px,-2px);}13%{transform:translate(-1px,1px);}18%{transform:translate(0,0);}}" +
+        "@keyframes pxScan{0%{top:-12%;}100%{top:112%;}}" +
+        "@keyframes pxGrid{0%{background-position:0 0,0 0;}100%{background-position:0 56px,56px 0;}}" +
+        "@keyframes pxSheen{0%{left:-70%;}55%,100%{left:140%;}}" +
+        "@keyframes pxBtnGlow{0%{filter:drop-shadow(0 0 10px rgba(190,220,255,.4));}7%{filter:drop-shadow(0 0 34px rgba(235,246,255,1));}42%,100%{filter:drop-shadow(0 0 10px rgba(190,220,255,.4));}}" +
+        "@keyframes pxGlitch{0%,92%,100%{transform:translate(0,0);text-shadow:none;}93%{transform:translate(-4px,0);text-shadow:3px 0 #5cf,-3px 0 #f5c;}95%{transform:translate(4px,0);text-shadow:-3px 0 #5cf,3px 0 #f5c;}97%{transform:translate(0,0);text-shadow:none;}}" +
+        "@media (prefers-reduced-motion: reduce){.px-anim{animation:none !important;}}";
     document.head.appendChild(style);
 }
 
 function SplashEnterScreen(props) {
     ensureSplashCss();
     var [exiting, setExiting] = React.useState(false);
+    var BEAT = "1.2s";
 
     function enter() {
         setExiting(true);
         setTimeout(function () {
             try { sessionStorage.setItem("pl_splash_seen", "yes"); } catch (e) {}
             props.onEnter();
-        }, 500);
+        }, 600);
+    }
+    var chrome = "linear-gradient(180deg,#ffffff 0%,#c6ccd4 30%,#7d848e 49%,#e4e8ec 51%,#a3a9b2 78%,#f6f8fa 100%)";
+    function ring(delay) {
+        return React.createElement("div", { className: "px-anim", style: { position: "absolute", left: "50%", top: "47%", width: "min(70vw,70vh)", height: "min(70vw,70vh)", borderRadius: "50%", border: "3px solid rgba(214,232,255,.9)", boxShadow: "0 0 30px rgba(150,200,255,.6), inset 0 0 30px rgba(150,200,255,.3)", animation: "pxShock " + BEAT + " cubic-bezier(.1,.7,.2,1) infinite " + delay, pointerEvents: "none" } });
+    }
+    function bracket(pos) {
+        var st = { position: "absolute", width: 38, height: 38, borderColor: "rgba(205,225,255,.75)", borderStyle: "solid", borderWidth: 0 };
+        if (pos.indexOf("t") > -1) { st.top = 16; st.borderTopWidth = 2; } else { st.bottom = 16; st.borderBottomWidth = 2; }
+        if (pos.indexOf("l") > -1) { st.left = 16; st.borderLeftWidth = 2; } else { st.right = 16; st.borderRightWidth = 2; }
+        return React.createElement("div", { key: pos, style: st });
     }
 
     return React.createElement("div", {
         style: {
-            position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 999999,
-            background: "radial-gradient(circle at 50% 40%, #1a1600, #080808 70%)",
-            backgroundSize: "200% 200%", animation: "bgPulse 6s ease infinite",
-            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-            opacity: exiting ? 0 : 1, transition: "opacity 0.5s ease", gap: 6, overflow: "hidden"
+            position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 999999, overflow: "hidden", fontFamily: "'DM Sans','Segoe UI',system-ui,sans-serif",
+            background: "radial-gradient(ellipse at 50% 47%, #1c2535 0%, #090c12 52%, #000 100%)",
+            opacity: exiting ? 0 : 1, transform: exiting ? "scale(1.12)" : "scale(1)", transition: "opacity .6s ease, transform .6s ease"
         }
     },
-        // Real multi-layer effect — Griffin now dominates the screen,
-        // genuine pulsing ring behind it, continuous breathing motion,
-        // not a static image with a subtle glow.
-        React.createElement("div", { style: { position: "relative", display: "flex", alignItems: "center", justifyContent: "center" } },
-            React.createElement("div", { style: { position: "absolute", width: 280, height: 280, borderRadius: "50%", border: "2px solid #F0E00088", animation: "ringPulse 2.2s ease-out infinite" } }),
-            React.createElement("div", { style: { position: "absolute", width: 280, height: 280, borderRadius: "50%", border: "2px solid #F0E00066", animation: "ringPulse 2.2s ease-out infinite 1.1s" } }),
-            React.createElement("img", { src: "/potent-griffin-icon.png", style: { width: 280, maxWidth: "75vw", position: "relative", zIndex: 2, animation: "griffinIn 1s ease forwards, griffinGlow 2.5s ease-in-out infinite 1s, griffinBreathe 3.5s ease-in-out infinite 1s" } })),
-        React.createElement("div", { style: { fontSize: 34, fontWeight: 900, color: "#F2F2F2", marginTop: 24, animation: "textIn 0.8s ease forwards", animationDelay: "0.5s", opacity: 0, animationFillMode: "forwards" } },
-            "POTENT ", React.createElement("span", { style: { color: "#F0E000" } }, "LOGISTICS")),
-        React.createElement("div", { style: { fontSize: 13, color: "#999", marginBottom: 40, animation: "textIn 0.8s ease forwards", animationDelay: "0.7s", opacity: 0, animationFillMode: "forwards" } },
-            "The first app with Ghost Mode. No App Store. No monthly fee. Built to win."),
-        React.createElement("button", {
-            onClick: enter,
-            style: {
-                background: "#F0E000", color: "#000", border: "none", borderRadius: 30,
-                padding: "16px 48px", fontSize: 15, fontWeight: 900, cursor: "pointer", fontFamily: "inherit",
-                letterSpacing: 1, animation: "btnIn 0.8s ease forwards", animationDelay: "0.9s", opacity: 0, animationFillMode: "forwards",
-                boxShadow: "0 0 30px #F0E00066"
-            }
-        }, "ENTER \u2192"));
+        // moving tech grid
+        React.createElement("div", { className: "px-anim", style: { position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(150,190,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(150,190,255,.07) 1px,transparent 1px)", backgroundSize: "56px 56px", animation: "pxGrid 3s linear infinite", maskImage: "radial-gradient(ellipse at 50% 50%,#000 20%,transparent 75%)", WebkitMaskImage: "radial-gradient(ellipse at 50% 50%,#000 20%,transparent 75%)" } }),
+        // shockwaves, one hard hit every beat
+        ring("0s"), ring(".1s"), ring(".2s"),
+        // the griffin: fills the screen, shakes + slams on every beat
+        React.createElement("div", { className: "px-anim", style: { position: "absolute", inset: 0, animation: "pxShake " + BEAT + " linear infinite" } },
+            React.createElement("img", {
+                src: "/potent-griffin-hero.png", alt: "POTENT chrome griffin",
+                onError: function (e) { if (e.target.src.indexOf("potent-griffin-icon") < 0) e.target.src = "/potent-griffin-icon.png"; },
+                className: "px-anim",
+                style: { position: "absolute", left: "50%", top: "47%", width: "min(122vw,122vh)", maxWidth: "1900px", marginLeft: "calc(min(122vw,122vh) / -2)", marginTop: "calc(min(122vw,122vh) * -0.264)", transformOrigin: "50% 50%", animation: "pxBeat " + BEAT + " cubic-bezier(.2,.9,.3,1) infinite, pxGlow " + BEAT + " linear infinite", zIndex: 3, userSelect: "none", pointerEvents: "none" }
+            })),
+        // beat flash + scan line
+        React.createElement("div", { className: "px-anim", style: { position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 47%,rgba(235,246,255,.9),transparent 60%)", animation: "pxFlash " + BEAT + " linear infinite", pointerEvents: "none", zIndex: 4 } }),
+        React.createElement("div", { className: "px-anim", style: { position: "absolute", left: 0, right: 0, height: 3, background: "linear-gradient(90deg,transparent,rgba(200,225,255,.85),transparent)", boxShadow: "0 0 18px rgba(170,210,255,.8)", animation: "pxScan 3.2s linear infinite", zIndex: 5, pointerEvents: "none" } }),
+        ["tl", "tr", "bl", "br"].map(bracket),
+        // title
+        React.createElement("div", { style: { position: "absolute", top: "5.5%", left: 0, right: 0, textAlign: "center", zIndex: 6, padding: "0 16px" } },
+            React.createElement("div", { style: { fontSize: 12, letterSpacing: 8, color: "#aab6c8", fontWeight: 700, marginBottom: 6, animation: "textIn .8s ease .2s both" } }, "WELCOME TO"),
+            React.createElement("div", { className: "px-anim", style: { fontSize: "clamp(40px,9vw,92px)", fontWeight: 900, letterSpacing: "clamp(4px,1.2vw,14px)", lineHeight: 1, background: chrome, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent", filter: "drop-shadow(0 4px 14px rgba(0,0,0,.8))", animation: "textIn .8s ease .4s both, pxGlitch 4.8s steps(1) infinite 1.4s" } }, "POTENT OS"),
+            React.createElement("div", { style: { fontSize: 12, color: "#b4c0d2", marginTop: 10, letterSpacing: 2, textShadow: "0 1px 6px #000", animation: "textIn .8s ease .6s both" } }, "The first app with Ghost Mode · No App Store · No monthly fee")),
+        // chrome enter button
+        React.createElement("div", { style: { position: "absolute", left: 0, right: 0, bottom: "7%", display: "flex", justifyContent: "center", zIndex: 7, animation: "btnIn .8s ease 1s both" } },
+            React.createElement("div", { className: "px-anim", style: { animation: "pxBtnGlow " + BEAT + " linear infinite" } },
+                React.createElement("button", {
+                    onClick: enter,
+                    style: {
+                        position: "relative", overflow: "hidden", cursor: "pointer", fontFamily: "inherit", border: "none",
+                        padding: "20px clamp(40px,9vw,84px)", fontSize: "clamp(15px,2.4vw,20px)", fontWeight: 900, letterSpacing: 6, color: "#0a0d12",
+                        background: chrome, clipPath: "polygon(18px 0,100% 0,calc(100% - 18px) 100%,0 100%)",
+                        boxShadow: "inset 0 2px 2px #fff, inset 0 -4px 8px rgba(0,0,0,.35)", textShadow: "0 1px 0 rgba(255,255,255,.75)"
+                    }
+                },
+                    "ENTER HERE",
+                    React.createElement("span", { className: "px-anim", style: { position: "absolute", top: 0, bottom: 0, width: "45%", left: "-70%", background: "linear-gradient(100deg,transparent,rgba(255,255,255,.95),transparent)", transform: "skewX(-20deg)", animation: "pxSheen 2.4s ease-in-out infinite", pointerEvents: "none" } }))))
+    );
 }
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
@@ -17470,6 +20124,8 @@ function uploadVoiceClip(blob, realMime) {
 function VoiceRoom(props) {
     var senderName = (props.currentUser && props.currentUser.name) || "Unknown";
     var senderRole = props.role || "driver";
+    var room = props.room || "team"; // real separate channel — "team" or "dispatch"
+    var roomLabel = room === "dispatch" ? "Dispatch" : "Team Chat Room";
     var [messages, setMessages] = React.useState(null);
     var [recording, setRecording] = React.useState(false);
     var [uploading, setUploading] = React.useState(false);
@@ -17478,19 +20134,27 @@ function VoiceRoom(props) {
     var [textDraft, setTextDraft] = React.useState("");
     var [sendingText, setSendingText] = React.useState(false);
 
-    // Real text message send — genuinely more reliable than audio across
-    // devices/browsers, per real request. Same shared room, same table.
+    // Real role label — shows everyone's actual real role, not just
+    // owner/admin. Confirmed real roles used throughout the app.
+    function realRoleLabel(role) {
+        if (role === "owner") return "Owner";
+        if (role === "admin") return "Admin";
+        if (role === "dispatch") return "Dispatch";
+        if (role === "driver") return "Driver";
+        return role ? role.charAt(0).toUpperCase() + role.slice(1) : "Team";
+    }
+
     function sendTextMessage() {
         if (!textDraft.trim()) return;
         setSendingText(true);
         fetch(SUPABASE_URL + "/rest/v1/voice_room_messages", {
             method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
-            body: JSON.stringify({ sender_name: senderName, sender_role: senderRole, text_message: textDraft.trim() })
+            body: JSON.stringify({ sender_name: senderName, sender_role: senderRole, text_message: textDraft.trim(), room: room })
         }).then(function () { setTextDraft(""); setSendingText(false); loadMessages(); }).catch(function () { setSendingText(false); alert("Message failed to send \u2014 check your connection and try again."); });
     }
 
     function loadMessages() {
-        fetch(SUPABASE_URL + "/rest/v1/voice_room_messages?select=*&order=created_at.desc&limit=50", {
+        fetch(SUPABASE_URL + "/rest/v1/voice_room_messages?select=*&room=eq." + room + "&order=created_at.desc&limit=50", {
             headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
         }).then(function (r) { return r.json(); }).then(function (rows) { setMessages(Array.isArray(rows) ? rows : []); }).catch(function () { setMessages([]); });
     }
@@ -17520,7 +20184,7 @@ function VoiceRoom(props) {
                     if (!url) { alert("Upload failed \u2014 check your connection and try again."); return; }
                     fetch(SUPABASE_URL + "/rest/v1/voice_room_messages", {
                         method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
-                        body: JSON.stringify({ sender_name: senderName, sender_role: senderRole, audio_url: url })
+                        body: JSON.stringify({ sender_name: senderName, sender_role: senderRole, audio_url: url, room: room })
                     }).then(loadMessages).catch(function () {});
                 });
             };
@@ -17535,8 +20199,8 @@ function VoiceRoom(props) {
     }
 
     return React.createElement("div", { style: { maxWidth: 500, margin: "0 auto", padding: "16px" } },
-        React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "\uD83C\uDF99\uFE0F Voice Room"),
-        React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 20 } }, "Tap, talk, release. Everyone \u2014 dispatch and every driver \u2014 hears it in this same room."),
+        React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "\uD83D\uDCAC " + roomLabel),
+        React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 20 } }, room === "dispatch" ? "Dispatch-only channel \u2014 separate from the main Team Chat Room." : "Tap, talk, or type. Everyone on the team sees it in this same room."),
         React.createElement("button", {
             onClick: function () { recording ? stopRecording() : startRecording(); },
             disabled: uploading,
@@ -17551,7 +20215,7 @@ function VoiceRoom(props) {
             var isMe = m.sender_name === senderName;
             return React.createElement("div", { key: m.id, style: { background: isMe ? "#1a1400" : C.card, border: "1px solid " + (isMe ? C.orange + "66" : C.border), borderRadius: 10, padding: 12, marginBottom: 8 } },
                 React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } },
-                    React.createElement("div", { style: { fontSize: 11, fontWeight: 800, color: isMe ? C.orange : C.white } }, m.sender_name + (m.sender_role === "owner" || m.sender_role === "admin" ? " (Dispatch)" : "")),
+                    React.createElement("div", { style: { fontSize: 11, fontWeight: 800, color: isMe ? C.orange : C.white } }, m.sender_name + " \u00b7 " + realRoleLabel(m.sender_role)),
                     React.createElement("div", { style: { fontSize: 10, color: C.dim } }, new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))),
                 m.text_message ? React.createElement("div", { style: { fontSize: 13, color: C.white } }, m.text_message) : React.createElement("audio", { controls: true, src: m.audio_url, style: { width: "100%", height: 32 } }));
         }));
@@ -18617,16 +21281,12 @@ function PendingApplicationsView() {
     var [selected, setSelected] = React.useState(null);
 
     function load() {
-        fetch(SUPABASE_URL + "/rest/v1/carrier_profiles?verification_status=eq.pending&select=*&order=created_at.desc", {
-            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
-        }).then(function (r) { return r.json(); }).then(function (rows) { setApps(Array.isArray(rows) ? rows : []); }).catch(function () { setApps([]); });
+        plApi("partnerlist").then(function (r) { setApps(r && r.ok && Array.isArray(r.rows) ? r.rows : []); });
     }
     React.useEffect(load, []);
 
     function decide(app, status) {
-        fetch(SUPABASE_URL + "/rest/v1/carrier_profiles?id=eq." + app.id, {
-            method: "PATCH", headers: sbHeaders(), body: JSON.stringify({ verification_status: status })
-        }).then(function () { setSelected(null); load(); }).catch(function () {});
+        plApi("partnerdecide", { id: app.id, status: status }).then(function () { setSelected(null); load(); });
     }
 
     if (apps === null) return React.createElement(LoadingSpinner, { padding: 40 });
@@ -18667,106 +21327,7 @@ function PendingApplicationsView() {
 // Construction companies across Georgia. Real verified phone numbers.
 // These are businesses that regularly need overflow/regional freight —
 // matches your actual 16ft box truck capability.
-var SUPPLY_LEADS_IMPORT = [
-    ["Mingledorff\'s", "A - HVAC", "Conyers", "770-918-9132", ""],
-    ["Apex Supply", "A - HVAC", "Conyers", "678-342-3121", ""],
-    ["Sunbelt Rentals Power & HVAC", "D - Rental", "Conyers", "678-342-9869", ""],
-    ["P&S Electric Supply", "C - Electrical", "Conyers", "770-922-6101", ""],
-    ["Reece Plumbing", "E - Construction", "Conyers", "470-805-1530", ""],
-    ["Rexel", "C - Electrical", "Conyers", "770-481-0500", ""],
-    ["Hughes Supply", "E - Construction", "Conyers", "770-761-6241", ""],
-    ["Sunbelt Trench Safety", "D - Rental", "Conyers", "678-607-1327", ""],
-    ["Sunbelt Pump Solutions", "B - Industrial", "Conyers", "770-483-1328", ""],
-    ["Fastenal", "B - Industrial", "Conyers", "770-860-0556", ""],
-    ["Motion Industries", "B - Industrial", "Covington", "770-786-1402", ""],
-    ["HD Supply Electrical", "C - Electrical", "Covington", "678-625-1847", ""],
-    ["United Rentals", "D - Rental", "Covington", "770-764-8702", ""],
-    ["Fastenal", "B - Industrial", "Covington", "770-784-3811", ""],
-    ["Southern Pipe & Supply", "E - Construction", "Covington", "770-786-0960", ""],
-    ["Herc Rentals", "D - Rental", "Covington", "678-660-7500", ""],
-    ["Hajoca", "E - Construction", "McDonough", "678-432-7950", ""],
-    ["HD Supply Plumbing HVAC LTD", "A - HVAC", "McDonough", "678-432-2253", ""],
-    ["Hughes Supply", "E - Construction", "McDonough", "678-432-2253", ""],
-    ["Tidewater Equipment", "D - Rental", "Forsyth", "478-994-5300", ""],
-    ["United Rentals", "D - Rental", "Byron", "478-956-1106", ""],
-    ["Southway Crane & Rigging", "E - Construction", "Byron", "478-956-1805", ""],
-    ["Fastenal", "B - Industrial", "Byron", "478-956-7882", ""],
-    ["Sterling Industrial Sales-Service", "B - Industrial", "Byron", "478-956-0886", ""],
-    ["United Rentals", "D - Rental", "Macon", "478-477-5853", ""],
-    ["United Rentals", "D - Rental", "Macon", "478-784-9323", ""],
-    ["Mingledorff\'s", "A - HVAC", "Macon", "478-474-8544", ""],
-    ["Motion Industries", "B - Industrial", "Macon", "478-784-0500", ""],
-    ["Winsupply of Middle Georgia", "E - Construction", "Warner Robins", "478-781-9191", ""],
-    ["Lowe Electric Supply", "C - Electrical", "Warner Robins", "478-971-1911", ""],
-    ["City Electric Supply", "C - Electrical", "Warner Robins", "478-953-3787", ""],
-    ["Johnstone Supply", "A - HVAC", "Warner Robins", "478-273-6036", ""],
-    ["Mingledorff\'s", "A - HVAC", "Warner Robins", "478-953-3727", ""],
-    ["EquipmentShare", "D - Rental", "Perry", "478-313-7200", ""],
-    ["Winsupply Dublin GA Co", "E - Construction", "Dublin", "478-272-8004", ""],
-    ["Dublin Winwater Works Co", "E - Construction", "Dublin", "478-272-2026", ""],
-    ["Dublin Winnelson Co", "E - Construction", "Dublin", "478-272-3585", ""],
-    ["Sidney Lee Welding Supply", "B - Industrial", "East Dublin", "478-246-7765", ""],
-    ["Mingledorff\'s", "A - HVAC", "Statesboro", "912-764-8841", ""],
-    ["Statesboro Winlectric", "C - Electrical", "Statesboro", "912-764-6580", ""],
-    ["Statesboro Winnelson", "E - Construction", "Statesboro", "912-489-8643", ""],
-    ["Eagle Wholesale Plumbing", "E - Construction", "Statesboro", "912-764-8179", ""],
-    ["Northside Supply", "E - Construction", "Statesboro", "912-764-6101", ""],
-    ["City Electric Supply", "C - Electrical", "Statesboro", "912-259-9440", ""],
-    ["Georgia Equipment Co.", "B - Industrial", "Statesboro", "912-764-5444", ""],
-    ["United Rentals", "D - Rental", "Statesboro", "912-489-5888", ""],
-    ["Bobcat of Statesboro", "D - Rental", "Statesboro", "912-681-7463", ""],
-    ["Holden & Associates", "A - HVAC", "Statesboro", "912-944-3932", ""],
-    ["Southern Pipe & Supply", "E - Construction", "Pooler", "912-964-6681", ""],
-    ["United Rentals Power & HVAC", "D - Rental", "Pooler", "912-748-6920", ""],
-    ["United Rentals Fluid Solutions", "D - Rental", "Pooler", "912-330-0233", ""],
-    ["Ferguson Waterworks", "E - Construction", "Pooler", "912-330-0140", ""],
-    ["Shearer Supply", "A - HVAC", "Pooler", "912-742-2055", ""],
-    ["Hydraulic Supply Company", "B - Industrial", "Pooler", "912-965-6771", ""],
-    ["White Cap", "E - Construction", "Pooler", "912-748-7191", ""],
-    ["Fastenal", "B - Industrial", "Pooler", "912-748-1343", ""],
-    ["Ferguson HVAC Supply", "A - HVAC", "Garden City", "912-255-6514", ""],
-    ["Sunbelt Rentals", "D - Rental", "Garden City", "912-966-0696", ""],
-    ["Dobbs Equipment", "B - Industrial", "Savannah", "912-964-7370", ""],
-    ["Savannah Winlectric", "C - Electrical", "Savannah", "912-233-7717", ""],
-    ["CED Consolidated Electrical", "C - Electrical", "Savannah", "912-232-8999", ""],
-    ["Winsupply of Savannah", "E - Construction", "Savannah", "912-826-4551", ""],
-    ["Sandpiper Supply", "E - Construction", "Savannah", "912-236-3351", ""],
-    ["Johnstone Supply", "A - HVAC", "Savannah", "912-238-4822", ""],
-    ["Hughes Supply", "E - Construction", "Savannah", "912-351-0636", ""],
-    ["McCall\'s Supply", "E - Construction", "Savannah", "912-233-0321", ""],
-    ["BlueLine Rental", "D - Rental", "Savannah", "912-303-7951", ""],
-    ["US Tool Group", "B - Industrial", "Savannah", "912-335-1372", ""],
-    ["Kaman Industrial Technologies", "B - Industrial", "Savannah", "912-330-8770", ""],
-    ["Machinery Export Service", "B - Industrial", "Pooler", "912-349-2919", ""],
-    ["SA Allen Inc", "B - Industrial", "Pooler", "912-344-4285", ""],
-    ["Holden & Associates", "A - HVAC", "Gray", "770-670-2731", ""],
-    ["Tidewater Equipment", "D - Rental", "Brunswick", "912-265-8760", ""],
-    ["Mingledorff\'s", "A - HVAC", "Albany", "229-432-5254", ""],
-    ["Mingledorff\'s", "A - HVAC", "Valdosta", "229-245-8200", ""],
-    ["Mingledorff\'s", "A - HVAC", "Augusta", "706-651-1950", ""],
-    ["Mingledorff\'s", "A - HVAC", "Athens/Bogart", "706-548-2563", ""],
-    ["Mingledorff\'s", "A - HVAC", "Atlanta", "404-875-7755", ""],
-    ["Mingledorff\'s", "A - HVAC", "Forest Park", "404-361-2474", ""],
-    ["Mingledorff\'s", "A - HVAC", "Lawrenceville", "678-442-1060", ""],
-    ["Mingledorff\'s", "A - HVAC", "Lithia Springs", "770-948-3451", ""],
-    ["Mingledorff\'s", "A - HVAC", "Marietta", "770-426-0551", ""],
-    ["Mingledorff\'s", "A - HVAC", "Newnan", "770-239-2105", ""],
-    ["Mingledorff\'s", "A - HVAC", "Peachtree Corners", "770-239-2100", ""],
-    ["Holden & Associates", "A - HVAC", "Peachtree Corners", "770-458-4000", ""],
-    ["Apex Supply", "A - HVAC", "Marietta", "770-422-1700", ""],
-    ["Cowan Supply", "E - Construction", "Norcross", "770-263-4804", ""],
-    ["Maintenance Supply Company", "E - Construction", "Atlanta", "770-986-8015", ""],
-    ["Mayer Electric Supply", "C - Electrical", "Atlanta", "404-696-3000", ""],
-    ["Elliott Electric Supply", "C - Electrical", "Doraville", "678-710-9550", ""],
-    ["City Electric Supply", "C - Electrical", "Doraville", "770-799-8050", ""],
-    ["Reece Plumbing", "E - Construction", "Atlanta", "470-419-4950", ""],
-    ["Southern Pipe & Supply", "E - Construction", "Atlanta", "678-270-2677", ""],
-    ["Lade Electric Supply", "C - Electrical", "Atlanta", "770-278-9222", ""],
-    ["Lade Electric Supply", "C - Electrical", "Tucker", "770-939-6214", ""],
-    ["Mayer Electric Supply", "C - Electrical", "College Park", "404-768-1476", ""],
-    ["City Electric Supply", "C - Electrical", "Midtown Atlanta", "404-355-8330", ""],
-];
-
+var SUPPLY_LEADS_IMPORT = []; // lead data removed from the public bundle; see POTENT-leads-backup.json
 function SupplyLeadsImportButton() {
     var [importing, setImporting] = React.useState(false);
     var [result, setResult] = React.useState(null);
@@ -18776,8 +21337,8 @@ function SupplyLeadsImportButton() {
         var rows = SUPPLY_LEADS_IMPORT.map(function (l) {
             return { name: l[0], company: l[0], category: l[1], city: l[2], state: "GA", phone: l[3], email: l[4] || null, source: "Supply/Equipment Lead List", priority: "New" };
         });
-        fetch(SUPABASE_URL + "/rest/v1/leads", {
-            method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
+        plLeadsFetch("", {
+            method: "POST", prefer: "return=minimal",
             body: JSON.stringify(rows)
         }).then(function (res) {
             setImporting(false);
@@ -18849,6 +21410,8 @@ function JunkNewJobWizard(props) {
     var isConstructionDebris = job.items.indexOf("Construction Debris") > -1 || job.items.indexOf("Renovation Debris") > -1;
     var realDumpCostPerLb = (isConstructionDebris ? GA_CONSTRUCTION_DEBRIS_RATE_PER_TON : GA_AVG_DUMP_RATE_PER_TON) / 2000;
     var priceDisposal = selectedLoad ? Math.round(selectedLoad.estWeightLbs * realDumpCostPerLb * 3) : 0;
+    var heavyRes = plHeavyFee(job.heavy, isConstructionDebris);
+    var priceHeavy = heavyRes.fee;
     var priceEmergencyAddons = (job.emergencyAddons || []).reduce(function (s, id) {
         var a = EMERGENCY_ADDONS.find(function (e) { return e.id === id; });
         return s + (a ? a.fee : 0);
@@ -18867,14 +21430,16 @@ function JunkNewJobWizard(props) {
             setTravelCalculating(false);
         }).catch(function () { setTravelCalculating(false); });
     }, [step]);
-    var priceTotal = priceJob + priceExtras + priceDisposal + priceTravel + priceEmergencyAddons + priceExtraWorker;
+    var priceTotal = priceJob + priceExtras + priceDisposal + priceHeavy + priceTravel + priceEmergencyAddons + priceExtraWorker;
 
     function createRealJob() {
         var jobDraft = {
             customer_name: job.customerName, customer_phone: job.customerPhone, customer_email: job.customerEmail, customer_address: job.customerAddress,
             is_existing_customer: job.isExisting === "existing", job_type: job.jobType, items: job.items, load_size: job.loadSize,
             access_type: job.accessType, access_details: job.accessDetails, price_job: priceJob, price_total: priceTotal,
-            scheduled_window: job.scheduleWindow, scheduled_date: job.scheduleDate || null, special_items: job.specialItems || [], extra_material: job.emergencyAddons || []
+            scheduled_window: job.scheduleWindow, scheduled_date: job.scheduleDate || null, special_items: job.specialItems || [], extra_material: job.emergencyAddons || [],
+            heavy_fee: priceHeavy, heavy_lbs: heavyRes.lbs, heavy_items: heavyRes.items, price_disposal: priceDisposal, price_travel: priceTravel,
+            est_total_lbs: plHaulPlan({ loadId: job.loadSize, heavyLbs: heavyRes.lbs }).totalLbs, trips: plHaulPlan({ loadId: job.loadSize, heavyLbs: heavyRes.lbs }).trips
         };
         // Real date resolution — "Today"/"ASAP" genuinely mean today's
         // real date for capacity-checking purposes; without this, the
@@ -18948,6 +21513,7 @@ function JunkNewJobWizard(props) {
                     set("specialItems", active ? cur.filter(function (x) { return x !== d.id; }) : cur.concat([d.id]));
                 }, style: { background: active ? C.red : C.card, color: active ? "#fff" : C.white, border: "1px solid " + (active ? C.red : C.border), borderRadius: 20, padding: "8px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, d.label + " +$" + d.markup);
             })),
+        React.createElement(HeavyPicker, { heavy: job.heavy, construction: isConstructionDebris, onChange: function (v) { set("heavy", v); }, loadId: job.loadSize, loadLbs: 0 }),
         React.createElement("div", { style: { fontSize: 11, color: C.dim, fontWeight: 700, marginBottom: 8 } }, "Need an extra worker? (real $" + EXTRA_WORKER_RATE_PER_HOUR + "/hr, simple)"),
         React.createElement("input", { type: "number", min: "0", step: "0.5", value: job.extraWorkerHours || "", onChange: function (e) { set("extraWorkerHours", e.target.value); }, placeholder: "Hours (e.g. 2)", style: { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, color: C.white, padding: "9px 12px", fontSize: 13, fontFamily: "inherit", marginBottom: 16, boxSizing: "border-box" } }),
         React.createElement("button", { onClick: next, disabled: job.items.length === 0, style: { width: "100%", background: C.orange, color: "#000", border: "none", borderRadius: 10, padding: 14, fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "NEXT \u2192 SIZE"),
@@ -18984,12 +21550,13 @@ function JunkNewJobWizard(props) {
     if (step === 6) return React.createElement("div", { style: { maxWidth: 480, margin: "0 auto" } },
         React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 16 } }, "Price"),
         React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: 20, marginBottom: 16 } },
-            [["Job Price", priceJob], ["Travel", priceTravel], ["Extras (Special Items)", priceExtras], ["Extra Worker", priceExtraWorker], ["Disposal", priceDisposal]].map(function (r) {
+            [["Job Price", priceJob], ["Travel", priceTravel], ["Extras (Special Items)", priceExtras], ["Extra Worker", priceExtraWorker], ["Disposal", priceDisposal], ["Heavy Items", priceHeavy]].map(function (r) {
                 return React.createElement("div", { key: r[0], style: { display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid " + C.border, fontSize: 13, color: C.white } },
                     React.createElement("span", null, r[0]), React.createElement("span", null, "$" + r[1]));
             }),
             React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "12px 0 0", fontSize: 16, fontWeight: 900, color: C.orange } },
                 React.createElement("span", null, "TOTAL"), React.createElement("span", null, "$" + priceTotal))),
+        React.createElement(ProfitGuardCard, { pickup: job.customerAddress, dropoff: "", bid: priceTotal }),
         React.createElement("div", { style: { fontSize: 12, color: C.white, marginBottom: 14, textAlign: "center" } }, checkApprovalRule(priceTotal).label),
         React.createElement("div", { style: { fontSize: 10, color: C.dim, marginBottom: 14, textAlign: "center" } }, "Rush/holiday options on the next step may add to this real total."),
         React.createElement("button", { onClick: next, style: { width: "100%", background: C.orange, color: "#000", border: "none", borderRadius: 10, padding: 14, fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", marginBottom: 8 } }, "CUSTOMER APPROVED \u2192 BOOK JOB"),
@@ -19214,6 +21781,7 @@ function NextJobEnginePanel(props) {
     var [mode, setMode] = React.useState("nearby");
     var [results, setResults] = React.useState(null);
     var [loading, setLoading] = React.useState(false);
+    var [requested, setRequested] = React.useState({});
 
     function search() {
         setLoading(true); setResults(null);
@@ -19250,9 +21818,19 @@ function NextJobEnginePanel(props) {
                     React.createElement("div", { style: { fontSize: 13, fontWeight: 900, color: C.orange } }, "$" + j.price_total)),
                 React.createElement("div", { style: { fontSize: 11, color: C.dim } }, j.customer_address),
                 j.realDistanceMiles != null && React.createElement("div", { style: { fontSize: 11, color: C.green, marginTop: 4 } }, j.realDistanceMiles + " real miles away"),
-                React.createElement("button", { onClick: function () {
-                    fetch(SUPABASE_URL + "/rest/v1/junk_jobs?id=eq." + j.id, { method: "PATCH", headers: sbHeaders(), body: JSON.stringify({ assigned_driver: (props.currentUser && props.currentUser.name) || "driver", status: "assigned" }) }).then(search);
-                }, style: { marginTop: 8, background: C.green, color: "#000", border: "none", borderRadius: 6, padding: "6px 14px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "ACCEPT"));
+                requested[j.id]
+                    ? React.createElement("div", { style: { marginTop: 8, fontSize: 11, fontWeight: 800, color: C.orange } }, "✓ Requested. Waiting for dispatch to approve.")
+                    : React.createElement("button", { onClick: function () {
+                        var me = (props.currentUser && props.currentUser.name) || "driver";
+                        if (plOpsCanDecide()) { // office can assign directly, and it is logged
+                            fetch(SUPABASE_URL + "/rest/v1/junk_jobs?id=eq." + j.id, { method: "PATCH", headers: sbHeaders(), body: JSON.stringify({ assigned_driver: me, status: "assigned" }) }).then(function () { plOps("job_events", "POST", "", { job_id: j.id, event: "CLAIM_APPROVED", kind: "claim", note: me + " (assigned by office)" }); search(); });
+                            return;
+                        }
+                        // a driver asks; dispatch decides
+                        plOps("job_events", "POST", "", { job_id: j.id, event: "CLAIM_REQUEST", kind: "claim", note: me }).then(function (r) {
+                            if (r.ok) setRequested(function (o) { var n = Object.assign({}, o); n[j.id] = true; return n; }); else alert("Could not send the request: " + r.error);
+                        });
+                    }, style: { marginTop: 8, background: plOpsCanDecide() ? C.green : C.orange, color: "#000", border: "none", borderRadius: 6, padding: "6px 14px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, plOpsCanDecide() ? "ASSIGN" : "REQUEST THIS JOB"));
         }));
 }
 
@@ -19605,65 +22183,58 @@ function CapacityCheckPanel(props) {
 }
 
 // ── 2. POTENT COINS WALLET — real ledger, real prepaid, no credit ──
-function getOrCreateWallet(email, name) {
-    return fetch(SUPABASE_URL + "/rest/v1/potent_wallets?customer_email=eq." + encodeURIComponent(email) + "&select=*", {
-        headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
-    }).then(function (r) { return r.json(); }).then(function (rows) {
-        if (Array.isArray(rows) && rows[0]) return rows[0];
-        return fetch(SUPABASE_URL + "/rest/v1/potent_wallets", {
-            method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=representation" },
-            body: JSON.stringify({ customer_email: email, customer_name: name, available_balance: 0 })
-        }).then(function (r) { return r.json(); }).then(function (created) { return created[0]; });
-    });
+// Wallet changes happen on the server only (data-api). These helpers are for staff; customers use the portal.
+function plWalletStaff(action, body) {
+    return fetch("/.netlify/functions/data-api?wallet=" + encodeURIComponent(action), { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + plTokenGet() }, body: JSON.stringify(body || {}) })
+        .then(function (r) { return r.json().catch(function () { return { error: "Server error" }; }); }).catch(function () { return { error: "No connection" }; });
+}
+// When a job is finished, pay it from the customer's wallet if they turned autopay on and the balance covers it.
+function plWalletAutoCharge(job) {
+    if (!plTokenGet() || !job || !job.id || !job.email) return Promise.resolve(null);
+    return plWalletStaff("autocharge", { job_id: job.id }).then(function (d) { return d && d.ok && d.charged > 0 ? d : null; });
 }
 function PotentWalletPanel(props) {
-    var [wallet, setWallet] = React.useState(null);
-    var [txns, setTxns] = React.useState([]);
-    var [addAmount, setAddAmount] = React.useState("500");
-
-    function load() {
-        getOrCreateWallet(props.email, props.name).then(function (w) {
-            setWallet(w);
-            fetch(SUPABASE_URL + "/rest/v1/wallet_transactions?wallet_id=eq." + w.id + "&select=*&order=created_at.desc&limit=20", {
-                headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
-            }).then(function (r) { return r.json(); }).then(function (rows) { setTxns(Array.isArray(rows) ? rows : []); });
+    var ws = React.useState([]); var wallets = ws[0], setWallets = ws[1];
+    var ss = React.useState(null); var sel = ss[0], setSel = ss[1];
+    var ts = React.useState([]); var txns = ts[0], setTxns = ts[1];
+    var qs = React.useState(""); var q = qs[0], setQ = qs[1];
+    var fs = React.useState({ email: "", amount: "", note: "" }); var f = fs[0], setF = fs[1];
+    var ms = React.useState(""); var msg = ms[0], setMsg = ms[1];
+    var role = plOpsRole(), isOwner = role === "owner", canUse = plOpsCanDecide();
+    function load() { plOps("potent_wallets", "GET", "select=*&order=updated_at.desc&limit=300").then(function (r) { if (r.ok && Array.isArray(r.data)) setWallets(r.data); else setMsg(r.error || ""); }); }
+    function loadTx(w) { setSel(w); plOps("wallet_transactions", "GET", "wallet_id=eq." + w.id + "&select=*&order=created_at.desc&limit=50").then(function (r) { setTxns(r.ok && Array.isArray(r.data) ? r.data : []); }); }
+    React.useEffect(function () { load(); }, []);
+    if (!canUse) return React.createElement("div", { style: { color: C.dim, fontSize: 12 } }, "Wallets are managed by the owner and dispatch.");
+    function act(kind) {
+        var amt = Number(f.amount);
+        if (!f.email.trim() || !(amt > 0)) { setMsg("Enter the customer's email and an amount."); return; }
+        if (kind === "credit" && !f.note.trim()) { setMsg("Add a note: cash, check, refund, goodwill..."); return; }
+        plWalletStaff(kind, { email: f.email.trim(), amount: amt, note: f.note }).then(function (d) {
+            if (d && d.ok) { setMsg((kind === "credit" ? "Added. " : "Charged. ") + "New balance $" + Number(d.balance).toFixed(2) + "."); setF({ email: f.email, amount: "", note: "" }); load(); if (sel && sel.customer_email === f.email.trim().toLowerCase()) loadTx(sel); }
+            else setMsg((d && d.error) || "Not saved.");
         });
     }
-    React.useEffect(function () { if (props.email) load(); }, [props.email]);
-
-    function purchaseCoins() {
-        var amt = parseFloat(addAmount);
-        if (!amt || amt <= 0) return;
-        var newBalance = (Number(wallet.available_balance) || 0) + amt;
-        fetch(SUPABASE_URL + "/rest/v1/potent_wallets?id=eq." + wallet.id, {
-            method: "PATCH", headers: sbHeaders(), body: JSON.stringify({ available_balance: newBalance, updated_at: new Date().toISOString() })
-        }).then(function () {
-            return fetch(SUPABASE_URL + "/rest/v1/wallet_transactions", {
-                method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
-                body: JSON.stringify({ wallet_id: wallet.id, type: "PURCHASE", amount: amt, note: "Real wallet funding" })
-            });
-        }).then(load);
-    }
-
-    if (!wallet) return React.createElement(LoadingSpinner, { padding: 40 });
-    return React.createElement("div", { style: { maxWidth: 460, margin: "0 auto" } },
-        React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "\uD83E\uDE99 POTENT Coins Wallet"),
-        React.createElement("div", { style: { fontSize: 10, color: C.dim, marginBottom: 16 } }, "1 POTENT Coin = $1.00. Prepaid only \u2014 no credit, no Net terms."),
-        React.createElement("div", { style: { background: C.card, border: "1px solid " + C.orange + "66", borderRadius: 10, padding: 20, textAlign: "center", marginBottom: 16 } },
-            React.createElement("div", { style: { fontSize: 32, fontWeight: 900, color: C.orange } }, "$" + Number(wallet.available_balance).toFixed(2)),
-            React.createElement("div", { style: { fontSize: 10, color: C.dim } }, "Real available balance"),
-            Number(wallet.reserved_balance) > 0 && React.createElement("div", { style: { fontSize: 11, color: "#F0E000", marginTop: 6 } }, "$" + Number(wallet.reserved_balance).toFixed(2) + " reserved for pending bookings")),
-        React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 8 } },
-            [500, 1000, 2500].map(function (amt) {
-                return React.createElement("button", { key: amt, onClick: function () { setAddAmount(String(amt)); }, style: { flex: 1, background: addAmount === String(amt) ? C.orange : C.card, color: addAmount === String(amt) ? "#000" : C.white, border: "1px solid " + C.border, borderRadius: 8, padding: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "$" + amt);
-            })),
-        React.createElement("input", { type: "number", value: addAmount, onChange: function (e) { setAddAmount(e.target.value); }, placeholder: "Custom amount", style: { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, color: C.white, padding: "9px 12px", fontSize: 13, fontFamily: "inherit", marginBottom: 10, boxSizing: "border-box" } }),
-        React.createElement("button", { onClick: purchaseCoins, style: { width: "100%", background: C.orange, color: "#000", border: "none", borderRadius: 10, padding: 12, fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", marginBottom: 20 } }, "Add Real Funds"),
-        React.createElement("div", { style: { fontSize: 11, color: C.dim, fontWeight: 700, marginBottom: 8 } }, "Real Transaction History"),
-        txns.map(function (t) {
-            return React.createElement("div", { key: t.id, style: { display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid " + C.border, fontSize: 11 } },
-                React.createElement("span", { style: { color: C.dim } }, t.type + (t.note ? " \u2014 " + t.note : "")),
-                React.createElement("span", { style: { color: t.type === "PURCHASE" || t.type === "CREDIT" ? C.green : C.red, fontWeight: 700 } }, (t.type === "PURCHASE" || t.type === "CREDIT" ? "+" : "-") + "$" + Math.abs(t.amount).toFixed(2)));
+    var inp = { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "8px 10px", fontSize: 12, fontFamily: "inherit", boxSizing: "border-box" };
+    var shown = wallets.filter(function (w) { var t = q.toLowerCase(); return !t || String(w.customer_email).toLowerCase().indexOf(t) >= 0 || String(w.customer_name || "").toLowerCase().indexOf(t) >= 0; });
+    var total = wallets.reduce(function (t, w) { return t + (Number(w.available_balance) || 0); }, 0);
+    return React.createElement("div", { style: { maxWidth: 640, margin: "0 auto" } },
+        React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "\uD83E\uDE99 Customer Wallets"),
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 12 } }, "Every customer account has a prepaid wallet (1 coin = $1). Customers add money by card in their portal. Balances change only on the server and every change is in the ledger. Held for customers: $" + total.toFixed(2) + " across " + wallets.length + " wallets."),
+        React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: 12, marginBottom: 12 } },
+            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "2fr 1fr 2fr", gap: 8 } },
+                React.createElement("input", { value: f.email, placeholder: "customer email", onChange: function (e) { setF(Object.assign({}, f, { email: e.target.value })); }, style: inp }),
+                React.createElement("input", { type: "number", value: f.amount, placeholder: "$", onChange: function (e) { setF(Object.assign({}, f, { amount: e.target.value })); }, style: inp }),
+                React.createElement("input", { value: f.note, placeholder: "note (cash, check, refund...)", onChange: function (e) { setF(Object.assign({}, f, { note: e.target.value })); }, style: inp })),
+            React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8 } },
+                isOwner && React.createElement("button", { onClick: function () { act("credit"); }, style: { background: C.green, color: "#000", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Add money"),
+                React.createElement("button", { onClick: function () { act("charge"); }, style: { background: "transparent", color: C.white, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 14px", fontSize: 12, cursor: "pointer", fontFamily: "inherit" } }, "Charge wallet"))),
+        msg && React.createElement("div", { style: { fontSize: 12, color: /Added|Charged/.test(msg) ? C.green : C.red, marginBottom: 8 } }, msg),
+        React.createElement("input", { value: q, placeholder: "Search wallets", onChange: function (e) { setQ(e.target.value); }, style: Object.assign({}, inp, { marginBottom: 8 }) }),
+        shown.length === 0 && React.createElement("div", { style: { fontSize: 12, color: C.dim } }, "No wallets yet. One is created the first time a customer opens their portal."),
+        shown.map(function (w) {
+            return React.createElement("div", { key: w.id, style: { background: C.card, border: "1px solid " + (sel && sel.id === w.id ? C.orange : C.border), borderRadius: 10, padding: "10px 14px", marginBottom: 6, fontSize: 12, color: C.dim } },
+                React.createElement("div", { onClick: function () { loadTx(w); }, style: { display: "flex", justifyContent: "space-between", cursor: "pointer" } }, React.createElement("span", null, React.createElement("b", { style: { color: C.white } }, w.customer_name || w.customer_email), w.customer_name ? "  " + w.customer_email : ""), React.createElement("b", { style: { color: C.orange } }, "$" + Number(w.available_balance).toFixed(2))),
+                sel && sel.id === w.id && React.createElement("div", { style: { marginTop: 6 } }, txns.length === 0 ? "No transactions." : txns.map(function (x) { return React.createElement("div", { key: x.id, style: { display: "flex", justifyContent: "space-between", borderTop: "1px solid " + C.border, padding: "3px 0" } }, React.createElement("span", null, x.type + (x.note ? " \u2014 " + x.note : "") + " \u00b7 " + String(x.created_at || "").slice(0, 10) + (x.actor ? " \u00b7 " + x.actor : "")), React.createElement("span", { style: { color: Number(x.amount) >= 0 ? C.green : C.red, fontWeight: 700 } }, (Number(x.amount) >= 0 ? "+" : "-") + "$" + Math.abs(Number(x.amount)).toFixed(2))); })));
         }));
 }
 
@@ -19837,21 +22408,20 @@ function AdminB2BPricingControls() {
 // Real intent patterns → real function calls. Each checks the actual
 // transcript for real keywords and calls a real data source — never
 // invents an answer.
-function griffinAnswer(transcript, userEmail, userRole) {
+function griffinAnswer(transcript, userEmail, userRole, token) {
     var t = transcript.toLowerCase();
 
     if (t.indexOf("wallet") > -1 || t.indexOf("balance") > -1) {
-        return getOrCreateWallet(userEmail, "").then(function (w) {
-            return "Your real available balance is $" + Number(w.available_balance).toFixed(2) + ".";
-        });
+        if (userRole !== "customer" || !token) return Promise.resolve("Open the Wallets tab to see customer balances.");
+        return plPortalCall("wallet", token).then(function (d) { return d && d.ok ? "Your available balance is $" + Number(d.balance).toFixed(2) + "." : "I could not reach your wallet right now."; });
     }
     if (t.indexOf("next delivery") > -1 || t.indexOf("next booking") > -1 || t.indexOf("next shipment") > -1) {
-        return fetch(SUPABASE_URL + "/rest/v1/jobs?email=eq." + encodeURIComponent(userEmail) + "&status=neq.Completed&select=*&order=scheduled_date.asc&limit=1", {
-            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
-        }).then(function (r) { return r.json(); }).then(function (rows) {
-            if (!Array.isArray(rows) || rows.length === 0) return "You don't have any real upcoming deliveries right now.";
-            var j = rows[0];
-            return "Your next real delivery is to " + (j.destination || "an address on file") + ", status " + (j.status || "pending") + ".";
+        if (userRole !== "customer" || !token) return Promise.resolve("Open the Jobs tab to see upcoming jobs.");
+        return plPortalCall("data", token).then(function (d) {
+            var open = d && d.ok ? (d.jobs || []).filter(function (j) { return ["Completed", "Delivered", "Paid", "Cancelled"].indexOf(j.status) < 0; }).sort(function (a, b) { return String(a.date).localeCompare(String(b.date)); }) : null;
+            if (!open) return "I could not load your jobs right now.";
+            if (!open.length) return "You don't have any upcoming jobs right now.";
+            return "Your next job is to " + (open[0].destination || open[0].origin || "the address on file") + " on " + (open[0].date || "a date to be set") + ", status " + (open[0].status || "pending") + ".";
         });
     }
     if (t.indexOf("potent coin") > -1 || (t.indexOf("how") > -1 && t.indexOf("wallet") > -1 && t.indexOf("work") > -1)) {
@@ -19954,7 +22524,7 @@ function GriffinVoiceButton(props) {
         recognition.onresult = function (event) {
             var transcript = event.results[0][0].transcript;
             setState("thinking");
-            griffinAnswer(transcript, props.userEmail, props.userRole).then(function (answer) {
+            griffinAnswer(transcript, props.userEmail, props.userRole, props.token).then(function (answer) {
                 setLastAnswer(answer);
                 fetch(SUPABASE_URL + "/rest/v1/griffin_queries", {
                     method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
@@ -20000,4 +22570,7 @@ function GriffinVoiceButton(props) {
 // ── MOUNT APP ─────────────────────────────────────────────────────
 var rootEl = document.getElementById("root");
 var reactRoot = ReactDOM.createRoot(rootEl);
-reactRoot.render(React.createElement(Root));
+plTenantReady.then(function () {
+    if (PL_TENANT_FAIL) { rootEl.innerHTML = "<div style=\"font-family:sans-serif;text-align:center;padding:60px 20px;color:#ccc;background:#000;min-height:100vh\"><h2>This company page is not available</h2><p>Check the link, or contact the company that sent it to you.</p></div>"; return; }
+    reactRoot.render(React.createElement(React.Fragment, null, React.createElement(Root), React.createElement(RealBackButton, null)));
+});
