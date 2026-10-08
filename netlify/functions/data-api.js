@@ -64,6 +64,7 @@ var TABLES = {
     // POTENT OS sales side: the POTENT login only
     waitlist: { potentOnly: true, writeRoles: ["owner", "dispatch", "dispatcher"] },
     os_prospects: { potentOnly: true, writeRoles: ["owner", "dispatch", "dispatcher"] },
+    business_rules: { pk: "id", prefixId: true, writeRoles: ["owner"], noDelete: true },
     // ── core job tables: every row belongs to one company ──
     jobs: { pk: "id" },
     job_photos: { pk: "id" },
@@ -401,6 +402,45 @@ exports.handler = async function (event) {
     var tok = verify(auth.replace(/^Bearer\s+/i, ""));
     if (!tok) return J(401, { error: "Sign in again" });
     if (STAFF_ROLES.indexOf(tok.role) < 0) return J(403, { error: "Not allowed" });
+
+    // ── payout method: each signed-in person sets and sees only their own; the owner can see the list. Bank numbers are refused. ──
+    if (qs.payout) {
+        if (event.httpMethod !== "POST") return J(405, { error: "POST only" });
+        var yorg = tok.orgId ? String(tok.orgId) : await potentOrgId();
+        if (!yorg) return J(500, { error: "Company not found" });
+        var yuid = String(tok.uid || "").slice(0, 80);
+        if (!yuid) return J(400, { error: "Sign in again" });
+        var yb = parse(event.body || "null") || {};
+        if (qs.payout === "get") {
+            var gy = await sb("payout_methods?org_id=eq." + encodeURIComponent(yorg) + "&user_id=eq." + encodeURIComponent(yuid) + "&select=method,handle,address,note&limit=1");
+            var gyr = gy.ok ? parse(gy.text) : [];
+            return J(200, { ok: true, row: Array.isArray(gyr) && gyr[0] ? gyr[0] : null });
+        }
+        if (qs.payout === "list") {
+            if (tok.role !== "owner") return J(403, { error: "Only the owner can see everyone's payout method." });
+            var ly = await sb("payout_methods?org_id=eq." + encodeURIComponent(yorg) + "&select=user_id,user_name,method,handle,address,note&order=updated_at.desc&limit=300");
+            var lyr = ly.ok ? parse(ly.text) : [];
+            return J(200, { ok: true, rows: Array.isArray(lyr) ? lyr : [] });
+        }
+        if (qs.payout === "set") {
+            var METHODS = ["zelle", "cash_app", "check", "stripe_connect", "other"];
+            var ym = String(yb.method || "");
+            if (METHODS.indexOf(ym) < 0) return J(400, { error: "Pick a payout method." });
+            var cl = function (v, n) { return String(v == null ? "" : v).trim().slice(0, n); };
+            var yrow = { org_id: yorg, user_id: yuid, user_name: cl(yb.user_name || tok.name || yuid, 80), method: ym, handle: cl(yb.handle, 120), address: cl(yb.address, 200), note: cl(yb.note, 200), updated_at: new Date().toISOString() };
+            // a bank account or routing number has no place here (Stripe collects those securely)
+            if ([yrow.handle, yrow.address, yrow.note].some(function (v) { var dg = v.replace(/\D/g, ""); return dg.length >= 8 && !/@/.test(v) && !((dg.length === 10 || dg.length === 11) && /^[\d\s().+\-]+$/.test(v)); })) return J(400, { error: "That looks like a bank number. Do not type bank numbers here. Choose Direct deposit through Stripe instead." });
+            if (ym === "check" && !yrow.address) return J(400, { error: "Enter the mailing address for checks." });
+            if ((ym === "zelle" || ym === "cash_app" || ym === "other") && !yrow.handle) return J(400, { error: "Enter your Zelle, Cash App or payout details." });
+            var ex = await sb("payout_methods?org_id=eq." + encodeURIComponent(yorg) + "&user_id=eq." + encodeURIComponent(yuid) + "&select=user_id&limit=1");
+            var exr = ex.ok ? parse(ex.text) : [];
+            var wr = Array.isArray(exr) && exr[0]
+                ? await sb("payout_methods?org_id=eq." + encodeURIComponent(yorg) + "&user_id=eq." + encodeURIComponent(yuid), { method: "PATCH", body: JSON.stringify(yrow), prefer: "return=minimal" })
+                : await sb("payout_methods", { method: "POST", body: JSON.stringify(yrow), prefer: "return=minimal" });
+            return wr.ok ? J(200, { ok: true }) : J(500, { error: "Could not save" });
+        }
+        return J(400, { error: "Unknown payout action" });
+    }
 
     // ── staff wallet actions: charge a wallet (dispatch/owner), add money received outside the app (owner), auto-charge a finished job ──
     if (qs.wallet) {

@@ -365,7 +365,7 @@ function plApi(action, body) {
 // ── TENANT GATEWAY — company data goes through the server, never straight to the database ──
 // Every read/write of these tables is sent to /.netlify/functions/data-api with the
 // signed-in login, so each company only ever sees and changes its own rows.
-var PL_GATED = ["fleet_vehicles","fleet_maintenance","driver_locations","voice_room_messages","driver_compliance","brokers_carriers_backup","storage_partners","safety_alerts","job_route_legs","job_events","job_scope_changes","vendors","disposal_facilities","properties","potent_wallets","wallet_transactions","rate_cards","service_zones","job_templates","quote_terms_acceptance","jobs","job_photos","junk_jobs","jobs_backup","audit_log_real","expenses_real","commission_rates_real","payment_references","cost_profiles","customer_rate_cards","claims","change_orders","addon_authorizations","my_documents","deadlines","shift_handoffs","escalation_timers","site_profiles","customer_locations","incoming_loads","user_display_names","revoked_users","receipts","job_communications","login_log","push_subscriptions","griffin_queries","recurring_routes","reviews","waitlist","os_prospects"];
+var PL_GATED = ["fleet_vehicles","fleet_maintenance","driver_locations","voice_room_messages","driver_compliance","brokers_carriers_backup","storage_partners","safety_alerts","job_route_legs","job_events","job_scope_changes","vendors","disposal_facilities","properties","potent_wallets","wallet_transactions","rate_cards","service_zones","job_templates","quote_terms_acceptance","jobs","job_photos","junk_jobs","jobs_backup","audit_log_real","expenses_real","commission_rates_real","payment_references","cost_profiles","customer_rate_cards","claims","change_orders","addon_authorizations","my_documents","deadlines","shift_handoffs","escalation_timers","site_profiles","customer_locations","incoming_loads","user_display_names","revoked_users","receipts","job_communications","login_log","push_subscriptions","griffin_queries","recurring_routes","reviews","waitlist","os_prospects","business_rules"];
 (function () {
     if (typeof window === "undefined" || !window.fetch || window.__plGate) return;
     window.__plGate = true;
@@ -3302,6 +3302,118 @@ function plAlerts(jobs, acct, today, tpls) {
     });
     return out;
 }
+
+// ── BUSINESS RULES: the numbers the app uses, editable by the owner (Growth Tools > Rules) ──
+var PL_RULE_DEFAULTS = { onsiteFreeMin: 30, onsiteFlat: 50, freightFreeHrs: 2, lateFeePct: 1.5, netDays: 7, quoteValidDays: 14 };
+var PL_RULE_LABELS = [
+    ["onsiteFreeMin", "On-site free minutes", "Local jobs: minutes at the stop before a detention charge starts"],
+    ["onsiteFlat", "On-site detention charge ($)", "Flat charge once the free minutes are used"],
+    ["freightFreeHrs", "Freight free hours", "Freight loads: hours at shipper or receiver before detention (used in agreements)"],
+    ["lateFeePct", "Late fee (% per month)", "Shown on invoices for business accounts paying late"],
+    ["netDays", "Business invoice terms (days)", "Days a business account has to pay"],
+    ["quoteValidDays", "Quote valid for (days)", "Shown on quote emails"]
+];
+var _plRules = null, _plRulesLoading = false;
+function plRule(k) {
+    if (!_plRules && !_plRulesLoading && plTokenGet()) {
+        _plRulesLoading = true;
+        plOps("business_rules", "GET", "id=eq.rules&select=data").then(function (r) { _plRules = (r && r.ok && r.data && r.data[0] && r.data[0].data) || {}; _plRulesLoading = false; }).catch(function () { _plRulesLoading = false; });
+    }
+    var v = _plRules ? _plRules[k] : null;
+    return (v !== undefined && v !== null && v !== "" && !isNaN(Number(v))) ? Number(v) : PL_RULE_DEFAULTS[k];
+}
+function plRulesSet(obj) { _plRules = obj; }
+function plMoney(n) { return "$" + (Number(n) || 0).toFixed(2); }
+// Emails to the customer: quote ready, invoice
+function plQuoteMail(job) {
+    var brand = plBrandName();
+    return { subject: "Your quote from " + brand + " - " + job.id,
+        body: "Hi " + (job.customer || "there") + ",\n\nYour quote is ready.\n\nJob ID: " + job.id + "\nService: " + (job.serviceName || job.service || "Service") + "\nFrom: " + (job.origin || "") + (job.destination && job.destination !== job.origin ? "\nTo: " + job.destination : "") + (job.date ? "\nDate: " + job.date : "") +
+            "\nTotal: " + plMoney(job.finalPrice || job.basePrice) + "\n\nThis quote is good for " + plRule("quoteValidDays") + " days. Reply to this email" + (plIsTenant() ? "" : " or call " + PHONE_DISPLAY) + " to confirm and we will lock in your time.\n\nThank you,\n" + brand };
+}
+function plInvoiceMail(job) {
+    var brand = plBrandName();
+    var biz = job.isBusiness || job.customerType === "business";
+    var total = Number(job.finalPrice || job.basePrice) || 0, paid = Number(job.amountPaid) || 0;
+    var due = Math.max(0, total - paid);
+    var terms = biz ? "Net " + plRule("netDays") + " days. A late fee of " + plRule("lateFeePct") + "% per month applies to balances past due." : "Due on receipt.";
+    return { subject: "Invoice for job " + job.id + " - " + plMoney(due) + " due",
+        body: "Hi " + (job.customer || "there") + ",\n\nThank you for choosing " + brand + ". Your invoice:\n\nJob ID: " + job.id + "\nService: " + (job.serviceName || job.service || "Service") + "\nTotal: " + plMoney(total) + (paid > 0 ? "\nPaid: " + plMoney(paid) : "") + "\nAmount due: " + plMoney(due) + "\nTerms: " + terms +
+            "\n\nYou can pay by card or from your wallet on our website: open it, choose Track My Jobs and sign in with this email address.\n\nThank you,\n" + brand };
+}
+function plSendCustomerMail(kind, job) {
+    if (!job || !job.email) return Promise.resolve({ ok: false, error: "No email on file for this job." });
+    if (!(Number(job.finalPrice || job.basePrice) > 0)) return Promise.resolve({ ok: false, error: "This job has no price yet." });
+    var m = kind === "quote" ? plQuoteMail(job) : plInvoiceMail(job);
+    return plSendMail(job.email, m.subject, m.body, job.id).then(function (res) { return res.ok ? { ok: true } : { ok: false, error: "The email service refused it (" + res.status + ")." }; }).catch(function () { return { ok: false, error: "No connection" }; });
+}
+function plPayoutCall(action, body) {
+    return fetch("/.netlify/functions/data-api?payout=" + action, { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + plTokenGet() }, body: JSON.stringify(body || {}) })
+        .then(function (r) { return r.json().catch(function () { return { ok: false, error: "Server error" }; }); }).catch(function () { return { ok: false, error: "No connection" }; });
+}
+var PL_PAYOUT_METHODS = [["zelle", "Zelle (phone or email)"], ["cash_app", "Cash App ($cashtag)"], ["check", "Paper check (mailing address)"], ["stripe_connect", "Direct deposit through Stripe"], ["other", "Other (describe)"]];
+// Manage payout method: anyone signed in sets how they get paid. Bank numbers are never typed here; direct deposit is set up in Stripe's own secure form.
+function PayoutMethodCard(props) {
+    var s = React.useState({ method: "zelle", handle: "", address: "", note: "" }); var f = s[0], setF = s[1];
+    var ms = React.useState(""); var msg = ms[0], setMsg = ms[1];
+    var ls = React.useState(null); var list = ls[0], setList = ls[1];
+    var u = loadCurrentUser() || {};
+    function loadMine() { plPayoutCall("get").then(function (r) { if (r && r.ok && r.row) setF({ method: r.row.method || "zelle", handle: r.row.handle || "", address: r.row.address || "", note: r.row.note || "" }); }); }
+    function loadAll() { if (u.role !== "owner") return; plPayoutCall("list").then(function (r) { setList(r && r.ok ? r.rows : []); }); }
+    React.useEffect(function () { loadMine(); loadAll(); }, []);
+    function save() { setMsg("Saving..."); plPayoutCall("set", f).then(function (r) { setMsg(r && r.ok ? "Saved." : ((r && r.error) || "Could not save.")); loadAll(); }); }
+    function connect() { setMsg("Opening Stripe..."); plApi("connectstart").then(function (r) { if (r && r.url) window.location.href = r.url; else setMsg((r && r.error) || "Stripe setup is available for company owners."); }); }
+    var inp = { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "9px 10px", fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", marginBottom: 8 };
+    return React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: 14, marginBottom: 14 } },
+        React.createElement("div", { style: { fontSize: 14, fontWeight: 900, color: C.white, marginBottom: 2 } }, "Manage payout method"),
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 10 } }, "How you get paid. Never type a bank account or routing number here."),
+        React.createElement("select", { value: f.method, onChange: function (e) { setF(Object.assign({}, f, { method: e.target.value })); }, style: inp }, PL_PAYOUT_METHODS.map(function (m) { return React.createElement("option", { key: m[0], value: m[0] }, m[1]); })),
+        f.method !== "stripe_connect" && f.method !== "check" && React.createElement("input", { value: f.handle, placeholder: f.method === "zelle" ? "Phone or email on your Zelle" : f.method === "cash_app" ? "$yourcashtag" : "Details", onChange: function (e) { setF(Object.assign({}, f, { handle: e.target.value })); }, style: inp }),
+        f.method === "check" && React.createElement("input", { value: f.address, placeholder: "Mailing address for checks", onChange: function (e) { setF(Object.assign({}, f, { address: e.target.value })); }, style: inp }),
+        React.createElement("input", { value: f.note, placeholder: "Note for the office (optional)", onChange: function (e) { setF(Object.assign({}, f, { note: e.target.value })); }, style: inp }),
+        React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+            React.createElement("button", { onClick: save, style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 12, fontWeight: 800, cursor: "pointer" } }, "Save payout method"),
+            u.role === "owner" && React.createElement("button", { onClick: connect, style: { background: "transparent", color: C.white, border: "1px solid " + C.border, borderRadius: 8, padding: "9px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer" } }, "Set up direct deposit (Stripe)")),
+        msg && React.createElement("div", { style: { fontSize: 12, color: /Saved|Opening|Saving/.test(msg) ? C.green : C.red, marginTop: 8 } }, msg),
+        list && list.length > 0 && React.createElement("div", { style: { marginTop: 14, borderTop: "1px solid " + C.border, paddingTop: 10 } },
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, fontWeight: 800, marginBottom: 6, textTransform: "uppercase" } }, "Everyone's payout method (owner only)"),
+            list.map(function (r) { return React.createElement("div", { key: r.user_id, style: { fontSize: 12, color: C.white, padding: "5px 0", borderBottom: "1px solid " + C.border } }, (r.user_name || r.user_id) + " - " + (r.method || "") + " " + (r.handle || r.address || "") + (r.note ? " (" + r.note + ")" : "")); })));
+}
+function BusinessRulesPanel() {
+    var s = React.useState({}); var v = s[0], setV = s[1];
+    var ms = React.useState(""); var msg = ms[0], setMsg = ms[1];
+    var isOwner = plOpsRole() === "owner";
+    React.useEffect(function () { plOps("business_rules", "GET", "id=eq.rules&select=data").then(function (r) { if (r && r.ok && r.data && r.data[0]) setV(r.data[0].data || {}); }); }, []);
+    function save() {
+        var clean = {};
+        for (var i = 0; i < PL_RULE_LABELS.length; i++) { var k = PL_RULE_LABELS[i][0]; var n = Number(v[k] === undefined || v[k] === "" ? PL_RULE_DEFAULTS[k] : v[k]); if (!(n >= 0) || n > 100000) { setMsg("Not saved: " + PL_RULE_LABELS[i][1] + " must be a number."); return; } clean[k] = n; }
+        plOps("business_rules", "GET", "id=eq.rules&select=id").then(function (r) {
+            var go = r && r.ok && r.data && r.data[0] ? plOps("business_rules", "PATCH", "id=eq.rules", { data: clean, updated_at: new Date().toISOString() }) : plOps("business_rules", "POST", "", { id: "rules", data: clean });
+            go.then(function (x) { if (x.ok) { plRulesSet(clean); setV(clean); setMsg("Saved. New jobs and emails use these now."); } else setMsg("Not saved: " + ((x.data && x.data.error) || "try again")); });
+        });
+    }
+    var inp = { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "9px 10px", fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" };
+    return React.createElement("div", null,
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 10 } }, "These numbers drive detention charges, invoice terms and the quote and invoice emails. The written agreements (legal pages) are separate: if you change a number that appears there, tell your lawyer and update the agreement text."),
+        PL_RULE_LABELS.map(function (r) {
+            return React.createElement("label", { key: r[0], style: { display: "block", fontSize: 11, color: C.dim, marginBottom: 10 } }, r[1], React.createElement("input", { type: "number", step: "any", disabled: !isOwner, value: v[r[0]] === undefined ? PL_RULE_DEFAULTS[r[0]] : v[r[0]], onChange: function (e) { var o = Object.assign({}, v); o[r[0]] = e.target.value; setV(o); }, style: inp }), React.createElement("span", { style: { fontSize: 10, color: C.faint } }, r[2]));
+        }),
+        isOwner ? React.createElement("button", { onClick: save, style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "10px 18px", fontSize: 12, fontWeight: 800, cursor: "pointer" } }, "Save rules") : React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "Only the owner can change these."),
+        msg && React.createElement("div", { style: { fontSize: 12, color: msg.indexOf("Not saved") === 0 ? C.red : C.green, marginTop: 8 } }, msg));
+}
+function CustomerMailPanel(props) {
+    var ms = React.useState(""); var msg = ms[0], setMsg = ms[1];
+    var jobs = (props.jobs || []).filter(function (j) { return j.email && j.status !== "Cancelled"; }).slice(0, 60);
+    function send(kind, j) { setMsg("Sending..."); plSendCustomerMail(kind, j).then(function (r) { setMsg(r.ok ? (kind === "quote" ? "Quote" : "Invoice") + " sent to " + j.email + "." : "Not sent: " + r.error); }); }
+    var b = { background: "transparent", color: C.white, border: "1px solid " + C.border, borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", marginLeft: 6 };
+    return React.createElement("div", null,
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 8 } }, "Send the customer their quote or invoice. Invoices also go out automatically when a job is marked Completed and is not already paid."),
+        msg && React.createElement("div", { style: { fontSize: 12, color: msg.indexOf("Not sent") === 0 ? C.red : C.green, marginBottom: 8 } }, msg),
+        jobs.length === 0 && React.createElement("div", { style: { fontSize: 12, color: C.dim } }, "No jobs with an email address yet."),
+        jobs.map(function (j) { return React.createElement("div", { key: j.id, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "9px 12px", marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" } },
+            React.createElement("span", { style: { fontSize: 12, color: C.white } }, j.id + " - " + (j.customer || "") + " - " + plMoney(j.finalPrice || j.basePrice) + " - " + j.status),
+            React.createElement("span", null, React.createElement("button", { onClick: function () { send("quote", j); }, style: b }, "Send quote"), React.createElement("button", { onClick: function () { send("invoice", j); }, style: b }, "Send invoice"))); }));
+}
 function GrowthTools(props) {
     var tabS = React.useState("accounts"); var tab = tabS[0], setTab = tabS[1];
     var dS = React.useState({ cards: [], zones: [], tpls: [], legs: [], events: [], scopes: [] }); var d = dS[0], setD = dS[1];
@@ -3329,7 +3441,7 @@ function GrowthTools(props) {
         var b = Object.assign({}, body); delete b.created_at; delete b.org_id;
         (b.id ? plOps(table, "PATCH", "id=eq." + b.id, b) : plOps(table, "POST", "", b)).then(function (r) { if (r.ok) { setEdit(null); setMsg(""); load(); if (after) after(r); } else setMsg("Not saved: " + r.error); });
     }
-    var tabs = [["accounts", "Accounts"], ["insights", "Insights"], ["alerts", "Alerts" + (alerts.length ? " (" + alerts.length + ")" : "")], ["cards", "Rate cards"], ["zones", "Zones"], ["tpls", "Repeat jobs"]];
+    var tabs = [["accounts", "Accounts"], ["insights", "Insights"], ["alerts", "Alerts" + (alerts.length ? " (" + alerts.length + ")" : "")], ["cards", "Rate cards"], ["zones", "Zones"], ["tpls", "Repeat jobs"], ["send", "Quotes & invoices"], ["payout", "Payout method"], ["rules", "Rules"]];
     var body = null;
     if (tab === "accounts") {
         if (sel) {
@@ -3419,6 +3531,9 @@ function GrowthTools(props) {
                     canWrite && btn("Edit", function () { setEdit(Object.assign({}, t)); }),
                     canWrite && btn("Delete", function () { if (window.confirm("Delete template " + t.name + "?")) plOps("job_templates", "DELETE", "id=eq." + t.id).then(load); })))); }));
     }
+    if (tab === "send") body = React.createElement(CustomerMailPanel, { jobs: props.jobs });
+    if (tab === "payout") body = React.createElement(PayoutMethodCard, null);
+    if (tab === "rules") body = React.createElement(BusinessRulesPanel, null);
     return React.createElement("div", { style: { maxWidth: 760, margin: "0 auto" } },
         React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "📈 Growth Tools"),
         React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", margin: "8px 0 12px" } }, tabs.map(function (t) { return React.createElement("button", { key: t[0], onClick: function () { setTab(t[0]); setEdit(null); setMsg(""); setSel(null); }, style: { background: tab === t[0] ? C.orange : C.card, color: tab === t[0] ? "#000" : C.white, border: "1px solid " + C.border, borderRadius: 18, padding: "6px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, t[1]); })),
@@ -6026,6 +6141,14 @@ function PhoneQuotePanelInner(props) {
     var calculatedTotal = form.isOOS
         ? (q ? (q.total - oosPayDisc) : 0)
         : (q ? q.total : 0);
+    // Service zones (set up in Growth Tools): the distance band adds its surcharge, and its rush multiplier applies on non-standard speeds
+    var [plZones, setPlZones] = useState([]);
+    useEffect(function () { if (!plTokenGet()) return; plOps("service_zones", "GET", "select=*&active=eq.true&order=from_miles.asc").then(function (r) { if (r && r.ok && Array.isArray(r.data)) setPlZones(r.data); }); }, []);
+    var zoneHit = (!form.isOOS && q && instMiles > 0 && !(form.customPriceOn && Number(form.customPrice) > 0)) ? plZoneFor(instMiles, plZones) : null;
+    if (zoneHit && calculatedTotal > 0) {
+        var zMult = form.speed && form.speed !== "standard" ? (Number(zoneHit.rush_multiplier) || 1) : 1;
+        calculatedTotal = Math.round(calculatedTotal * zMult + (Number(zoneHit.surcharge) || 0));
+    }
     var displayTotal = (form.customPriceOn && Number(form.customPrice) > 0) ? Number(form.customPrice) : calculatedTotal;
     var referralDiscountAmt = form.referralApplied ? Math.round(displayTotal * (form.referralApplied.discountPct / 100)) : 0;
     displayTotal = Math.max(0, displayTotal - referralDiscountAmt);
@@ -6318,6 +6441,7 @@ function PhoneQuotePanelInner(props) {
                         : React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", background: C.green + "18", border: "1px solid " + C.green + "44", borderRadius: 7, padding: "8px 12px" } },
                             React.createElement("span", { style: { fontSize: 12, color: C.green, fontWeight: 700 } }, "✅ " + form.referralApplied.code + " — " + form.referralApplied.discountPct + "% off applied"),
                             React.createElement("button", { onClick: function(){ set("referralApplied", null); set("referralCode", ""); }, style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 11, fontFamily: "inherit" } }, "Remove"))),
+                zoneHit && displayTotal > 0 && React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 6, textAlign: "center" } }, "Zone: " + zoneHit.name + (Number(zoneHit.surcharge) ? " (+$" + Number(zoneHit.surcharge) + ")" : "") + (form.speed !== "standard" && Number(zoneHit.rush_multiplier) > 1 ? " x" + zoneHit.rush_multiplier + " rush" : "") + " is included in the price"),
                 React.createElement(ProfitGuardCard, { pickup: form.isOOS ? "" : form.origin, dropoff: form.isOOS ? "" : form.destination, bid: displayTotal }),
                 displayTotal > 0 && React.createElement("div", { style: { background: C.orangeSoft, border: "1px solid " + C.orange + "44", borderRadius: 10, padding: "12px 14px", marginBottom: 10, fontSize: 12, textAlign: "center" } },
                     React.createElement("div", { style: { color: C.dim, marginBottom: 4 } }, "Tell the customer:"),
@@ -9849,8 +9973,8 @@ function Root() {
     // were sitting. Past a free-time threshold, it auto-drafts a detention
     // charge as a flagged expense — dispatch reviews and approves it
     // rather than it just disappearing into "the driver was slow today."
-    var DETENTION_FREE_MINUTES = 30; // 30 minutes free, then flat detention charge kicks in
-    var DETENTION_FLAT_CHARGE = 50; // flat $50 charge once free time is exceeded — not hourly
+    var DETENTION_FREE_MINUTES = plRule("onsiteFreeMin"); // 30 minutes free, then flat detention charge kicks in
+    var DETENTION_FLAT_CHARGE = plRule("onsiteFlat"); // flat $50 charge once free time is exceeded — not hourly
     function updateJobPaymentStatus(id, ps, amountPaid) {
         // Same real pattern as updateJob — update local state immediately so the
         // dashboard reflects it, and sync to Supabase in the background.
@@ -9923,12 +10047,16 @@ function Root() {
         syncStatusToSupabase(id, s, timestampPatch);
         // Finished job + customer has autopay on + wallet covers it => paid from the wallet on the server. Hourly route jobs wait for their final price (above).
         var hourlyWait = s === "Delivered" && oldJob && oldJob.recurringRouteId && oldJob.assignedAt;
-        if ((s === "Delivered" || s === "Completed") && oldJob && oldJob.status !== s && !hourlyWait) plWalletAutoCharge(oldJob).then(plAutoChargeDone);
+        var autoPaid = ((s === "Delivered" || s === "Completed") && oldJob && oldJob.status !== s && !hourlyWait) ? plWalletAutoCharge(oldJob).then(function (d) { plAutoChargeDone(d); return d; }) : Promise.resolve(null);
         // Real automated review request — fires once, the moment a job
         // genuinely completes, not on every status touch. Confirmed via
         // real competitive research this was a standard feature POTENT
         // was missing; every other platform in the space has this.
         var justCompleted = (s === "Completed" || s === "Paid") && oldJob && oldJob.status !== "Completed" && oldJob.status !== "Paid";
+        // invoice email once, when the job completes and the wallet did not already pay it
+        if (justCompleted && oldJob.email && s === "Completed" && oldJob.paymentStatus !== "paid" && !oldJob.paidOnline) {
+            autoPaid.then(function (d) { if (!d) plSendCustomerMail("invoice", oldJob); });
+        }
         if (justCompleted && oldJob.email) {
             plSendMail(oldJob.email, "How did we do? \u2014 " + id,
                 "Hi " + (oldJob.customer || "there") + ",\n\nYour job with " + plBrandName() + " is complete. If you have a minute, we'd genuinely appreciate a real review \u2014 it helps us and helps other customers know what to expect.\n\nLeave a review: " + window.location.origin + "/?leavereview=1&job=" + id + "\n\nThank you for your business.\n\n\u2014 " + plBrandName(), id).catch(function () {});
@@ -18086,7 +18214,7 @@ function DetentionPanel(props) {
         var start = new Date(j.detentionStart);
         var end = new Date();
         var minutes = Math.round((end - start) / 60000);
-        var charge = minutes > 30 ? 50 : 0; // real policy: 30 min free, then flat $50
+        var charge = minutes > plRule("onsiteFreeMin") ? plRule("onsiteFlat") : 0; // owner-set rule (default 30 min free, then flat $50)
         fetch(SUPABASE_URL + "/rest/v1/jobs?id=eq." + encodeURIComponent(j.id), {
             method: "PATCH", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
             body: JSON.stringify({ detention_end: end.toISOString(), detention_minutes: minutes, detention_charge: charge })
@@ -18095,7 +18223,7 @@ function DetentionPanel(props) {
             if (!res.ok) { alert("Failed to save (server error)."); return; }
             setRunning(false);
             if (charge > 0) addAuditEntry("Detention Charge", j.id, "detention", "$0", "$" + charge + " (" + minutes + " min)", "Driver");
-            alert(minutes + " minutes on site. " + (charge > 0 ? "$" + charge + " detention charge applied (over 30 min free)." : "Under 30 minutes \u2014 no charge."));
+            alert(minutes + " minutes on site. " + (charge > 0 ? "$" + charge + " detention charge applied (over " + plRule("onsiteFreeMin") + " min free)." : "Within " + plRule("onsiteFreeMin") + " minutes \u2014 no charge."));
         }).catch(function () { setSaving(false); alert("Something went wrong."); });
     }
 
@@ -19480,6 +19608,7 @@ function DriverProfileTab(props) {
                 React.createElement("span", { style: { fontSize: 11, color: C.dim, textTransform: "uppercase" } }, r[0]),
                 React.createElement("span", { style: { fontSize: 13, color: C.white, fontWeight: 700 } }, r[1]));
         }),
+        React.createElement("div", { style: { marginTop: 20 } }, React.createElement(PayoutMethodCard, null)),
         React.createElement("div", { style: { marginTop: 20, fontSize: 11, color: C.dim, fontWeight: 800, textTransform: "uppercase" } }, "Your Vehicle"),
         React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: 14, marginTop: 8 } },
             [["Make/Model", "2022 Ford E-350"], ["Type", "16ft Dock-Height Box Truck"], ["Capacity", "4,500 lbs"], ["Equipment", "Ramp, E-tracks, moving blankets, load bars \u2014 no liftgate"]].map(function (r) {

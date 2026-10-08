@@ -15,7 +15,7 @@ Your Mailjet key and secret were typed inside the old send-email.js. Treat them 
 3. Make sure the old send-email.js is NOT in GitHub with the keys (the new one in this zip has none).
 
 ## 2. Supabase: run this BEFORE you upload, so the new columns exist. ONE file (SQL Editor > paste ALL > Run). Safe to run twice.
-RUN-THIS-ONCE.sql  (it already contains 68, 70, 71, 72, 73, 74, 75, 76, 77 and 69 in the right order; you do not need the separate files)
+RUN-THIS-ONCE.sql  (it already contains 68, 70, 71, 72, 73, 74, 75, 76, 77, 78 and 69 in the right order; you do not need the separate files)
 It stops with a clear message and changes nothing if the company-accounts tables are missing.
 The check at the bottom should show 0 in every row.
 
@@ -78,6 +78,13 @@ Never put STAFF_PASSWORDS_JSON.txt or POTENT-leads-backup.json in GitHub.
 - Customer portal: add a note to a job; it shows on the job in the office (Communication log). Internal notes never show to the customer.
 - Signed out: leave a review with a real Job ID, join the waitlist, submit a recurring request (its day-capacity bars still show), upload a BOL.
 - Offline: book a job with no signal, reconnect; the "waiting to sync" banner clears and the job appears.
+
+## 7b. New in the final round: check after upload
+- More > Money > Growth Tools > Rules: change a number (owner only), save. Detention on a job uses the on-site minutes and charge you set.
+- Growth Tools > Payout method: pick Zelle, enter an email, save. Typing a bank or routing number is refused. Drivers see the same card on their Profile tab; the owner sees everyone's list.
+- Growth Tools > Quotes & invoices: tap Send quote / Send invoice on a test job with your own email. Marking a job Completed sends the invoice automatically (not if the wallet already paid it).
+- Quote screen: with a zone set up in Growth Tools > Zones, a quote whose miles fall in that band shows "Zone ... is included in the price".
+- Data & Imports > QuickBooks export downloads an invoice file for QuickBooks Online.
 
 ## 8. LAST: run the lockdown files, in order
 LOCKDOWN-3-RUN-LAST.sql (jobs, job photos, jobs backup, wallets), then LOCKDOWN-4-RUN-LAST.sql (expenses, claims, audit log, documents, prospects and the rest of the office tables; public forms can only ADD rows).
