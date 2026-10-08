@@ -11,6 +11,17 @@ BEGIN
   END IF;
 END $$;
 
+
+-- ===== part 0: make sure every table that gets a company column already has one (old copies of some tables did not) =====
+DO $$
+DECLARE t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY['addon_authorizations','assist_sessions','audit_log_real','brokers_carriers_backup','business_rules','carrier_profiles','change_orders','claims','commission_rates_real','cost_profiles','customer_locations','customer_rate_cards','deadlines','disposal_facilities','driver_compliance','driver_locations','escalation_timers','expenses_real','fleet_maintenance','fleet_vehicles','griffin_queries','incoming_loads','job_communications','job_events','job_photos','job_route_legs','job_scope_changes','job_templates','jobs','jobs_backup','junk_jobs','license_invoices','login_log','my_documents','os_prospects','payment_references','payout_methods','potent_wallets','properties','push_subscriptions','quote_terms_acceptance','rate_cards','receipts','recurring_routes','reviews','revoked_users','safety_alerts','service_zones','shift_handoffs','site_profiles','storage_partners','ui_translations','user_display_names','vendors','voice_room_messages','waitlist','wallet_transactions'] LOOP
+    IF to_regclass('public.' || t) IS NOT NULL THEN
+      EXECUTE format('ALTER TABLE public.%I ADD COLUMN IF NOT EXISTS org_id TEXT', t);
+    END IF;
+  END LOOP;
+END $$;
 CREATE INDEX IF NOT EXISTS org_users_email_idx ON org_users (lower(email));
 ALTER TABLE organizations ADD COLUMN IF NOT EXISTS pricing_config JSONB;
 ALTER TABLE organizations ADD COLUMN IF NOT EXISTS max_trucks    INTEGER;
