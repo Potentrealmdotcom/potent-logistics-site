@@ -2,126 +2,125 @@
 // AI Document Extraction using OpenAI Vision API
 // Handles: Rate Cons, BOLs, Receipts, CDLs
 
+var crypto = require("crypto");
+function b64u(buf) { return Buffer.from(buf).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+// Only signed-in staff may use this (it costs money per call).
+function signedIn(event) {
+  var h = event.headers || {}, token = String(h.authorization || h.Authorization || "").replace(/^Bearer\s+/i, "");
+  if(!process.env.AUTH_SECRET || token.indexOf(".") < 0) return false;
+  var parts = token.split("."), expect = b64u(crypto.createHmac("sha256", process.env.AUTH_SECRET).update(parts[0]).digest());
+  var a = Buffer.from(parts[1] || ""), b = Buffer.from(expect);
+  if(a.length !== b.length || !crypto.timingSafeEqual(a, b)) return false;
+  try { var p = JSON.parse(Buffer.from(parts[0].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8")); return !!(p.exp && p.exp >= Date.now() && ["owner","dispatch","dispatcher","driver"].indexOf(p.role) > -1); } catch(e) { return false; }
+}
+
 exports.handler = async function(event, context) {
-if(event.httpMethod !== “POST”) return { statusCode: 405, body: “Method not allowed” };
+  if(event.httpMethod !== "POST") return { statusCode: 405, body: "Method not allowed" };
+  if(!signedIn(event)) return { statusCode: 401, body: JSON.stringify({ error: "Sign in to use document reading." }) };
 
-const OPENAI_KEY = process.env.OPENAI_API_KEY;
-if(!OPENAI_KEY) return { statusCode: 500, body: JSON.stringify({ error: “API key not configured” }) };
+  const OPENAI_KEY = process.env.OPENAI_API_KEY;
+  if(!OPENAI_KEY) return { statusCode: 500, body: JSON.stringify({ error: "API key not configured" }) };
 
-try {
-const { imageBase64, docType } = JSON.parse(event.body);
-if(!imageBase64 || !docType) return { statusCode: 400, body: JSON.stringify({ error: “Missing image or docType” }) };
+  try {
+    const { imageBase64, docType } = JSON.parse(event.body);
+    if(!imageBase64 || !docType) return { statusCode: 400, body: JSON.stringify({ error: "Missing image or docType" }) };
 
-```
-const prompts = {
-  ratecon: `You are extracting data from a trucking rate confirmation document. Extract these fields and return ONLY valid JSON, no other text:
-```
-
+    const prompts = {
+      ratecon: `You are extracting data from a trucking rate confirmation document. Extract these fields and return ONLY valid JSON, no other text:
 {
-“customerName”: “”,
-“customerPhone”: “”,
-“pickupAddress”: “”,
-“deliveryAddress”: “”,
-“pickupDate”: “”,
-“deliveryDate”: “”,
-“commodity”: “”,
-“weight”: “”,
-“rate”: “”,
-“brokerName”: “”,
-“brokerMC”: “”,
-“loadNumber”: “”,
-“notes”: “”
+  "customerName": "",
+  "customerPhone": "",
+  "pickupAddress": "",
+  "deliveryAddress": "",
+  "pickupDate": "",
+  "deliveryDate": "",
+  "commodity": "",
+  "weight": "",
+  "rate": "",
+  "brokerName": "",
+  "brokerMC": "",
+  "loadNumber": "",
+  "notes": ""
 }
 If a field is not found, use empty string. Return only the JSON object.`,
 
-```
-  bol: `You are extracting data from a Bill of Lading (BOL). Extract these fields and return ONLY valid JSON:
-```
-
+      bol: `You are extracting data from a Bill of Lading (BOL). Extract these fields and return ONLY valid JSON:
 {
-“bolNumber”: “”,
-“shipperName”: “”,
-“shipperAddress”: “”,
-“consigneeName”: “”,
-“consigneeAddress”: “”,
-“commodity”: “”,
-“weight”: “”,
-“pieces”: “”,
-“specialInstructions”: “”,
-“date”: “”
+  "bolNumber": "",
+  "shipperName": "",
+  "shipperAddress": "",
+  "consigneeName": "",
+  "consigneeAddress": "",
+  "commodity": "",
+  "weight": "",
+  "pieces": "",
+  "specialInstructions": "",
+  "date": ""
 }
 Return only the JSON object.`,
 
-```
-  receipt: `You are extracting data from a receipt or expense document. Return ONLY valid JSON:
-```
-
+      receipt: `You are extracting data from a receipt or expense document. Return ONLY valid JSON:
 {
-“vendor”: “”,
-“date”: “”,
-“amount”: “”,
-“expenseType”: “”,
-“description”: “”,
-“state”: “”
+  "vendor": "",
+  "date": "",
+  "amount": "",
+  "expenseType": "",
+  "description": "",
+  "state": ""
 }
 For expenseType use one of: fuel, tolls, parking, supplies, other.
 Return only the JSON object.`,
 
-```
-  cdl: `You are extracting data from a Commercial Driver's License (CDL). Return ONLY valid JSON:
-```
-
+      cdl: `You are extracting data from a Commercial Driver's License (CDL). Return ONLY valid JSON:
 {
-“driverName”: “”,
-“licenseNumber”: “”,
-“state”: “”,
-“dateOfBirth”: “”,
-“expiryDate”: “”,
-“licenseClass”: “”,
-“endorsements”: “”
+  "driverName": "",
+  "licenseNumber": "",
+  "state": "",
+  "dateOfBirth": "",
+  "expiryDate": "",
+  "licenseClass": "",
+  "endorsements": ""
 }
 Return only the JSON object.`
-};
+    };
 
-```
-const prompt = prompts[docType];
-if(!prompt) return { statusCode: 400, body: JSON.stringify({ error: "Invalid docType" }) };
+    const prompt = prompts[docType];
+    if(!prompt) return { statusCode: 400, body: JSON.stringify({ error: "Invalid docType" }) };
 
-const response = await fetch("https://api.openai.com/v1/chat/completions", {
-  method: "POST",
-  headers: {
-    "Authorization": "Bearer " + OPENAI_KEY,
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    model: "gpt-4o-mini",
-    max_tokens: 500,
-    messages: [{
-      role: "user",
-      content: [
-        { type: "text", text: prompt },
-        { type: "image_url", image_url: { url: imageBase64, detail: "low" } }
-      ]
-    }]
-  })
-});
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + OPENAI_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        max_tokens: 500,
+        messages: [{
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: imageBase64, detail: "low" } }
+          ]
+        }]
+      })
+    });
 
-const data = await response.json();
-if(!response.ok) return { statusCode: 500, body: JSON.stringify({ error: data.error?.message || "OpenAI error" }) };
+    const data = await response.json();
+    if(!response.ok) return { statusCode: 500, body: JSON.stringify({ error: data.error?.message || "OpenAI error" }) };
 
-const text = data.choices?.[0]?.message?.content || "";
-// Clean and parse JSON
-const cleaned = text.replace(/```json|```/g, "").trim();
-const extracted = JSON.parse(cleaned);
+    const text = data.choices?.[0]?.message?.content || "";
+    // Clean and parse JSON
+    const cleaned = text.replace(/```json|```/g, "").trim();
+    const extracted = JSON.parse(cleaned);
 
-return {
-  statusCode: 200,
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ success: true, data: extracted, docType })
-};
-```
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ success: true, data: extracted, docType })
+    };
 
-} catch(e) {
-return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
-}
+  } catch(e) {
+    return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
+  }
 };

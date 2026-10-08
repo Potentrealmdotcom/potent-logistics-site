@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -27,6 +26,23 @@ input[type=file]{padding:8px;font-size:11px;}
 .success{text-align:center;padding:40px 20px;}
 .success h2{font-size:22px;font-weight:900;color:#1DB954;margin-bottom:8px;}
 .note{background:#1a1400;border:1px solid #F0E00044;border-radius:8px;padding:10px 14px;font-size:11px;color:#F0E000;margin-bottom:16px;line-height:1.6;}
+.progressBar{display:flex;gap:4px;max-width:560px;margin:0 auto 20px;padding:0 16px;}
+.progressStep{flex:1;text-align:center;}
+.progressDot{width:22px;height:22px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;background:#1e1e1e;color:#888;transition:all .2s;}
+.progressDot.done{background:#1DB954;color:#000;}
+.progressLabel{font-size:8px;color:#888;text-transform:uppercase;}
+.progressLabel.done{color:#1DB954;font-weight:700;}
+.tourOverlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:99998;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:20px;}
+.tourCard{background:#111;border:1px solid #F0E00066;border-radius:14px;padding:24px;max-width:380px;width:100%;}
+.tourBars{display:flex;gap:4px;margin-bottom:16px;}
+.tourBar{flex:1;height:3px;border-radius:2px;background:#333;}
+.tourBar.active{background:#F0E000;}
+.tourStepLabel{font-size:10px;color:#888;text-transform:uppercase;margin-bottom:6px;}
+.tourTitle{font-size:17px;font-weight:900;color:#F2F2F2;margin-bottom:10px;}
+.tourBody{font-size:13px;color:#ccc;line-height:1.6;margin-bottom:22px;}
+.tourFooter{display:flex;justify-content:space-between;align-items:center;}
+.tourSkip{background:transparent;color:#888;border:none;font-size:12px;cursor:pointer;}
+.tourNext{background:#F0E000;color:#000;border:none;border-radius:8px;padding:8px 20px;font-size:12px;font-weight:800;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -37,7 +53,45 @@ input[type=file]{padding:8px;font-size:11px;}
   <p>POTENT Logistics LLC · Complete this to finish setup with our company</p>
 </div>
 
-<div class="container" id="formView">
+<div class="progressBar" id="progressBar" style="display:none;">
+  <div class="progressStep"><div class="progressDot" id="pd-info">1</div><div class="progressLabel" id="pl-info">Info</div></div>
+  <div class="progressStep"><div class="progressDot" id="pd-reg">2</div><div class="progressLabel" id="pl-reg">Reg</div></div>
+  <div class="progressStep"><div class="progressDot" id="pd-truck">3</div><div class="progressLabel" id="pl-truck">Truck</div></div>
+  <div class="progressStep"><div class="progressDot" id="pd-lic">4</div><div class="progressLabel" id="pl-lic">License</div></div>
+  <div class="progressStep"><div class="progressDot" id="pd-med">5</div><div class="progressLabel" id="pl-med">Medical</div></div>
+  <div class="progressStep"><div class="progressDot" id="pd-pay">6</div><div class="progressLabel" id="pl-pay">Payment</div></div>
+</div>
+
+<div class="tourOverlay" id="tourOverlay" style="display:none;">
+  <div class="tourCard">
+    <div class="tourBars" id="tourBars"></div>
+    <div class="tourStepLabel" id="tourStepLabel"></div>
+    <div class="tourTitle" id="tourTitle"></div>
+    <div class="tourBody" id="tourBody"></div>
+    <div class="tourFooter">
+      <button class="tourSkip" onclick="closeTour()">Skip</button>
+      <button class="tourNext" onclick="tourNext()" id="tourNextBtn">Next</button>
+    </div>
+  </div>
+</div>
+
+<div class="container" id="cameraGateView">
+  <div class="card" style="text-align:center;">
+    <div style="font-size:40px;margin-bottom:10px;">📷</div>
+    <h2>Identity Verification Required</h2>
+    <p style="color:#888;font-size:13px;margin-bottom:20px;">By continuing, you agree to POTENT's Identity Verification Terms: that the information you provide is accurate, and that you consent to identity verification as part of onboarding, and that your ID photo, selfie and (while working) location are collected and used as described in the <a href="/privacy.html" target="_blank" style="color:#F0E000;">Privacy Policy</a>. Our <a href="/terms.html" target="_blank" style="color:#F0E000;">full agreements</a> apply to all work.</p>
+    <div id="camConsentStep">
+      <button class="btn" onclick="startCamera()">I Agree &amp; Continue</button>
+    </div>
+    <div id="camLiveStep" style="display:none;">
+      <video id="camVideo" autoplay playsinline muted style="width:240px;height:180px;border-radius:8px;background:#000;margin-bottom:12px;"></video><br>
+      <button class="btn" onclick="captureApplicantPhoto()">📸 Take Photo</button>
+    </div>
+    <div id="camErrorStep" style="display:none;color:#E53E3E;font-size:13px;">Camera access is required to continue. Please allow it in your browser and try again.</div>
+  </div>
+</div>
+
+<div class="container" id="formView" style="display:none;">
   <div class="note">All 7 items below are required to complete onboarding, except ELD (only if you have one). Photos upload directly — no email needed.</div>
 
   <div class="card">
@@ -94,16 +148,15 @@ input[type=file]{padding:8px;font-size:11px;}
     <div class="sub">Where we send your money</div>
     <label>Payment Method</label>
     <select id="paymentMethod">
-      <option value="zelle">Zelle</option>
+      <option value="novo">Novo (Bank Transfer)</option>
       <option value="cashapp">Cash App</option>
-      <option value="bank">Bank Transfer (ACH)</option>
+      <option value="bank">Other Bank Transfer (ACH)</option>
     </select>
-    <label>Details (Zelle number/email, , or Bank Account/Routing #)</label>
+    <label>Details (Novo/Bank Account &amp; Routing #, or Cash App $Cashtag)</label>
     <input id="paymentDetails" placeholder="Enter your payment info">
   </div>
 
-<button class="btn" id="submitBtn" onclick="submitForm()">Submit Onboarding</button>
-
+  <button class="btn" id="submitBtn" onclick="submitForm()">Submit Onboarding</button>
 </div>
 
 <div class="container success" id="successView" style="display:none;">
@@ -115,6 +168,80 @@ input[type=file]{padding:8px;font-size:11px;}
 var SUPABASE_URL = "https://ymvsatlrkzgxwzxybwmk.supabase.co";
 var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltdnNhdGxya3pneHd6eHlid21rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4NzgwMTQsImV4cCI6MjEwMzQ1NDAxNH0.KbW0enJr5FOzJmDQnT3Thhr5NJdbI4Ehp1vkhVEyPEg";
 var uploadedUrls = {};
+var applicantPhotoUrl = null;
+
+function startCamera(){
+  document.getElementById('camConsentStep').style.display = 'none';
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    document.getElementById('camErrorStep').style.display = 'block';
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } })
+    .then(function(stream){
+      document.getElementById('camLiveStep').style.display = 'block';
+      var video = document.getElementById('camVideo');
+      video.srcObject = stream;
+      window._camStream = stream;
+    })
+    .catch(function(){
+      document.getElementById('camErrorStep').style.display = 'block';
+    });
+}
+
+function captureApplicantPhoto(){
+  var video = document.getElementById('camVideo');
+  var canvas = document.createElement('canvas');
+  canvas.width = 320; canvas.height = 240;
+  canvas.getContext('2d').drawImage(video, 0, 0, 320, 240);
+  canvas.toBlob(function(blob){
+    if (!blob) return;
+    var fileName = 'applicant-' + Date.now() + '.jpg';
+    fetch(SUPABASE_URL + '/storage/v1/object/driver-documents/' + fileName, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'image/jpeg' },
+      body: blob
+    }).then(function(res){ return res.ok ? res.json() : null; })
+      .then(function(data){
+        if (data && data.Key) {
+          applicantPhotoUrl = SUPABASE_URL + '/storage/v1/object/public/driver-documents/' + data.Key.split('/').slice(1).join('/');
+          if (window._camStream) window._camStream.getTracks().forEach(function(t){ t.stop(); });
+          document.getElementById('cameraGateView').style.display = 'none';
+          document.getElementById('formView').style.display = 'block';
+          document.getElementById('progressBar').style.display = 'flex';
+          updateProgress();
+          startDriverTour();
+        }
+      });
+  }, 'image/jpeg', 0.8);
+}
+
+// Same Craigslist-style compression as the main app — resize to max 1200px,
+// re-encode as JPEG at 80% quality before upload.
+function compressImage(file){
+  return new Promise(function(resolve){
+    if (!file || !file.type || file.type.indexOf('image/') !== 0) { resolve(file); return; }
+    var img = new Image();
+    var reader = new FileReader();
+    reader.onload = function(e){
+      img.onload = function(){
+        var maxDim = 1200;
+        var w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) { h = Math.round(h * (maxDim / w)); w = maxDim; }
+          else { w = Math.round(w * (maxDim / h)); h = maxDim; }
+        }
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        canvas.toBlob(function(blob){ resolve(blob || file); }, 'image/jpeg', 0.8);
+      };
+      img.onerror = function(){ resolve(file); };
+      img.src = e.target.result;
+    };
+    reader.onerror = function(){ resolve(file); };
+    reader.readAsDataURL(file);
+  });
+}
 
 document.querySelectorAll('.docUpload').forEach(function(input){
   input.addEventListener('change', function(e){
@@ -125,17 +252,19 @@ document.querySelectorAll('.docUpload').forEach(function(input){
     statusEl.textContent = 'Uploading...';
     statusEl.className = 'upload-status pending';
 
+    compressImage(file).then(function(compressed){
     var fileName = Date.now() + '-' + Math.random().toString(36).slice(2) + '-' + file.name;
     fetch(SUPABASE_URL + '/storage/v1/object/driver-documents/' + fileName, {
       method: 'POST',
-      headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': file.type || 'image/jpeg' },
-      body: file
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'image/jpeg' },
+      body: compressed
     }).then(function(res){ return res.ok ? res.json() : null; })
       .then(function(data){
         if (data && data.Key) {
           uploadedUrls[field] = SUPABASE_URL + '/storage/v1/object/public/driver-documents/' + data.Key.split('/').slice(1).join('/');
           statusEl.textContent = '✅ Uploaded';
           statusEl.className = 'upload-status done';
+          updateProgress();
         } else {
           statusEl.textContent = 'Upload failed — try again';
           statusEl.className = 'upload-status pending';
@@ -144,8 +273,76 @@ document.querySelectorAll('.docUpload').forEach(function(input){
         statusEl.textContent = 'Upload failed — try again';
         statusEl.className = 'upload-status pending';
       });
+    });
   });
 });
+
+// Real, dynamic progress — checks off each stage as it's actually
+// completed, not a static decoration. Matches the same pattern used
+// in the main admin app's onboarding flow.
+function updateProgress(){
+  var driverName = document.getElementById('driverName').value.trim();
+  var phone = document.getElementById('phone').value.trim();
+  var ein = document.getElementById('ein').value.trim();
+  var paymentDetails = document.getElementById('paymentDetails') ? document.getElementById('paymentDetails').value.trim() : '';
+  var steps = [
+    ['info', !!(driverName && phone && ein)],
+    ['reg', !!uploadedUrls['truck_registration_url']],
+    ['truck', !!uploadedUrls['truck_photo_url']],
+    ['lic', !!(uploadedUrls['license_front_url'] && uploadedUrls['license_back_url'])],
+    ['med', !!uploadedUrls['medical_card_url']],
+    ['pay', !!paymentDetails],
+  ];
+  steps.forEach(function(s){
+    var dot = document.getElementById('pd-' + s[0]);
+    var label = document.getElementById('pl-' + s[0]);
+    if (!dot) return;
+    if (s[1]) { dot.className = 'progressDot done'; dot.textContent = '✓'; label.className = 'progressLabel done'; }
+    else { dot.className = 'progressDot'; label.className = 'progressLabel'; }
+  });
+}
+['driverName','phone','ein','paymentDetails'].forEach(function(id){
+  var el = document.getElementById(id);
+  if (el) el.addEventListener('input', updateProgress);
+});
+
+// Real, reusable tour engine — shows once per device (localStorage),
+// same 4-step content as the main app's driver onboarding tour.
+var DRIVER_TOUR_STEPS = [
+  { title: "Welcome, Driver", body: "This onboarding takes about 5 minutes. We'll walk through what you need." },
+  { title: "One Photo, Required", body: "We take a real photo of you at the start — this protects both you and POTENT from anyone using your information without permission." },
+  { title: "6 Real Documents", body: "Registration, truck photo, license (front and back), medical card, and payment info. The progress bar at the top fills in as you go, so you always know where you stand." },
+  { title: "That's It", body: "Once submitted, POTENT reviews it and follows up. No waiting around wondering what happens next." },
+];
+var tourStepIdx = 0;
+function startDriverTour(){
+  try { if (localStorage.getItem('pl_tour_seen_driver-onboarding') === 'yes') return; } catch(e){}
+  tourStepIdx = 0;
+  renderTourStep();
+  document.getElementById('tourOverlay').style.display = 'flex';
+}
+function renderTourStep(){
+  var step = DRIVER_TOUR_STEPS[tourStepIdx];
+  document.getElementById('tourStepLabel').textContent = 'Step ' + (tourStepIdx+1) + ' of ' + DRIVER_TOUR_STEPS.length;
+  document.getElementById('tourTitle').textContent = step.title;
+  document.getElementById('tourBody').textContent = step.body;
+  document.getElementById('tourNextBtn').textContent = tourStepIdx < DRIVER_TOUR_STEPS.length - 1 ? 'Next' : 'Got It';
+  var bars = document.getElementById('tourBars');
+  bars.innerHTML = '';
+  DRIVER_TOUR_STEPS.forEach(function(s, i){
+    var b = document.createElement('div');
+    b.className = 'tourBar' + (i <= tourStepIdx ? ' active' : '');
+    bars.appendChild(b);
+  });
+}
+function tourNext(){
+  if (tourStepIdx < DRIVER_TOUR_STEPS.length - 1) { tourStepIdx++; renderTourStep(); }
+  else closeTour();
+}
+function closeTour(){
+  document.getElementById('tourOverlay').style.display = 'none';
+  try { localStorage.setItem('pl_tour_seen_driver-onboarding', 'yes'); } catch(e){}
+}
 
 function submitForm(){
   var driverName = document.getElementById('driverName').value.trim();
@@ -178,7 +375,8 @@ function submitForm(){
       license_front_url: uploadedUrls.license_front_url,
       license_back_url: uploadedUrls.license_back_url,
       eld_photo_url: uploadedUrls.eld_photo_url || null,
-      medical_card_url: uploadedUrls.medical_card_url
+      medical_card_url: uploadedUrls.medical_card_url,
+      applicant_photo_url: applicantPhotoUrl
     })
   }).then(function(){
     document.getElementById('formView').style.display = 'none';
@@ -190,6 +388,5 @@ function submitForm(){
   });
 }
 </script>
-
 </body>
 </html>

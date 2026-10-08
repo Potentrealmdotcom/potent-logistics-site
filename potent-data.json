@@ -1,0 +1,321 @@
+{
+ "built": "October 8, 2026",
+ "prices": {
+  "delivery": {
+   "local": 400,
+   "regional": 750,
+   "longdist": 1500
+  },
+  "freight": {
+   "local": 400,
+   "regional": 750,
+   "longdist": 1500
+  },
+  "event": {
+   "local": 350,
+   "regional": 700,
+   "longdist": 1300
+  },
+  "discreet": {
+   "local": 500,
+   "regional": 900,
+   "longdist": 1800
+  }
+ },
+ "single": {
+  "scheduled": 250,
+  "sameday": 225,
+  "rush": 350
+ },
+ "loadSizes": [
+  {
+   "id": "minimum",
+   "label": "Single Item / Minimum",
+   "sub": "One item or a small pile",
+   "price": 179,
+   "priceMax": 179,
+   "estWeightLbs": 150,
+   "capLbs": 300
+  },
+  {
+   "id": "quarter",
+   "label": "Quarter Load",
+   "sub": "A few items — couch, small cleanout",
+   "price": 250,
+   "priceMax": 250,
+   "estWeightLbs": 750,
+   "capLbs": 1075
+  },
+  {
+   "id": "half",
+   "label": "Half Load",
+   "sub": "Bedroom set, multiple appliances",
+   "price": 350,
+   "priceMax": 400,
+   "estWeightLbs": 1500,
+   "capLbs": 2150
+  },
+  {
+   "id": "threequarter",
+   "label": "Three-Quarter Load",
+   "sub": "Garage or large room cleanout",
+   "price": 500,
+   "priceMax": 600,
+   "estWeightLbs": 2400,
+   "capLbs": 3225
+  },
+  {
+   "id": "full",
+   "label": "Full Load",
+   "sub": "Full 16ft truck — biggest single trip",
+   "price": 750,
+   "priceMax": 850,
+   "estWeightLbs": 3200,
+   "capLbs": 4300
+  }
+ ],
+ "plans": {
+  "starter": 4995,
+  "growth": 9995,
+  "fleet": 19995,
+  "enterprise": 34995
+ },
+ "support": {
+  "starter": 149,
+  "growth": 249,
+  "fleet": 399,
+  "enterprise": 599
+ },
+ "limits": {
+  "starter": {
+   "trucks": 10,
+   "drivers": 10,
+   "dispatch": 100
+  },
+  "growth": {
+   "trucks": 50,
+   "drivers": 50,
+   "dispatch": 100
+  },
+  "fleet": {
+   "trucks": 150,
+   "drivers": 150,
+   "dispatch": 100
+  },
+  "enterprise": {
+   "trucks": 300,
+   "drivers": 300,
+   "dispatch": null
+  }
+ },
+ "cleanouts": [
+  {
+   "id": "studio",
+   "label": "Studio / 1 Bedroom",
+   "startPrice": 499
+  },
+  {
+   "id": "2br",
+   "label": "2 Bedroom",
+   "startPrice": 799
+  },
+  {
+   "id": "3br",
+   "label": "3 Bedroom",
+   "startPrice": 1299
+  },
+  {
+   "id": "4br",
+   "label": "4 Bedroom",
+   "startPrice": 1799
+  },
+  {
+   "id": "5br",
+   "label": "5+ Bedroom",
+   "startPrice": 2299
+  },
+  {
+   "id": "hoarder",
+   "label": "Hoarder House",
+   "startPrice": 3500
+  },
+  {
+   "id": "commercial",
+   "label": "Commercial / School / Warehouse",
+   "startPrice": 0
+  }
+ ],
+ "dedicated": [
+  {
+   "id": "oneway_50",
+   "label": "One-Way, up to 50mi",
+   "direction": "oneway",
+   "maxMiles": 50,
+   "dailyPrice": 425,
+   "weeklyPrice": 2125
+  },
+  {
+   "id": "roundtrip_50",
+   "label": "Round Trip, up to 50mi",
+   "direction": "roundtrip",
+   "maxMiles": 50,
+   "dailyPrice": 425,
+   "weeklyPrice": 2125
+  },
+  {
+   "id": "oneway_100",
+   "label": "One-Way, up to 100mi",
+   "direction": "oneway",
+   "maxMiles": 100,
+   "dailyPrice": 468,
+   "weeklyPrice": 2340
+  },
+  {
+   "id": "roundtrip_100",
+   "label": "Round Trip, up to 100mi",
+   "direction": "roundtrip",
+   "maxMiles": 100,
+   "dailyPrice": 510,
+   "weeklyPrice": 2550
+  },
+  {
+   "id": "oneway_150",
+   "label": "One-Way, up to 150mi",
+   "direction": "oneway",
+   "maxMiles": 150,
+   "dailyPrice": 468,
+   "weeklyPrice": 2340
+  },
+  {
+   "id": "roundtrip_150",
+   "label": "Round Trip, up to 150mi",
+   "direction": "roundtrip",
+   "maxMiles": 150,
+   "dailyPrice": 552,
+   "weeklyPrice": 2760
+  },
+  {
+   "id": "oneway_250",
+   "label": "One-Way, up to 250mi",
+   "direction": "oneway",
+   "maxMiles": 250,
+   "dailyPrice": 510,
+   "weeklyPrice": 2550
+  },
+  {
+   "id": "roundtrip_250",
+   "label": "Round Trip, up to 250mi",
+   "direction": "roundtrip",
+   "maxMiles": 250,
+   "dailyPrice": 638,
+   "weeklyPrice": 3190
+  },
+  {
+   "id": "roundtrip_300",
+   "label": "Round Trip, 250-300mi",
+   "direction": "roundtrip",
+   "maxMiles": 300,
+   "dailyPrice": 680,
+   "weeklyPrice": 3400
+  }
+ ],
+ "heavy": [
+  {
+   "label": "Gun safe (small)",
+   "sub": "about 250 lbs. We charge for the real weight.",
+   "lbs": 250,
+   "price": 100
+  },
+  {
+   "label": "Gun safe (large)",
+   "sub": "about 750 lbs. We charge for the real weight.",
+   "lbs": 750,
+   "price": 374
+  },
+  {
+   "label": "Upright piano",
+   "sub": "about 450 lbs. We charge for the real weight.",
+   "lbs": 450,
+   "price": 195
+  },
+  {
+   "label": "Baby grand piano",
+   "sub": "about 650 lbs. We charge for the real weight.",
+   "lbs": 650,
+   "price": 364
+  },
+  {
+   "label": "Hot tub / spa",
+   "sub": "about 800 lbs. We charge for the real weight.",
+   "lbs": 800,
+   "price": 379
+  },
+  {
+   "label": "Slate pool table",
+   "sub": "about 900 lbs. We charge for the real weight.",
+   "lbs": 900,
+   "price": 389
+  },
+  {
+   "label": "Treadmill / elliptical",
+   "sub": "about 250 lbs. We charge for the real weight.",
+   "lbs": 250,
+   "price": 100
+  },
+  {
+   "label": "Weight bench + plates",
+   "sub": "about 400 lbs. We charge for the real weight.",
+   "lbs": 400,
+   "price": 190
+  },
+  {
+   "label": "Refrigerator / freezer",
+   "sub": "about 250 lbs. We charge for the real weight.",
+   "lbs": 250,
+   "price": 100
+  },
+  {
+   "label": "Washer",
+   "sub": "about 175 lbs. We charge for the real weight.",
+   "lbs": 175,
+   "price": 92
+  },
+  {
+   "label": "Dryer",
+   "sub": "about 130 lbs. We charge for the real weight.",
+   "lbs": 130,
+   "price": 53
+  },
+  {
+   "label": "Stove / range",
+   "sub": "about 200 lbs. We charge for the real weight.",
+   "lbs": 200,
+   "price": 95
+  },
+  {
+   "label": "Water heater",
+   "sub": "about 130 lbs. We charge for the real weight.",
+   "lbs": 130,
+   "price": 53
+  },
+  {
+   "label": "Sleeper sofa",
+   "sub": "about 250 lbs. We charge for the real weight.",
+   "lbs": 250,
+   "price": 100
+  },
+  {
+   "label": "Filing cabinet (4 drawer)",
+   "sub": "about 120 lbs. We charge for the real weight.",
+   "lbs": 120,
+   "price": 52
+  },
+  {
+   "label": "Large cabinet / armoire",
+   "sub": "about 300 lbs. We charge for the real weight.",
+   "lbs": 300,
+   "price": 105
+  }
+ ],
+ "termsVersion": "2026.1"
+}
