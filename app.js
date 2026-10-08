@@ -2529,6 +2529,7 @@ var DUMPSTER_OVERAGE_PER_TON = 85;   // vendors quote $80-$90 per extra ton
 var DUMPSTER_EXTRA_DAY = 25;         // per extra day, vendor cost
 var DUMPSTER_TRIP_FEE = 40;          // delivery + pickup, vendor cost (some include it)
 function plRound5(n) { return Math.round(n / 5) * 5; }
+function plDumpsterPrice(size) { return plRound5(size.rent * DUMPSTER_MARKUP); }
 
 function plDumpRate(isConstruction) { return isConstruction ? GA_CONSTRUCTION_DEBRIS_RATE_PER_TON : GA_AVG_DUMP_RATE_PER_TON; }
 // Common heavy items. The weight is a starting point only: the person quoting enters the real weight.
