@@ -29,4 +29,6 @@ DROP POLICY IF EXISTS "anon_full_access_potent_wallets"      ON public.potent_wa
 DROP POLICY IF EXISTS "anon_full_access_wallet_transactions" ON public.wallet_transactions;
 ALTER TABLE public.potent_wallets      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.wallet_transactions ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.potent_wallets      FROM anon;
+REVOKE ALL ON public.wallet_transactions FROM anon;
 SELECT 'wallets locked' AS status;

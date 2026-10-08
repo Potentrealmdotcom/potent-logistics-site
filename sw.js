@@ -1,5 +1,5 @@
 // POTENT OS Service Worker — v7: video + server calls bypass the cache; real push notifications
-var CACHE = "potent-os-v19";
+var CACHE = "potent-os-v20";
 var ASSETS = ["/", "/index.html", "/app.js", "/manifest.json"];
 
 self.addEventListener("install", function(e){

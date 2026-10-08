@@ -223,17 +223,6 @@ function setCustomPw(uid,pw){
 }
 function loadPasswordOverridesFromServer(){ return Promise.resolve(); }
 function clearCustomPw(uid){ try{ var c=getCustomPws(); delete c[uid]; localStorage.setItem(CUSTOM_PWS_KEY,JSON.stringify(c)); }catch(e){} }
-function checkPassword(uid,entered){
-  // Check master password first
-  var master=getMasterPw();
-  if(master&&entered===master) return true;
-  // Check custom password
-  var customs=getCustomPws();
-  if(customs[uid]&&entered===customs[uid]) return true;
-  // Check default password
-  var user=USERS.find(function(u){return u.id===uid;});
-  return false; // default passwords no longer ship in the bundle; login is verified server-side
-}
 function loadPayrollCode() { try {
     return localStorage.getItem(PAYROLL_CODE_KEY) || "";
 }
@@ -245,14 +234,6 @@ function savePayrollCode(code) { try {
 }
 catch (e) { } }
 var ROLES = { OWNER: "owner", DISPATCH: "dispatch", DRIVER: "driver" };
-function getUserByPassword(pw) {
-  var master=getMasterPw();
-  if(master&&pw===master) return USERS.find(function(u){return u.id==="potent";})||null;
-  var customs=getCustomPws();
-  var byCustom=USERS.find(function(u){return customs[u.id]&&pw===customs[u.id];});
-  if(byCustom)return byCustom;
-  return null;
-}
 function loadCurrentUser() { try {
     var r = localStorage.getItem("pl_user");
     return r ? JSON.parse(r) : null;
@@ -314,14 +295,6 @@ function checkGPSStall(lat,lng,driverId,driverName,jobId){
 }
 // Fetch Potent Logistics org_id once and cache it
 // Multi-tenant: a logged-in company user (org_users) carries their own orgId.
-function plSha256(str) {
-    try {
-        var enc = new TextEncoder().encode(str);
-        return crypto.subtle.digest("SHA-256", enc).then(function (buf) {
-            return Array.prototype.map.call(new Uint8Array(buf), function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
-        });
-    } catch (e) { return Promise.resolve(str); }
-}
 function plTruckLimitHit() {
     try {
         var u = loadCurrentUser();
@@ -1175,15 +1148,7 @@ var DIESEL_BY_STATE = {
 };
 var NATIONAL_AVG_DIESEL = 4.72; // national average, same baseline date
 var FALLBACK_DIESEL = 5.72; // Georgia default (updated Sept 2026)
-function getDieselForState(stateAbbr) {
-    if (!stateAbbr)
-        return FALLBACK_DIESEL;
-    return DIESEL_BY_STATE[stateAbbr.toUpperCase()] || NATIONAL_AVG_DIESEL;
-}
 // Unified lookup — pass "regular" or "diesel" as fuelType.
-function getFuelPriceForState(stateAbbr, fuelType) {
-    return fuelType === "diesel" ? getDieselForState(stateAbbr) : getGasForState(stateAbbr);
-}
 // Real new Single Item tier — Delivery/Freight only, separate from the
 // existing bulk zone pricing below. Confirmed real structure: Scheduled
 // $250 flat, Same-Day $225 flat (genuinely cheaper — a real flexibility
@@ -1859,23 +1824,6 @@ function saveLanes(l) { try {
     localStorage.setItem(LANE_HISTORY_KEY, JSON.stringify(l.slice(0, 500)));
 }
 catch (e) { } }
-function trackLane(job) {
-    if (!job.origin || !job.destination)
-        return;
-    var lanes = loadLanes();
-    var key = job.origin.split(",")[1]?.trim() + "→" + job.destination.split(",")[1]?.trim();
-    var existing = lanes.find(function (l) { return l.key === key; });
-    if (existing) {
-        existing.count++;
-        existing.totalRevenue += job.finalPrice;
-        existing.lastDate = job.date;
-        existing.avgRevenue = Math.round(existing.totalRevenue / existing.count);
-    }
-    else {
-        lanes.unshift({ key, origin: job.origin, destination: job.destination, count: 1, totalRevenue: job.finalPrice, avgRevenue: job.finalPrice, lastDate: job.date });
-    }
-    saveLanes(lanes);
-}
 var PAYMENTS = [
     { id: "cash", label: "💵 Cash", sub: "10% discount — due in full at pickup", badge: "BEST DEAL", discount: true },
     { id: "card", label: "💳 Card", sub: "Pay securely online now to confirm booking", badge: null, discount: false },
@@ -1984,20 +1932,6 @@ function isSlotAvailable(dateStr, slotId, zone, jobs, blockedDates) {
     return needed.every(function (s) { return taken.indexOf(s) < 0; });
 }
 // Get next N available dates from today
-function getNextAvailableDates(jobs, blockedDates, count) {
-    var results = [];
-    var d = new Date();
-    var max = 90; // look up to 90 days ahead
-    while (results.length < count && max > 0) {
-        var ds = d.toISOString().split("T")[0];
-        var av = getDayAvailability(ds, jobs, blockedDates);
-        if (av.available)
-            results.push(ds);
-        d.setDate(d.getDate() + 1);
-        max--;
-    }
-    return results;
-}
 function getCancelPolicy(jobDate, speed) {
     if (speed === "urgent" || speed === "emergency" || speed === "sameday" || speed === "rush")
         return CANCEL_POLICY[0];
@@ -2595,7 +2529,7 @@ var DUMPSTER_OVERAGE_PER_TON = 85;   // vendors quote $80-$90 per extra ton
 var DUMPSTER_EXTRA_DAY = 25;         // per extra day, vendor cost
 var DUMPSTER_TRIP_FEE = 40;          // delivery + pickup, vendor cost (some include it)
 function plRound5(n) { return Math.round(n / 5) * 5; }
-function plDumpsterPrice(size) { return plRound5(size.rent * DUMPSTER_MARKUP); }
+
 function plDumpRate(isConstruction) { return isConstruction ? GA_CONSTRUCTION_DEBRIS_RATE_PER_TON : GA_AVG_DUMP_RATE_PER_TON; }
 // Common heavy items. The weight is a starting point only: the person quoting enters the real weight.
 var HEAVY_PRESETS = [
@@ -3450,6 +3384,7 @@ function GrowthTools(props) {
                 card("h", [React.createElement("div", { key: "n", style: { fontSize: 15, fontWeight: 800, color: C.white } }, a.name),
                     React.createElement("div", { key: "s" }, a.jobs + " jobs · $" + a.revenue.toFixed(0) + " revenue · avg $" + a.avgRevenue.toFixed(0) + " per job · " + a.open + " open" + (a.last ? " · last job " + a.last : "")),
                     React.createElement("div", { key: "p", style: { color: a.belowNeed ? C.red : C.green, fontWeight: 700 } }, a.measured ? "Profit after gas on " + a.measured + " measured jobs: $" + a.profit.toFixed(0) + " (avg $" + a.avgProfit.toFixed(0) + ", need $" + acct.needed.toFixed(0) + ")" : "No road miles saved yet for this account's jobs, so profit can't be measured.")]),
+                React.createElement(ServiceHistoryPanel, { jobs: a.list.map(function (j) { return Object.assign({}, j, { customer: a.name }); }), customerName: a.name }),
                 a.list.slice().sort(function (x, y) { return String(y.date).localeCompare(String(x.date)); }).slice(0, 25).map(function (j) { return card(j.id, React.createElement("div", { style: { display: "flex", justifyContent: "space-between" } }, React.createElement("span", null, j.id + " · " + (j.date || "") + " · " + (j.status || "")), React.createElement("b", { style: { color: C.white } }, "$" + (Number(j.finalPrice) || 0).toFixed(0)))); }));
         } else body = React.createElement("div", null,
             React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 8 } }, "Every customer ranked by revenue. Profit = price − gas on jobs that have saved road miles. Needed per job right now: $" + acct.needed.toFixed(0) + "."),
@@ -3930,18 +3865,6 @@ function Toggle(props) {
             React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: C.white } }, props.label),
             props.sub && React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 2 } }, props.sub)),
         React.createElement("div", { style: { width: 22, height: 22, borderRadius: "50%", background: props.value ? C.orange : C.border, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#000", fontWeight: 700, flexShrink: 0 } }, props.value ? "✓" : ""));
-}
-function WeightPicker(props) {
-    return React.createElement("div", { style: { marginBottom: 14 } },
-        React.createElement(Lbl, null, "Item Weight"),
-        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 } }, WEIGHT_TIERS.map(function (w) {
-            return React.createElement("div", { key: w.id, onClick: function () { props.onChange(w.id); }, style: { border: "1.5px solid " + (props.value === w.id ? C.orange : C.border), borderRadius: 9, padding: "10px 10px", cursor: "pointer", background: props.value === w.id ? C.orangeSoft : "transparent" } },
-                React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: props.value === w.id ? C.orange : C.white } },
-                    w.label,
-                    w.fee > 0 ? " (+$" + w.fee + ")" : ""),
-                React.createElement("div", { style: { fontSize: 10, color: C.dim, marginTop: 2 } }, w.sub));
-        })),
-        React.createElement("div", { style: { fontSize: 10, color: C.faint, marginTop: 6, lineHeight: 1.6 } }, "Weight classifications are estimates based on the heaviest individual item. Final pricing may change if actual items differ from submitted details."));
 }
 // ── NET 7 PARTNER ACCOUNT APPLICATION ─────────────────────────────
 var PARTNER_ACCOUNT_TYPES = [
@@ -5790,276 +5713,6 @@ function JobsDashboard(props) {
             })));
 }
 // ─── OUT-OF-STATE BOOKING VIEW ────────────────────────────────────────
-function OOSBookingView(props) {
-    var onBook = props.onBook;
-    var gasPPG = props.gasPPG || FALLBACK_GAS;
-    var sf = useState({
-        name: "", phone: "", originCity: "Conyers, GA", destCity: "",
-        speed: "standard", service: "delivery", notes: "", payment: "cash",
-        discreet: false, helper: false, weightTier: "light", tosAccepted: false,
-    });
-    var form = sf[0];
-    var setForm = sf[1];
-    function set(k, v) { setForm(function (f) { var n = Object.assign({}, f); n[k] = v; return n; }); }
-    var sq = useState(null);
-    var quote = sq[0];
-    var setQuote = sq[1];
-    var sj = useState(null);
-    var jobId = sj[0];
-    var setJobId = sj[1];
-    var se = useState("");
-    var err = se[0];
-    var setErr = se[1];
-    var ss = useState(1);
-    var step = ss[0];
-    var setStep = ss[1];
-    var scf = useState(false);
-    var showCardForm = scf[0];
-    var setShowCardForm = scf[1];
-    var originKeys = Object.keys(CITY_COORDS).filter(function (c) { return c.indexOf(", GA") > -1; });
-    var destKeys = Object.keys(CITY_COORDS).filter(function (c) { return c.indexOf(", GA") === -1; });
-    var pay = PAYMENTS.find(function (p) { return p.id === form.payment; }) || PAYMENTS[0];
-    function buildQuote() {
-        var q = calcOOSQuote(form.originCity, form.destCity, form.speed, form.helper, form.weightTier);
-        return q;
-    }
-    function goQuote() {
-        setErr("");
-        if (!form.destCity) {
-            setErr("Please select a destination city.");
-            return;
-        }
-        var q = buildQuote();
-        if (!q) {
-            setErr("We don't have coordinates for that city yet. Please call us for a custom quote: " + PHONE_DISPLAY);
-            return;
-        }
-        setQuote(q);
-        setStep(3);
-    }
-    function doBook(paymentIntentId) {
-        var q = buildQuote();
-        if (!q)
-            return;
-        var id = makeJobId();
-        var destState = getStateFromCity(form.destCity) || "OOS";
-        var payObj = PAYMENTS.find(function (p) { return p.id === form.payment; }) || PAYMENTS[0];
-        var cashDisc = payObj.discount ? Math.round(q.total * 0.10) : 0;
-        var finalTotal = q.total - cashDisc;
-        var job = {
-            id: id, customer: form.name, phone: form.phone,
-            service: "oos_" + form.service, serviceName: "Out-of-State — " +
-                (SERVICES.find(function (s) { return s.id === form.service; }) || SERVICES[0]).name,
-            origin: form.originCity, destination: form.destCity,
-            zone: "longdist", speed: form.speed,
-            basePrice: q.total, finalPrice: finalTotal,
-            status: "Confirmed", payment: form.payment,
-            discreet: form.discreet, isBusiness: false,
-            date: new Date().toISOString().split("T")[0],
-            notes: "OUT-OF-STATE · " + q.miles + " mi · $" + q.rate + "/mi" + (form.notes ? " — " + form.notes : "") + (paymentIntentId ? " · Stripe: " + paymentIntentId : ""),
-            helperHours: 0, fuel: q.fuelCost, weightTier: form.weightTier,
-            oosJob: true, miles: q.miles, ratePerMile: q.rate, destState: destState,
-            paymentIntentId: paymentIntentId || null, paidOnline: !!paymentIntentId,
-        };
-        onBook(job);
-        sendEmail(job);
-        setJobId(id);
-        setStep(4);
-    }
-    function handleConfirmClick() {
-        if (form.payment === "card") {
-            setShowCardForm(true);
-        }
-        else {
-            doBook();
-        }
-    }
-    function reset() {
-        setStep(1);
-        setShowCardForm(false);
-        setForm({ name: "", phone: "", originCity: "Conyers, GA", destCity: "", speed: "standard",
-            service: "delivery", notes: "", payment: "cash", discreet: false, helper: false, weightTier: "light", tosAccepted: false });
-        setQuote(null);
-        setJobId(null);
-        setErr("");
-    }
-    var STEPS = ["Service", "Route", "Quote", "Done"];
-    // STEP 1 — Service type
-    if (step === 1)
-        return React.createElement("div", { style: { maxWidth: 540, margin: "0 auto" } },
-            React.createElement(StepBar, { steps: STEPS, current: 1 }),
-            React.createElement("div", { style: { fontSize: 20, fontWeight: 800, color: C.white, marginBottom: 4 } }, "Out-of-State Job"),
-            React.createElement("div", { style: { color: C.dim, fontSize: 13, marginBottom: 20 } }, "One-way cargo transport anywhere in the continental US. Priced per mile \u2014 no deposit required."),
-            React.createElement("div", { style: { background: C.orangeSoft, border: "1px solid " + C.orange + "33", borderRadius: 10, padding: "14px 16px", marginBottom: 18 } },
-                React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 } },
-                    React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.orange } }, "\uD83D\uDCCD One-Way Pricing"),
-                    React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "Pickup + drop-off = 2 separate jobs")),
-                React.createElement(JobOpsPanel, { job: job }),
-                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 } }, [["Standard Rate", "$6.50 / mile"], ["Same-Day Rate", "$8.50 / mile"], ["No Minimum", "Price = miles × rate"], ["Deposit Required", "None"]].map(function (row) {
-                    return React.createElement("div", { key: row[0] },
-                        React.createElement("div", { style: { fontSize: 10, color: C.dim, textTransform: "uppercase", letterSpacing: 1 } }, row[0]),
-                        React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white } }, row[1]));
-                }))),
-            React.createElement(Lbl, null, "Service Type"),
-            React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 } }, SERVICES.map(function (s) {
-                return React.createElement("div", { key: s.id, onClick: function () { set("service", s.id); }, style: { border: "1.5px solid " + (form.service === s.id ? C.orange : C.border), borderRadius: 10, padding: "12px 14px", cursor: "pointer", background: form.service === s.id ? C.orangeSoft : "transparent", display: "flex", alignItems: "center", gap: 10 } },
-                    React.createElement("span", { style: { fontSize: 18 } }, s.icon),
-                    React.createElement("div", null,
-                        React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: form.service === s.id ? C.orange : C.white } }, s.name),
-                        React.createElement("div", { style: { fontSize: 11, color: C.dim } }, s.tagline)),
-                    form.service === s.id && React.createElement("div", { style: { marginLeft: "auto", color: C.orange, fontWeight: 800 } }, "\u2713"));
-            })),
-            React.createElement(Btn, { onClick: function () { setStep(2); }, style: { width: "100%" } }, "Continue \u2192"));
-    // STEP 2 — Route + details
-    if (step === 2)
-        return React.createElement("div", { style: { maxWidth: 540, margin: "0 auto" } },
-            React.createElement(StepBar, { steps: STEPS, current: 2 }),
-            React.createElement(Card, null,
-                React.createElement("div", { style: { fontSize: 16, fontWeight: 800, color: C.white, marginBottom: 16 } }, "Route & Contact"),
-                React.createElement(TxtIn, { label: "Your Full Name", value: form.name, onChange: function (v) { set("name", v); }, placeholder: "e.g. Jordan Smith" }),
-                React.createElement(TxtIn, { label: "Phone Number", value: form.phone, onChange: function (v) { set("phone", v); }, type: "tel", placeholder: "404-000-0000" }),
-                React.createElement(Lbl, null, "Pickup City (Georgia)"),
-                React.createElement("div", { style: { marginBottom: 14 } },
-                    React.createElement("select", { value: form.originCity, onChange: function (e) { set("originCity", e.target.value); }, style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 9, color: C.white, padding: "11px 14px", fontSize: 14, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box", cursor: "pointer" } }, originKeys.map(function (c) { return React.createElement("option", { key: c, value: c }, c); }))),
-                React.createElement(Lbl, null, "Destination City"),
-                React.createElement("div", { style: { marginBottom: 14 } },
-                    React.createElement("select", { value: form.destCity, onChange: function (e) { set("destCity", e.target.value); }, style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 9, color: C.white, padding: "11px 14px", fontSize: 14, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box", cursor: "pointer" } },
-                        React.createElement("option", { value: "" }, "\u2014 Select destination \u2014"),
-                        destKeys.sort().map(function (c) { return React.createElement("option", { key: c, value: c }, c); }))),
-                React.createElement(Lbl, null, "Dispatch Speed"),
-                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 } }, visibleSpeeds().map(function (sp) {
-                    return React.createElement("div", { key: sp.id, onClick: function () { set("speed", sp.id); }, style: { border: "1.5px solid " + (form.speed === sp.id ? sp.color : C.border), borderRadius: 9, padding: "10px 12px", cursor: "pointer", background: form.speed === sp.id ? sp.color + "15" : "transparent" } },
-                        React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: form.speed === sp.id ? sp.color : C.white } }, sp.icon + " " + sp.label),
-                        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 2 } }, sp.sub),
-                        React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: form.speed === sp.id ? sp.color : C.faint, marginTop: 2 } }, (sp.id === "urgent" || sp.id === "emergency") ? "$8.50/mi" : "$6.50/mi"));
-                })),
-                React.createElement(Lbl, null, "Payment Method"),
-                React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7, marginBottom: 14 } }, PAYMENTS.map(function (p) {
-                    return React.createElement("div", { key: p.id, onClick: function () { set("payment", p.id); }, style: { border: "1.5px solid " + (form.payment === p.id ? (p.discount ? C.green : C.orange) : C.border), borderRadius: 9, padding: "10px 14px", cursor: "pointer", background: form.payment === p.id ? (p.discount ? C.green + "12" : C.orangeSoft) : "transparent", display: "flex", justifyContent: "space-between", alignItems: "center" } },
-                        React.createElement("div", null,
-                            React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: form.payment === p.id ? (p.discount ? C.green : C.orange) : C.white } }, p.label),
-                            React.createElement("div", { style: { fontSize: 11, color: C.dim } }, p.sub)),
-                        p.badge && React.createElement("span", { style: { background: p.discount ? C.green + "22" : C.orange + "22", color: p.discount ? C.green : C.orange, borderRadius: 5, padding: "2px 7px", fontSize: 9, fontWeight: 700 } }, p.badge));
-                })),
-                
-                React.createElement(Toggle, { label: "\uD83D\uDD12 Discreet / High-Value handling (+35%)", value: form.discreet, onChange: function (v) { set("discreet", v); } }),
-                React.createElement(TxtIn, { label: "Notes (optional)", value: form.notes, onChange: function (v) { set("notes", v); }, placeholder: "Load description, access notes, special instructions...", rows: 2 }),
-                err && React.createElement("div", { style: { color: C.red, fontSize: 12, marginBottom: 10 } },
-                    "\u26A0 ",
-                    err),
-                React.createElement("div", { style: { display: "flex", gap: 8 } },
-                    React.createElement(Btn, { variant: "ghost", onClick: function () { setStep(1); }, style: { flex: 1 } }, "\u2190 Back"),
-                    React.createElement(Btn, { onClick: goQuote, disabled: !form.name || !form.phone || !form.destCity, style: { flex: 2 } }, "Get My Quote \u2192"))));
-    // STEP 3 — Quote
-    if (step === 3 && quote)
-        return React.createElement("div", { style: { maxWidth: 480, margin: "0 auto" } },
-            React.createElement(StepBar, { steps: STEPS, current: 3 }),
-            React.createElement(Card, null,
-                React.createElement("div", { style: { fontSize: 16, fontWeight: 800, color: C.white, marginBottom: 16 } }, "Your Out-of-State Quote"),
-                React.createElement("div", { style: { background: C.orangeSoft, border: "1px solid " + C.orange + "33", borderRadius: 12, padding: "22px", marginBottom: 20, textAlign: "center" } },
-                    React.createElement("div", { style: { fontSize: 11, color: C.dim, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 } }, quote.isSameDay ? "Same-Day Rate · $8.50/mi" : "Standard Rate · $6.50/mi"),
-                    React.createElement("div", { style: { fontSize: 56, fontWeight: 900, color: C.orange, lineHeight: 1 } }, "$" + (pay.discount ? (quote.total - Math.round(quote.total * 0.10)) : quote.total).toLocaleString()),
-                    pay.discount && React.createElement("div", { style: { marginTop: 8 } },
-                        React.createElement("span", { style: { color: C.dim, fontSize: 13, textDecoration: "line-through", marginRight: 8 } }, "$" + quote.total.toLocaleString()),
-                        React.createElement("span", { style: { color: C.green, fontSize: 13, fontWeight: 700 } }, "You save $" + Math.round(quote.total * 0.10).toLocaleString() + " (10% cash)"))),
-                React.createElement("div", { style: { marginBottom: 16 } },
-                    [
-                        ["Route", form.originCity + " → " + form.destCity],
-                        ["Est. Miles", quote.miles + " miles (one-way)"],
-                        ["Rate per Mile", "$" + quote.rate.toFixed(2)],
-                        ["Mileage Charge", "$" + quote.mileageCharge.toLocaleString()],
-                        quote.helperFee > 0 && ["Helper", "+$" + quote.helperFee],
-                        quote.weightFee > 0 && [quote.weightTier.label, "+$" + quote.weightFee],
-                        ["Service", (SERVICES.find(function (s) { return s.id === form.service; }) || { name: "Cargo" }).name],
-                        ["Payment", pay.label],
-                    ].filter(Boolean).map(function (row) {
-                        return React.createElement("div", { key: row[0], style: { display: "flex", justifyContent: "space-between", fontSize: 13, padding: "8px 0", borderBottom: "1px solid " + C.border } },
-                            React.createElement("span", { style: { color: C.dim } }, row[0]),
-                            React.createElement("span", { style: { color: C.white, fontWeight: 600 } }, row[1]));
-                    }),
-                    React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", background: C.orangeSoft, borderRadius: 9, paddingLeft: 12, paddingRight: 12, marginTop: 4 } },
-                        React.createElement("span", { style: { fontWeight: 800, color: C.white, fontSize: 14 } }, "Total (One-Way)"),
-                        React.createElement("span", { style: { fontSize: 22, fontWeight: 900, color: C.orange } },
-                            "$",
-                            quote.total.toLocaleString()))),
-                React.createElement("div", { style: { background: C.surface, borderRadius: 9, padding: "10px 14px", marginBottom: 12, fontSize: 12, color: C.dim, lineHeight: 1.8 } },
-                    React.createElement("div", { style: { color: C.white, fontWeight: 700, marginBottom: 4 } },
-                        "\u26FD Fuel Transparency \u00B7 ",
-                        form.destCity.split(",").pop().trim(),
-                        " Gas Price"),
-                    React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 } },
-                        React.createElement("div", null,
-                            React.createElement("span", { style: { color: C.faint } }, "Gas price"),
-                            React.createElement("br", null),
-                            React.createElement("strong", { style: { color: C.white } },
-                                "$",
-                                quote.ppg.toFixed(2),
-                                "/gal")),
-                        React.createElement("div", null,
-                            React.createElement("span", { style: { color: C.faint } }, "Gallons est."),
-                            React.createElement("br", null),
-                            React.createElement("strong", { style: { color: C.white } },
-                                quote.fuelGal,
-                                " gal")),
-                        React.createElement("div", null,
-                            React.createElement("span", { style: { color: C.faint } }, "Fuel cost"),
-                            React.createElement("br", null),
-                            React.createElement("strong", { style: { color: C.orange } },
-                                "$",
-                                quote.fuelCost))),
-                    React.createElement("div", { style: { fontSize: 10, color: C.faint, marginTop: 6 } },
-                        "16ft box truck \u00B7 ",
-                        TRUCK_MPG,
-                        " MPG \u00B7 One-way miles \u00B7 ",
-                        form.destCity.split(",").pop().trim(),
-                        " state rate")),
-                pay.discount && React.createElement("div", { style: { background: C.green + "12", border: "1px solid " + C.green + "33", borderRadius: 9, padding: "10px 14px", marginBottom: 10, fontSize: 12 } },
-                    React.createElement("div", { style: { color: C.green, fontWeight: 700, marginBottom: 2 } }, "\uD83D\uDCB5 Cash Discount Applied \u2014 10% Off"),
-                    React.createElement("div", { style: { color: C.dim } }, "Cash price: $" + (quote.total - Math.round(quote.total * 0.10)).toLocaleString() + " (saves $" + Math.round(quote.total * 0.10).toLocaleString() + " vs $" + quote.total.toLocaleString() + ")")),
-                React.createElement("div", { style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 9, padding: "10px 14px", marginBottom: 14, fontSize: 12 } },
-                    React.createElement("div", { style: { color: C.white, fontWeight: 700, marginBottom: 2 } }, "\uD83D\uDCB3 Payment Due in Full at Pickup"),
-                    React.createElement("div", { style: { color: C.dim } }, "Cash or Card accepted. No deposit required in advance.")),
-                React.createElement("div", { style: { background: C.surface, borderRadius: 9, padding: "10px 14px", marginBottom: 18, fontSize: 12, color: C.dim, lineHeight: 1.7 } },
-                    "\u26A0 ",
-                    React.createElement("strong", { style: { color: C.yellow } }, "One-Way Job:"),
-                    " This covers pickup to destination only. Return transport is a separate booking. Mileage is estimated \u2014 final miles confirmed at pickup."),
-                !showCardForm && React.createElement("div", { style: { marginBottom: 14 } },
-                    React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.white, marginBottom: 2 } }, "\uD83D\uDCF8 Photos Required \u2014 No Photos, No Booking"),
-                    React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 8 } }, "At least 1 real photo of what needs to be moved, so we can confirm it actually fits before your truck shows up."),
-                    React.createElement("input", { type: "file", accept: "image/*", multiple: true, onChange: handleBookingPhotoSelect, style: { display: "none" }, id: "realBookingPhotoInput" }),
-                    React.createElement("label", { htmlFor: "realBookingPhotoInput", style: { display: "block", textAlign: "center", background: C.card, border: "1px dashed " + C.orange + "66", borderRadius: 8, padding: "14px", fontSize: 12, color: C.orange, fontWeight: 700, cursor: "pointer" } }, photoUploading ? "Loading..." : "\uD83D\uDCF7 Take Photo or Choose from Gallery"),
-                    bookingPhotos.length > 0 && React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, marginTop: 8 } },
-                        bookingPhotos.map(function (photo, i) {
-                            return React.createElement("div", { key: i, style: { position: "relative" } },
-                                React.createElement("img", { src: photo, style: { width: "100%", height: 70, objectFit: "cover", borderRadius: 6 } }),
-                                React.createElement("button", { onClick: function () { setBookingPhotos(function (p) { return p.filter(function (_, idx) { return idx !== i; }); }); }, style: { position: "absolute", top: 2, right: 2, background: "rgba(0,0,0,0.7)", color: "#fff", border: "none", borderRadius: 4, padding: "2px 5px", fontSize: 10, cursor: "pointer" } }, "\u2715"));
-                        }))),
-                !showCardForm && React.createElement(TosCheckbox, { value: form.tosAccepted, onChange: function (v) { set("tosAccepted", v); } }),
-                !showCardForm && bookingPhotos.length === 0 && React.createElement("div", { style: { fontSize: 11, color: C.red, marginBottom: 8, textAlign: "center" } }, "\u26A0 Add at least 1 real photo to continue \u2014 this is required, not optional."),
-                !showCardForm && React.createElement("div", { style: { display: "flex", gap: 8 } },
-                    React.createElement(Btn, { variant: "ghost", onClick: function () { setStep(2); }, style: { flex: 1 } }, "\u2190 Back"),
-                    React.createElement(Btn, { onClick: handleConfirmClick, disabled: !form.tosAccepted || bookingPhotos.length === 0, style: { flex: 2 } }, form.payment === "card" ? "Continue to Payment 💳" : "Confirm & Book 🚐")),
-                showCardForm && React.createElement(StripeCardForm, { amount: pay.discount ? (quote.total - Math.round(quote.total * 0.10)) : quote.total, jobId: "pending", customerName: form.name, onCancel: function () { setShowCardForm(false); }, onSuccess: function (paymentIntentId) { doBook(paymentIntentId); } })));
-    // STEP 4 — Confirmed
-    if (step === 4)
-        return React.createElement("div", { style: { maxWidth: 480, margin: "0 auto" } },
-            React.createElement(Card, { style: { textAlign: "center" } },
-                React.createElement("div", { style: { fontSize: 52, marginBottom: 12 } }, "\uD83D\uDDFA\uFE0F"),
-                React.createElement("div", { style: { fontSize: 24, fontWeight: 900, color: C.white, marginBottom: 6 } }, "Out-of-State Job Booked!"),
-                React.createElement("div", { style: { color: C.dim, fontSize: 14, marginBottom: 4 } }, "We'll reach out to confirm details, " + form.name + "."),
-                React.createElement("div", { style: { fontSize: 26, fontWeight: 900, color: C.orange, marginBottom: 2 } }, "$" + (quote && pay.discount ? (quote.total - Math.round(quote.total * 0.10)) : quote && quote.total).toLocaleString()),
-                React.createElement("div", { style: { color: C.dim, fontSize: 13, marginBottom: 20 } }, "via " + pay.label + " · due in full at pickup" + (pay.discount ? " (10% cash discount applied)" : "")),
-                React.createElement("div", { style: { background: C.surface, borderRadius: 10, padding: "14px 16px", marginBottom: 14, textAlign: "left" } },
-                    React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 } }, "Job ID \u2014 Save This"),
-                    React.createElement("div", { style: { fontSize: 22, fontWeight: 900, color: C.orange, letterSpacing: 2 } }, jobId),
-                    React.createElement("div", { style: { fontSize: 12, color: C.dim, marginTop: 4 } }, "Track your job under Track My Job")),
-                React.createElement("div", { style: { background: C.orangeSoft, border: "1px solid " + C.orange + "33", borderRadius: 9, padding: "10px 14px", marginBottom: 14, fontSize: 12, textAlign: "left" } },
-                    React.createElement("div", { style: { color: C.orange, fontWeight: 700, marginBottom: 4 } }, "\uD83D\uDCCD Route Confirmed"),
-                    React.createElement("div", { style: { color: C.white, fontWeight: 600 } }, form.originCity + " → " + form.destCity),
-                    React.createElement("div", { style: { color: C.dim, marginTop: 2 } }, quote && quote.miles + " miles · $" + quote && quote.rate.toFixed(2) + "/mi")),
-                React.createElement(Btn, { variant: "ghost", onClick: reset, style: { width: "100%" } }, "Book Another Job")));
-    return null;
-}
 // ─── PHONE QUOTE PANEL ────────────────────────────────────────────────
 // Built for live phone calls — fill in as customer talks, quote updates instantly
 function PhoneQuotePanel(props) {
@@ -6603,17 +6256,6 @@ function addDocument(doc) {
     return docs;
 }
 // ── REVIEWS ───────────────────────────────────────────────────────────
-function loadReviews() { try {
-    var r = localStorage.getItem("pl_reviews");
-    return r ? JSON.parse(r) : [];
-}
-catch (e) {
-    return [];
-} }
-function saveReviews(r) { try {
-    localStorage.setItem("pl_reviews", JSON.stringify(r));
-}
-catch (e) { } }
 // ── SALES LEADS ───────────────────────────────────────────────────────
 function loadLeads() { try {
     var r = localStorage.getItem("pl_leads");
@@ -18314,61 +17956,6 @@ function DeadlinesView() {
 // PAYMENT REFERENCES — real credit risk verification, tied to a
 // partner's carrier_profiles record.
 // ═══════════════════════════════════════════════════════════════════
-function PaymentReferencesPanel(props) {
-    var carrierId = props.carrierId;
-    var [refs, setRefs] = React.useState(null);
-    var [creating, setCreating] = React.useState(false);
-    var [f, setF] = React.useState({ company: "", contact: "", phone: "", length: "", size: "", terms: "" });
-    var [saving, setSaving] = React.useState(false);
-
-    function refetch() {
-        fetch(SUPABASE_URL + "/rest/v1/payment_references?carrier_profile_id=eq." + carrierId + "&select=*", {
-            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
-        }).then(function (r) { return r.json(); }).then(function (data) { setRefs(Array.isArray(data) ? data : []); }).catch(function () { setRefs([]); });
-    }
-    React.useEffect(function () { refetch(); }, [carrierId]);
-
-    function addRef() {
-        if (!f.company || !f.contact || !f.phone) { alert("Company, contact, and phone are required."); return; }
-        setSaving(true);
-        fetch(SUPABASE_URL + "/rest/v1/payment_references", {
-            method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
-            body: JSON.stringify({ carrier_profile_id: carrierId, reference_company: f.company, contact_name: f.contact, contact_phone: f.phone, relationship_length: f.length, typical_transaction_size: Number(f.size) || null, payment_terms: f.terms, verified: false })
-        }).then(function (res) {
-            setSaving(false);
-            if (!res.ok) { alert("Failed to save (server error)."); return; }
-            setF({ company: "", contact: "", phone: "", length: "", size: "", terms: "" }); setCreating(false); refetch();
-        }).catch(function () { setSaving(false); alert("Something went wrong."); });
-    }
-    function markVerified(id, timely) {
-        fetch(SUPABASE_URL + "/rest/v1/payment_references?id=eq." + id, {
-            method: "PATCH", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
-            body: JSON.stringify({ verified: true, timely_payment: timely, verified_by: "Owner" })
-        }).then(refetch);
-    }
-
-    if (refs === null) return null;
-
-    return React.createElement("div", { style: { marginTop: 10, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px" } },
-        React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 } }, "\uD83D\uDCCB Payment References \u2014 Credit Risk"),
-        refs.map(function (r) {
-            return React.createElement("div", { key: r.id, style: { borderTop: "1px solid " + C.border, padding: "6px 0", fontSize: 11 } },
-                React.createElement("div", { style: { color: C.white, fontWeight: 700 } }, r.reference_company + " \u2014 " + r.contact_name + " \u00b7 " + r.contact_phone),
-                React.createElement("div", { style: { color: C.dim } }, (r.relationship_length || "\u2014") + " \u00b7 typically $" + (r.typical_transaction_size || "?") + " \u00b7 " + (r.payment_terms || "terms unknown")),
-                r.verified ? React.createElement("div", { style: { color: r.timely_payment ? C.green : C.red, fontWeight: 800, marginTop: 2 } }, "\u2713 Verified \u2014 " + (r.timely_payment ? "Pays on time" : "History of late payment"))
-                    : React.createElement("div", { style: { display: "flex", gap: 6, marginTop: 4 } },
-                        React.createElement("button", { onClick: function () { markVerified(r.id, true); }, style: { background: C.green, color: "#000", border: "none", borderRadius: 5, padding: "3px 10px", fontSize: 10, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Verified \u2014 Pays On Time"),
-                        React.createElement("button", { onClick: function () { markVerified(r.id, false); }, style: { background: "transparent", color: C.red, border: "1px solid " + C.red, borderRadius: 5, padding: "3px 10px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "Verified \u2014 Late History")));
-        }),
-        !creating && React.createElement("button", { onClick: function () { setCreating(true); }, style: { marginTop: 6, background: "transparent", color: C.orange, border: "1px solid " + C.orange, borderRadius: 5, padding: "3px 10px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "+ Add Reference"),
-        creating && React.createElement("div", { style: { marginTop: 6 } },
-            React.createElement("input", { value: f.company, onChange: function (e) { setF(Object.assign({}, f, { company: e.target.value })); }, placeholder: "Reference company name", style: { width: "100%", background: C.card, border: "1px solid " + C.border, borderRadius: 6, color: C.white, padding: "6px 8px", fontSize: 12, marginBottom: 6, fontFamily: "inherit", boxSizing: "border-box" } }),
-            React.createElement("input", { value: f.contact, onChange: function (e) { setF(Object.assign({}, f, { contact: e.target.value })); }, placeholder: "Contact name", style: { width: "100%", background: C.card, border: "1px solid " + C.border, borderRadius: 6, color: C.white, padding: "6px 8px", fontSize: 12, marginBottom: 6, fontFamily: "inherit", boxSizing: "border-box" } }),
-            React.createElement("input", { value: f.phone, onChange: function (e) { setF(Object.assign({}, f, { phone: e.target.value })); }, placeholder: "Phone", style: { width: "100%", background: C.card, border: "1px solid " + C.border, borderRadius: 6, color: C.white, padding: "6px 8px", fontSize: 12, marginBottom: 6, fontFamily: "inherit", boxSizing: "border-box" } }),
-            React.createElement("div", { style: { display: "flex", gap: 6 } },
-                React.createElement("button", { onClick: addRef, disabled: saving, style: { background: C.orange, color: "#000", border: "none", borderRadius: 5, padding: "4px 12px", fontSize: 10, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, saving ? "Saving..." : "Save"),
-                React.createElement("button", { onClick: function () { setCreating(false); }, style: { background: "transparent", color: C.dim, border: "1px solid " + C.border, borderRadius: 5, padding: "4px 12px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "Cancel"))));
-}
 
 // ═══════════════════════════════════════════════════════════════════
 // UNIFIED ACCOUNTING LEDGER — real, one connected view pulling from
@@ -19334,12 +18921,6 @@ var CUSTOMER_TOUR_STEPS = [
     { title: "Track It Live", body: "Once your job is on the road, you'll see the real truck moving on a live map, with an ETA." },
     { title: "Pay Right Here", body: "When it's done, pay directly in the app. No separate invoice email to dig up." },
 ];
-var DRIVER_TOUR_STEPS = [
-    { title: "Welcome, Driver", body: "This onboarding takes about 5 minutes. We'll walk through what you need." },
-    { title: "One Photo, Required", body: "We take a real photo of you at the start -- this protects both you and POTENT from anyone using your information without permission." },
-    { title: "6 Real Documents", body: "Registration, truck photo, license (front and back), medical card, and payment info. The progress bar at the top fills in as you go, so you always know where you stand." },
-    { title: "That's It", body: "Once submitted, POTENT reviews it and follows up. No waiting around wondering what happens next." },
-];
 var ADMIN_DASHBOARD_TOUR_STEPS = [
     { title: "Welcome To Your Dashboard", body: "Everything is organized into 5 real groups at the top: Jobs, Sales, Fleet, Money, Team. Let's walk through where things actually live." },
     { title: "Jobs & Sales", body: "Jobs is where every booking lives, start to finish. Sales is where you book new work \u2014 Live Call Screen for phone bookings, Leads for your call list, Incoming Loads for brokers sending you freight." },
@@ -19472,28 +19053,6 @@ var ACCOUNT_TOS_SECTIONS = [
     { num: 5, title: "Billing Disputes", body: "A billing dispute does not excuse or delay payment of the undisputed portion of any invoice." },
 ];
 
-function TermsOfServiceDisplay(props) {
-    var [expanded, setExpanded] = React.useState(1); // first section open by default, rest collapsed
-
-    return React.createElement("div", { style: { marginTop: 16, marginBottom: 16 } },
-        React.createElement("div", { style: { fontSize: 15, fontWeight: 900, color: C.white, marginBottom: 4 } }, "Terms of Service"),
-        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 14 } }, "5 sections. Tap each to read. All 5 apply regardless of which you've opened."),
-        ACCOUNT_TOS_SECTIONS.map(function (s) {
-            var isOpen = expanded === s.num;
-            return React.createElement("div", { key: s.num, style: { border: "1px solid " + C.border, borderRadius: 10, marginBottom: 8, overflow: "hidden", background: C.card } },
-                React.createElement("button", {
-                    onClick: function () { setExpanded(isOpen ? null : s.num); },
-                    style: { width: "100%", background: "transparent", border: "none", padding: "12px 14px", textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }
-                },
-                    React.createElement("div", { style: { width: 22, height: 22, borderRadius: "50%", background: isOpen ? C.orange : C.border, color: isOpen ? "#000" : C.dim, fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } }, s.num),
-                    React.createElement("div", { style: { fontSize: 12.5, fontWeight: 700, color: C.white, flex: 1 } }, s.title),
-                    React.createElement("span", { style: { color: C.dim, fontSize: 12 } }, isOpen ? "\u2212" : "+")),
-                isOpen && React.createElement("div", { style: { padding: "0 14px 14px", fontSize: 12, color: "rgba(255,255,255,0.75)", lineHeight: 1.7 } }, s.body));
-        }),
-        React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.white, cursor: "pointer", marginTop: 4 } },
-            React.createElement("input", { type: "checkbox", checked: props.agreed, onChange: function (e) { props.onAgree(e.target.checked); }, style: { width: 18, height: 18, accentColor: C.orange } }),
-            "I have read and agree to all 5 sections above"));
-}
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
 // [render relocated to end of file]
@@ -19883,24 +19442,6 @@ function PotentLogisticsFullTOS(props) {
 // tier pricing, Flex Pay, perpetual ownership once paid in full.
 // ═══════════════════════════════════════════════════════════════════
 
-function PotentOSFullTOS(props) {
-    var [expanded, setExpanded] = React.useState(1);
-    return React.createElement("div", { style: { marginTop: 16, marginBottom: 16 } },
-        React.createElement("div", { style: { fontSize: 15, fontWeight: 900, color: C.white, marginBottom: 4 } }, "POTENT OS \u2014 Software License Agreement"),
-        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 14 } }, POTENT_OS_TOS_SECTIONS.length + " sections. Tap each to read."),
-        POTENT_OS_TOS_SECTIONS.map(function (s) {
-            var isOpen = expanded === s.num;
-            return React.createElement("div", { key: s.num, style: { border: "1px solid " + C.border, borderRadius: 10, marginBottom: 6, overflow: "hidden", background: C.card } },
-                React.createElement("button", { onClick: function () { setExpanded(isOpen ? null : s.num); }, style: { width: "100%", background: "transparent", border: "none", padding: "10px 14px", textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", gap: 10 } },
-                    React.createElement("div", { style: { width: 20, height: 20, borderRadius: "50%", background: isOpen ? C.orange : C.border, color: isOpen ? "#000" : C.dim, fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } }, s.num),
-                    React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: C.white, flex: 1 } }, s.title),
-                    React.createElement("span", { style: { color: C.dim, fontSize: 12 } }, isOpen ? "\u2212" : "+")),
-                isOpen && React.createElement("div", { style: { padding: "0 14px 12px", fontSize: 11.5, color: "rgba(255,255,255,0.75)", lineHeight: 1.65 } }, s.body));
-        }),
-        React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.white, cursor: "pointer", marginTop: 8 } },
-            React.createElement("input", { type: "checkbox", checked: props.agreed, onChange: function (e) { props.onAgree(e.target.checked); }, style: { width: 18, height: 18, accentColor: C.orange } }),
-            "I have read and agree to all " + POTENT_OS_TOS_SECTIONS.length + " sections above"));
-}
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
 // [render relocated to end of file]
@@ -20016,37 +19557,7 @@ function SplashEnterScreen(props) {
 // click, not just decoration. Real claims only (Ghost Mode, no App
 // Store install, no monthly fee) — matching what's actually built.
 // ═══════════════════════════════════════════════════════════════════
-var SHOWCASE_TABS = [
-    { id: "ghost", label: "\uD83D\uDC7B Ghost Mode", title: "Works With Zero Signal", body: "Dead zone, warehouse, rural pickup \u2014 doesn't matter. Book jobs, view every job, take real action with no internet at all. The moment signal comes back, everything syncs automatically. Nothing is ever lost, whether you were offline for 10 seconds or 10 hours." },
-    { id: "install", label: "\uD83D\uDCF2 No App Store", title: "Installs In Seconds, Not Days", body: "No app store review, no waiting for approval, no update delays. Open the site, tap Add to Home Screen, and it's a real app icon on your phone \u2014 full screen, no browser bar, feels native. Works the same on iPhone and Android." },
-    { id: "money", label: "\uD83D\uDCB0 No Monthly Fee", title: "Pay Once, Own It Forever", body: "Competitors charge $25\u2013$50 per truck, every month, forever \u2014 and lock you into a 3-year contract to get there. POTENT OS is a one-time license. You own it. No recurring bill ever shows up." },
-    { id: "video", label: "\uD83C\uDFA5 See It Live", title: "Watch The Real App", body: null },
-];
 
-function FeatureShowcase() {
-    ensureSplashCss();
-    var [active, setActive] = React.useState("ghost");
-    var tab = SHOWCASE_TABS.find(function (t) { return t.id === active; });
-
-    return React.createElement("div", { style: { maxWidth: 640, margin: "40px auto", padding: "0 16px" } },
-        React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap", justifyContent: "center" } },
-            SHOWCASE_TABS.map(function (t) {
-                var isActive = active === t.id;
-                return React.createElement("button", {
-                    key: t.id, onClick: function () { setActive(t.id); },
-                    style: { background: isActive ? C.orange : "transparent", color: isActive ? "#000" : C.dim, border: "1px solid " + (isActive ? C.orange : C.border), borderRadius: 20, padding: "9px 16px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s" }
-                }, t.label);
-            })),
-        React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: 24, minHeight: 200 } },
-            tab.id === "video" ?
-                React.createElement("div", null,
-                    React.createElement("div", { style: { fontSize: 17, fontWeight: 900, color: C.white, marginBottom: 14, textAlign: "center" } }, tab.title),
-                    React.createElement("video", { controls: true, muted: true, style: { width: "100%", borderRadius: 10, display: "block" } },
-                        React.createElement("source", { src: "/potent-commercial.mp4", type: "video/mp4" }))) :
-                React.createElement("div", { key: tab.id, style: { animation: "textIn 0.35s ease" } },
-                    React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.orange, marginBottom: 10 } }, tab.title),
-                    React.createElement("div", { style: { fontSize: 14, color: "#ddd", lineHeight: 1.7 } }, tab.body))));
-}
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
 // [render relocated to end of file]
@@ -20346,12 +19857,6 @@ function MarginLeakDetector(props) {
 // ═══════════════════════════════════════════════════════════════════
 
 // ── 4. SAVE AS DRAFT ──────────────────────────────────────────────
-function saveDraftJob(partialJob) {
-    return fetch(SUPABASE_URL + "/rest/v1/jobs", {
-        method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=representation" },
-        body: JSON.stringify(Object.assign({}, partialJob, { is_draft: true, status: "Draft" }))
-    }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
-}
 function DraftsPanel(props) {
     var drafts = (props.jobs || []).filter(function (j) { return j.status === "Draft"; });
     if (drafts.length === 0) return null;
@@ -20470,25 +19975,8 @@ function DeliveryRefusedPanel(props) {
 }
 
 // ── 11. REDELIVERY ENGINE ────────────────────────────────────────
-function createRedelivery(originalJob) {
-    var newId = "RD-" + originalJob.id;
-    return fetch(SUPABASE_URL + "/rest/v1/jobs", {
-        method: "POST", headers: sbHeaders(),
-        body: JSON.stringify({
-            id: newId, origin: originalJob.origin, destination: originalJob.destination,
-            customer: originalJob.customer, email: originalJob.email, phone: originalJob.phone,
-            finalPrice: originalJob.finalPrice, status: "New", redelivery_of: originalJob.id
-        })
-    }).then(function (r) { return r.ok ? newId : null; }).catch(function () { return null; });
-}
 
 // ── 16. ESCALATION TIMER ─────────────────────────────────────────
-function startEscalationTimer(jobId, reason) {
-    return fetch(SUPABASE_URL + "/rest/v1/escalation_timers", {
-        method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
-        body: JSON.stringify({ job_id: jobId, reason: reason })
-    }).catch(function () {});
-}
 function EscalationTimersPanel(props) {
     var [timers, setTimers] = React.useState(null);
     React.useEffect(function () {
@@ -22259,22 +21747,6 @@ function SavannahPricingPanel(props) {
 }
 
 // ── 4. QUOTE EXPIRATION — real 30-minute window, matches live fuel refresh ──
-var QUOTE_EXPIRATION_MINUTES = 30;
-function isQuoteExpired(quoteGeneratedAt) {
-    if (!quoteGeneratedAt) return false;
-    var ageMinutes = (Date.now() - new Date(quoteGeneratedAt).getTime()) / 60000;
-    return ageMinutes >= QUOTE_EXPIRATION_MINUTES;
-}
-function QuoteExpirationBanner(props) {
-    var [expired, setExpired] = React.useState(isQuoteExpired(props.quoteGeneratedAt));
-    React.useEffect(function () {
-        var iv = setInterval(function () { setExpired(isQuoteExpired(props.quoteGeneratedAt)); }, 10000);
-        return function () { clearInterval(iv); };
-    }, [props.quoteGeneratedAt]);
-    if (!props.quoteGeneratedAt) return null;
-    if (!expired) return React.createElement("div", { style: { fontSize: 10, color: C.dim, textAlign: "center", marginBottom: 8 } }, "Real quote, valid for 30 real minutes from generation.");
-    return React.createElement("div", { style: { background: "#1a0000", border: "1px solid " + C.red + "66", borderRadius: 8, padding: 10, textAlign: "center", marginBottom: 8, fontSize: 12, color: C.red, fontWeight: 700 } }, "Quote expired. Generate a new quote.");
-}
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
 // [render relocated to end of file]
