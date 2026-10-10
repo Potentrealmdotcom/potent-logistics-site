@@ -4062,7 +4062,7 @@ function CustomQuoteModal(props) {
 // Real LIVE key — already confirmed live, not test. The old comment here
 // was stale and wrong. Live mode genuinely rejects Stripe's 4242 test
 // card number by design — that's not a bug, it's correct behavior.
-var STRIPE_PUBLISHABLE_KEY = "pk_live_51RYvZCDw93YFbYhIoSZPUDge7a6BSkontrdV8dpSYCcD8rt0F99oC0LDbxtGgDfLeWnF3qYwb12mwUVxwSXV5Yif00jmoIT2gC";
+var STRIPE_PUBLISHABLE_KEY = "pk_live_51TkbJt609KMwZrdNl8Y3BEyvwNmS25EGbuWFFS4326ttgTaKGr1mxylDXNdXKOgtuvQoXKGsptN0zC0YyGTP92Bx00T0FTTVBX";
 function StripeCardForm(props) {
     var sErr = useState("");
     var cardError = sErr[0];
