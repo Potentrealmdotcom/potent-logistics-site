@@ -1,24 +1,23 @@
 // netlify/functions/create-license-payment.js
 // Upload to: potent-logistics-site/netlify/functions/create-license-payment.js
 
-const stripe = require(“stripe”)(process.env.STRIPE_SECRET_KEY);
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 exports.handler = async (event) => {
-if (event.httpMethod !== “POST”) {
-return { statusCode: 405, body: “Method Not Allowed” };
+if (event.httpMethod !== "POST") {
+return { statusCode: 405, body: "Method Not Allowed" };
 }
 
 const headers = {
-“Access-Control-Allow-Origin”: “*”,
-“Access-Control-Allow-Headers”: “Content-Type”,
-“Content-Type”: “application/json”
+"Access-Control-Allow-Origin": "*",
+"Access-Control-Allow-Headers": "Content-Type",
+"Content-Type": "application/json"
 };
 
 try {
-const body = JSON.parse(event.body || “{}”);
+const body = JSON.parse(event.body || "{}");
 const { amount, tier, company, name, email, phone } = body;
 
-```
 if (!amount || amount < 1000) {
   return { statusCode: 400, headers, body: JSON.stringify({ error: "Invalid amount" }) };
 }
@@ -56,10 +55,9 @@ return {
     paymentIntentId: paymentIntent.id,
   }),
 };
-```
 
 } catch (err) {
-console.error(“Payment intent error:”, err);
+console.error("Payment intent error:", err);
 return {
 statusCode: 500,
 headers,

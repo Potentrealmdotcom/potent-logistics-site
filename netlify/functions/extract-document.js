@@ -3,87 +3,78 @@
 // Handles: Rate Cons, BOLs, Receipts, CDLs
 
 exports.handler = async function(event, context) {
-if(event.httpMethod !== “POST”) return { statusCode: 405, body: “Method not allowed” };
+if(event.httpMethod !== "POST") return { statusCode: 405, body: "Method not allowed" };
 
 const OPENAI_KEY = process.env.OPENAI_API_KEY;
-if(!OPENAI_KEY) return { statusCode: 500, body: JSON.stringify({ error: “API key not configured” }) };
+if(!OPENAI_KEY) return { statusCode: 500, body: JSON.stringify({ error: "API key not configured" }) };
 
 try {
 const { imageBase64, docType } = JSON.parse(event.body);
-if(!imageBase64 || !docType) return { statusCode: 400, body: JSON.stringify({ error: “Missing image or docType” }) };
+if(!imageBase64 || !docType) return { statusCode: 400, body: JSON.stringify({ error: "Missing image or docType" }) };
 
-```
 const prompts = {
   ratecon: `You are extracting data from a trucking rate confirmation document. Extract these fields and return ONLY valid JSON, no other text:
-```
 
 {
-“customerName”: “”,
-“customerPhone”: “”,
-“pickupAddress”: “”,
-“deliveryAddress”: “”,
-“pickupDate”: “”,
-“deliveryDate”: “”,
-“commodity”: “”,
-“weight”: “”,
-“rate”: “”,
-“brokerName”: “”,
-“brokerMC”: “”,
-“loadNumber”: “”,
-“notes”: “”
+"customerName": "",
+"customerPhone": "",
+"pickupAddress": "",
+"deliveryAddress": "",
+"pickupDate": "",
+"deliveryDate": "",
+"commodity": "",
+"weight": "",
+"rate": "",
+"brokerName": "",
+"brokerMC": "",
+"loadNumber": "",
+"notes": ""
 }
 If a field is not found, use empty string. Return only the JSON object.`,
 
-```
   bol: `You are extracting data from a Bill of Lading (BOL). Extract these fields and return ONLY valid JSON:
-```
 
 {
-“bolNumber”: “”,
-“shipperName”: “”,
-“shipperAddress”: “”,
-“consigneeName”: “”,
-“consigneeAddress”: “”,
-“commodity”: “”,
-“weight”: “”,
-“pieces”: “”,
-“specialInstructions”: “”,
-“date”: “”
+"bolNumber": "",
+"shipperName": "",
+"shipperAddress": "",
+"consigneeName": "",
+"consigneeAddress": "",
+"commodity": "",
+"weight": "",
+"pieces": "",
+"specialInstructions": "",
+"date": ""
 }
 Return only the JSON object.`,
 
-```
   receipt: `You are extracting data from a receipt or expense document. Return ONLY valid JSON:
-```
 
 {
-“vendor”: “”,
-“date”: “”,
-“amount”: “”,
-“expenseType”: “”,
-“description”: “”,
-“state”: “”
+"vendor": "",
+"date": "",
+"amount": "",
+"expenseType": "",
+"description": "",
+"state": ""
 }
 For expenseType use one of: fuel, tolls, parking, supplies, other.
 Return only the JSON object.`,
 
-```
   cdl: `You are extracting data from a Commercial Driver's License (CDL). Return ONLY valid JSON:
-```
 
 {
-“driverName”: “”,
-“licenseNumber”: “”,
-“state”: “”,
-“dateOfBirth”: “”,
-“expiryDate”: “”,
-“licenseClass”: “”,
-“endorsements”: “”
+"driverName": "",
+"licenseNumber": "",
+"state": "",
+"dateOfBirth": "",
+"expiryDate": "",
+"licenseClass": "",
+"endorsements": ""
 }
 Return only the JSON object.`
 };
 
-```
 const prompt = prompts[docType];
 if(!prompt) return { statusCode: 400, body: JSON.stringify({ error: "Invalid docType" }) };
 
@@ -119,7 +110,6 @@ return {
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ success: true, data: extracted, docType })
 };
-```
 
 } catch(e) {
 return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
