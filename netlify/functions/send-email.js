@@ -5,8 +5,9 @@
 // never expose the API key/secret in client-side app.jsx code, since anyone
 // could read them from the browser and send spam through your account.
 
-const MAILJET_API_KEY = "a7ffe77f0f2d40545b166ed123572c7a";
-const MAILJET_SECRET_KEY = "928fcab1f666a431a03748049dc3015f";
+// Credentials come from Netlify environment variables (never hardcode them —
+const MAILJET_API_KEY = process.env.MAILJET_API_KEY;
+const MAILJET_SECRET_KEY = process.env.MAILJET_SECRET_KEY;
 const FROM_EMAIL = "potentlogistics@pm.me"; // must be a verified sender in your Mailjet account
 const FROM_NAME = "POTENT Logistics";
 
