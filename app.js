@@ -18945,7 +18945,7 @@ var ADMIN_PARTNER_TOUR_STEPS = [
 // what actually pops a notification on the lock screen in the
 // background, not just an in-tab alert.
 // ═══════════════════════════════════════════════════════════════════
-var VAPID_PUBLIC_KEY = "BJ5PoBvxHwvSLxIOo6VyNoAmy5sQXsR60mN3aZ0hO5hez1gqhyKXeJl4aYQ1xqR4m2GBcqljNczT3lJu5oVoeSQ";
+var VAPID_PUBLIC_KEY = "BBQlQTbRgBgULvEs_OKZTuCif4X81lgSExlayrkPixNtkRx_NlZcFlgEtgkb8lMIsNAtp95TNIIUZJmDC-STnoc";
 
 function urlBase64ToUint8Array(base64String) {
     var padding = "=".repeat((4 - (base64String.length % 4)) % 4);
