@@ -12,7 +12,7 @@
 var crypto = require("crypto");
 
 var SB = "https://ymvsatlrkzgxwzxybwmk.supabase.co";
-var FROM_EMAIL = "potentlogistics@proton.me"; // verified Mailjet sender
+var FROM_EMAIL = process.env.MAILJET_FROM_EMAIL; // verified Mailjet sender (Netlify env var)
 var FROM_NAME = "POTENT Logistics";
 
 function J(s, o) { return { statusCode: s, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" }, body: JSON.stringify(o) }; }
@@ -65,7 +65,7 @@ async function sendMailjet(to, subject, message, fromName, replyTo) {
 
 exports.handler = async function (event) {
     if (event.httpMethod !== "POST") return J(405, { ok: false, error: "POST only" });
-    if (!process.env.AUTH_SECRET || !process.env.SUPABASE_SERVICE_ROLE_KEY) return J(500, { ok: false, error: "Server not configured" });
+    if (!process.env.AUTH_SECRET || !process.env.SUPABASE_SERVICE_ROLE_KEY || !process.env.MAILJET_FROM_EMAIL) return J(500, { ok: false, error: "Server not configured" });
     var body;
     try { body = JSON.parse(event.body || "{}"); } catch (e) { return J(400, { ok: false, error: "Bad JSON" }); }
 
