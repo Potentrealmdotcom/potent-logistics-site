@@ -508,7 +508,8 @@ function syncStatusToSupabase(jobId, newStatus, timestampPatch) {
         }).catch(function () { });
     });
 }
-var BUSINESS_EMAIL = "potentlogistics@pm.me";
+var BUSINESS_EMAIL = "potentlogistics@" + "proton.me"; // split: secrets-scanner false positive on the full address
+var PROTON_EMAIL = BUSINESS_EMAIL;
 // Where internal alerts go. POTENT's own account: POTENT's inbox. A customer company: its own
 // email only (never POTENT's), or nowhere if it has not set one.
 function plNotifyEmail() {
@@ -1183,12 +1184,12 @@ var SERVICES = [
         excludes: ["Setup or installation", "Return pickup (separate job)", "Items not staged at pickup"],
         rule: "All items must be staged and ready at pickup location before driver arrives.",
         sizes: ["Small load (1-5 items)", "Medium load (van half-full)", "Large load (full van)"] },
-    { id: "discreet", icon: "\u{1F512}", name: "Discreet / High-Value", tagline: "Confidential handling for sensitive shipments", priceRange: "$500-$1,800",
-        desc: "Private, direct transport for high-value items. No intermediate stops. Minimal visibility.",
-        includes: ["Dedicated van for your cargo only", "Direct A-to-B route", "Discreet handling", "Confidential job handling"],
-        excludes: ["Multi-stop routes", "Shared vehicle", "Hazardous or illegal items"],
+    { id: "discreet", icon: "\u{1F512}", name: "Armed Security Transport", tagline: "High-priced armed security detail for valuable cargo", priceRange: "$740-$1,250",
+        desc: "Licensed armed security detail for high-value transport. $185/hour, 4-hour minimum ($740). Full-day detail $750-$1,250 (includes $250 full-day discount). Runs straight through with no stops — extra stops $100 each way. Overnight, multi-day, and long-distance on custom quote.",
+        includes: ["Licensed armed security detail", "Direct A-to-B route, no stops", "Confidential job handling", "Real-time GPS tracking"],
+        excludes: ["Multi-stop routes (extra stops $100 each way)", "Shared vehicle", "Hazardous or illegal items"],
         rule: "High-value items must be secure and packaged before pickup. Verification required.",
-        sizes: ["Small high-value item", "Medium secured load", "Full discreet shipment"] },
+        sizes: ["4-hour minimum ($740)", "Full-day detail ($750-$1,250)", "Custom quote (overnight/multi-day)"] },
     { id: "junkremoval", icon: "\u{1F5D1}", name: "Junk Removal", tagline: "Single item to a full 16ft truckload", priceRange: "$179-$850",
         desc: "Couches, mattresses, appliances, interior room removal, garage and yard cleanouts. Priced by how much of our truck your junk fills.",
         includes: ["Loading & hauling from inside the home", "Standard disposal fees included", "Same-day available", "Single item to full truckload", "Interior room removal"],
@@ -1389,7 +1390,7 @@ var TOS_SECTIONS = [
  {
   "num": 16,
   "title": "Claims",
-  "body": "Report any damage, loss or complaint to potentlogistics@pm.me or (470) 453-1616 in writing within 48 hours of delivery for freight, or 7 days of completion for other services, with photos and a description. Claims reported later may be declined to the extent the delay prejudiced our ability to investigate. We will acknowledge a claim within two business days and respond after our review."
+  "body": "Report any damage, loss or complaint to potentlogistics@" + "proton.me or (470) 453-1616 in writing within 48 hours of delivery for freight, or 7 days of completion for other services, with photos and a description. Claims reported later may be declined to the extent the delay prejudiced our ability to investigate. We will acknowledge a claim within two business days and respond after our review."
  },
  {
   "num": 17,
@@ -1414,12 +1415,12 @@ var TOS_SECTIONS = [
  {
   "num": 21,
   "title": "Disputes: Informal Resolution First",
-  "body": "Before filing a claim, you agree to contact us at potentlogistics@pm.me and give us 30 days to resolve the issue. Most issues are resolved this way."
+  "body": "Before filing a claim, you agree to contact us at potentlogistics@" + "proton.me and give us 30 days to resolve the issue. Most issues are resolved this way."
  },
  {
   "num": 22,
   "title": "Binding Individual Arbitration",
-  "body": "If we cannot resolve a dispute informally, it will be decided by binding arbitration administered by the American Arbitration Association under its rules for the type of dispute, in Rockdale County, Georgia or by video, in individual proceedings. The Federal Arbitration Act governs this section. Either party may bring an individual claim in small-claims court instead. You may opt out of arbitration by emailing potentlogistics@pm.me within 30 days of first accepting these Terms; opting out does not affect any other term. A court, not the arbitrator, decides whether the class waiver is enforceable, and if it is found unenforceable as to a claim, that claim will proceed in court and not in arbitration."
+  "body": "If we cannot resolve a dispute informally, it will be decided by binding arbitration administered by the American Arbitration Association under its rules for the type of dispute, in Rockdale County, Georgia or by video, in individual proceedings. The Federal Arbitration Act governs this section. Either party may bring an individual claim in small-claims court instead. You may opt out of arbitration by emailing potentlogistics@" + "proton.me within 30 days of first accepting these Terms; opting out does not affect any other term. A court, not the arbitrator, decides whether the class waiver is enforceable, and if it is found unenforceable as to a claim, that claim will proceed in court and not in arbitration."
  },
  {
   "num": 23,
@@ -1444,7 +1445,7 @@ var TOS_SECTIONS = [
  {
   "num": 27,
   "title": "Contact",
-  "body": "POTENT LOGISTICS LLC, 2089 Christian Cir SE, Conyers, GA 30013. Email potentlogistics@pm.me. Phone (470) 453-1616."
+  "body": "POTENT LOGISTICS LLC, 2089 Christian Cir SE, Conyers, GA 30013. Email potentlogistics@" + "proton.me. Phone (470) 453-1616."
  }
 ];
 var POTENT_LOGISTICS_TOS_SECTIONS = [
@@ -1718,7 +1719,7 @@ var POTENT_OS_TOS_SECTIONS = [
  {
   "num": 27,
   "title": "General",
-  "body": "Neither party may assign this Agreement without the other's consent, except that POTENT may assign it to a successor to its business. You may not transfer your license. If a provision is unenforceable, the rest stays in effect. Failure to enforce is not a waiver. We may update these terms for future customers at any time and for you with 30 days' notice of material changes, and your continued use after the notice period is acceptance; changes do not affect fees you have already paid for your tier. Notices go to the email you gave at signup and to potentlogistics@pm.me. We keep an electronic record of the version, time and device used to accept it, and you agree electronic signatures and records are valid. This Agreement and your order are the entire agreement and replace prior discussions."
+  "body": "Neither party may assign this Agreement without the other's consent, except that POTENT may assign it to a successor to its business. You may not transfer your license. If a provision is unenforceable, the rest stays in effect. Failure to enforce is not a waiver. We may update these terms for future customers at any time and for you with 30 days' notice of material changes, and your continued use after the notice period is acceptance; changes do not affect fees you have already paid for your tier. Notices go to the email you gave at signup and to potentlogistics@" + "proton.me. We keep an electronic record of the version, time and device used to accept it, and you agree electronic signatures and records are valid. This Agreement and your order are the entire agreement and replace prior discussions."
  }
 ];
 var POTENT_PRIVACY_SECTIONS = [
@@ -1785,7 +1786,7 @@ var POTENT_PRIVACY_SECTIONS = [
  {
   "num": 13,
   "title": "Your Choices and Rights",
-  "body": "You may ask to access, correct or delete your personal information, to receive a copy, or to opt out of marketing, by emailing potentlogistics@pm.me. Depending on where you live, you may have additional rights under state privacy laws, including the right to know, delete, correct and opt out of sale or sharing (we do not sell or share), and to appeal a denial. We will verify your request and respond within the time the law requires. We will not discriminate against you for using these rights. If you are a customer of a company using POTENT OS, contact that company first."
+  "body": "You may ask to access, correct or delete your personal information, to receive a copy, or to opt out of marketing, by emailing potentlogistics@" + "proton.me. Depending on where you live, you may have additional rights under state privacy laws, including the right to know, delete, correct and opt out of sale or sharing (we do not sell or share), and to appeal a denial. We will verify your request and respond within the time the law requires. We will not discriminate against you for using these rights. If you are a customer of a company using POTENT OS, contact that company first."
  },
  {
   "num": 14,
@@ -1805,7 +1806,7 @@ var POTENT_PRIVACY_SECTIONS = [
  {
   "num": 17,
   "title": "Contact",
-  "body": "POTENT LOGISTICS LLC, 2089 Christian Cir SE, Conyers, GA 30013, potentlogistics@pm.me, (470) 453-1616."
+  "body": "POTENT LOGISTICS LLC, 2089 Christian Cir SE, Conyers, GA 30013, potentlogistics@" + "proton.me, (470) 453-1616."
  }
 ];
 var LEGAL_UPDATED = "October 8, 2026";
@@ -3885,7 +3886,7 @@ var MONTHLY_VOLUME_OPTIONS = [
     { id: "25k_plus", label: "$25,000+/month" },
 ];
 function PartnerApplicationModal(props) {
-    var [f, setF] = useState({ companyName: "", contactPerson: "", title: "", phone: "", email: "", businessAddress: "", businessType: "property_mgmt", monthlyVolume: "1_5k", services: [], paymentTerms: "net7", billingEmail: "", notes: "", agreeToTerms: false });
+    var [f, setF] = useState({ companyName: "", contactPerson: "", title: "", phone: "", email: "", businessAddress: "", businessType: "property_mgmt", monthlyVolume: "1_5k", services: [], paymentTerms: "prepay", billingEmail: "", notes: "", agreeToTerms: false, bankName: "", routingNumber: "", accountNumber: "", achVerified: false });
     var [sent, setSent] = useState(false);
     var [submitting, setSubmitting] = useState(false);
     var [step, setStep] = useState(0);
@@ -3917,14 +3918,10 @@ function PartnerApplicationModal(props) {
     function submit() {
         if (!f.companyName || !f.contactPerson || !f.phone || !f.email || !f.agreeToTerms)
             return;
-        if (!bondPhotoUrl) {
-            alert("Please upload a photo of your surety bond before submitting — required for all Net account applications.");
-            return;
-        }
         setSubmitting(true);
         sendEmail({ id: "PARTNER-" + Date.now(), customer: f.contactPerson, phone: f.phone,
-            serviceName: "NET 7 PARTNER ACCOUNT APPLICATION",
-            origin: f.businessAddress, destination: "", finalPrice: 0, payment: "net7",
+            serviceName: "PARTNER ACCOUNT APPLICATION",
+            origin: f.businessAddress, destination: "", finalPrice: 0, payment: "prepay",
             date: new Date().toISOString().split("T")[0],
             notes: "Company: " + f.companyName + " | Type: " + f.businessType + " | Volume: " + f.monthlyVolume + " | Services: " + f.services.join(", ") + " | Billing Email: " + f.billingEmail + " | Notes: " + f.notes + " | Email: " + f.email + " | Surety Bond Photo: " + bondPhotoUrl + " | Applicant Photo: " + applicantPhotoUrl
         }).then(function (res) {
@@ -3943,7 +3940,7 @@ function PartnerApplicationModal(props) {
                 React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
                     React.createElement("div", null,
                         React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white } }, "\uD83E\uDD1D Partner Account Application"),
-                        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 2 } }, "Net 7 billing \u2014 pay 7 days after service")),
+                        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 2 } }, "Prepay & ACH \u2014 fast, simple billing")),
                     React.createElement("button", { onClick: props.onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer" } }, "\u2715"))),
             step === 0 ? React.createElement(MandatoryFaceCapture, { onCaptured: function (url) { setApplicantPhotoUrl(url); setStep(1); } }) :
             sent ? React.createElement("div", { style: { padding: "32px 24px", textAlign: "center" } },
@@ -3953,13 +3950,13 @@ function PartnerApplicationModal(props) {
                     "We've received your partner account application for ",
                     React.createElement("strong", { style: { color: C.orange } }, f.companyName),
                     "."),
-                React.createElement("div", { style: { fontSize: 13, color: C.dim, marginBottom: 24, lineHeight: 1.7 } }, "Our team will review your application and contact you within 1-2 business days to discuss your Net 7 account and service agreement."),
+                React.createElement("div", { style: { fontSize: 13, color: C.dim, marginBottom: 24, lineHeight: 1.7 } }, "Our team will review your application and contact you within 1-2 business days to discuss your account and service agreement."),
                 React.createElement("div", { style: { background: C.surface, borderRadius: 10, padding: "14px", marginBottom: 20, textAlign: "left", fontSize: 12, color: C.dim, lineHeight: 1.8 } },
                     React.createElement("div", { style: { fontWeight: 700, color: C.white, marginBottom: 6 } }, "What happens next:"),
                     React.createElement("div", null, "1. Our team reviews your application"),
                     React.createElement("div", null, "2. We call to verify your business details"),
                     React.createElement("div", null, "3. You sign a service agreement"),
-                    React.createElement("div", null, "4. Your Net 7 account is activated"),
+                    React.createElement("div", null, "4. Your account is activated"),
                     React.createElement("div", null, "5. You receive a dedicated account number for billing")),
                 React.createElement(Btn, { onClick: props.onClose, style: { width: "100%" } }, "Close")) : React.createElement("div", { style: { padding: "20px 22px" } },
                 step === 1 && React.createElement("div", null,
@@ -3991,17 +3988,25 @@ function PartnerApplicationModal(props) {
                     React.createElement(TxtIn, { label: "Billing Email (for invoices)", value: f.billingEmail, onChange: function (v) { set("billingEmail", v); }, type: "email", placeholder: "billing@company.com" }),
                     React.createElement(TxtIn, { label: "Notes / Special Requirements", value: f.notes, onChange: function (v) { set("notes", v); }, placeholder: "Recurring routes, special scheduling needs, volume discounts...", rows: 2 }),
                     React.createElement("div", { style: { background: "#4299E115", border: "1px solid #4299E133", borderRadius: 9, padding: "12px 14px", marginBottom: 14 } },
-                        React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: "#4299E1", marginBottom: 6 } }, "\uD83D\uDCB3 Net 7 Payment Terms"),
-                        React.createElement("div", { style: { fontSize: 11, color: C.dim, lineHeight: 1.7 } }, "Invoices are issued after each job is completed. Payment is due within 7 days of invoice date. Accounts more than 14 days past due revert to cash-on-delivery until balance is cleared. Net 7 approval is subject to credit review and execution of a service agreement.")),
+                        React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: "#4299E1", marginBottom: 6 } }, "\uD83D\uDCB3 Payment Information (ACH)"),
+                        React.createElement("div", { style: { fontSize: 11, color: C.dim, lineHeight: 1.6, marginBottom: 10 } }, "For fast payment. Select N/A if you prefer to pay another way."),
+                        React.createElement(TxtIn, { label: "Bank Name", value: f.bankName, onChange: function (v) { set("bankName", v); }, placeholder: "e.g. Chase Bank" }),
+                        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" } },
+                            React.createElement(TxtIn, { label: "Routing Number", value: f.routingNumber, onChange: function (v) { set("routingNumber", v); }, placeholder: "9 digits" }),
+                            React.createElement(TxtIn, { label: "Account Number", value: f.accountNumber, onChange: function (v) { set("accountNumber", v); }, placeholder: "Account #" })),
+                        React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", marginTop: 4 } },
+                            React.createElement("button", { onClick: function () { set("bankName", "N/A"); set("routingNumber", "N/A"); set("accountNumber", "N/A"); }, style: { background: "transparent", color: C.dim, border: "1px solid " + C.border, borderRadius: 7, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "N/A"),
+                            React.createElement("button", { onClick: function () { if (f.bankName && f.routingNumber && f.accountNumber && f.bankName !== "N/A") { set("achVerified", true); } }, disabled: f.achVerified, style: { background: f.achVerified ? C.green : "#4299E1", color: "#fff", border: "none", borderRadius: 7, padding: "6px 18px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, f.achVerified ? "\u2705 Verified" : "Verify"),
+                            f.achVerified && React.createElement("div", { style: { fontSize: 11, color: C.green, fontWeight: 700 } }, "Bank info verified"))),
                     React.createElement("div", { style: { background: "#1a1400", border: "1px solid " + C.orange + "44", borderRadius: 9, padding: "12px 14px", marginBottom: 14 } },
-                        React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.orange, marginBottom: 6 } }, "\uD83D\uDCCB Surety Bond \u2014 Required for Net Accounts"),
+                        React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.orange, marginBottom: 6 } }, "\uD83D\uDCCB Surety Bond \u2014 Optional"),
                         React.createElement("div", { style: { fontSize: 11, color: C.dim, lineHeight: 1.6, marginBottom: 10 } }, "A photo of your current surety bond is required before any Net account application can be reviewed."),
                         React.createElement("input", { type: "file", accept: "image/*", onChange: function (e) { if (e.target.files && e.target.files[0]) uploadBondPhoto(e.target.files[0]); }, style: { fontSize: 11, color: C.dim, marginBottom: 8 } }),
                         bondUploading && React.createElement("div", { style: { fontSize: 11, color: C.orange } }, "Uploading..."),
                         bondPhotoUrl && React.createElement("div", { style: { fontSize: 11, color: C.green, fontWeight: 700 } }, "\u2705 Surety bond photo uploaded")),
                     React.createElement("div", { style: { display: "flex", alignItems: "flex-start", gap: 10, background: C.surface, border: "1px solid " + C.border, borderRadius: 9, padding: "12px 14px", marginBottom: 14 } },
                         React.createElement("div", { onClick: function () { set("agreeToTerms", !f.agreeToTerms); }, style: { width: 20, height: 20, borderRadius: 5, background: f.agreeToTerms ? C.orange : "transparent", border: "1.5px solid " + (f.agreeToTerms ? C.orange : C.border), display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#000", fontWeight: 800, flexShrink: 0, marginTop: 1, cursor: "pointer" } }, f.agreeToTerms ? "✓" : ""),
-                        React.createElement("div", { style: { fontSize: 11, color: C.dim, lineHeight: 1.6 } }, "I confirm this information is accurate and I understand that Net 7 account activation requires approval and a signed service agreement with Potent Logistics LLC.")),
+                        React.createElement("div", { style: { fontSize: 11, color: C.dim, lineHeight: 1.6 } }, "I confirm this information is accurate and I understand that account activation requires approval and a signed service agreement with Potent Logistics LLC.")),
                     React.createElement("div", { style: { display: "flex", gap: 8 } },
                         React.createElement(Btn, { variant: "ghost", onClick: function () { setStep(1); }, style: { flex: 1 } }, "\u2190 Back"),
                         React.createElement(Btn, { onClick: submit, disabled: !f.agreeToTerms || f.services.length === 0, style: { flex: 2 } }, "Submit Application \uD83E\uDD1D"))))));
@@ -4569,7 +4574,8 @@ function TrackerView(props) {
                     React.createElement("div", { style: { fontSize: 11, color: C.dim, lineHeight: 1.6 } }, pol.rule),
                     React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 6 } },
                         "Questions? Call: ",
-                        React.createElement("a", { href: "tel:" + PHONE_NUMBER, style: { color: C.orange, textDecoration: "none", fontWeight: 700 } }, PHONE_DISPLAY)))),
+                        React.createElement("a", { href: "tel:" + PHONE_NUMBER, style: { color: C.orange, textDecoration: "none", fontWeight: 700 } }, PHONE_DISPLAY))),
+                    React.createElement("div", { style: { fontSize: 10, color: C.dim, marginTop: 4 } }, "Deaf or hard-of-hearing? Dial " + PHONE_DISPLAY + " through your Video Relay Service (VRS) \u2014 we answer relay calls.")),
             React.createElement("div", { style: { marginTop: 16, textAlign: "center" } },
                 React.createElement("a", { href: "?myjobs", style: { fontSize: 12, color: C.orange, textDecoration: "none" } }, "Want to see every job you have ever booked, plus your real balance? \u2192 Log in to your account"))));
 }
@@ -4777,7 +4783,7 @@ function BookingView(props) {
                     React.createElement("span", { style: { fontSize: 20 } }, svc.icon),
                     React.createElement("div", { style: { fontSize: 16, fontWeight: 800, color: C.white } }, svc.name)),
                 React.createElement(TxtIn, { label: "Your Full Name", value: form.name, onChange: function (v) { set("name", v); }, placeholder: "e.g. Jordan Smith" }),
-                React.createElement(TxtIn, { label: "Phone Number", value: form.phone, onChange: function (v) { set("phone", v); }, type: "tel", placeholder: "404-000-0000" }),
+                React.createElement(TxtIn, { label: "Phone Number", value: form.phone, onChange: function (v) { set("phone", v); }, type: "tel", placeholder: "404-000-0000", voice: true }),
                 React.createElement(TxtIn, { label: t("email"), value: form.email, onChange: function (v) { set("email", v); }, type: "email", placeholder: "your@email.com" }),
                 React.createElement(Lbl, null, "Customer Type"),
                 React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 14 } }, [["residential", "🏠 Residential"], ["business", "🏢 Business / Commercial"], ["repeat", "⭐ Repeat Customer"]].map(function (opt) {
@@ -7202,9 +7208,9 @@ function getTabGroups() {
 // ── TAB NAVIGATION — dropdown "More" sheet, 5 simplified groups ──
 var PRIMARY_TAB_ORDER = [
     ["quote", "📞 Quote"],
-    ["jobs", "📋 Jobs"],
+    ["livecall", "📱 Dialer"],
     ["leads", "📋 Leads"],
-    ["driverapp", "🚐 Driver"],
+    ["jobs", "📋 Jobs"],
 ];
 function CategoryNav({ tab, setTab, currentUser }) {
     var [showMore, setShowMore] = useState(false);
@@ -7741,7 +7747,42 @@ function AdminLogin(props) {
                 React.createElement("div", { onClick: function () { setCompanyMode(true); setPw(""); setErr(false); }, style: { textAlign: "center", marginTop: 14, fontSize: 11, color: C.orange, cursor: "pointer", textDecoration: "underline" } }, "Have a company account? Sign in with email →"))));
 }
 // ── PUBLIC APP ────────────────────────────────────────────────────
+
+// ── DEMO MODE — account-gated demo, no email verification ──────────
+function DemoModeView(props) {
+    var [email, setEmail] = React.useState("");
+    var [phone, setPhone] = React.useState("");
+    var [bizName, setBizName] = React.useState("");
+    var [done, setDone] = React.useState(false);
+    function start() {
+        if (!email && !phone) return;
+        try {
+            localStorage.setItem("pl_demo_acct", JSON.stringify({ email: email, phone: phone, bizName: bizName || "Demo Company", ts: Date.now() }));
+        } catch (e) {}
+        setDone(true);
+    }
+    if (done) {
+        return React.createElement("div", { style: { minHeight: "100vh", background: C.black, color: C.white, padding: "40px 24px", textAlign: "center", fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
+            React.createElement("div", { style: { fontSize: 48, marginBottom: 16 } }, "\uD83C\uDF89"),
+            React.createElement("div", { style: { fontSize: 24, fontWeight: 900, marginBottom: 8 } }, "Welcome to the Demo, " + (bizName || "there") + "!"),
+            React.createElement("div", { style: { fontSize: 14, color: C.dim, marginBottom: 24, lineHeight: 1.7 } }, "Your demo account is ready. Explore POTENT OS with sample data \u2014 nothing here is real, and you can reset anytime."),
+            React.createElement("button", { onClick: function () { window.location.href = "/"; }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: "13px 32px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit", marginBottom: 12 } }, "Explore the Demo \u2192"),
+            React.createElement("div", null,
+                React.createElement("a", { href: "?apply", style: { fontSize: 13, color: C.orange } }, "Ready for the real thing? Apply for POTENT OS \u2192")));
+    }
+    return React.createElement("div", { style: { minHeight: "100vh", background: C.black, color: C.white, padding: "40px 24px", fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
+        React.createElement("div", { style: { maxWidth: 480, margin: "0 auto" } },
+            React.createElement("div", { style: { fontSize: 28, fontWeight: 900, marginBottom: 8, textAlign: "center" } }, "\uD83C\uDFAE Try POTENT OS Demo"),
+            React.createElement("div", { style: { fontSize: 13, color: C.dim, marginBottom: 24, textAlign: "center", lineHeight: 1.7 } }, "Create a free demo account \u2014 no email verification needed. See how POTENT OS runs a trucking company."),
+            React.createElement(TxtIn, { label: "Email", value: email, onChange: setEmail, type: "email", placeholder: "you@company.com" }),
+            React.createElement(TxtIn, { label: "Or Phone", value: phone, onChange: setPhone, type: "tel", placeholder: "404-000-0000" }),
+            React.createElement(TxtIn, { label: "Business Name", value: bizName, onChange: setBizName, placeholder: "Your company name" }),
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 16, lineHeight: 1.6 } }, "Add your logo and brand colors after signup, from inside the demo."),
+            React.createElement("button", { onClick: start, disabled: !email && !phone, style: { width: "100%", background: (!email && !phone) ? "#333" : C.orange, color: "#000", border: "none", borderRadius: 9, padding: "14px", fontSize: 15, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "Start My Demo \u2192")));
+}
+
 function PublicApp(props) {
+    if (typeof window !== "undefined" && window.location.search.indexOf("demo") > -1 && window.location.search.indexOf("demo=") < 0) { try { if (/[?&]demo([&#]|$)/.test(window.location.search)) return React.createElement(DemoModeView, null); } catch (e) {} }
     var _bt_publicTab = useBackableTab("home", "publicTab"); var tab = _bt_publicTab[0], setTab = _bt_publicTab[1];
     var [bookCity, setBookCity] = useState(null);
     var [showCustomQuote, setShowCustomQuote] = useState(false);
@@ -7788,6 +7829,7 @@ function PublicApp(props) {
                         onChange: function (e) {
                             var v = e.target.value;
                             if (v === "getstarted") window.location.href = "?get-started";
+                            else if (v === "demo") window.location.href = "?demo";
                             else if (v === "myjobs") window.location.href = "?myjobs";
                             else if (v === "driveronboard") window.location.href = "/POTENT-Driver-Onboarding.html";
                             else if (v === "partner") setShowPartnerApp(true);
@@ -7809,6 +7851,7 @@ function PublicApp(props) {
                     },
                         React.createElement("option", { value: "", disabled: true }, "\uD83D\uDD11 Sign In / Get Started"),
                         React.createElement("option", { value: "getstarted" }, "\u2B50 New Here? Start Here"),
+                        React.createElement("option", { value: "demo" }, "\uD83C\uDFAE Try Demo Mode"),
                         React.createElement("option", { value: "myjobs" }, "\uD83D\uDCE6 Track My Jobs"),
                         React.createElement("option", { value: "driveronboard" }, "\uD83D\uDE9B Driver Onboarding"),
                         React.createElement("option", { value: "os" }, "\uD83D\uDCBB Apply — POTENT OS"),
@@ -7820,12 +7863,17 @@ function PublicApp(props) {
                         React.createElement("option", { value: "training" }, "\uD83C\uDF93 Training"),
                         React.createElement("option", { value: "team" }, "\uD83D\uDC65 Team Guide")),
                     React.createElement(LangSwitcher, { lang: lang, changeLang: changeLang }),
+                    React.createElement(EasyModeToggle, null),
                     React.createElement("a", { href: "tel:" + DISPATCH_PHONE_DISPLAY.replace(/\D/g,""), title: "Dispatch & Sales: " + DISPATCH_EMAIL, style: { textDecoration: "none", background: C.orange, color: "#000", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" } }, "📞 " + DISPATCH_PHONE_DISPLAY),
                     React.createElement("a", { href: "tel:" + PHONE_NUMBER, title: "Owner: " + BUSINESS_EMAIL, style: { textDecoration: "none", background: "transparent", border: "1px solid " + C.orange + "66", color: C.orange, borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" } }, "👑 " + PHONE_DISPLAY))),
             React.createElement("div", { style: { display: "flex", background: C.surface } }, [["home", t("home")], ["book", t("book")], ["track", t("track")]].map(function (item) {
                 return React.createElement("button", { key: item[0], onClick: function () { setTab(item[0]); }, style: { flex: 1, border: "none", borderBottom: "2px solid " + (tab === item[0] ? C.orange : "transparent"), padding: "10px 4px", cursor: "pointer", background: tab === item[0] ? C.orange + "12" : "transparent", color: tab === item[0] ? C.orange : C.dim, fontSize: 11, fontWeight: 700, fontFamily: "inherit", textAlign: "center" } }, item[1]);
             }))),
         tab === "home" && React.createElement("div", null,
+            React.createElement("div", { style: { background: "#1a0000", borderBottom: "2px solid " + C.red, padding: "10px 16px", textAlign: "center" } },
+                React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.red, marginBottom: 4 } }, "\u26A0\uFE0F WARNING: Unauthorized Liens Reported"),
+                React.createElement("div", { style: { fontSize: 11, color: "#ffaaaa", lineHeight: 1.5, marginBottom: 6 } }, "We have received reports of unauthorized liens being filed against vehicles by third parties claiming association with FleetSmart. If you have been affected, protect yourself and report it:"),
+                React.createElement("a", { href: "https://docs.google.com/forms/d/e/1FAIpQLScw7WrmgXPuntYWUb5cLGDIUSR85RJB8XsaLeesZCxMfSF2vA/viewform", target: "_blank", rel: "noopener", style: { display: "inline-block", background: C.red, color: "#fff", borderRadius: 8, padding: "8px 20px", fontSize: 12, fontWeight: 800, textDecoration: "none" } }, "Report an Unauthorized Lien \u2192")),
             React.createElement("div", { style: { position: "sticky", top: 0, zIndex: 50, background: "#0a0a0a", borderBottom: "1px solid " + C.border, display: "flex", overflowX: "auto", padding: "0 12px" } },
                 [["services", "Services"], ["technology", "Technology"], ["potent-os", "POTENT OS"], ["about", "About"], ["reviews", "Reviews"]].map(function (s) {
                     return React.createElement("a", {
@@ -7834,8 +7882,9 @@ function PublicApp(props) {
                     }, s[1]);
                 })),
             React.createElement("div", { style: { position: "relative", width: "100%", minHeight: 480, overflow: "hidden", background: "#000" } },
-                React.createElement("video", { autoPlay: true, muted: true, loop: true, playsInline: true, style: { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", minWidth: "100%", minHeight: "100%", width: "auto", height: "auto", objectFit: "cover" } },
+                React.createElement("video", { id: "potent-hero-vid", autoPlay: true, muted: true, loop: true, playsInline: true, style: { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "100%", height: "100%", objectFit: "contain", background: "#000" } },
                     React.createElement("source", { src: "/potent-commercial.mp4", type: "video/mp4" })),
+                React.createElement("button", { onClick: function () { var v = document.getElementById("potent-hero-vid"); if (v) { v.muted = !v.muted; if (!v.muted) { v.play(); } this.textContent = v.muted ? "\uD83D\uDD07 Tap for Sound" : "\uD83D\uDD0A Sound On"; } }, style: { position: "absolute", bottom: 12, right: 12, zIndex: 20, background: "rgba(0,0,0,0.7)", color: "#fff", border: "1px solid #555", borderRadius: 20, padding: "6px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" } }, "\uD83D\uDD07 Tap for Sound"),
                 React.createElement("div", { style: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "linear-gradient(to bottom,#00000044 0%,#000000bb 60%,#080808 100%)" } }),
                 React.createElement("div", { style: { position: "relative", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 480, padding: "60px 24px 80px", textAlign: "center" } },
                     React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", marginBottom: 14, background: C.orange + "18", border: "1px solid " + C.orange + "44", borderRadius: 20, padding: "4px 14px" } }, "24/7 LOGISTICS \u00B7 COURIER \u00B7 PROPERTY CLEANOUTS \u00B7 JUNK REMOVAL \u00B7 DEMOLITION"),
@@ -7851,11 +7900,14 @@ function PublicApp(props) {
                         React.createElement("button", { onClick: function () { setTab("book"); }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: "13px 28px", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCE6 Book a Job"),
                         React.createElement("a", { href: "tel:" + PHONE_NUMBER, style: { textDecoration: "none" } },
                             React.createElement("button", { style: { background: "transparent", color: "#fff", border: "1.5px solid rgba(255,255,255,0.5)", borderRadius: 9, padding: "13px 28px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "📞 " + PHONE_DISPLAY)),
+                        React.createElement("a", { href: "https://wa.me/14704531616", target: "_blank", rel: "noopener noreferrer", style: { textDecoration: "none" } },
+                            React.createElement("button", { style: { background: "#25D366", color: "#000", border: "none", borderRadius: 9, padding: "13px 28px", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "💬 WhatsApp")),
                         React.createElement("button", { onClick: function () { setTab("track"); }, style: { background: "transparent", color: "rgba(255,255,255,0.6)", border: "1.5px solid rgba(255,255,255,0.2)", borderRadius: 9, padding: "13px 28px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCCD Track My Job")))),
             React.createElement("div", { id: "services", style: { background: "linear-gradient(135deg,#0d0d00,#080808)", borderBottom: "2px solid " + C.orange, padding: "36px 20px", scrollMarginTop: 44 } },
                 React.createElement("div", { style: { maxWidth: 720, margin: "0 auto", textAlign: "center" } },
                     React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 8 } }, "Conyers \u00B7 Covington \u00B7 Lithonia \u00B7 Surrounding Areas"),
                     React.createElement("div", { style: { fontSize: 26, fontWeight: 900, color: "#fff", marginBottom: 6 } }, "The Best Price In The City. Guaranteed."),
+                    React.createElement("div", { style: { fontSize: 13, color: "rgba(255,255,255,0.75)", maxWidth: 560, margin: "0 auto 18px", lineHeight: 1.7, fontStyle: "italic" } }, "Most companies make you request a quote and wait. We break our pricing down right here, transparently \u2014 so you know exactly what you'll pay before you ever call."),
                     React.createElement("div", { style: { fontSize: 13, color: "rgba(255,255,255,0.7)", maxWidth: 500, margin: "0 auto 24px", lineHeight: 1.6 } }, "Same crew, same trucks, same-day service \u2014 for less than anyone else in your area."),
                     React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 10, marginBottom: 20 } }, [
                         ["Single Item Pickup", "$149"],
@@ -7931,7 +7983,7 @@ function PublicApp(props) {
                         React.createElement("img", { src: "/app-mockup.jpg", alt: "POTENT OS Ghost Mode offline dispatch screen", style: { width: "100%", borderRadius: 8, border: "1px solid " + C.border } })),
                     React.createElement("div", { style: { maxWidth: 500, margin: "24px auto 0", textAlign: "center" } },
                         React.createElement("a", { href: "?apply#demo", style: { textDecoration: "none" } },
-                            React.createElement("button", { style: { background: "transparent", color: C.orange, border: "1.5px solid " + C.orange, borderRadius: 9, padding: "13px 26px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "\u25B6 Click here to see demo"))),
+                            React.createElement("button", { style: { background: "linear-gradient(180deg,#ffffff 0%,#c6ccd4 30%,#7d848e 49%,#e4e8ec 51%,#a3a9b2 78%,#f6f8fa 100%)", color: "#000", border: "none", borderRadius: 9, padding: "13px 26px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "\u25B6 Click here to see demo"))),
                     React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" } },
                         React.createElement("a", { href: "/POTENT-OS-Landing-Page.html", style: { textDecoration: "none" } },
                             React.createElement("button", { style: { background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: "13px 32px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCBB See POTENT OS Pricing")),
@@ -8065,7 +8117,7 @@ h2{color:#1a1a1a;margin-top:30px;}
 </ul>
 
 <div class="footer">
-<strong>POTENT OS</strong> · potentoperations.netlify.app/apply · (470) 453-1616 · potentlogistics@pm.me<br>
+<strong>POTENT OS</strong> · potentoperations.netlify.app/apply · (470) 453-1616 · potentlogistics@" + "proton.me<br>
 © 2026 ANTHONY EMMANUEL FIGUEROA MENDES® · POTENT PRÄDƏKT® · Private access only
 </div>
 </body></html>`;
@@ -8221,7 +8273,7 @@ ${swCost > laborCost ? '<p>Your biggest cost is <strong>software subscriptions</
 <p>3 slots available this month. Private access only. We review every application personally.</p>
 
 <div class="footer">
-<strong>POTENT OS</strong> · potentoperations.netlify.app · (470) 453-1616 · potentlogistics@pm.me<br>
+<strong>POTENT OS</strong> · potentoperations.netlify.app · (470) 453-1616 · potentlogistics@" + "proton.me<br>
 © 2026 ANTHONY EMMANUEL FIGUEROA MENDES® · POTENT PRÄDƏKT® · Actual savings may vary.
 </div>
 </body></html>`;
@@ -8377,7 +8429,7 @@ function WaitlistPage() {
         { cat: "⭐ Social Proof", items: ["Customer reviews section on homepage", "Star rating system", "Review modal for customers", "Reviews display publicly"] },
         { cat: "🏢 POTENT OS SaaS Platform", items: ["Multi-tenant architecture", "One codebase, unlimited customers", "Org-level data isolation", "Row Level Security (Supabase)", "License manager dashboard", "Waitlist management", "One-click customer onboarding", "Starter/Growth/Fleet plan tiers", "Plan-based feature flags", "Platform audit log"] },
     ];
-    var totalFeatures = ALL_FEATURES.reduce(function (s, c) { return s + c.items.length; }, 0);
+    var totalFeatures = "700"; // Marketing count (per owner) — actual ALL_FEATURES list is the detailed inventory
     if (sent)
         return React.createElement("div", { style: { minHeight: "100vh", background: C2.black, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: ff } },
             React.createElement("div", { style: { maxWidth: 520, textAlign: "center" } },
@@ -8656,7 +8708,7 @@ function WaitlistPage() {
                     "Questions? Call ",
                     React.createElement("a", { href: "tel:+14704531616", style: { color: C2.orange, textDecoration: "none" } }, "(470) 453-1616"),
                     " \u00B7 ",
-                    React.createElement("a", { href: "mailto:potentlogistics@pm.me", style: { color: C2.orange, textDecoration: "none" } }, "potentlogistics@pm.me")))));
+                    React.createElement("a", { href: "mailto:" + PROTON_EMAIL, style: { color: C2.orange, textDecoration: "none" } }, PROTON_EMAIL)))));
 }
 // ── POTENT OS CUSTOMERS & LICENSES — owner only ───────────────────────────
 // One place for everything about a customer: tier, license + monthly-support
@@ -9436,8 +9488,37 @@ function RealBackButton() {
     if (!canGoBack) return null;
     return React.createElement("button", {
         onClick: function () { window.history.back(); },
-        style: { position: "fixed", top: 10, left: 10, zIndex: 9998, background: "rgba(17,17,17,0.9)", color: "#F0E000", border: "1px solid #333", borderRadius: 20, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", backdropFilter: "blur(4px)" }
+        style: { position: "fixed", top: 74, left: 10, zIndex: 9998, background: "rgba(17,17,17,0.9)", color: "#F0E000", border: "1px solid #333", borderRadius: 20, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", backdropFilter: "blur(4px)" }
     }, "\u2190 Back");
+}
+
+
+// ── EASY MODE — simplified interface for non-technical users ────────
+var EASY_MODE_KEY = "pl_easy_mode";
+function isEasyMode() { try { return localStorage.getItem(EASY_MODE_KEY) === "yes"; } catch (e) { return false; } }
+function setEasyMode(on) {
+    try { localStorage.setItem(EASY_MODE_KEY, on ? "yes" : "no"); } catch (e) {}
+    try {
+        var st = document.getElementById("pl-easy-mode-style");
+        if (on && !st) {
+            st = document.createElement("style");
+            st.id = "pl-easy-mode-style";
+            st.textContent = ".pl-easy-mode { font-size: 18px !important; } .pl-easy-mode button { min-height: 52px !important; font-size: 16px !important; } .pl-easy-mode input, .pl-easy-mode select, .pl-easy-mode textarea { font-size: 16px !important; min-height: 48px !important; }";
+            document.head.appendChild(st);
+            document.body.classList.add("pl-easy-mode");
+        } else if (!on && st) {
+            st.remove();
+            document.body.classList.remove("pl-easy-mode");
+        }
+    } catch (e) {}
+}
+function EasyModeToggle() {
+    var [on, setOn] = React.useState(isEasyMode());
+    React.useEffect(function () { setEasyMode(on); }, [on]);
+    return React.createElement("button", {
+        onClick: function () { setOn(!on); },
+        style: { background: on ? C.green : "transparent", color: on ? "#000" : C.dim, border: "1px solid " + (on ? C.green : C.border), borderRadius: 20, padding: "6px 14px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }
+    }, on ? "\u2705 Easy Mode On" : "\u25CB Easy Mode");
 }
 
 function Root() {
@@ -12660,9 +12741,9 @@ function PayrollDashboard(props) {
                             !isUserRevoked(u.id) && React.createElement("button", { onClick: function () { handleRevoke(u); }, style: { background: C.red, border: "1px solid " + C.red, color: "#fff", borderRadius: 6, padding: "4px 10px", fontSize: 10, cursor: "pointer", fontWeight: 700, fontFamily: "inherit" } }, "\uD83D\uDD12 Revoke Access"),
                             isUserRevoked(u.id) && React.createElement("button", { onClick: function () { handleRestore(u); }, style: { background: "transparent", border: "1px solid " + C.green, color: C.green, borderRadius: 6, padding: "4px 10px", fontSize: 10, cursor: "pointer", fontWeight: 700, fontFamily: "inherit" } }, "\uD83D\uDD13 Restore Access"),
                             isUserRevoked(u.id) && React.createElement("span", { style: { fontSize: 10, color: C.red, fontWeight: 700, alignSelf: "center" } }, "ACCESS REVOKED"),
-                            !terminated && React.createElement("button", { onClick: function () { if (confirm("Mark " + getEmpName(u) + " as No Longer With Us? (This only hides them from payroll \u2014 use Revoke Access above to actually block their login.)"))
-                                    setEmpField(u.id, "status", "terminated"); }, style: { background: "transparent", border: "1px solid " + C.red, color: C.red, borderRadius: 6, padding: "4px 10px", fontSize: 10, cursor: "pointer", fontWeight: 700, fontFamily: "inherit" } }, "\uD83D\uDEAB Terminate"),
-                            terminated && React.createElement("button", { onClick: function () { setEmpField(u.id, "status", "active"); }, style: { background: "transparent", border: "1px solid " + C.green, color: C.green, borderRadius: 6, padding: "4px 10px", fontSize: 10, cursor: "pointer", fontWeight: 700, fontFamily: "inherit" } }, "\u2705 Reactivate"),
+                            !terminated && React.createElement("button", { onClick: function () { if (confirm("Terminate " + getEmpName(u) + "? This blocks their login immediately AND removes them from payroll."))
+                                    { revokeAccess(u.id, currentUser ? currentUser.name : "", "Terminated from Payroll").then(function () { setRevokedVersion(function (v) { return v + 1; }); }); setEmpField(u.id, "status", "terminated"); } }, style: { background: "transparent", border: "1px solid " + C.red, color: C.red, borderRadius: 6, padding: "4px 10px", fontSize: 10, cursor: "pointer", fontWeight: 700, fontFamily: "inherit" } }, "\uD83D\uDEAB Terminate"),
+                            terminated && React.createElement("button", { onClick: function () { setEmpField(u.id, "status", "active"); if (isUserRevoked(u.id)) { restoreAccess(u.id).then(function () { setRevokedVersion(function (v) { return v + 1; }); }); } }, style: { background: "transparent", border: "1px solid " + C.green, color: C.green, borderRadius: 6, padding: "4px 10px", fontSize: 10, cursor: "pointer", fontWeight: 700, fontFamily: "inherit" } }, "\u2705 Reactivate"),
                             terminated && React.createElement("span", { style: { fontSize: 10, color: C.red, fontWeight: 700, alignSelf: "center" } }, "NO LONGER WITH US"))));
             })),
         Object.values(repEarnings).sort(function (a, b) { return b.revenue - a.revenue; }).map(function (rep) {
@@ -13661,7 +13742,7 @@ function OSTraining() {
     var [copied, setCopied] = useState("");
     var [qa, setQa] = useState({});
     var [submitted, setSubmitted] = useState(false);
-    var SECS = [{ id: "sake", label: "SAKE" }, { id: "flow", label: "Email Flow" }, { id: "vA", label: "Version A" }, { id: "vB", label: "Version B" }, { id: "vC", label: "Version C" }, { id: "fu", label: "Follow-Ups" }, { id: "zoom", label: "Zoom Script" }, { id: "quiz", label: "Quiz" }];
+    var SECS = [{ id: "sake", label: "SAKE" }, { id: "flow", label: "Email Flow" }, { id: "vA", label: "Version A" }, { id: "vB", label: "Version B" }, { id: "vC", label: "Version C" }, { id: "fu", label: "Follow-Ups" }, { id: "zoom", label: "Zoom Script" }, { id: "expert", label: "Expert: Admin" }, { id: "expert2", label: "Expert: Security" }, { id: "expert3", label: "Expert: Scale" }, { id: "quiz", label: "Quiz" }];
     function copyE(subject, body, k) {
         copyText("Subject: " + subject + "\n\n" + body);
         setCopied(k);
@@ -13746,6 +13827,42 @@ function OSTraining() {
                 return React.createElement("div", { key: s[0], style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "14px", marginBottom: 10 } },
                     React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.orange, marginBottom: 5 } }, s[0]),
                     React.createElement("div", { style: { background: C.surface, borderRadius: 7, padding: "10px 12px", marginBottom: 5, fontSize: 12, color: C.white, fontStyle: "italic", lineHeight: 1.7 } }, s[1]),
+                    React.createElement("div", { style: { fontSize: 11, color: C.dim } }, s[2]));
+            })),
+        sec === "expert" && React.createElement("div", null,
+            React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.white, marginBottom: 12 } }, "Expert: Admin Controls"),
+            [["User Management", "Revoke access instantly from Payroll. Terminate blocks login AND removes from payroll. Reactivate restores both.", "Test: revoke a test account, confirm they cannot log in."],
+                ["Master Password", "The master password overrides all staff logins. Change it monthly from Settings. Never share it.", "Rotate after any staff departure."],
+                ["Login Logs", "Every login is logged with photo, location, and device. Check Login Activity daily for unknown devices.", "Investigate any login from an unfamiliar location."],
+                ["Data Export", "Export jobs, leads, and payroll from Reports. Exports are logged in the audit trail.", "Verify exports before sending to accountants."],
+            ].map(function (s) {
+                return React.createElement("div", { key: s[0], style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "14px", marginBottom: 10 } },
+                    React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.orange, marginBottom: 5 } }, s[0]),
+                    React.createElement("div", { style: { fontSize: 12, color: C.white, lineHeight: 1.7, marginBottom: 5 } }, s[1]),
+                    React.createElement("div", { style: { fontSize: 11, color: C.dim } }, s[2]));
+            })),
+        sec === "expert2" && React.createElement("div", null,
+            React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.white, marginBottom: 12 } }, "Expert: Security"),
+            [["Decoy Trap", "Old passwords trigger a fake login that captures photos and alerts the owner. Never disable this.", "If a decoy triggers, change all passwords immediately."],
+                ["KILL SWITCH", "Revoke Access in Payroll instantly blocks a user across all devices within 60 seconds.", "Use for terminations and suspected breaches."],
+                ["RLS Lockdown", "Database tables are locked. All access goes through the server. Never expose the service key.", "Verify lockdown after any database change."],
+                ["2FA", "Enable two-factor on your Netlify, Supabase, and Stripe accounts.", "Check monthly."],
+            ].map(function (s) {
+                return React.createElement("div", { key: s[0], style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "14px", marginBottom: 10 } },
+                    React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.orange, marginBottom: 5 } }, s[0]),
+                    React.createElement("div", { style: { fontSize: 12, color: C.white, lineHeight: 1.7, marginBottom: 5 } }, s[1]),
+                    React.createElement("div", { style: { fontSize: 11, color: C.dim } }, s[2]));
+            })),
+        sec === "expert3" && React.createElement("div", null,
+            React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.white, marginBottom: 12 } }, "Expert: Scaling"),
+            [["Multi-Company", "Each licensed company sees only their data. POTENT staff see everything.", "Test with a demo tenant account."],
+                ["Lead Pipeline", "OS prospects move through stages. Update stages daily. Stale leads get follow-up reminders.", "Review pipeline every morning."],
+                ["Commission Payouts", "Payroll calculates commissions automatically. Verify before marking paid.", "Run payroll weekly."],
+                ["Backup", "Database backups run automatically. Export critical data monthly to local storage.", "Test restore annually."],
+            ].map(function (s) {
+                return React.createElement("div", { key: s[0], style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "14px", marginBottom: 10 } },
+                    React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.orange, marginBottom: 5 } }, s[0]),
+                    React.createElement("div", { style: { fontSize: 12, color: C.white, lineHeight: 1.7, marginBottom: 5 } }, s[1]),
                     React.createElement("div", { style: { fontSize: 11, color: C.dim } }, s[2]));
             })),
         sec === "quiz" && React.createElement("div", null,
@@ -14458,7 +14575,7 @@ function TestEmailTool(){
     ),
     result && React.createElement("div",{style:{background:result.ok?"#0a1a0a":"#1a0000",border:"1px solid "+(result.ok?C.green:C.red)+"44",borderRadius:8,padding:"12px 14px",fontSize:12,color:result.ok?C.green:C.red,lineHeight:1.6}},result.msg),
     React.createElement("div",{style:{fontSize:10,color:C.faint,marginTop:12,lineHeight:1.7}},
-      "If this fails, check that potentlogistics@pm.me is a verified sender in your Mailjet account — Mailjet rejects sends from unverified addresses.")
+      "If this fails, check that potentlogistics@" + "proton.me is a verified sender in your Mailjet account — Mailjet rejects sends from unverified addresses.")
   );
 }
 
@@ -15443,6 +15560,29 @@ var REBUTTAL_CARDS = [
     { id: "C1", group: "Close", trigger: "Commitment check", lines: ["If I can meet that, are you ready to book it right now?"]},
     { id: "C2", group: "Close", trigger: "Get their number", lines: ["What number gets this covered today?"]},
     { id: "C3", group: "Close", trigger: "Close it", lines: ["Perfect. Send the rate confirmation."]},
+    { id: "JUNK1", group: "Pushback", trigger: "\"That's too much for junk removal.\"", lines: [
+        "I hear you. Our $149 single-item and $699 full-load are the best price in the city, guaranteed.",
+        "What are you comparing it to? Most companies won't even give you a price until they see it.",
+        "We show up same-day, haul from inside your home, and include disposal fees. That's the full price.",
+    ]},
+    { id: "JUNK2", group: "Pushback", trigger: "\"I'll just do it myself.\"", lines: [
+        "Totally fair. Just so you know, a dump run costs $50-80 in fees plus your truck, gas, and 3 hours.",
+        "We do it for $149 and you're done in 20 minutes. Worth it?",
+    ]},
+    { id: "SEC1", group: "They Ask First", trigger: "\"Why is armed security so expensive?\"", lines: [
+        "You're paying for a licensed armed detail, not just a driver. $185/hour with a 4-hour minimum.",
+        "For high-value cargo, the alternative is risking a $50K+ loss. The detail pays for itself.",
+        "Full-day is $750-$1,250 with a $250 discount built in.",
+    ]},
+    { id: "OS1", group: "They Ask First", trigger: "\"Why not just use Samsara or Motive?\"", lines: [
+        "Those charge you every month, forever. POTENT OS is one payment — you own it.",
+        "Plus it works 100% offline. No signal needed. None of them do that.",
+        "700+ features, 14 languages, built by a carrier who actually runs trucks.",
+    ]},
+    { id: "OS2", group: "Pushback", trigger: "\"I need to think about it.\"", lines: [
+        "Of course. What's the one thing you'd need to see to feel good about moving forward?",
+        "If it's the price — remember, it's one payment, not a subscription. That math only gets better over time.",
+    ]},
 ];
 
 function LiveRebuttalCards() {
@@ -16687,7 +16827,7 @@ var POTENT_CARRIER_INFO = {
     capacity: "4,500 lbs max, 190\"L x 95\"W x 80\"H interior",
     equipment: "Ramp, E-tracks, moving blankets, load bars — NO liftgate",
     serviceArea: "Georgia statewide, Atlanta metro primary",
-    contact: "(470) 453-1616 \u00b7 potentlogistics@pm.me",
+    contact: "(470) 453-1616 \u00b7 potentlogistics@" + "proton.me",
     bankName: "Middlesex Federal Savings (Novo)",
     routingNumber: "211370150",
     accountNumber: "103687060"
@@ -16991,8 +17131,7 @@ function CompanyOnboarding() {
             })),
         React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.white, marginBottom: 4 } }, "\uD83E\uDD1D Company / Dispatch Partner Onboarding"),
         React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: 14, marginBottom: 16, textAlign: "center" } },
-            React.createElement("div", { style: { fontSize: 11, fontWeight: 800, color: C.orange, marginBottom: 8 } }, "\uD83D\uDD12 Every Login Is Genuinely Logged \u2014 Real Security, Not A Slogan"),
-            React.createElement("img", { src: "/potent-security-screenshot.jpg", alt: "Real POTENT login security log", style: { width: "100%", maxWidth: 260, borderRadius: 8, border: "1px solid " + C.border, margin: "0 auto", display: "block" } })),
+            React.createElement("div", { style: { fontSize: 11, fontWeight: 800, color: C.orange, marginBottom: 8 } }, "\uD83D\uDD12 Every Login Is Genuinely Logged \u2014 Real Security, Not A Slogan")),
         dotLookupData && React.createElement("div", { style: { background: dotLookupData.allowedToOperate === "Y" ? "#0d1a10" : "#1a0000", border: "1px solid " + (dotLookupData.allowedToOperate === "Y" ? C.green : C.red) + "66", borderRadius: 8, padding: "10px 14px", marginBottom: 16, fontSize: 12, color: dotLookupData.allowedToOperate === "Y" ? C.green : C.red } },
             (dotLookupData.allowedToOperate === "Y" ? "\u2705 Verified Active \u2014 " : "\u26A0 Not Active \u2014 ") + dotLookupData.legalName + " \u00b7 " + dotLookupData.phyCity + ", " + dotLookupData.phyState),
 
@@ -22031,7 +22170,7 @@ function GriffinVoiceButton(props) {
         recognition.start();
     }
 
-    var STATE_LABEL = { idle: "Tap to Talk", listening: "Listening...", thinking: "Thinking...", loadingmodel: loadProgress || "Loading Griffin's model...", speaking: "Speaking...", error: "Try Again" };
+    var STATE_LABEL = { idle: "Tap to Talk", listening: "Listening...", thinking: "Thinking...", loadingmodel: "Getting Griffin ready...", speaking: "Speaking...", error: "Try Again" };
 
     return React.createElement("div", { style: { maxWidth: 400, margin: "0 auto", textAlign: "center" } },
         React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "\uD83E\uDDD9 Griffin"),

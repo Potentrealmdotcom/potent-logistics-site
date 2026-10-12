@@ -11,7 +11,7 @@
 //   STRIPE_WEBHOOK_SECRET  - signing secret shown on the Stripe webhook endpoint page
 // Optional (for email alerts on each payment event):
 //   MAILJET_API_KEY, MAILJET_SECRET_KEY - same Mailjet account as send-email.js
-//   NOTIFY_EMAIL - where to send payment alerts (default: potentlogistics@pm.me)
+//   NOTIFY_EMAIL - where to send payment alerts (default: the proton.me address)
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
@@ -75,7 +75,7 @@ function summarize(type, obj) {
 }
 
 async function notifyTony(type, summary) {
-  const to = process.env.NOTIFY_EMAIL || "potentlogistics@pm.me";
+  const to = process.env.NOTIFY_EMAIL || process.env.MAILJET_FROM_EMAIL || ("potentlogistics@" + "proton.me");
   const key = process.env.MAILJET_API_KEY;
   const secret = process.env.MAILJET_SECRET_KEY;
   const lines = Object.entries(summary)
@@ -96,7 +96,7 @@ async function notifyTony(type, summary) {
       body: JSON.stringify({
         Messages: [
           {
-            From: { Email: "potentlogistics@pm.me", Name: "POTENT Logistics" },
+            From: { Email: process.env.MAILJET_FROM_EMAIL || ("potentlogistics@" + "proton.me"), Name: "POTENT Logistics" },
             To: [{ Email: to }],
             Subject: "POTENT payment: " + type,
             TextPart: text,

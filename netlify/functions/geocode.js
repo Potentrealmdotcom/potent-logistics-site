@@ -40,7 +40,7 @@ exports.handler = async function(event) {
   try {
     const nomUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(clean)}&format=json&limit=1&countrycodes=us`;
     const res = await fetch(nomUrl, {
-      headers: { 'User-Agent': 'PotentLogistics/1.0 (potentlogistics@pm.me)' },
+      headers: { 'User-Agent': 'PotentLogistics/1.0 (potentlogistics@proton.me)' },
       signal: AbortSignal.timeout(5000)
     });
     if (res.ok) {
