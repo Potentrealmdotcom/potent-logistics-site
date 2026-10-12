@@ -7799,6 +7799,10 @@ function PublicApp(props) {
                             else if (v === "partnersignup") window.location.href = "?partner-signup";
                             else if (v === "partnerlogin") window.location.href = "?partner-login";
                             else if (v === "stafflogin") window.location.href = "?staff-login";
+                            else if (v === "guide") window.location.href = "/guide.html";
+                            else if (v === "osguide") window.location.href = "/os-guide.html";
+                            else if (v === "training") window.location.href = "/training.html";
+                            else if (v === "team") window.location.href = "/team.html";
                             e.target.value = ""; // reset back to placeholder after navigating
                         },
                         style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }
@@ -7810,7 +7814,11 @@ function PublicApp(props) {
                         React.createElement("option", { value: "os" }, "\uD83D\uDCBB Apply — POTENT OS"),
                         React.createElement("option", { value: "partnersignup" }, "\uD83E\uDD1D Company/Dispatch Partner Signup"),
                         React.createElement("option", { value: "partnerlogin" }, "\uD83D\uDD11 Partner Login"),
-                        React.createElement("option", { value: "stafflogin" }, "\uD83D\uDC64 Staff / Dispatch Login")),
+                        React.createElement("option", { value: "stafflogin" }, "\uD83D\uDC64 Staff / Dispatch Login"),
+                        React.createElement("option", { value: "guide" }, "\uD83D\uDCDA Guide — Prices & How It Works"),
+                        React.createElement("option", { value: "osguide" }, "\uD83D\uDCBB POTENT OS Guide"),
+                        React.createElement("option", { value: "training" }, "\uD83C\uDF93 Training"),
+                        React.createElement("option", { value: "team" }, "\uD83D\uDC65 Team Guide")),
                     React.createElement(LangSwitcher, { lang: lang, changeLang: changeLang }),
                     React.createElement("a", { href: "tel:" + DISPATCH_PHONE_DISPLAY.replace(/\D/g,""), title: "Dispatch & Sales: " + DISPATCH_EMAIL, style: { textDecoration: "none", background: C.orange, color: "#000", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" } }, "📞 " + DISPATCH_PHONE_DISPLAY),
                     React.createElement("a", { href: "tel:" + PHONE_NUMBER, title: "Owner: " + BUSINESS_EMAIL, style: { textDecoration: "none", background: "transparent", border: "1px solid " + C.orange + "66", color: C.orange, borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" } }, "👑 " + PHONE_DISPLAY))),
@@ -13466,8 +13474,8 @@ function OSPipeline(props) {
     var [msg, setMsg] = useState("");
     var [form, setForm] = useState({ company_name: "", contact_name: "", email: "", phone: "", fleet_size: "", current_software: "Motive/Samsara", monthly_gps_cost: "", state: "", notes: "", stage: "cold_1", next_followup: "", assigned_to: currentUser ? currentUser.name : "" });
     function sbOS(method, data, qs) {
-        var url = SUPABASE_URL + "/rest/v1/os_prospects" + (qs ? "?" + qs : "");
-        return fetch(url, { method: method || "GET", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=representation" }, body: data ? JSON.stringify(data) : undefined }).then(function (r) { return r.json(); });
+        var url = "/.netlify/functions/os-prospects-api" + (qs ? "?" + qs : "");
+        return fetch(url, { method: method || "GET", headers: { "Content-Type": "application/json", Authorization: "Bearer " + plTokenGet(), Prefer: "return=representation" }, body: data ? JSON.stringify(data) : undefined }).then(function (r) { return r.json(); });
     }
     function load() { setLoading(true); sbOS("GET", null, "select=*&order=created_at.desc&limit=50000").then(function (d) { setProspects(Array.isArray(d) ? d : []); setLoading(false); }).catch(function () { setLoading(false); }); }
     useEffect(function () { load(); }, []);
@@ -13494,7 +13502,7 @@ function OSPipeline(props) {
     }
     async function updateStage(p, s) {
         var up = { stage: s, updated_at: new Date().toISOString(), last_contact: new Date().toISOString().slice(0, 10) };
-        await fetch(SUPABASE_URL + "/rest/v1/os_prospects?id=eq." + p.id, { method: "PATCH", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=representation" }, body: JSON.stringify(up) });
+        await fetch("/.netlify/functions/os-prospects-api?id=eq." + p.id, { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: "Bearer " + plTokenGet(), Prefer: "return=representation" }, body: JSON.stringify(up) });
         setProspects(function (pr) { return pr.map(function (x) { return x.id === p.id ? Object.assign({}, x, up) : x; }); });
         if (selected && selected.id === p.id)
             setSelected(function (sx) { return Object.assign({}, sx, up); });
@@ -13505,7 +13513,7 @@ function OSPipeline(props) {
             return;
         var dt = prompt("Close date (YYYY-MM-DD)", new Date().toISOString().slice(0, 10));
         var up = { deal_value: Number(val) || null, close_date: dt || null, stage: "closed_won", updated_at: new Date().toISOString() };
-        await fetch(SUPABASE_URL + "/rest/v1/os_prospects?id=eq." + p.id, { method: "PATCH", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "return=representation" }, body: JSON.stringify(up) });
+        await fetch("/.netlify/functions/os-prospects-api?id=eq." + p.id, { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: "Bearer " + plTokenGet(), Prefer: "return=representation" }, body: JSON.stringify(up) });
         setProspects(function (pr) { return pr.map(function (x) { return x.id === p.id ? Object.assign({}, x, up) : x; }); });
         if (selected && selected.id === p.id)
             setSelected(function (sx) { return Object.assign({}, sx, up); });

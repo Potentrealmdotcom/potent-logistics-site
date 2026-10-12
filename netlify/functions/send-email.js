@@ -8,7 +8,7 @@
 // Credentials come from Netlify environment variables (never hardcode them —
 const MAILJET_API_KEY = process.env.MAILJET_API_KEY;
 const MAILJET_SECRET_KEY = process.env.MAILJET_SECRET_KEY;
-const FROM_EMAIL = "potentlogistics@pm.me"; // must be a verified sender in your Mailjet account
+const FROM_EMAIL = "potentlogistics@proton.me"; // must be a verified sender in your Mailjet account
 const FROM_NAME = "POTENT Logistics";
 
 exports.handler = async (event) => {
