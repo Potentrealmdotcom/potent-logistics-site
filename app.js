@@ -17,7 +17,7 @@ var C = {
 // To add a dispatcher: copy any dispatch line, change id/name/password.
 // Passwords: owner sets them, employees never share.
 var USERS = [
-    { id: "potent", name: "POTENT", role: "owner", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash", "geofence", "flexpay", "referrals", "marketrates", "loginActivity", "loginimages", "safetyscore", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "licenses", "datatools", "vendors", "properties", "growthtools", "commandcenter", "setup", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "potent", name: "POTENT", role: "owner", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "aemnireach", "ostraining", "safety", "ceodash", "geofence", "flexpay", "referrals", "marketrates", "loginActivity", "loginimages", "safetyscore", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "licenses", "datatools", "vendors", "properties", "growthtools", "commandcenter", "setup", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
     { id: "dispatch1", name: "Dispatch 1", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
     { id: "dispatch2", name: "Dispatch 2", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
     { id: "dispatch3", name: "Dispatch 3", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
@@ -7205,7 +7205,7 @@ function OrgLimitsEditor(props) {
 function getTabGroups() {
     return [
         { label: "📋 Jobs", color: "#4299E1", tabs: [["commandcenter", "\uD83C\uDF9B Command Center"], ["quickquote", "\u26A1 Quick Quote"], ["workqueue", "\uD83D\uDCE5 Work Queue"], ["jobs", "📋 " + t("jobs")], ["junknewjob", "\uD83D\uDDD1\uFE0F New Junk Job"], ["junkdriverjobs", "\uD83D\uDDD1\uFE0F Junk Driver Jobs"], ["nextjobengine", "\uD83D\uDD0D Find My Next Job"], ["exceptions", "🚨 " + t("alerts")], ["calendar", "📅 " + t("calendar")], ["driver", "🚐 " + t("driver")], ["driverapp", "🚐 " + t("driverApp")]] },
-        { label: "📞 Sales", color: "#1DB954", tabs: [["leads", "📋 " + t("leads")], ["activity", "👥 " + t("activity")], ["leaderboard", "🏆 " + t("board")], ["ospipeline", "🎯 Pipeline"], ["ostraining", "📚 Training"], ["flexpay", "📅 Flex Pay"], ["rebuttals", "📞 Rebuttal Cards"], ["recurring", "🔁 Recurring Routes"], ["realcapacity", "\uD83D\uDCC5 Real Capacity Calendar"], ["capacityforecast", "\uD83D\uDCCA Forecasted Capacity"], ["whatif", "\uD83E\uDDEE What-If Mode"], ["potentwallet", "\uD83E\uDE99 POTENT Coins Wallet"], ["fitcheck", "\uD83D\uDCE6 Real Fit Check"], ["savannah", "\uD83C\uDF0A Savannah Flat Rate"], ["b2bpricing", "\u2699\uFE0F B2B Pricing Controls"], ["griffin", "\uD83E\uDDD9 Griffin"], ["livecall", "📞 Live Call Screen"], ["companyonboard", "🤝 Company Onboarding"], ["pendingapps", "\uD83D\uDCCB Pending Applications"], ["incomingloads", "📦 Incoming Loads"], ["loadanalysis", "\uD83D\uDCF8 Load Analysis"], ["costprofile", "\u2699 Cost Profile"], ["carriercourse", "\uD83C\uDF93 Carrier Authority Course"], ["truckpricing", "\uD83D\uDCB2 Truck Job Pricing"], ["voiceroom", "\uD83D\uDCAC Team Chat Room"], ["dispatchroom", "\uD83D\uDCDE Dispatch"]] },
+        { label: "📞 Sales", color: "#1DB954", tabs: [["leads", "📋 " + t("leads")], ["activity", "👥 " + t("activity")], ["leaderboard", "🏆 " + t("board")], ["ospipeline", "🎯 Pipeline"], ["aemnireach", "📡 Aemnireach"], ["ostraining", "📚 Training"], ["flexpay", "📅 Flex Pay"], ["rebuttals", "📞 Rebuttal Cards"], ["recurring", "🔁 Recurring Routes"], ["realcapacity", "\uD83D\uDCC5 Real Capacity Calendar"], ["capacityforecast", "\uD83D\uDCCA Forecasted Capacity"], ["whatif", "\uD83E\uDDEE What-If Mode"], ["potentwallet", "\uD83E\uDE99 POTENT Coins Wallet"], ["fitcheck", "\uD83D\uDCE6 Real Fit Check"], ["savannah", "\uD83C\uDF0A Savannah Flat Rate"], ["b2bpricing", "\u2699\uFE0F B2B Pricing Controls"], ["griffin", "\uD83E\uDDD9 Griffin"], ["livecall", "📞 Live Call Screen"], ["companyonboard", "🤝 Company Onboarding"], ["pendingapps", "\uD83D\uDCCB Pending Applications"], ["incomingloads", "📦 Incoming Loads"], ["loadanalysis", "\uD83D\uDCF8 Load Analysis"], ["costprofile", "\u2699 Cost Profile"], ["carriercourse", "\uD83C\uDF93 Carrier Authority Course"], ["truckpricing", "\uD83D\uDCB2 Truck Job Pricing"], ["voiceroom", "\uD83D\uDCAC Team Chat Room"], ["dispatchroom", "\uD83D\uDCDE Dispatch"]] },
         { label: "🚗 Fleet", color: "#F6AD55", tabs: [["fleet", "🚗 Fleet"], ["fleetmap", "🗺️ Live Map"], ["vendors", "\uD83D\uDE9B Vendors & Disposal"], ["properties", "\uD83C\uDFE2 Properties"], ["driveravail", "\uD83D\uDC65 Driver Availability"], ["vehicleavail", "\uD83D\uDE9B Vehicle Availability"], ["storagepartners", "\uD83D\uDCE6 Storage Partners"], ["compliance", "🛡 Compliance"], ["documents", "📁 Documents"], ["docpackages", "\uD83D\uDCC1 Document Packages"], ["safetyscore", "🛡️ Safety Scores"], ["geofence", "📍 Geofencing"], ["carriers", "🤝 " + t("carriers")], ["safety", "🔒 Safety Alerts"]] },
         { label: "💰 Money", color: C.orange, tabs: [["reports", "📊 " + t("reports")], ["advanced", "📈 " + t("analytics")], ["sales", "🏆 " + t("sales")], ["expenses", "💸 " + t("expenses")], ["accounts", "🏢 " + t("accounts")], ["payroll", "💰 " + t("payroll")], ["growthtools", "📈 Growth Tools"], ["ceodash", "📊 CEO Dashboard"], ["referrals", "🎟️ Referral Codes"], ["marketrates", "📊 Market Rates"], ["claims", "⚠ Claims & Recovery"], ["ratecards", "\uD83D\uDCB2 Rate Cards"], ["deadlines", "\u23F0 Deadlines"], ["ledger", "\uD83D\uDCD2 Accounting Ledger"], ["marginleak", "\uD83D\uDCB0 Margin Leak Detector"]] },
         { label: "⚙ Team", color: "#FC8181", tabs: [["setup", "\uD83D\uDE80 Get Started"], ["ownerSettings", "⚙ Settings"], ["licenses", "\uD83C\uDFE2 Customers & Licenses"], ["mycompany", "\uD83C\uDFE2 My Company"], ["datatools", "\uD83D\uDCE6 Data & Imports"], ["teamaccts", "\uD83D\uDC65 Team Accounts"], ["pricingsetup", "\uD83D\uDCB2 Pricing Setup"], ["audit", "👁 " + t("audit")], ["loginActivity", "🔐 Login Activity"], ["loginimages", "\uD83D\uDCF8 Login Images"], ["shifthandoff", "\uD83D\uDD04 Shift Handoff"], ["ai", "🤖 " + t("aiDocs")], ["demo", "🎬 " + t("demo"), ["ext_guide", "\U0001F4CB Prices Page", "guide.html"], ["ext_osguide", "\U0001F4BB POTENT OS Guide", "os-guide.html"], ["ext_team", "\U0001F465 Team Guide", "team.html"], ["ext_training", "\U0001F393 Sales Training", "training.html"]]] },
@@ -7356,6 +7356,7 @@ function AdminDashboard(props) {
             tab === "safetyscore" && React.createElement(DriverSafetyScores, { jobs: props.jobs }),
             tab === "geofence" && React.createElement(GeofenceManager, null),
             tab === "ospipeline" && props.role === ROLES.OWNER && React.createElement(OSPipeline, { currentUser: props.currentUser }),
+            tab === "aemnireach" && React.createElement(AemnireachPanel, { currentUser: props.currentUser }),
             tab === "safety" && props.role === ROLES.OWNER && React.createElement(SafetyDashboard, { users: USERS, jobs: props.jobs }),
             tab === "ownerSettings" && props.role === ROLES.OWNER && React.createElement(OwnerSettings, { users: USERS, currentUser: props.currentUser }),
             tab === "ceodash" && props.role === ROLES.OWNER && React.createElement(CEODashboard, { jobs: props.jobs, prospects: props.prospects }),
@@ -7760,10 +7761,11 @@ function DemoModeView(props) {
     var [phone, setPhone] = React.useState("");
     var [bizName, setBizName] = React.useState("");
     var [done, setDone] = React.useState(false);
+    var [wantAemni, setWantAemni] = React.useState(false);
     function start() {
         if (!email && !phone) return;
         try {
-            localStorage.setItem("pl_demo_acct", JSON.stringify({ email: email, phone: phone, bizName: bizName || "Demo Company", ts: Date.now() }));
+            localStorage.setItem("pl_demo_acct", JSON.stringify({ email: email, phone: phone, bizName: bizName || "Demo Company", ts: Date.now(), addons: { aemnireach: wantAemni } }));
         } catch (e) {}
         setDone(true);
     }
@@ -7784,6 +7786,15 @@ function DemoModeView(props) {
             React.createElement(TxtIn, { label: "Or Phone", value: phone, onChange: setPhone, type: "tel", placeholder: "404-000-0000" }),
             React.createElement(TxtIn, { label: "Business Name", value: bizName, onChange: setBizName, placeholder: "Your company name" }),
             React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 16, lineHeight: 1.6 } }, "Add your logo and brand colors after signup, from inside the demo."),
+            React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.white, marginBottom: 8 } }, "Add-ons"),
+            React.createElement("div", {
+                onClick: function () { setWantAemni(!wantAemni); },
+                style: { display: "flex", alignItems: "center", gap: 10, background: wantAemni ? "#1a1206" : C.surface, border: "1px solid " + (wantAemni ? C.orange : C.border), borderRadius: 10, padding: "12px", marginBottom: 16, cursor: "pointer" }
+            },
+                React.createElement("div", { style: { width: 22, height: 22, borderRadius: 6, border: "2px solid " + (wantAemni ? C.orange : C.dim), background: wantAemni ? C.orange : "transparent", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "#000", fontWeight: 900 } }, wantAemni ? "✓" : ""),
+                React.createElement("div", { style: { flex: 1 } },
+                    React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.white } }, "📡 Aemnireach — Email Marketing"),
+                    React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "Broadcast emails to your contacts. $49/mo after trial."))),
             React.createElement("button", { onClick: start, disabled: !email && !phone, style: { width: "100%", background: (!email && !phone) ? "#333" : C.orange, color: "#000", border: "none", borderRadius: 9, padding: "14px", fontSize: 15, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "Start My Demo \u2192")));
 }
 
@@ -14534,6 +14545,145 @@ try {
         }).catch(function () { PL_TENANT_FAIL = true; });
     }
 } catch (e) { }
+
+
+// ═══════════════════════════════════════════════════════════════════
+// AEMNIREACH — email marketing add-on for POTENT OS (email-only, free tier)
+// ═══════════════════════════════════════════════════════════════════
+function AemnireachPanel(props) {
+    var userId = props.currentUser && (props.currentUser.id || props.currentUser.email) || "owner";
+    var [view, setView] = React.useState("dash");
+    var [stats, setStats] = React.useState(null);
+    var [contacts, setContacts] = React.useState([]);
+    var [loading, setLoading] = React.useState(true);
+    // composer
+    var [subject, setSubject] = React.useState("");
+    var [body, setBody] = React.useState("");
+    var [sending, setSending] = React.useState(false);
+    var [sendResult, setSendResult] = React.useState(null);
+    // add contact
+    var [nc, setNc] = React.useState({ first_name: "", last_name: "", email: "", company: "" });
+
+    function api(action, extra) {
+        return fetch("/.netlify/functions/aemnireach-api", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(Object.assign({ action: action, user_id: userId }, extra || {}))
+        }).then(function (r) { return r.json(); });
+    }
+    function refresh() {
+        setLoading(true);
+        Promise.all([api("stats"), api("contacts")]).then(function (rs) {
+            if (!rs[0].error) setStats(rs[0]);
+            if (rs[1].contacts) setContacts(rs[1].contacts);
+            setLoading(false);
+        }).catch(function () { setLoading(false); });
+    }
+    React.useEffect(refresh, []);
+
+    function doSend() {
+        if (!subject.trim() || !body.trim()) { alert("Subject and message required"); return; }
+        if (!confirm("Send this email to all opted-in contacts?")) return;
+        setSending(true); setSendResult(null);
+        api("broadcast", { subject: subject, body: body, name: subject.slice(0, 40) }).then(function (r) {
+            setSending(false);
+            setSendResult(r.error ? { err: r.error } : { ok: true, sent: r.sent, failed: r.failed });
+            refresh();
+        }).catch(function (e) { setSending(false); setSendResult({ err: "Send failed" }); });
+    }
+    function addContact() {
+        if (!nc.email.trim()) { alert("Email required"); return; }
+        api("add_contact", nc).then(function (r) {
+            if (r.error) alert(r.error); else { setNc({ first_name: "", last_name: "", email: "", company: "" }); refresh(); }
+        });
+    }
+    function delContact(id) {
+        if (!confirm("Remove this contact?")) return;
+        api("delete_contact", { id: id }).then(refresh);
+    }
+
+    var card = { background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: 16 };
+    var statCard = function (label, val, color) {
+        return React.createElement("div", { style: Object.assign({}, card, { textAlign: "center", flex: "1 1 120px" }) },
+            React.createElement("div", { style: { fontSize: 26, fontWeight: 900, color: color || C.white } }, val),
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 4 } }, label));
+    };
+
+    if (loading) return React.createElement("div", { style: { padding: 40, textAlign: "center", color: C.dim } }, "Loading Aemnireach...");
+
+    // ── Paywall ──
+    if (stats && !stats.subscribed) {
+        return React.createElement("div", { style: { maxWidth: 560, margin: "0 auto", textAlign: "center", padding: "30px 16px" } },
+            React.createElement("div", { style: { fontSize: 40, marginBottom: 12 } }, "\uD83D\uDCE1"),
+            React.createElement("div", { style: { fontSize: 22, fontWeight: 900, color: C.white, marginBottom: 8 } }, "POTENT OS: Aemnireach"),
+            React.createElement("div", { style: { fontSize: 13, color: C.dim, lineHeight: 1.7, marginBottom: 20 } },
+                "Email marketing built into POTENT OS. Broadcast to your contacts, track opens and bounces, auto-handle opt-outs — all from one dashboard."),
+            React.createElement("div", { style: Object.assign({}, card, { marginBottom: 16, textAlign: "left" }) },
+                ["\u2705 Broadcast emails to your full contact list", "\u2705 Delivery, bounce & opt-out tracking", "\u2705 Contact manager with tags", "\u2705 Automatic STOP/unsubscribe handling", "\u2705 AI-assisted subject lines (coming soon)"].map(function (f, i) {
+                    return React.createElement("div", { key: i, style: { fontSize: 13, color: C.white, padding: "6px 0", borderBottom: i < 4 ? "1px solid " + C.border : "none" } }, f);
+                })),
+            React.createElement("div", { style: { display: "flex", gap: 10, marginBottom: 16 } },
+                React.createElement("div", { style: Object.assign({}, card, { flex: 1 }) },
+                    React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.orange } }, "$49/mo"),
+                    React.createElement("div", { style: { fontSize: 11, color: C.dim, margin: "4px 0 8px" } }, "Base — 5,000 emails/mo"),
+                    React.createElement("button", { onClick: function () { api("activate", { tier: "base" }).then(refresh); }, style: { width: "100%", background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "10px", fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Activate Base")),
+                React.createElement("div", { style: Object.assign({}, card, { flex: 1 }) },
+                    React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.orange } }, "$99/mo"),
+                    React.createElement("div", { style: { fontSize: 11, color: C.dim, margin: "4px 0 8px" } }, "Pro — 25,000 emails/mo"),
+                    React.createElement("button", { onClick: function () { api("activate", { tier: "pro" }).then(refresh); }, style: { width: "100%", background: C.card, color: C.white, border: "1px solid " + C.orange, borderRadius: 8, padding: "10px", fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Activate Pro"))),
+            React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "Internal use: tap a plan to activate instantly. Stripe billing connects at launch."));
+    }
+
+    return React.createElement("div", { style: { maxWidth: 800, margin: "0 auto" } },
+        React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 } },
+            React.createElement("div", null,
+                React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.white } }, "\uD83D\uDCE1 Aemnireach"),
+                React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "Email marketing for POTENT OS" + (stats.tier ? " — " + stats.tier.toUpperCase() + " plan" : ""))),
+            React.createElement("div", { style: { fontSize: 12, color: C.orange, fontWeight: 800 } }, (stats.emailCredits || 0).toLocaleString() + " emails left")),
+        React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 16 } },
+            [["dash", "\uD83D\uDCCA Dashboard"], ["send", "\u2709\uFE0F Broadcast"], ["contacts", "\uD83D\uDC65 Contacts"]].map(function (t) {
+                return React.createElement("button", { key: t[0], onClick: function () { setView(t[0]); },
+                    style: { flex: 1, background: view === t[0] ? C.orange : C.card, color: view === t[0] ? "#000" : C.dim, border: "1px solid " + (view === t[0] ? C.orange : C.border), borderRadius: 9, padding: "10px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, t[1]);
+            })),
+        view === "dash" && React.createElement("div", null,
+            React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 } },
+                statCard("Contacts", stats.totalContacts || 0),
+                statCard("Emails Sent", stats.emailSent || 0, C.blue),
+                statCard("Delivered", stats.emailDelivered || 0, C.green),
+                statCard("Bounced", stats.emailBounced || 0, C.red),
+                statCard("Opt-Outs", stats.optOuts || 0, C.orange)),
+            React.createElement("div", { style: card },
+                React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white, marginBottom: 8 } }, "How it works"),
+                React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.8 } },
+                    "1. Add contacts (or import your leads).\n2. Write your broadcast — use {first} to personalize.\n3. Hit send. Bounces and opt-outs are handled automatically.\n4. Track everything here."))),
+        view === "send" && React.createElement("div", { style: card },
+            React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white, marginBottom: 12 } }, "New Broadcast"),
+            React.createElement(TxtIn, { label: "Subject", value: subject, onChange: setSubject, placeholder: "Your subject line" }),
+            React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, textTransform: "uppercase", marginBottom: 6 } }, "Message"),
+            React.createElement("textarea", { value: body, onChange: function (e) { setBody(e.target.value); }, placeholder: "Hi {first}, ...", rows: 6,
+                style: { width: "100%", background: C.card, border: "1px solid " + C.border, borderRadius: 8, color: C.white, padding: "10px", fontSize: 13, fontFamily: "inherit", marginBottom: 12, boxSizing: "border-box" } }),
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 12 } }, "Will send to " + contacts.filter(function (c) { return !c.email_opted_out && c.email; }).length + " opted-in contacts. Use {first} for their first name."),
+            sendResult && sendResult.err && React.createElement("div", { style: { background: "#2a0a0a", border: "1px solid " + C.red, borderRadius: 8, padding: 10, fontSize: 12, color: "#ffaaaa", marginBottom: 12 } }, sendResult.err),
+            sendResult && sendResult.ok && React.createElement("div", { style: { background: "#0a2a0a", border: "1px solid " + C.green, borderRadius: 8, padding: 10, fontSize: 12, color: "#aaffaa", marginBottom: 12 } }, "\u2705 Sent to " + sendResult.sent + " contacts" + (sendResult.failed ? " (" + sendResult.failed + " failed)" : "")),
+            React.createElement("button", { onClick: doSend, disabled: sending, style: { width: "100%", background: sending ? "#333" : C.orange, color: "#000", border: "none", borderRadius: 9, padding: "14px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, sending ? "Sending..." : "\u2709\uFE0F Send Broadcast")),
+        view === "contacts" && React.createElement("div", null,
+            React.createElement("div", { style: Object.assign({}, card, { marginBottom: 12 }) },
+                React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white, marginBottom: 10 } }, "Add Contact"),
+                React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+                    React.createElement("div", { style: { flex: "1 1 120px" } }, React.createElement(TxtIn, { label: "First", value: nc.first_name, onChange: function (v) { setNc(Object.assign({}, nc, { first_name: v })); } })),
+                    React.createElement("div", { style: { flex: "1 1 120px" } }, React.createElement(TxtIn, { label: "Last", value: nc.last_name, onChange: function (v) { setNc(Object.assign({}, nc, { last_name: v })); } })),
+                    React.createElement("div", { style: { flex: "2 1 180px" } }, React.createElement(TxtIn, { label: "Email", value: nc.email, onChange: function (v) { setNc(Object.assign({}, nc, { email: v })); }, type: "email" })),
+                    React.createElement("div", { style: { flex: "1 1 120px" } }, React.createElement(TxtIn, { label: "Company", value: nc.company, onChange: function (v) { setNc(Object.assign({}, nc, { company: v })); } }))),
+                React.createElement("button", { onClick: addContact, style: { marginTop: 10, background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "10px 24px", fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "+ Add")),
+            contacts.map(function (c) {
+                return React.createElement("div", { key: c.id, style: Object.assign({}, card, { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, padding: "10px 14px" }) },
+                    React.createElement("div", null,
+                        React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.white } }, (c.first_name || "") + " " + (c.last_name || "") || c.email),
+                        React.createElement("div", { style: { fontSize: 11, color: C.dim } }, [c.email, c.company].filter(Boolean).join(" · ") + (c.email_opted_out ? " — OPTED OUT" : ""))),
+                    React.createElement("button", { onClick: function () { delContact(c.id); }, style: { background: "none", border: "none", color: C.red, fontSize: 16, cursor: "pointer" } }, "\uD83D\uDDD1\uFE0F"));
+            }),
+            !contacts.length && React.createElement("div", { style: { textAlign: "center", color: C.dim, padding: 20, fontSize: 12 } }, "No contacts yet. Add your first one above.")));
+}
+
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
 // [render relocated to end of file]
