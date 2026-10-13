@@ -3,7 +3,7 @@
 // Actions: stats, contacts (list/add/delete), broadcast (send SMS/email campaign)
 // Auth: uses the same staff auth as other functions.
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_URL = "https://ymvsatlrkzgxwzxybwmk.supabase.co";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const MAILJET_KEY = process.env.MAILJET_API_KEY;
 const MAILJET_SECRET = process.env.MAILJET_SECRET_KEY;

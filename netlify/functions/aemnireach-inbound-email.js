@@ -3,7 +3,7 @@
 // Set this URL in Mailjet → Account → Event notifications (API):
 //   https://potentoperations.netlify.app/.netlify/functions/aemnireach-inbound-email
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_URL = "https://ymvsatlrkzgxwzxybwmk.supabase.co";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 async function sb(path, method, body) {

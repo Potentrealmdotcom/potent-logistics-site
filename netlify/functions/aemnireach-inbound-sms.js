@@ -3,7 +3,7 @@
 // Set this URL in Twilio Console → Phone Numbers → Messaging → Webhook:
 //   https://potentoperations.netlify.app/.netlify/functions/aemnireach-inbound-sms
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_URL = "https://ymvsatlrkzgxwzxybwmk.supabase.co";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const OPENAI_KEY = process.env.OPENAI_API_KEY;
 
