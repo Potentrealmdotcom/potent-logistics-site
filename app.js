@@ -1184,7 +1184,13 @@ var SERVICES = [
         excludes: ["Setup or installation", "Return pickup (separate job)", "Items not staged at pickup"],
         rule: "All items must be staged and ready at pickup location before driver arrives.",
         sizes: ["Small load (1-5 items)", "Medium load (van half-full)", "Large load (full van)"] },
-    { id: "discreet", icon: "\u{1F512}", name: "Armed Security Transport", tagline: "High-priced armed security detail for valuable cargo", priceRange: "$740-$1,250",
+    { id: "discreet", icon: "\u{1F512}", name: "Discreet / High-Value", tagline: "Confidential handling for sensitive shipments", priceRange: "$500-$1,800",
+        desc: "Private, direct transport for high-value items. No intermediate stops. Minimal visibility.",
+        includes: ["Dedicated van for your cargo only", "Direct A-to-B route", "Discreet handling", "Confidential job handling"],
+        excludes: ["Multi-stop routes", "Shared vehicle", "Hazardous or illegal items"],
+        rule: "High-value items must be secure and packaged before pickup. Verification required.",
+        sizes: ["Small high-value item", "Medium secured load", "Full discreet shipment"] },
+    { id: "armed", icon: "\u{1F6E1}\uFE0F", name: "Armed Security Transport", tagline: "High-priced armed security detail for valuable cargo", priceRange: "$740-$1,250",
         desc: "Licensed armed security detail for high-value transport. $185/hour, 4-hour minimum ($740). Full-day detail $750-$1,250 (includes $250 full-day discount). Runs straight through with no stops — extra stops $100 each way. Overnight, multi-day, and long-distance on custom quote.",
         includes: ["Licensed armed security detail", "Direct A-to-B route, no stops", "Confidential job handling", "Real-time GPS tracking"],
         excludes: ["Multi-stop routes (extra stops $100 each way)", "Shared vehicle", "Hazardous or illegal items"],
@@ -7870,10 +7876,6 @@ function PublicApp(props) {
                 return React.createElement("button", { key: item[0], onClick: function () { setTab(item[0]); }, style: { flex: 1, border: "none", borderBottom: "2px solid " + (tab === item[0] ? C.orange : "transparent"), padding: "10px 4px", cursor: "pointer", background: tab === item[0] ? C.orange + "12" : "transparent", color: tab === item[0] ? C.orange : C.dim, fontSize: 11, fontWeight: 700, fontFamily: "inherit", textAlign: "center" } }, item[1]);
             }))),
         tab === "home" && React.createElement("div", null,
-            React.createElement("div", { style: { background: "#1a0000", borderBottom: "2px solid " + C.red, padding: "10px 16px", textAlign: "center" } },
-                React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.red, marginBottom: 4 } }, "\u26A0\uFE0F WARNING: Unauthorized Liens Reported"),
-                React.createElement("div", { style: { fontSize: 11, color: "#ffaaaa", lineHeight: 1.5, marginBottom: 6 } }, "We have received reports of unauthorized liens being filed against vehicles by third parties claiming association with FleetSmart. If you have been affected, protect yourself and report it:"),
-                React.createElement("a", { href: "https://docs.google.com/forms/d/e/1FAIpQLScw7WrmgXPuntYWUb5cLGDIUSR85RJB8XsaLeesZCxMfSF2vA/viewform", target: "_blank", rel: "noopener", style: { display: "inline-block", background: C.red, color: "#fff", borderRadius: 8, padding: "8px 20px", fontSize: 12, fontWeight: 800, textDecoration: "none" } }, "Report an Unauthorized Lien \u2192")),
             React.createElement("div", { style: { position: "sticky", top: 0, zIndex: 50, background: "#0a0a0a", borderBottom: "1px solid " + C.border, display: "flex", overflowX: "auto", padding: "0 12px" } },
                 [["services", "Services"], ["technology", "Technology"], ["potent-os", "POTENT OS"], ["about", "About"], ["reviews", "Reviews"]].map(function (s) {
                     return React.createElement("a", {
