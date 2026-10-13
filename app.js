@@ -7216,7 +7216,7 @@ var PRIMARY_TAB_ORDER = [
     ["quote", "📞 Quote"],
     ["livecall", "📱 Dialer"],
     ["leads", "📋 Leads"],
-    ["jobs", "📋 Jobs"],
+    ["ospipeline", "🎯 Pipeline"],
 ];
 function CategoryNav({ tab, setTab, currentUser }) {
     var [showMore, setShowMore] = useState(false);
