@@ -16357,6 +16357,7 @@ function LiveCallScreen(props) {
         ["logistics", "\uD83D\uDCE6 Logistics"],
         ["loadbooking", "\uD83D\uDE9B Book Load"],
         ["rebuttals", "\uD83D\uDCAC Rebuttals"],
+        ["sendlink", "\uD83D\uDD17 Send Link"],
     ];
     return React.createElement("div", { style: { maxWidth: 700, margin: "0 auto" } },
         React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 16, position: "sticky", top: 0, background: C.black, paddingTop: 4, paddingBottom: 8, zIndex: 10 } },
@@ -16369,7 +16370,47 @@ function LiveCallScreen(props) {
             })),
         innerTab === "logistics" && React.createElement(PhoneQuotePanel, { onAddJob: props.onAddJob, gasPPG: props.gasPPG, role: props.role, currentUser: props.currentUser }),
         innerTab === "loadbooking" && React.createElement(LoadBookingForm, { onAddJob: props.onAddJob }),
-        innerTab === "rebuttals" && React.createElement(LiveRebuttalCards, null));
+        innerTab === "rebuttals" && React.createElement(LiveRebuttalCards, null),
+        innerTab === "sendlink" && React.createElement(SendLinkPanel, null));
+}
+
+// ── SEND LINK — cold caller sends signup/demo link during a call ────
+function SendLinkPanel() {
+    var [phone, setPhone] = React.useState("");
+    var [linkType, setLinkType] = React.useState("demo");
+    var [copied, setCopied] = React.useState(false);
+    var base = typeof window !== "undefined" ? window.location.origin : "https://potentoperations.netlify.app";
+    var links = {
+        demo: { label: "Demo Signup", url: base + "/?demo", msg: "Try POTENT OS free — no verification needed:" },
+        apply: { label: "Apply for POTENT OS", url: base + "/?apply", msg: "Apply for POTENT OS here:" },
+        book: { label: "Book a Job", url: base + "/", msg: "Book your job with POTENT Logistics here:" },
+        track: { label: "Track a Job", url: base + "/?myjobs", msg: "Track your POTENT job here:" },
+    };
+    var sel = links[linkType];
+    var fullMsg = sel.msg + " " + sel.url;
+    function copyLink() {
+        copyText(sel.url);
+        setCopied(true);
+        setTimeout(function () { setCopied(false); }, 2000);
+    }
+    return React.createElement("div", { style: { maxWidth: 500, margin: "0 auto" } },
+        React.createElement("div", { style: { fontSize: 16, fontWeight: 900, color: C.white, marginBottom: 4 } }, "\uD83D\uDD17 Send Link"),
+        React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 16 } }, "While you're on the call — send them a link by text."),
+        React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, textTransform: "uppercase", marginBottom: 8 } }, "Link Type"),
+        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 } },
+            Object.keys(links).map(function (k) {
+                return React.createElement("button", {
+                    key: k, onClick: function () { setLinkType(k); },
+                    style: { background: linkType === k ? C.orange : C.card, color: linkType === k ? "#000" : C.white, border: "1px solid " + (linkType === k ? C.orange : C.border), borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }
+                }, links[k].label);
+            })),
+        React.createElement("div", { style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 9, padding: "12px", marginBottom: 12, fontSize: 12, color: C.white, wordBreak: "break-all" } }, sel.url),
+        React.createElement(TxtIn, { label: "Their Phone Number", value: phone, onChange: setPhone, type: "tel", placeholder: "404-000-0000", voice: true }),
+        React.createElement("div", { style: { display: "flex", gap: 8 } },
+            React.createElement("button", { onClick: copyLink, style: { flex: 1, background: C.card, color: C.white, border: "1px solid " + C.border, borderRadius: 9, padding: "12px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, copied ? "✓ Copied!" : "📋 Copy Link"),
+            React.createElement("a", { href: "sms:" + phone.replace(/\D/g, "") + "?&body=" + encodeURIComponent(fullMsg), style: { flex: 2, textDecoration: "none" } },
+                React.createElement("button", { disabled: !phone.replace(/\D/g, ""), style: { width: "100%", background: !phone.replace(/\D/g, "") ? "#333" : "#25D366", color: "#000", border: "none", borderRadius: 9, padding: "12px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "💬 Text Them the Link"))),
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 12, lineHeight: 1.6 } }, "Tap \"Text Them\" to open your SMS app with the message ready — just hit send."));
 }
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
