@@ -38,6 +38,10 @@ input[type=file]{padding:8px;font-size:11px;}
 </div>
 
 <div class="container" id="formView">
+  <div class="note" style="border:2px solid #F0E000;background:#1a1400;">
+    <b style="color:#F0E000;">⚡ Start running loads THIS WEEK.</b><br>
+    We’re already onboarded with our partner — no waiting weeks for approval like signing up on your own. All vehicle classes welcome: hot shots, box trucks, cargo vans &amp; more. Complete the steps below and we’ll get you moving.
+  </div>
   <div class="note">All 8 items below are required to complete onboarding, except ELD (only if you have one). Photos upload directly — no email needed.</div>
 
   <div class="card">
@@ -50,6 +54,17 @@ input[type=file]{padding:8px;font-size:11px;}
     <input id="email" type="email" placeholder="you@email.com">
     <label>EIN Number</label>
     <input id="ein" placeholder="XX-XXXXXXX">
+    <label>Vehicle Class</label>
+    <select id="vehicleClass">
+      <option value="cargo_van">Cargo Van</option>
+      <option value="sprinter">Sprinter / Transit Van</option>
+      <option value="box_16">Box Truck — 16 ft</option>
+      <option value="box_24">Box Truck — 24 ft</option>
+      <option value="box_26">Box Truck — 26 ft</option>
+      <option value="hotshot">Hot Shot (Pickup + Trailer)</option>
+      <option value="flatbed">Flatbed</option>
+      <option value="other">Other</option>
+    </select>
   </div>
 
   <div class="card">
@@ -159,6 +174,7 @@ function submitForm(){
   var phone = document.getElementById('phone').value.trim();
   var email = document.getElementById('email').value.trim();
   var ein = document.getElementById('ein').value.trim();
+  var vehicleClass = document.getElementById('vehicleClass').value;
   var paymentMethod = document.getElementById('paymentMethod').value;
   var paymentDetails = document.getElementById('paymentDetails').value.trim();
 
@@ -178,7 +194,7 @@ function submitForm(){
     method: 'POST',
     headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
     body: JSON.stringify({
-      driver_name: driverName, phone: phone, email: email, ein: ein,
+      driver_name: driverName, phone: phone, email: email, ein: ein, vehicle_class: vehicleClass,
       payment_method: paymentMethod, payment_details: paymentDetails,
       truck_registration_url: uploadedUrls.truck_registration_url,
       truck_photo_url: uploadedUrls.truck_photo_url,
