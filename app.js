@@ -7207,7 +7207,7 @@ function getTabGroups() {
         { label: "📋 Jobs", color: "#4299E1", tabs: [["commandcenter", "\uD83C\uDF9B Command Center"], ["quickquote", "\u26A1 Quick Quote"], ["workqueue", "\uD83D\uDCE5 Work Queue"], ["jobs", "📋 " + t("jobs")], ["junknewjob", "\uD83D\uDDD1\uFE0F New Junk Job"], ["junkdriverjobs", "\uD83D\uDDD1\uFE0F Junk Driver Jobs"], ["nextjobengine", "\uD83D\uDD0D Find My Next Job"], ["exceptions", "🚨 " + t("alerts")], ["calendar", "📅 " + t("calendar")], ["driver", "🚐 " + t("driver")], ["driverapp", "🚐 " + t("driverApp")], ["ext_driveronboard", "🚛 Driver Onboarding", "POTENT-Driver-Onboarding.html"]] },
         { label: "📞 Sales", color: "#1DB954", tabs: [["leads", "📋 " + t("leads")], ["activity", "👥 " + t("activity")], ["leaderboard", "🏆 " + t("board")], ["ospipeline", "🎯 Pipeline"], ["aemnireach", "📡 Aemnireach"], ["ostraining", "📚 Training"], ["flexpay", "📅 Flex Pay"], ["rebuttals", "📞 Rebuttal Cards"], ["recurring", "🔁 Recurring Routes"], ["realcapacity", "\uD83D\uDCC5 Real Capacity Calendar"], ["capacityforecast", "\uD83D\uDCCA Forecasted Capacity"], ["whatif", "\uD83E\uDDEE What-If Mode"], ["potentwallet", "\uD83E\uDE99 POTENT Coins Wallet"], ["fitcheck", "\uD83D\uDCE6 Real Fit Check"], ["savannah", "\uD83C\uDF0A Savannah Flat Rate"], ["b2bpricing", "\u2699\uFE0F B2B Pricing Controls"], ["griffin", "\uD83E\uDDD9 Griffin"], ["livecall", "📞 Live Call Screen"], ["companyonboard", "🤝 Company Onboarding"], ["pendingapps", "\uD83D\uDCCB Pending Applications"], ["incomingloads", "📦 Incoming Loads"], ["loadanalysis", "\uD83D\uDCF8 Load Analysis"], ["costprofile", "\u2699 Cost Profile"], ["carriercourse", "\uD83C\uDF93 Carrier Authority Course"], ["truckpricing", "\uD83D\uDCB2 Truck Job Pricing"], ["voiceroom", "\uD83D\uDCAC Team Chat Room"], ["dispatchroom", "\uD83D\uDCDE Dispatch"]] },
         { label: "🚗 Fleet", color: "#F6AD55", tabs: [["fleet", "🚗 Fleet"], ["fleetmap", "🗺️ Live Map"], ["vendors", "\uD83D\uDE9B Vendors & Disposal"], ["properties", "\uD83C\uDFE2 Properties"], ["driveravail", "\uD83D\uDC65 Driver Availability"], ["vehicleavail", "\uD83D\uDE9B Vehicle Availability"], ["storagepartners", "\uD83D\uDCE6 Storage Partners"], ["compliance", "🛡 Compliance"], ["documents", "📁 Documents"], ["docpackages", "\uD83D\uDCC1 Document Packages"], ["safetyscore", "🛡️ Safety Scores"], ["geofence", "📍 Geofencing"], ["carriers", "🤝 " + t("carriers")], ["safety", "🔒 Safety Alerts"]] },
-        { label: "💰 Money", color: C.orange, tabs: [["reports", "📊 " + t("reports")], ["advanced", "📈 " + t("analytics")], ["sales", "🏆 " + t("sales")], ["expenses", "💸 " + t("expenses")], ["accounts", "🏢 " + t("accounts")], ["payroll", "💰 " + t("payroll")], ["growthtools", "📈 Growth Tools"], ["ceodash", "📊 CEO Dashboard"], ["referrals", "🎟️ Referral Codes"], ["marketrates", "📊 Market Rates"], ["claims", "⚠ Claims & Recovery"], ["ratecards", "\uD83D\uDCB2 Rate Cards"], ["deadlines", "\u23F0 Deadlines"], ["ledger", "\uD83D\uDCD2 Accounting Ledger"], ["marginleak", "\uD83D\uDCB0 Margin Leak Detector"]] },
+        { label: "💰 Money", color: C.orange, tabs: [["reports", "📊 " + t("reports")], ["advanced", "📈 " + t("analytics")], ["sales", "🏆 " + t("sales")], ["expenses", "💸 " + t("expenses")], ["accounts", "🏢 " + t("accounts")], ["payroll", "💰 " + t("payroll")], ["growthtools", "📈 Growth Tools"], ["ceodash", "📊 CEO Dashboard"], ["referrals", "🎟️ Referral Codes"], ["marketrates", "📊 Market Rates"], ["claims", "⚠ Claims & Recovery"], ["ratecards", "\uD83D\uDCB2 Rate Cards"], ["deadlines", "\u23F0 Deadlines"], ["ledger", "\uD83D\uDCD2 Accounting Ledger"], ["marginleak", "\uD83D\uDCB0 Margin Leak Detector"], ["teamwallets", "\uD83D\uDCB3 Team Wallets"]] },
         { label: "⚙ Team", color: "#FC8181", tabs: [["setup", "\uD83D\uDE80 Get Started"], ["ownerSettings", "⚙ Settings"], ["licenses", "\uD83C\uDFE2 Customers & Licenses"], ["mycompany", "\uD83C\uDFE2 My Company"], ["datatools", "\uD83D\uDCE6 Data & Imports"], ["teamaccts", "\uD83D\uDC65 Team Accounts"], ["pricingsetup", "\uD83D\uDCB2 Pricing Setup"], ["audit", "👁 " + t("audit")], ["loginActivity", "🔐 Login Activity"], ["loginimages", "\uD83D\uDCF8 Login Images"], ["shifthandoff", "\uD83D\uDD04 Shift Handoff"], ["ai", "🤖 " + t("aiDocs")], ["demo", "🎬 " + t("demo"), ["ext_guide", "\U0001F4CB Prices Page", "guide.html"], ["ext_osguide", "\U0001F4BB POTENT OS Guide", "os-guide.html"], ["ext_team", "\U0001F465 Team Guide", "team.html"], ["ext_training", "\U0001F393 Sales Training", "training.html"]]] },
     ];
 }
@@ -7304,7 +7304,9 @@ function AdminDashboard(props) {
                 React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1 } },
                     React.createElement("div", { style: { fontSize: 11, color: C.white, fontWeight: 700 } }, props.currentUser ? props.currentUser.emoji + " " + props.currentUser.name : "Admin"),
                     React.createElement("div", { style: { fontSize: 9, color: props.role === ROLES.OWNER ? C.orange : props.role === ROLES.DRIVER ? C.green : C.blue, fontWeight: 600, textTransform: "capitalize", letterSpacing: 1 } }, props.role),
-                    React.createElement(Btn, { variant: "muted", onClick: props.onLogout, style: { padding: "4px 10px", fontSize: 10 } }, tA("signOut"))))),
+                    React.createElement(Btn, { variant: "muted", onClick: props.onLogout, style: { padding: "4px 10px", fontSize: 10 } }, tA("signOut")),
+                    React.createElement("button", { onClick: function () { var v = !plEasyMode(); plSetEasyMode(v); window.location.reload(); }, style: { background: plEasyMode() ? C.orange : "transparent", color: plEasyMode() ? "#000" : C.dim, border: "1px solid " + C.border, borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, plEasyMode() ? "\u2728 Easy: ON" : "\u2728 Easy Mode")))),
+        plEasyMode() ? React.createElement(EasyModeDashboard, { jobs: props.jobs, onUpdateStatus: props.onUpdateStatus, setTab: setTab }) :
         React.createElement("div", { style: { padding: "20px 14px 90px", maxWidth: 740, margin: "0 auto" } },
             props.role === ROLES.OWNER && !(props.currentUser && props.currentUser.isDecoy) && React.createElement(FirstTimeTour, { tourId: "admin-dashboard", steps: ADMIN_DASHBOARD_TOUR_STEPS }),
             props.role === ROLES.OWNER && !(props.currentUser && props.currentUser.isDecoy) && React.createElement(GettingStartedChecklist, { jobs: props.jobs }),
@@ -7369,6 +7371,8 @@ function AdminDashboard(props) {
             tab === "capacityforecast" && React.createElement(ForecastedCapacityPanel, null),
             tab === "whatif" && React.createElement(WhatIfPanel, null),
             tab === "potentwallet" && React.createElement(PotentWalletPanel, null),
+            tab === "teamwallets" && React.createElement(TeamWalletPanel, null),
+            tab === "easymode" && React.createElement(EasyModeDashboard, { jobs: props.jobs, onUpdateStatus: props.onUpdateStatus, setTab: setTab }),
             tab === "fitcheck" && React.createElement(CapacityCheckPanel, null),
             tab === "savannah" && React.createElement(SavannahPricingPanel, null),
             tab === "b2bpricing" && React.createElement(AdminB2BPricingControls, null),
@@ -22038,6 +22042,282 @@ function plWalletAutoCharge(job) {
     if (!plTokenGet() || !job || !job.id || !job.email) return Promise.resolve(null);
     return plWalletStaff("autocharge", { job_id: job.id }).then(function (d) { return d && d.ok && d.charged > 0 ? d : null; });
 }
+// ── TEAM/DRIVER WALLETS — commission tracking + cashout ──
+// Fee structure: Bank (standard) = FREE | Debit card instant = 1.5% | Same-day rush = $10 flat
+var TEAM_WALLET_DEBIT_FEE_PCT = 1.5;
+var TEAM_WALLET_SAMEDAY_FEE = 10;
+
+function TeamWalletPanel(props) {
+    var role = plOpsRole();
+    var isOwner = role === "owner";
+    var canManage = plOpsCanDecide();
+    var me = loadCurrentUser();
+    var myEmail = (me && (me.email || me.id) || "").toLowerCase();
+
+    var ws = React.useState([]); var wallets = ws[0], setWallets = ws[1];
+    var ss = React.useState(null); var sel = ss[0], setSel = ss[1];
+    var ts = React.useState([]); var txns = ts[0], setTxns = ts[1];
+    var ps = React.useState([]); var payouts = ps[0], setPayouts = ps[1];
+    var qs = React.useState(""); var q = qs[0], setQ = qs[1];
+    var ms = React.useState(""); var msg = ms[0], setMsg = ms[1];
+    var cs = React.useState({ email: "", amount: "", note: "" }); var cf = cs[0], setCf = cs[1];
+    var cos = React.useState(false); var showCashout = cos[0], setShowCashout = cos[1];
+    var mos = React.useState({ method: "bank", speed: "standard", handle: "" }); var coForm = mos[0], setCoForm = mos[1];
+
+    function load() {
+        plOps("team_wallets", "GET", "select=*&order=updated_at.desc&limit=300").then(function (r) {
+            if (r.ok && Array.isArray(r.data)) setWallets(r.data);
+            else setMsg(r.error || "Could not load wallets.");
+        });
+        plOps("payout_requests", "GET", "select=*,team_wallets(member_name,member_email)&order=created_at.desc&limit=100").then(function (r) {
+            if (r.ok && Array.isArray(r.data)) setPayouts(r.data);
+        });
+    }
+    function loadTx(w) {
+        setSel(w);
+        plOps("team_wallet_txns", "GET", "wallet_id=eq." + w.id + "&select=*&order=created_at.desc&limit=50").then(function (r) {
+            setTxns(r.ok && Array.isArray(r.data) ? r.data : []);
+        });
+    }
+    React.useEffect(function () { load(); }, []);
+
+    // Get or create my wallet
+    var myWallet = wallets.filter(function (w) { return String(w.member_email).toLowerCase() === myEmail; })[0] || null;
+
+    function ensureWallet(email, name, roleName) {
+        var existing = wallets.filter(function (w) { return String(w.member_email).toLowerCase() === String(email).toLowerCase(); })[0];
+        if (existing) return Promise.resolve(existing);
+        return plOps("team_wallets", "POST", "", { member_email: String(email).toLowerCase(), member_name: name || email, role: roleName || "driver" }).then(function (r) {
+            if (r.ok && r.data && r.data[0]) { load(); return r.data[0]; }
+            return null;
+        });
+    }
+
+    function creditCommission() {
+        var amt = Number(cf.amount);
+        if (!cf.email.trim() || !(amt > 0)) { setMsg("Enter member email and amount."); return; }
+        var email = cf.email.trim().toLowerCase();
+        ensureWallet(email, email, "driver").then(function (w) {
+            if (!w) { setMsg("Could not find or create wallet."); return; }
+            return plOps("team_wallets", "PATCH", "id=eq." + w.id, {
+                available_balance: Number(w.available_balance || 0) + amt,
+                total_earned: Number(w.total_earned || 0) + amt,
+                updated_at: new Date().toISOString()
+            }).then(function () {
+                return plOps("team_wallet_txns", "POST", "", {
+                    wallet_id: w.id, type: "commission", amount: amt,
+                    note: cf.note || "Commission credit", actor: myEmail
+                });
+            }).then(function () {
+                setMsg("Credited $" + amt.toFixed(2) + " to " + email + ".");
+                setCf({ email: "", amount: "", note: "" });
+                load(); if (sel && sel.id === w.id) loadTx(w);
+            });
+        });
+    }
+
+    function calcFee(amount, method, speed) {
+        var fee = 0;
+        if (method === "debit_card") fee += amount * (TEAM_WALLET_DEBIT_FEE_PCT / 100);
+        if (speed === "sameday") fee += TEAM_WALLET_SAMEDAY_FEE;
+        return Math.round(fee * 100) / 100;
+    }
+
+    function requestCashout() {
+        if (!myWallet) { setMsg("No wallet found. Ask Tony to set one up."); return; }
+        var amt = Number(myWallet.available_balance || 0);
+        if (!(amt > 0)) { setMsg("Nothing to cash out yet."); return; }
+        if (!coForm.handle.trim()) { setMsg("Enter where to send the money (Zelle phone/email or CashApp tag)."); return; }
+        var fee = calcFee(amt, coForm.method, coForm.speed);
+        var net = Math.round((amt - fee) * 100) / 100;
+        if (net <= 0) { setMsg("Fee exceeds balance."); return; }
+        // Debit the wallet
+        plOps("team_wallets", "PATCH", "id=eq." + myWallet.id, {
+            available_balance: 0,
+            total_cashed_out: Number(myWallet.total_cashed_out || 0) + amt,
+            payout_method: coForm.method,
+            payout_handle: coForm.handle.trim(),
+            updated_at: new Date().toISOString()
+        }).then(function () {
+            return plOps("team_wallet_txns", "POST", "", {
+                wallet_id: myWallet.id, type: "cashout", amount: -amt,
+                note: "Cashout request (" + coForm.method + "/" + coForm.speed + ") fee $" + fee.toFixed(2), actor: myEmail
+            });
+        }).then(function () {
+            return plOps("payout_requests", "POST", "", {
+                wallet_id: myWallet.id, amount: amt, fee: fee, net_amount: net,
+                method: coForm.method, payout_handle: coForm.handle.trim(), status: "pending"
+            });
+        }).then(function () {
+            setMsg("Cashout requested: $" + net.toFixed(2) + " via " + coForm.method + ". Tony will send it shortly.");
+            setShowCashout(false); setCoForm({ method: "bank", speed: "standard", handle: "" });
+            load();
+        });
+    }
+
+    function markPaid(p) {
+        plOps("payout_requests", "PATCH", "id=eq." + p.id, {
+            status: "paid", paid_at: new Date().toISOString(), paid_by: myEmail
+        }).then(function () { setMsg("Marked paid."); load(); });
+    }
+
+    var inp = { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "8px 10px", fontSize: 12, fontFamily: "inherit", boxSizing: "border-box" };
+    var pendingPayouts = payouts.filter(function (p) { return p.status === "pending"; });
+    var myPayouts = payouts.filter(function (p) { return p.team_wallets && String(p.team_wallets.member_email).toLowerCase() === myEmail; });
+
+    // ── MEMBER VIEW ──
+    if (!canManage) {
+        return React.createElement("div", { style: { maxWidth: 560, margin: "0 auto" } },
+            React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "💳 My Wallet"),
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 16 } }, "Your commissions land here. Cash out anytime — bank is free, debit card takes a 1.5% fee, same-day rush is $10."),
+            msg && React.createElement("div", { style: { fontSize: 12, color: C.green, marginBottom: 10 } }, msg),
+            !myWallet && React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: 20, textAlign: "center", color: C.dim, fontSize: 13 } }, "No wallet yet — ask Tony to set yours up."),
+            myWallet && React.createElement("div", null,
+                React.createElement("div", { style: { background: "linear-gradient(135deg,#0d0d00,#080808)", border: "2px solid " + C.orange, borderRadius: 14, padding: 20, marginBottom: 14, textAlign: "center" } },
+                    React.createElement("div", { style: { fontSize: 11, color: C.dim, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 } }, "Available Balance"),
+                    React.createElement("div", { style: { fontSize: 36, fontWeight: 900, color: C.orange } }, "$" + Number(myWallet.available_balance || 0).toFixed(2)),
+                    React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 6 } }, "Total earned: $" + Number(myWallet.total_earned || 0).toFixed(2) + " · Cashed out: $" + Number(myWallet.total_cashed_out || 0).toFixed(2))),
+                React.createElement("button", { onClick: function () { setShowCashout(true); }, disabled: !(Number(myWallet.available_balance) > 0), style: { width: "100%", background: C.orange, color: "#000", border: "none", borderRadius: 10, padding: "14px", fontSize: 15, fontWeight: 900, cursor: "pointer", fontFamily: "inherit", marginBottom: 14, opacity: Number(myWallet.available_balance) > 0 ? 1 : 0.4 } }, "💸 Cash Out"),
+                showCashout && React.createElement("div", { style: { background: C.card, border: "1px solid " + C.orange, borderRadius: 12, padding: 16, marginBottom: 14 } },
+                    React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white, marginBottom: 10 } }, "Cash Out $" + Number(myWallet.available_balance || 0).toFixed(2)),
+                    React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 4, fontWeight: 700 } }, "HOW DO YOU WANT IT?"),
+                    [["bank", "🏦 Bank Transfer", "FREE · 1-3 business days"], ["debit_card", "💳 Debit Card", "1.5% fee · instant"]].map(function (m) {
+                        return React.createElement("label", { key: m[0], style: { display: "flex", alignItems: "center", gap: 10, background: C.surface, border: "1px solid " + (coForm.method === m[0] ? C.orange : C.border), borderRadius: 8, padding: "10px 12px", marginBottom: 6, cursor: "pointer" } },
+                            React.createElement("input", { type: "radio", checked: coForm.method === m[0], onChange: function () { setCoForm(Object.assign({}, coForm, { method: m[0] })); } }),
+                            React.createElement("div", null,
+                                React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.white } }, m[1]),
+                                React.createElement("div", { style: { fontSize: 11, color: coForm.method === m[0] ? C.orange : C.dim } }, m[2])));
+                    }),
+                    React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 4, marginTop: 8, fontWeight: 700 } }, "SPEED"),
+                    [["standard", "Standard (as above)"], ["sameday", "⚡ Same-day rush (+$10 fee)"]].map(function (s) {
+                        return React.createElement("label", { key: s[0], style: { display: "flex", alignItems: "center", gap: 10, background: C.surface, border: "1px solid " + (coForm.speed === s[0] ? C.orange : C.border), borderRadius: 8, padding: "8px 12px", marginBottom: 6, cursor: "pointer" } },
+                            React.createElement("input", { type: "radio", checked: coForm.speed === s[0], onChange: function () { setCoForm(Object.assign({}, coForm, { speed: s[0] })); } }),
+                            React.createElement("div", { style: { fontSize: 12, color: C.white } }, s[1]));
+                    }),
+                    React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 4, marginTop: 8, fontWeight: 700 } }, "WHERE TO SEND IT"),
+                    React.createElement("input", { value: coForm.handle, placeholder: "Zelle phone/email or CashApp $tag", onChange: function (e) { setCoForm(Object.assign({}, coForm, { handle: e.target.value })); }, style: Object.assign({}, inp, { marginBottom: 10 }) }),
+                    React.createElement("div", { style: { background: C.surface, borderRadius: 8, padding: "10px 12px", marginBottom: 10, fontSize: 12, color: C.dim } },
+                        "Fee: $" + calcFee(Number(myWallet.available_balance || 0), coForm.method, coForm.speed).toFixed(2),
+                        React.createElement("br", null),
+                        React.createElement("b", { style: { color: C.green, fontSize: 14 } }, "You get: $" + (Number(myWallet.available_balance || 0) - calcFee(Number(myWallet.available_balance || 0), coForm.method, coForm.speed)).toFixed(2))),
+                    React.createElement("div", { style: { display: "flex", gap: 8 } },
+                        React.createElement("button", { onClick: requestCashout, style: { flex: 1, background: C.green, color: "#000", border: "none", borderRadius: 8, padding: "12px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "Confirm Cashout"),
+                        React.createElement("button", { onClick: function () { setShowCashout(false); }, style: { background: "transparent", color: C.dim, border: "1px solid " + C.border, borderRadius: 8, padding: "12px 16px", fontSize: 12, cursor: "pointer", fontFamily: "inherit" } }, "Cancel"))),
+                React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.white, marginBottom: 8, marginTop: 6 } }, "My Payouts"),
+                myPayouts.length === 0 && React.createElement("div", { style: { fontSize: 12, color: C.dim } }, "No cashouts yet."),
+                myPayouts.map(function (p) {
+                    return React.createElement("div", { key: p.id, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", marginBottom: 6, fontSize: 12, color: C.dim, display: "flex", justifyContent: "space-between" } },
+                        React.createElement("span", null, "$" + Number(p.net_amount).toFixed(2) + " via " + p.method + " · " + String(p.created_at).slice(0, 10)),
+                        React.createElement("b", { style: { color: p.status === "paid" ? C.green : C.orange } }, p.status.toUpperCase()));
+                })));
+    }
+
+    // ── OWNER/DISPATCH VIEW ──
+    var shown = wallets.filter(function (w) { var t = q.toLowerCase(); return !t || String(w.member_email).toLowerCase().indexOf(t) >= 0 || String(w.member_name || "").toLowerCase().indexOf(t) >= 0; });
+    var totalHeld = wallets.reduce(function (t, w) { return t + (Number(w.available_balance) || 0); }, 0);
+    var totalPaid = payouts.filter(function (p) { return p.status === "paid"; }).reduce(function (t, p) { return t + (Number(p.net_amount) || 0); }, 0);
+    return React.createElement("div", { style: { maxWidth: 680, margin: "0 auto" } },
+        React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "💳 Team Wallets"),
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 12 } }, "Commissions for drivers & team. Holding $" + totalHeld.toFixed(2) + " · Paid out $" + totalPaid.toFixed(2) + ". Bank = free · Debit = 1.5% · Same-day = $10."),
+        msg && React.createElement("div", { style: { fontSize: 12, color: C.green, marginBottom: 8 } }, msg),
+        pendingPayouts.length > 0 && React.createElement("div", { style: { background: "#1a1400", border: "1px solid " + C.orange, borderRadius: 12, padding: 14, marginBottom: 14 } },
+            React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.orange, marginBottom: 10 } }, "⏳ " + pendingPayouts.length + " Payout(s) Waiting"),
+            pendingPayouts.map(function (p) {
+                var w = p.team_wallets || {};
+                return React.createElement("div", { key: p.id, style: { background: C.card, borderRadius: 8, padding: "10px 12px", marginBottom: 8, fontSize: 12 } },
+                    React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 } },
+                        React.createElement("div", null,
+                            React.createElement("b", { style: { color: C.white } }, w.member_name || w.member_email),
+                            React.createElement("div", { style: { color: C.dim, fontSize: 11 } }, "Send $" + Number(p.net_amount).toFixed(2) + " to " + (p.payout_handle || "—") + " (" + p.method + ") · fee $" + Number(p.fee).toFixed(2)),
+                            React.createElement("div", { style: { color: C.dim, fontSize: 10 } }, String(p.created_at).slice(0, 16).replace("T", " "))),
+                        isOwner && React.createElement("button", { onClick: function () { markPaid(p); }, style: { background: C.green, color: "#000", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" } }, "✓ Mark Paid")));
+            })),
+        React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: 12, marginBottom: 12 } },
+            React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.white, marginBottom: 8 } }, "Credit Commission"),
+            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "2fr 1fr", gap: 8, marginBottom: 8 } },
+                React.createElement("input", { value: cf.email, placeholder: "member email", onChange: function (e) { setCf(Object.assign({}, cf, { email: e.target.value })); }, style: inp }),
+                React.createElement("input", { type: "number", value: cf.amount, placeholder: "$ amount", onChange: function (e) { setCf(Object.assign({}, cf, { amount: e.target.value })); }, style: inp })),
+            React.createElement("input", { value: cf.note, placeholder: "note (e.g. POTENT OS sale 50%, load #1234)", onChange: function (e) { setCf(Object.assign({}, cf, { note: e.target.value })); }, style: Object.assign({}, inp, { marginBottom: 8 }) }),
+            isOwner && React.createElement("button", { onClick: creditCommission, style: { background: C.green, color: "#000", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "+ Credit Wallet")),
+        React.createElement("input", { value: q, placeholder: "Search wallets", onChange: function (e) { setQ(e.target.value); }, style: Object.assign({}, inp, { marginBottom: 8 }) }),
+        shown.length === 0 && React.createElement("div", { style: { fontSize: 12, color: C.dim } }, "No team wallets yet. Credit a commission above to create one."),
+        shown.map(function (w) {
+            return React.createElement("div", { key: w.id, style: { background: C.card, border: "1px solid " + (sel && sel.id === w.id ? C.orange : C.border), borderRadius: 10, padding: "10px 14px", marginBottom: 6, fontSize: 12, color: C.dim } },
+                React.createElement("div", { onClick: function () { loadTx(w); }, style: { display: "flex", justifyContent: "space-between", cursor: "pointer" } },
+                    React.createElement("span", null, React.createElement("b", { style: { color: C.white } }, w.member_name || w.member_email), " · " + (w.role || "driver")),
+                    React.createElement("b", { style: { color: C.orange } }, "$" + Number(w.available_balance || 0).toFixed(2))),
+                React.createElement("div", { style: { fontSize: 10, marginTop: 2 } }, "Earned $" + Number(w.total_earned || 0).toFixed(2) + " · Out $" + Number(w.total_cashed_out || 0).toFixed(2)),
+                sel && sel.id === w.id && React.createElement("div", { style: { marginTop: 6 } }, txns.length === 0 ? "No transactions." : txns.map(function (x) {
+                    return React.createElement("div", { key: x.id, style: { display: "flex", justifyContent: "space-between", borderTop: "1px solid " + C.border, padding: "3px 0" } },
+                        React.createElement("span", null, x.type + (x.note ? " — " + x.note : "") + " · " + String(x.created_at || "").slice(0, 10)),
+                        React.createElement("span", { style: { color: Number(x.amount) >= 0 ? C.green : C.red, fontWeight: 700 } }, (Number(x.amount) >= 0 ? "+" : "-") + "$" + Math.abs(Number(x.amount)).toFixed(2)));
+                })));
+        }));
+}
+
+
+// ── EASY MODE — simplified dashboard for drivers/dispatch ──
+// Wallet dead center at top, today's jobs, big simple buttons.
+function plEasyMode() { try { return localStorage.getItem("pl_easy_mode") === "1"; } catch (e) { return false; } }
+function plSetEasyMode(on) { try { localStorage.setItem("pl_easy_mode", on ? "1" : "0"); } catch (e) {} }
+
+function EasyModeDashboard(props) {
+    var me = loadCurrentUser();
+    var myEmail = (me && (me.email || me.id) || "").toLowerCase();
+    var ws = React.useState(null); var wallet = ws[0], setWallet = ws[1];
+    var js = React.useState([]); var jobs = js[0], setJobs = js[1];
+
+    React.useEffect(function () {
+        if (myEmail) {
+            plOps("team_wallets", "GET", "member_email=eq." + encodeURIComponent(myEmail) + "&select=*&limit=1").then(function (r) {
+                if (r.ok && r.data && r.data[0]) setWallet(r.data[0]);
+            });
+        }
+        var myJobs = (props.jobs || []).filter(function (j) { return j.status !== "Completed"; }).slice(0, 5);
+        setJobs(myJobs);
+    }, []);
+
+    var bal = wallet ? Number(wallet.available_balance || 0) : 0;
+
+    return React.createElement("div", { style: { maxWidth: 520, margin: "0 auto", padding: "16px 12px 90px" } },
+        // ── WALLET DEAD CENTER AT TOP ──
+        React.createElement("div", { style: { background: "linear-gradient(135deg,#0d0d00,#080808)", border: "3px solid " + C.orange, borderRadius: 18, padding: "24px 20px", marginBottom: 18, textAlign: "center", boxShadow: "0 4px 24px rgba(240,224,0,0.15)" } },
+            React.createElement("div", { style: { fontSize: 12, color: C.dim, textTransform: "uppercase", letterSpacing: 2, marginBottom: 6 } }, "💳 My Wallet"),
+            React.createElement("div", { style: { fontSize: 48, fontWeight: 900, color: C.orange, lineHeight: 1 } }, "$" + bal.toFixed(2)),
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 8 } },
+                wallet ? ("Earned $" + Number(wallet.total_earned || 0).toFixed(2)) : "No wallet yet — ask Tony to set yours up"),
+            React.createElement("button", {
+                onClick: function () { props.setTab && props.setTab("teamwallets"); },
+                disabled: !(bal > 0),
+                style: { marginTop: 14, background: C.orange, color: "#000", border: "none", borderRadius: 10, padding: "12px 32px", fontSize: 15, fontWeight: 900, cursor: "pointer", fontFamily: "inherit", opacity: bal > 0 ? 1 : 0.4 }
+            }, "💸 Cash Out")),
+        // ── TODAY'S JOBS ──
+        React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.white, marginBottom: 10 } }, "📋 Today's Jobs (" + jobs.length + ")"),
+        jobs.length === 0 && React.createElement("div", { style: { background: C.card, borderRadius: 12, padding: 20, textAlign: "center", color: C.dim, fontSize: 13 } }, "No active jobs right now."),
+        jobs.map(function (j) {
+            return React.createElement("div", { key: j.id, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "14px 16px", marginBottom: 10 } },
+                React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 } },
+                    React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white } }, j.customer || j.id),
+                    React.createElement("div", { style: { fontSize: 16, fontWeight: 900, color: C.orange } }, "$" + (j.finalPrice || j.price || 0))),
+                React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 10 } }, (j.origin || "") + " → " + (j.destination || "")),
+                React.createElement("div", { style: { display: "flex", gap: 8 } },
+                    j.phone && React.createElement("a", { href: "tel:" + String(j.phone).replace(/\D/g, ""), style: { flex: 1, textAlign: "center", textDecoration: "none", background: C.green, color: "#000", borderRadius: 8, padding: "12px", fontSize: 14, fontWeight: 800 } }, "📞 Call"),
+                    React.createElement("button", {
+                        onClick: function () { props.onUpdateStatus && props.onUpdateStatus(j.id, "En Route"); },
+                        style: { flex: 1, background: C.surface, color: C.white, border: "1px solid " + C.border, borderRadius: 8, padding: "12px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }
+                    }, "🚚 En Route")));
+        })),
+        // ── QUICK ACTIONS ──
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 6 } },
+            React.createElement("button", {
+                onClick: function () { props.setTab && props.setTab("driverapp"); },
+                style: { background: C.card, color: C.white, border: "1px solid " + C.border, borderRadius: 12, padding: "16px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }
+            }, "🚐 Driver App"),
+            React.createElement("a", { href: "tel:4704531616", style: { textDecoration: "none" } },
+                React.createElement("button", { style: { width: "100%", background: C.card, color: C.white, border: "1px solid " + C.border, borderRadius: 12, padding: "16px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "📞 Call Tony")));
+}
+
+
 function PotentWalletPanel(props) {
     var ws = React.useState([]); var wallets = ws[0], setWallets = ws[1];
     var ss = React.useState(null); var sel = ss[0], setSel = ss[1];
