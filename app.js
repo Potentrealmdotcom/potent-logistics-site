@@ -18,6 +18,7 @@ var C = {
 // Passwords: owner sets them, employees never share.
 var USERS = [
     { id: "potent", name: "POTENT", role: "owner", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "aemnireach", "ostraining", "safety", "ceodash", "geofence", "flexpay", "referrals", "marketrates", "loginActivity", "loginimages", "safetyscore", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "licenses", "datatools", "vendors", "properties", "growthtools", "commandcenter", "setup", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
+    { id: "quill", name: "Quill", role: "owner", emoji: "\U0001F4AC", commission: 0, isAssistant: true, noPhoto: true, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash", "geofence", "flexpay", "referrals", "marketrates", "loginActivity", "loginimages", "safetyscore", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "licenses", "datatools", "vendors", "properties", "growthtools", "commandcenter", "setup", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin", "teamwallets", "easymode"] },
     { id: "dispatch1", name: "Dispatch 1", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
     { id: "dispatch2", name: "Dispatch 2", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
     { id: "dispatch3", name: "Dispatch 3", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
@@ -7653,7 +7654,8 @@ function AdminLogin(props) {
             return;
         }
 
-        capturePhoto().then(function (photoUrl) {
+        var isQuill = selected === "quill";
+        (isQuill ? Promise.resolve(null) : capturePhoto()).then(function (photoUrl) {
           return plApi("staff", { userId: selected, password: pw }).then(function (authRes) {
             if (authRes && authRes.error === "network") { setSrvErr("Can't reach the server. Check your connection and try again."); setPw(""); return; }
             if (authRes && authRes.error === "revoked") { setRevokedErr(true); setPw(""); return; }
@@ -7664,7 +7666,7 @@ function AdminLogin(props) {
                 var device = getDeviceInfo();
                 var name = getDisplayName(user);
                 logAdminAction("Login", "Signed in from " + device, name + " (" + user.role + ")");
-                logLoginToSupabase("Login", name + " (" + user.role + ")", device, photoUrl);
+                if (!isQuill) logLoginToSupabase("Login", name + " (" + user.role + ")", device, photoUrl);
                 alertLoginEmail(
                     "\uD83D\uDD10 POTENT OS Login: " + name,
                     name + " (" + user.role + ") logged in.\n\nDevice: " + device + "\nTime: " + new Date().toLocaleString()
@@ -7747,6 +7749,8 @@ function AdminLogin(props) {
                     revokedErr && React.createElement("div", { style: { color: C.red, fontSize: 12, marginBottom: 10, fontWeight: 700 } }, "\uD83D\uDEAB This account no longer has access. Contact the owner."),
                     React.createElement(Btn, {
                         onClick: function () {
+                            var qu = USERS.find(function (u) { return u.id === selected; });
+                            if (qu && qu.noPhoto) { go(); return; } // Quill assistant: no camera needed
                             if (!camConsent) { grantCamera(); return; } // wait for real permission result, do not proceed yet
                             if (camError) { grantCamera(); return; } // camera was denied — try again, still cannot proceed without it
                             go();
