@@ -18,7 +18,7 @@ var C = {
 // Passwords: owner sets them, employees never share.
 var USERS = [
     { id: "potent", name: "POTENT", role: "owner", emoji: "👑", commission: 0, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "aemnireach", "ostraining", "safety", "ceodash", "geofence", "flexpay", "referrals", "marketrates", "loginActivity", "loginimages", "safetyscore", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "licenses", "datatools", "vendors", "properties", "growthtools", "commandcenter", "setup", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
-    { id: "quill", name: "Quill", role: "owner", emoji: "\U0001F4AC", commission: 0, isAssistant: true, noPhoto: true, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash", "geofence", "flexpay", "referrals", "marketrates", "loginActivity", "loginimages", "safetyscore", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "licenses", "datatools", "vendors", "properties", "growthtools", "commandcenter", "setup", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin", "teamwallets", "easymode"] },
+    { id: "quill", name: "Quill", role: "owner", emoji: "\uD83D\uDCAC", commission: 0, isAssistant: true, noPhoto: true, access: ["quote", "jobs", "exceptions", "reports", "advanced", "carriers", "expenses", "accounts", "sales", "audit", "calendar", "driver", "driverapp", "ai", "demo", "leads", "activity", "leaderboard", "payroll", "fleet", "fleetmap", "compliance", "documents", "ownerSettings", "ospipeline", "ostraining", "safety", "ceodash", "geofence", "flexpay", "referrals", "marketrates", "loginActivity", "loginimages", "safetyscore", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "licenses", "datatools", "vendors", "properties", "growthtools", "commandcenter", "setup", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin", "teamwallets", "easymode"] },
     { id: "dispatch1", name: "Dispatch 1", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
     { id: "dispatch2", name: "Dispatch 2", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
     { id: "dispatch3", name: "Dispatch 3", role: "dispatch", emoji: "📞", commission: 0.125, commLogistics: 0.125, commOS: 0.10, commLoadboard: 0.10, access: ["quote", "jobs", "calendar", "driver", "driverapp", "leads", "leaderboard", "fleetmap", "documents", "ai", "demo", "geofence", "rebuttals", "recurring", "livecall", "companyonboard", "claims", "incomingloads", "ratecards", "deadlines", "ledger", "docpackages", "loadanalysis", "costprofile", "carriercourse", "truckpricing", "voiceroom", "dispatchroom", "marginleak", "workqueue", "driveravail", "vehicleavail", "shifthandoff", "capacityforecast", "whatif", "pendingapps", "junknewjob", "junkdriverjobs", "storagepartners", "nextjobengine", "quickquote", "realcapacity", "potentwallet", "fitcheck", "savannah", "b2bpricing", "griffin"] },
@@ -3597,6 +3597,80 @@ function OpsCharts(props) {
         card("Expense breakdown", null, React.createElement(PlBars, { rows: D.expenseTypes, label: "Expenses", color: C.blue, empty: "No expenses logged in this period." })),
         card("Load status", null, React.createElement(PlBars, { rows: D.statuses, fmt: function (n) { return String(n); }, label: "Load status", empty: "No jobs in this period." })),
         card("Broker performance", "Loads, invoiced, average days to fund, disputes.", D.brokers.length ? React.createElement("div", null, D.brokers.map(function (b) { return React.createElement("div", { key: b.broker, style: { fontSize: 11, color: C.white, marginBottom: 3 } }, b.broker + ": " + b.loads + " loads, " + plMoney(b.invoiced) + ", avg " + daysTxt(b.avgDays) + ", " + b.disputed + " disputed"); })) : React.createElement("div", { style: { fontSize: 12, color: C.dim } }, "No factoring records yet.")));
+}
+// ── OUR SERVICES / OFFERINGS ──────────────────────────────────────────
+// Separate products sold through the same site, GitHub repo and Stripe account as POTENT OS. Add a product by adding a row here.
+// Entries with no url are shown as "Coming soon" (no invented prices or links).
+var PL_OFFERINGS = [
+    { id: "ccml", icon: "💳", name: "Credit Changed My Life", tag: "Credit repair course + done-for-you funding prep", url: "/ccml/",
+      lines: ["DIY Course - $50 (course, 20 letter and motion templates, tracker)", "Done-For-You - $2,999 (we prepare your documents and funding plan)", "Certified mail letters - 1 for $20, 5 for $90, 10 for $170, 25 for $400"] },
+    { id: "clothing", icon: "👕", name: "Clothing Playbook", tag: "Coming soon", url: "", lines: [] },
+    { id: "kids", icon: "🧸", name: "Kids App", tag: "Coming soon", url: "", lines: [] }
+];
+function plCcmlAdmin(body) {
+    return fetch("/.netlify/functions/ccml-admin", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + plTokenGet() }, body: JSON.stringify(body) })
+        .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || "Request failed"); return d; }); });
+}
+function CcmlAdminPanel() {
+    var [data, setData] = useState(null), [err, setErr] = useState(""), [busy, setBusy] = useState(""), [trk, setTrk] = useState({});
+    var load = function () { setErr(""); plCcmlAdmin({ action: "overview" }).then(setData).catch(function (e) { setErr(e.message); }); };
+    useEffect(function () { load(); }, []);
+    var act = function (key, body, after) { setBusy(key); setErr(""); plCcmlAdmin(body).then(function (d) { setBusy(""); if (after) after(d); load(); }).catch(function (e) { setBusy(""); setErr(e.message); }); };
+    var box = { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "9px 12px", marginBottom: 6, fontSize: 12, color: C.white };
+    var sel = { background: C.bg, color: C.white, border: "1px solid " + C.border, borderRadius: 6, padding: "4px 6px", fontSize: 11 };
+    var h = function (t2) { return React.createElement("div", { key: t2, style: { fontSize: 13, fontWeight: 800, color: C.white, margin: "14px 0 6px" } }, t2); };
+    if (!data) return React.createElement("div", { style: { fontSize: 12, color: err ? C.red : C.dim } }, err || "Loading CCML office data...");
+    var DS = ["intake_received", "reviewing", "in_progress", "waiting_on_client", "complete"], FS = ["not_started", "preparing", "applied", "approved", "funded", "declined"];
+    var q = data.mail.filter(function (m) { return m.status === "queued"; });
+    return React.createElement("div", null,
+        err && React.createElement("div", { style: { color: C.red, fontSize: 12, marginBottom: 6 } }, err),
+        React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+            [["Revenue", plMoney(data.revenueCents / 100)], ["Members", data.members], ["Purchases", data.purchases.length], ["Letters to mail", q.length]].map(function (x) {
+                return React.createElement("div", { key: x[0], style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "9px 12px", flex: "1 1 110px" } },
+                    React.createElement("div", { style: { fontSize: 10, color: C.dim } }, x[0]), React.createElement("div", { style: { fontSize: 16, fontWeight: 900, color: C.white } }, x[1])); })),
+        h("Certified mail queue (" + q.length + " waiting)"),
+        data.mail.length === 0 && React.createElement("div", { key: "nm", style: { fontSize: 12, color: C.dim } }, "No requests yet."),
+        data.mail.slice(0, 40).map(function (m) {
+            return React.createElement("div", { key: m.id, style: box },
+                React.createElement("div", null, React.createElement("b", null, m.to_name || "(no name)"), " - " + m.status + " - " + (m.account_email || "") + " - " + String(m.created_at || "").slice(0, 10)),
+                React.createElement("div", { style: { color: C.dim, margin: "3px 0", whiteSpace: "pre-wrap" } }, "To: " + (m.to_addr || "") + "\nFrom: " + (m.from_name || "") + " " + (m.from_addr || "")),
+                React.createElement("details", null, React.createElement("summary", { style: { cursor: "pointer", color: C.dim } }, "Letter text"), React.createElement("div", { style: { whiteSpace: "pre-wrap", marginTop: 4 } }, m.letter || "")),
+                m.status === "mailed" ? React.createElement("div", { style: { color: C.green, marginTop: 4 } }, "Tracking: " + (m.tracking_number || ""))
+                    : React.createElement("div", { style: { display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" } },
+                        React.createElement("input", { value: trk[m.id] || "", placeholder: "Certified tracking number", onChange: function (e) { var v = e.target.value; setTrk(function (o) { return Object.assign({}, o, { [m.id]: v }); }); }, style: Object.assign({}, sel, { width: 200 }) }),
+                        React.createElement(Btn, { onClick: function () { act("m" + m.id, { action: "setmail", id: m.id, status: "mailed", tracking_number: trk[m.id] || "" }); }, style: { padding: "4px 10px", fontSize: 11 } }, busy === "m" + m.id ? "..." : "Mark mailed"),
+                        m.status === "queued" && React.createElement(Btn, { onClick: function () { act("f" + m.id, { action: "setmail", id: m.id, status: "failed" }); }, style: { padding: "4px 10px", fontSize: 11 } }, "Mark failed"))); }),
+        h("Done-For-You clients (" + data.dfy.length + ")"),
+        data.dfy.length === 0 && React.createElement("div", { key: "nd", style: { fontSize: 12, color: C.dim } }, "No intake forms yet."),
+        data.dfy.map(function (d) {
+            return React.createElement("div", { key: d.id, style: box },
+                React.createElement("div", null, React.createElement("b", null, d.full_name || "(no name)"), " - " + (d.account_email || d.email || "") + " - " + (d.phone || "")),
+                React.createElement("div", { style: { color: C.dim, margin: "3px 0" } }, "Score " + (d.current_score || "?") + " - goal " + (d.goal_amount || "?") + " - " + (d.timeline || "") + " - LLC " + (d.llc_name || "none") + " (" + (d.llc_state || "") + ")"),
+                React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" } },
+                    React.createElement("select", { value: d.dfy_status, style: sel, onChange: function (e) { act("d" + d.id, { action: "setdfy", id: d.id, dfy_status: e.target.value }); } }, DS.map(function (x) { return React.createElement("option", { key: x, value: x }, x.replace(/_/g, " ")); })),
+                    React.createElement("select", { value: d.funding_status, style: sel, onChange: function (e) { act("d" + d.id, { action: "setdfy", id: d.id, funding_status: e.target.value }); } }, FS.map(function (x) { return React.createElement("option", { key: x, value: x }, "funding: " + x.replace(/_/g, " ")); })),
+                    React.createElement(Btn, { onClick: function () { act("p" + d.id, { action: "draftplan", id: d.id }); }, style: { padding: "4px 10px", fontSize: 11 } }, busy === "p" + d.id ? "Drafting..." : "Draft funding plan")),
+                React.createElement("textarea", { defaultValue: d.admin_notes || "", placeholder: "Internal notes (saved when you click away)", rows: 2, maxLength: 2000, onBlur: function (e) { if (e.target.value !== (d.admin_notes || "")) act("n" + d.id, { action: "setdfy", id: d.id, admin_notes: e.target.value }); }, style: Object.assign({}, sel, { width: "100%", marginTop: 6, boxSizing: "border-box" }) }),
+                d.ai_plan && React.createElement("details", null, React.createElement("summary", { style: { cursor: "pointer", color: C.dim, marginTop: 4 } }, "Draft plan (review before using)"), React.createElement("div", { style: { whiteSpace: "pre-wrap", marginTop: 4 } }, d.ai_plan))); }),
+        h("Recent purchases"),
+        data.purchases.slice(0, 30).map(function (p) { return React.createElement("div", { key: p.id, style: box }, (p.product || "") + " - " + plMoney((p.amount_cents || 0) / 100) + " - " + (p.email || "") + " - " + String(p.created_at || "").slice(0, 10)); }));
+}
+function OfferingsScreen() {
+    var isOwner = !plIsTenant() && plOpsRole() === "owner";
+    var [showAdmin, setShowAdmin] = useState(false);
+    return React.createElement("div", { style: { maxWidth: 760 } },
+        React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "Offerings & Apps"),
+        React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 12 } }, "Separate products from POTENT. Each is bought on its own, outside your OS license."),
+        PL_OFFERINGS.map(function (o) {
+            return React.createElement("div", { key: o.id, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "12px 14px", marginBottom: 10 } },
+                React.createElement("div", { style: { fontSize: 15, fontWeight: 800, color: C.white } }, o.icon + " " + o.name),
+                React.createElement("div", { style: { fontSize: 12, color: C.dim, margin: "2px 0 6px" } }, o.tag),
+                o.lines.map(function (l) { return React.createElement("div", { key: l, style: { fontSize: 12, color: C.white } }, "- " + l); }),
+                o.url ? React.createElement("a", { href: o.url, target: "_blank", rel: "noopener", style: { display: "inline-block", marginTop: 8, background: C.orange, color: "#000", fontWeight: 800, fontSize: 12, padding: "7px 14px", borderRadius: 8, textDecoration: "none" } }, "Open " + o.name)
+                    : null,
+                o.id === "ccml" && isOwner && React.createElement("div", { style: { marginTop: 10 } },
+                    React.createElement(Btn, { onClick: function () { setShowAdmin(!showAdmin); }, style: { padding: "6px 12px", fontSize: 11 } }, showAdmin ? "Hide office panel" : "Office panel (owner only)"),
+                    showAdmin && React.createElement("div", { style: { marginTop: 8 } }, React.createElement(CcmlAdminPanel, null)))); }));
 }
 function GrowthTools(props) {
     var tabS = React.useState("accounts"); var tab = tabS[0], setTab = tabS[1];
@@ -7453,6 +7527,7 @@ function getTabGroups() {
         { label: "🚗 Fleet", color: "#F6AD55", tabs: [["fleet", "🚗 Fleet"], ["fleetmap", "🗺️ Live Map"], ["vendors", "\uD83D\uDE9B Vendors & Disposal"], ["properties", "\uD83C\uDFE2 Properties"], ["driveravail", "\uD83D\uDC65 Driver Availability"], ["vehicleavail", "\uD83D\uDE9B Vehicle Availability"], ["storagepartners", "\uD83D\uDCE6 Storage Partners"], ["compliance", "🛡 Compliance"], ["documents", "📁 Documents"], ["docpackages", "\uD83D\uDCC1 Document Packages"], ["safetyscore", "🛡️ Safety Scores"], ["geofence", "📍 Geofencing"], ["carriers", "🤝 " + t("carriers")], ["safety", "🔒 Safety Alerts"]] },
         { label: "💰 Money", color: C.orange, tabs: [["reports", "📊 " + t("reports")], ["advanced", "📈 " + t("analytics")], ["sales", "🏆 " + t("sales")], ["expenses", "💸 " + t("expenses")], ["accounts", "🏢 " + t("accounts")], ["payroll", "💰 " + t("payroll")], ["growthtools", "📈 Growth Tools"], ["ceodash", "📊 CEO Dashboard"], ["referrals", "🎟️ Referral Codes"], ["marketrates", "📊 Market Rates"], ["claims", "⚠ Claims & Recovery"], ["ratecards", "\uD83D\uDCB2 Rate Cards"], ["deadlines", "\u23F0 Deadlines"], ["ledger", "\uD83D\uDCD2 Accounting Ledger"], ["marginleak", "\uD83D\uDCB0 Margin Leak Detector"], ["teamwallets", "\uD83D\uDCB3 Team Wallets"]] },
         { label: "⚙ Team", color: "#FC8181", tabs: [["setup", "\uD83D\uDE80 Get Started"], ["ownerSettings", "⚙ Settings"], ["licenses", "\uD83C\uDFE2 Customers & Licenses"], ["mycompany", "\uD83C\uDFE2 My Company"], ["datatools", "\uD83D\uDCE6 Data & Imports"], ["teamaccts", "\uD83D\uDC65 Team Accounts"], ["pricingsetup", "\uD83D\uDCB2 Pricing Setup"], ["audit", "👁 " + t("audit")], ["loginActivity", "🔐 Login Activity"], ["loginimages", "\uD83D\uDCF8 Login Images"], ["shifthandoff", "\uD83D\uDD04 Shift Handoff"], ["ai", "🤖 " + t("aiDocs")], ["demo", "🎬 " + t("demo"), ["ext_guide", "\U0001F4CB Prices Page", "guide.html"], ["ext_osguide", "\U0001F4BB POTENT OS Guide", "os-guide.html"], ["ext_team", "\U0001F465 Team Guide", "team.html"], ["ext_training", "\U0001F393 Sales Training", "training.html"]]] },
+        { label: "\uD83E\uDDE9 Our Services", color: "#9F7AEA", tabs: [["offerings", "\uD83E\uDDE9 Offerings & Apps"]] },
     ];
 }
 // ── TAB NAVIGATION — dropdown "More" sheet, 5 simplified groups ──
@@ -7464,7 +7539,7 @@ var PRIMARY_TAB_ORDER = [
 ];
 function CategoryNav({ tab, setTab, currentUser }) {
     var [showMore, setShowMore] = useState(false);
-    var hasAccess = function (id) { return !currentUser || id.indexOf('ext_')===0 || currentUser.access.indexOf(id) > -1; };
+    var hasAccess = function (id) { return !currentUser || id.indexOf('ext_')===0 || (id === 'offerings' ? currentUser.role !== 'driver' : currentUser.access.indexOf(id) > -1); };
 
     var primary = [];
     for (var i = 0; i < PRIMARY_TAB_ORDER.length && primary.length < 4; i++) {
@@ -7586,6 +7661,7 @@ function AdminDashboard(props) {
             tab === "vendors" && React.createElement(VendorCommandCenter, null),
             tab === "properties" && React.createElement(PropertiesManager, null),
             tab === "growthtools" && React.createElement(GrowthTools, { jobs: props.jobs, onAddJob: props.onAddJob }),
+            tab === "offerings" && React.createElement(OfferingsScreen, null),
             tab === "commandcenter" && React.createElement(CommandCenter, { jobs: props.jobs }),
             tab === "setup" && props.role === ROLES.OWNER && React.createElement(SetupChecklist, { onGo: setTab, isTenant: !!(props.currentUser && props.currentUser.orgId) }),
             tab === "teamaccts" && React.createElement(TeamAccounts, { currentUser: props.currentUser }),

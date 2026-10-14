@@ -21,6 +21,7 @@
 //   invoice.paid, invoice.payment_failed, customer.subscription.deleted
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const { fulfillSession: fulfillCcml } = require("./lib/ccml");
 const { deriveStatus } = require("./lib/billing");
 const { provisionCompany } = require("./lib/provision");
 
@@ -310,6 +311,10 @@ exports.handler = async function (event) {
       await sb("flex_pay_installments", { method: "POST", prefer: "return=minimal", body: { company: md.company, amount: obj.amount / 100, payment_intent_id: obj.id, paid_at: new Date().toISOString() } });
     } else if (product === "Recurring Route Payment") {
       await sb("recurring_routes?id=eq." + encodeURIComponent(md.route_id), { method: "PATCH", prefer: "return=minimal", body: { last_payment_confirmed_at: new Date().toISOString() } });
+    } else if (String(product).indexOf("CCML") === 0 && isCheckoutSession) {
+      // Credit Changed My Life (separate purchase): unlock the plan / add letter credits. Idempotent per Stripe session.
+      const res = await fulfillCcml(obj);
+      if (res && res.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "CCML fulfillment failed, retry" }) };
     }
   } catch (err) {
     console.error("Webhook handling failed after payment:", err.message);
