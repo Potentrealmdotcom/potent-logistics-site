@@ -221,7 +221,7 @@ select{color-scheme:dark;}
         <span class="badge" style="background:#1DB95418;color:#1DB954;border-color:#1DB95433;">✓ On File</span>
       </div>
       <button class="btn" style="max-width:320px;margin:0 auto 8px;display:block;" onclick="dlSigned()">📄 Download Your Signed Agreement</button>
-      <div style="font-size:12px;color:#444;margin-top:10px;">Questions? <a href="tel:4704531616" style="color:#F0E000;">(470) 453-1616</a> · <a href="mailto:potentlogistics&#64;proton.me" style="color:#F0E000;">potentlogistics&#64;proton.me</a></div>
+      <div style="font-size:12px;color:#444;margin-top:10px;">Questions? <a href="tel:4704531616" style="color:#F0E000;">(470) 453-1616</a> · <a href="mailto:potentlogistics@proton.me" style="color:#F0E000;">potentlogistics@proton.me</a></div>
     </div>
   </div>
 
@@ -292,7 +292,7 @@ async function submitAgreement(){
   if(window.emailjs){
     try{
       await emailjs.send('service_e3qn0bs','template_nxubdce',{
-        to_email:'potentlogistics&#64;proton.me',
+        to_email:'potentlogistics@proton.me',
         from_name:S.name+' — '+S.company,
         subject:'🤝 New '+(S.path==='broker'?'Broker':'Carrier')+' Agreement Signed: '+S.company,
         message:'NEW CARRIER/BROKER AGREEMENT SIGNED\\n\\nType: '+(S.path==='broker'?'Broker tendering freight':'Company hiring POTENT as 1099 carrier')+'\\nCompany: '+S.company+(S.dba?' (DBA '+S.dba+')':'')+'\\nContact: '+S.name+' ('+S.title+')\\nEmail: '+S.email+'\\nPhone: '+S.phone+'\\nCity: '+S.city+', '+S.state+(S.brokerMC?'\\nBroker MC#: '+S.brokerMC:'')+(S.brokerBond?'\\nBond/Trust: '+S.brokerBond:'')+'\\nSigned By: '+S.sig+'\\nDate: '+new Date().toLocaleString()

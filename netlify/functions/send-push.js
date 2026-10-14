@@ -10,7 +10,7 @@ var webpush = require("web-push");
 
 var VAPID_PUBLIC_KEY = "BJ5PoBvxHwvSLxIOo6VyNoAmy5sQXsR60mN3aZ0hO5hez1gqhyKXeJl4aYQ1xqR4m2GBcqljNczT3lJu5oVoeSQ";
 var VAPID_PRIVATE_KEY = "RBXmilmfr0S7Yqx5tQ1m9k8G-T1WBwuv_m61JfmtPRI";
-var VAPID_SUBJECT = "mailto:potentlogistics@" + "proton.me";
+var VAPID_SUBJECT = "mailto:potentlogistics@proton.me";
 
 var SUPABASE_URL = "https://ymvsatlrkzgxwzxybwmk.supabase.co";
 var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltdnNhdGxya3pneHd6eHlid21rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4NzgwMTQsImV4cCI6MjEwMzQ1NDAxNH0.KbW0enJr5FOzJmDQnT3Thhr5NJdbI4Ehp1vkhVEyPEg";

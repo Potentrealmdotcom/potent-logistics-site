@@ -8,7 +8,7 @@
 // Credentials come from Netlify environment variables (never hardcode them —
 const MAILJET_API_KEY = process.env.MAILJET_API_KEY;
 const MAILJET_SECRET_KEY = process.env.MAILJET_SECRET_KEY;
-const FROM_EMAIL = process.env.MAILJET_FROM_EMAIL; // verified sender in your Mailjet account (Netlify env var)
+const FROM_EMAIL = "potentlogistics@proton.me"; // must be a verified sender in your Mailjet account
 const FROM_NAME = "POTENT Logistics";
 
 exports.handler = async (event) => {
@@ -29,9 +29,6 @@ return { statusCode: 400, headers, body: JSON.stringify({ error: "Missing to, su
 }
 
 const auth = Buffer.from(`${MAILJET_API_KEY}:${MAILJET_SECRET_KEY}`).toString("base64");
-if (!FROM_EMAIL) {
-return { statusCode: 500, headers, body: JSON.stringify({ error: "Mail sender not configured" }) };
-}
 
 const res = await fetch("https://api.mailjet.com/v3.1/send", {
   method: "POST",
