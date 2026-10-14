@@ -339,7 +339,7 @@ function plApi(action, body) {
 // ── TENANT GATEWAY — company data goes through the server, never straight to the database ──
 // Every read/write of these tables is sent to /.netlify/functions/data-api with the
 // signed-in login, so each company only ever sees and changes its own rows.
-var PL_GATED = ["fleet_vehicles","fleet_maintenance","driver_locations","voice_room_messages","driver_compliance","brokers_carriers_backup","storage_partners","safety_alerts","job_route_legs","job_events","job_scope_changes","vendors","disposal_facilities","properties","potent_wallets","wallet_transactions","rate_cards","service_zones","job_templates","quote_terms_acceptance","jobs","job_photos","junk_jobs","jobs_backup","audit_log_real","expenses_real","commission_rates_real","payment_references","cost_profiles","customer_rate_cards","claims","change_orders","addon_authorizations","my_documents","deadlines","shift_handoffs","escalation_timers","site_profiles","customer_locations","incoming_loads","user_display_names","revoked_users","receipts","job_communications","login_log","push_subscriptions","griffin_queries","recurring_routes","reviews","waitlist","os_prospects","business_rules"];
+var PL_GATED = ["fleet_vehicles","fleet_maintenance","driver_locations","voice_room_messages","driver_compliance","brokers_carriers_backup","storage_partners","safety_alerts","job_route_legs","job_events","job_scope_changes","vendors","disposal_facilities","properties","potent_wallets","wallet_transactions","rate_cards","service_zones","job_templates","quote_terms_acceptance","jobs","job_photos","junk_jobs","jobs_backup","audit_log_real","expenses_real","commission_rates_real","payment_references","cost_profiles","customer_rate_cards","claims","change_orders","addon_authorizations","my_documents","deadlines","shift_handoffs","escalation_timers","site_profiles","customer_locations","incoming_loads","user_display_names","revoked_users","receipts","job_communications","login_log","push_subscriptions","griffin_queries","recurring_routes","reviews","waitlist","os_prospects","business_rules","factoring_receivables"];
 (function () {
     if (typeof window === "undefined" || !window.fetch || window.__plGate) return;
     window.__plGate = true;
@@ -1104,7 +1104,7 @@ function LangSwitcher({ lang, changeLang }) {
     );
 }
 var TRUCK_MPG = 9;
-var TRUCK_MAX_LBS = 4500;
+var TRUCK_MAX_LBS = 4999; // working payload cap; REAL_TRUCK_PROFILE.maxPayloadLbs must match
 var TRUCK_LENGTH = "16ft";
 var TRUCK_WIDTH = "93 inches wide";
 var HELPER_FEE = 100;
@@ -3357,6 +3357,247 @@ function CustomerMailPanel(props) {
             React.createElement("span", { style: { fontSize: 12, color: C.white } }, j.id + " - " + (j.customer || "") + " - " + plMoney(j.finalPrice || j.basePrice) + " - " + j.status),
             React.createElement("span", null, React.createElement("button", { onClick: function () { send("quote", j); }, style: b }, "Send quote"), React.createElement("button", { onClick: function () { send("invoice", j); }, style: b }, "Send invoice"))); }));
 }
+// ── FACTORING TRACKER (manual workflow: no live Cashway/Trinity connection) ──
+var PL_FACTOR_STATUSES = ["Delivered", "Documents ready", "Submitted", "Accepted", "Funding pending", "Partially funded", "Funded", "Rejected / disputed", "Reconciled"];
+var PL_FACTOR_DOCS = [["rate_con", "Rate confirmation"], ["bol", "Signed BOL"], ["pod", "Signed POD"], ["receipts", "Accessorial receipts"]];
+function plFactorCalc(r) {
+    var amt = Math.max(0, Number(r.invoice_amount) || 0);
+    var pct = Math.max(0, Number(r.fee_pct) || 0);
+    var fee = Math.round(amt * pct) / 100;
+    var net = Math.round((amt - fee) * 100) / 100;
+    var funded = Math.max(0, Number(r.funded_amount) || 0);
+    var owed = Math.max(0, Math.round((net - funded) * 100) / 100);
+    return { fee: fee, net: net, funded: funded, owed: owed };
+}
+function plFactorMissing(r) { return PL_FACTOR_DOCS.filter(function (d) { return !r[d[0]]; }).map(function (d) { return d[1]; }); }
+// Same load must never be on two factoring records, and a broker's load number must not repeat.
+function plFactorDup(list, r) {
+    var bn = String(r.broker_load_no || "").trim().toLowerCase(), br = String(r.broker || "").trim().toLowerCase();
+    for (var i = 0; i < list.length; i++) {
+        var o = list[i]; if (o.id === r.id) continue;
+        if (r.job_id && o.job_id === r.job_id) return "Load " + r.job_id + " is already on a factoring record (" + (o.factor || "no factor") + ", " + o.status + ").";
+        if (bn && String(o.broker_load_no || "").trim().toLowerCase() === bn && String(o.broker || "").trim().toLowerCase() === br) return "Broker load " + r.broker_load_no + " for " + r.broker + " is already recorded.";
+    }
+    return "";
+}
+function plFactorSummary(r) {
+    var c = plFactorCalc(r), miss = plFactorMissing(r);
+    return ["FACTORING SUBMISSION - " + (r.factor || "factor not chosen"), "POTENT load: " + (r.job_id || ""), "Broker: " + (r.broker || "") + "  Broker load #: " + (r.broker_load_no || ""),
+        "Invoice: " + plMoney(r.invoice_amount) + "  Fee: " + (Number(r.fee_pct) || 0) + "% (" + plMoney(c.fee) + ")  Expected net: " + plMoney(c.net),
+        "Notice of Assignment on file: " + (r.noa_on_file ? "yes" : "NO"), "Broker credit approval: " + (r.credit_status || "unknown"),
+        "Documents: " + PL_FACTOR_DOCS.map(function (d) { return d[1] + " " + (r[d[0]] ? "[x]" : "[ ]"); }).join(", "),
+        miss.length ? "MISSING: " + miss.join(", ") : "All required documents attached."].join("\n");
+}
+
+function plEsc(x) { return String(x == null ? "" : x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+function plPrintPacket(r, job) {
+    var c = plFactorCalc(r), miss = plFactorMissing(r);
+    return plOps("job_photos", "GET", "job_id=eq." + encodeURIComponent(r.job_id) + "&select=url,stage,photo_type,created_at&order=created_at.asc").then(function (x) {
+        var photos = x && x.ok && Array.isArray(x.data) ? x.data : [];
+        var w = window.open("", "_blank"); if (!w) return false;
+        var html = "<html><head><title>Load packet " + plEsc(r.job_id) + "</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:20px auto;color:#111}h1{font-size:20px}table{border-collapse:collapse;width:100%}td{border:1px solid #bbb;padding:6px 8px;font-size:13px}img{max-width:100%;max-height:340px;margin:6px 0}.miss{color:#b00020;font-weight:bold}</style></head><body>" +
+            "<h1>POTENT Logistics - Load packet</h1><table>" +
+            [["POTENT load", r.job_id], ["Broker / customer", r.broker], ["Broker load #", r.broker_load_no], ["Factor", r.factor || "not chosen"], ["Status", r.status], ["Route", job ? (job.origin || "") + " to " + (job.destination || "") : ""], ["Date", job ? job.date : ""],
+            ["Invoice", plMoney(r.invoice_amount)], ["Factoring fee", (Number(r.fee_pct) || 0) + "% = " + plMoney(c.fee)], ["Expected net", plMoney(c.net)], ["Funded so far", plMoney(c.funded)], ["Broker credit approval", r.credit_status], ["Notice of Assignment on file", r.noa_on_file ? "yes" : "NO"]]
+            .map(function (p) { return "<tr><td>" + plEsc(p[0]) + "</td><td>" + plEsc(p[1]) + "</td></tr>"; }).join("") + "</table><h2>Documents</h2><table>" +
+            PL_FACTOR_DOCS.map(function (d) { return "<tr><td>" + plEsc(d[1]) + "</td><td>" + (r[d[0]] ? "attached" : "<span class=miss>MISSING</span>") + "</td></tr>"; }).join("") + "</table>" +
+            (miss.length ? "<p class=miss>Not ready to submit: missing " + plEsc(miss.join(", ")) + ".</p>" : "<p>All required documents are attached.</p>") +
+            (r.note ? "<p>Note: " + plEsc(r.note) + "</p>" : "") + "<h2>Photos and documents on file (" + photos.length + ")</h2>" +
+            photos.map(function (p) { return "<div>" + plEsc(p.stage || p.photo_type || "photo") + " - " + plEsc(plFmtTime(p.created_at)) + "<br><img src=\"" + plEsc(p.url) + "\"></div>"; }).join("") +
+            "<p style=\"font-size:11px;color:#555\">Generated " + plEsc(new Date().toLocaleString()) + ". Rate confirmation, BOL and POD files must be attached from the originals.</p></body></html>";
+        w.document.write(html); w.document.close(); return true;
+    });
+}
+function FactoringPanel(props) {
+    var lS = React.useState([]); var list = lS[0], setList = lS[1];
+    var mS = React.useState(""); var msg = mS[0], setMsg = mS[1];
+    var eS = React.useState(null); var ed = eS[0], setEd = eS[1];
+    var canWrite = plOpsCanDecide();
+    function load() { plOps("factoring_receivables", "GET", "select=*&order=created_at.desc&limit=500").then(function (r) { setList(r && r.ok && Array.isArray(r.data) ? r.data : []); if (r && !r.ok) setMsg("Could not load: " + (r.error || "run the factoring SQL first")); }); }
+    React.useEffect(function () { load(); }, []);
+    var onFile = {}; list.forEach(function (r) { if (r.job_id) onFile[r.job_id] = true; });
+    var ready = (props.jobs || []).filter(function (j) { return ["Delivered", "Completed", "Paid"].indexOf(j.status) > -1 && !onFile[j.id]; }).slice(0, 40);
+    function start(j) {
+        setEd({ job_id: j.id, broker: j.customer || "", broker_load_no: "", factor: "", credit_status: "unknown", noa_on_file: false, invoice_amount: Number(j.finalPrice || j.basePrice) || 0, fee_pct: 0, funded_amount: 0, status: "Delivered", rate_con: false, bol: false, pod: false, receipts: false, note: "" });
+    }
+    function save() {
+        var r = Object.assign({}, ed);
+        if (!r.job_id) { setMsg("Not saved: pick a load (job ID is required)."); return; }
+        if (!(Number(r.invoice_amount) > 0)) { setMsg("Not saved: invoice amount must be more than zero."); return; }
+        if (Number(r.fee_pct) < 0 || Number(r.fee_pct) > 25) { setMsg("Not saved: fee % must be between 0 and 25."); return; }
+        var d = plFactorDup(list, r); if (d) { setMsg("Not saved: " + d); return; }
+        if (["Submitted", "Accepted", "Funding pending", "Partially funded", "Funded", "Reconciled"].indexOf(r.status) > -1) {
+            if (!r.factor) { setMsg("Not saved: choose the factor before marking it submitted."); return; }
+            var miss = plFactorMissing(r); if (miss.length) { setMsg("Not saved: missing " + miss.join(", ") + ". Attach them or mark the record Rejected / disputed with a note."); return; }
+        }
+        if (Number(r.funded_amount) > plFactorCalc(r).net + 0.005 && r.status !== "Rejected / disputed") { setMsg("Not saved: funded amount is more than the expected net."); return; }
+        var now = new Date().toISOString(), c = plFactorCalc(r);
+        var body = { job_id: String(r.job_id), broker: r.broker || "", broker_load_no: r.broker_load_no || "", factor: r.factor || "", credit_status: r.credit_status || "unknown", noa_on_file: !!r.noa_on_file,
+            invoice_amount: Number(r.invoice_amount), fee_pct: Number(r.fee_pct) || 0, fee_amount: c.fee, expected_net: c.net, funded_amount: c.funded, status: r.status, rate_con: !!r.rate_con, bol: !!r.bol, pod: !!r.pod, receipts: !!r.receipts, note: r.note || "", updated_at: now };
+        if (r.status === "Submitted" && !r.submitted_at) body.submitted_at = now; else if (r.submitted_at) body.submitted_at = r.submitted_at;
+        if (c.funded > 0 && !r.funded_date) body.funded_date = now; else if (r.funded_date) body.funded_date = r.funded_date;
+        (r.id ? plOps("factoring_receivables", "PATCH", "id=eq." + r.id, body) : plOps("factoring_receivables", "POST", "", body)).then(function (x) {
+            if (x.ok) { setEd(null); setMsg("Saved."); load(); } else setMsg("Not saved: " + (/duplicate|unique|23505/i.test(String(x.error || "")) ? "that load or broker load number is already on a record." : (x.error || "try again")));
+        });
+    }
+    function csv() {
+        var cols = ["job_id", "broker", "broker_load_no", "factor", "status", "invoice_amount", "fee_pct", "fee_amount", "expected_net", "funded_amount", "funded_date", "submitted_at", "credit_status", "note"];
+        var rows = [cols.join(",")].concat(list.map(function (r) { return cols.map(function (k) { return '"' + String(r[k] == null ? "" : r[k]).replace(/"/g, '""') + '"'; }).join(","); }));
+        var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([rows.join("\n")], { type: "text/csv" })); a.download = "factoring-" + new Date().toISOString().slice(0, 10) + ".csv"; a.click();
+    }
+    var tot = { ready: 0, submitted: 0, pending: 0, received: 0, owed: 0 };
+    list.forEach(function (r) { var c = plFactorCalc(r);
+        if (r.status === "Documents ready" || r.status === "Delivered") tot.ready += Number(r.invoice_amount) || 0;
+        else if (r.status === "Submitted" || r.status === "Accepted") tot.submitted += Number(r.invoice_amount) || 0;
+        if (["Funding pending", "Partially funded", "Accepted", "Submitted"].indexOf(r.status) > -1) tot.owed += c.owed;
+        tot.received += c.funded;
+        if (r.status === "Funding pending" || r.status === "Partially funded") tot.pending += c.owed; });
+    var inp = { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "8px 10px", fontSize: 12, fontFamily: "inherit", boxSizing: "border-box" };
+    var btn = function (label, fn, primary) { return React.createElement("button", { key: label, onClick: fn, style: { background: primary ? C.orange : "transparent", color: primary ? "#000" : C.white, border: primary ? "none" : "1px solid " + C.border, borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 800, cursor: "pointer", marginRight: 6, marginTop: 6 } }, label); };
+    var fld = function (k, label, type, extra) { return React.createElement("label", { key: k, style: { fontSize: 10, color: C.dim, display: "block" } }, label, React.createElement("input", Object.assign({ type: type || "text", step: "any", value: ed[k] == null ? "" : ed[k], style: inp, onChange: function (e) { var v = e.target.value, o = {}; o[k] = v; setEd(Object.assign({}, ed, o)); } }, extra || {}))); };
+    var stat = function (label, val, color) { return React.createElement("div", { key: label, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "9px 12px", flex: "1 1 120px" } }, React.createElement("div", { style: { fontSize: 10, color: C.dim } }, label), React.createElement("div", { style: { fontSize: 16, fontWeight: 900, color: color || C.white } }, plMoney(val))); };
+    var kids = [
+        React.createElement("div", { key: "n", style: { fontSize: 11, color: C.dim, marginBottom: 10 } }, "Manual tracking for Cashway, Trinity or any factor. There is no live connection to a factor: you enter what they tell you. Only money entered as funded counts as received; unpaid invoices never count as deposits."),
+        React.createElement("div", { key: "t", style: { display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 } }, [stat("Ready to submit", tot.ready), stat("Submitted", tot.submitted), stat("Funding pending", tot.pending, C.orange), stat("Funds received", tot.received, C.green), stat("Still owed to us", tot.owed)]),
+        msg && React.createElement("div", { key: "m", style: { fontSize: 12, color: msg.indexOf("Not saved") === 0 || msg.indexOf("Could not") === 0 ? C.red : C.green, marginBottom: 8 } }, msg)
+    ];
+    if (ed) {
+        var c = plFactorCalc(ed), miss = plFactorMissing(ed);
+        kids.push(React.createElement("div", { key: "f", style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: 14, marginBottom: 10 } },
+            React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.white, marginBottom: 8 } }, ed.id ? "Edit record" : "New factoring record"),
+            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 } },
+                fld("job_id", "POTENT load ID", "text", { disabled: !!ed.id }), fld("broker_load_no", "Broker's load number"), fld("broker", "Broker / customer"),
+                React.createElement("label", { key: "fa", style: { fontSize: 10, color: C.dim } }, "Factor", React.createElement("select", { value: ed.factor || "", style: inp, onChange: function (e) { setEd(Object.assign({}, ed, { factor: e.target.value })); } }, ["", "Cashway", "Trinity", "Other"].map(function (o) { return React.createElement("option", { key: o, value: o }, o || "Choose..."); }))),
+                fld("invoice_amount", "Invoice amount ($)", "number"), fld("fee_pct", "Factoring fee (%)", "number"),
+                React.createElement("label", { key: "cs", style: { fontSize: 10, color: C.dim } }, "Broker credit approval", React.createElement("select", { value: ed.credit_status || "unknown", style: inp, onChange: function (e) { setEd(Object.assign({}, ed, { credit_status: e.target.value })); } }, ["unknown", "approved", "pending", "declined"].map(function (o) { return React.createElement("option", { key: o, value: o }, o); }))),
+                React.createElement("label", { key: "st", style: { fontSize: 10, color: C.dim } }, "Status", React.createElement("select", { value: ed.status, style: inp, onChange: function (e) { setEd(Object.assign({}, ed, { status: e.target.value })); } }, PL_FACTOR_STATUSES.map(function (o) { return React.createElement("option", { key: o, value: o }, o); }))),
+                fld("funded_amount", "Actually funded so far ($)", "number")),
+            React.createElement("div", { key: "ck", style: { marginTop: 8, fontSize: 12, color: C.white } },
+                React.createElement("label", { style: { marginRight: 12 } }, React.createElement("input", { type: "checkbox", checked: !!ed.noa_on_file, onChange: function (e) { setEd(Object.assign({}, ed, { noa_on_file: e.target.checked })); } }), " Notice of Assignment on file"),
+                PL_FACTOR_DOCS.map(function (d) { return React.createElement("label", { key: d[0], style: { marginRight: 12 } }, React.createElement("input", { type: "checkbox", checked: !!ed[d[0]], onChange: function (e) { var o = {}; o[d[0]] = e.target.checked; setEd(Object.assign({}, ed, o)); } }), " " + d[1]); })),
+            React.createElement("div", { key: "calc", style: { fontSize: 12, color: C.dim, marginTop: 8 } }, "Fee " + plMoney(c.fee) + " - Expected net " + plMoney(c.net) + " - Still owed " + plMoney(c.owed) + (miss.length ? " - Missing: " + miss.join(", ") : " - All documents attached")),
+            fld("note", "Missing-document reason, dispute or deduction note"),
+            btn("Save", save, true), btn("Cancel", function () { setEd(null); })));
+    }
+    if (!ed && canWrite && ready.length) {
+        kids.push(React.createElement("div", { key: "rd", style: { marginBottom: 10 } }, React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 4 } }, "Delivered loads with no factoring record yet"),
+            ready.map(function (j) { return React.createElement("div", { key: j.id, style: { display: "flex", justifyContent: "space-between", alignItems: "center", background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "7px 12px", marginBottom: 5, fontSize: 12, color: C.white } }, React.createElement("span", null, j.id + " - " + (j.customer || "") + " - " + plMoney(j.finalPrice || j.basePrice)), btn("Start record", function () { start(j); })); })));
+    }
+    if (!ed) kids.push(React.createElement("div", { key: "ac" }, canWrite && btn("+ Add record by hand", function () { start({ id: "" }); }, true), list.length > 0 && btn("Export CSV", csv)));
+    list.length === 0 && !ed && kids.push(React.createElement("div", { key: "e", style: { fontSize: 12, color: C.dim, marginTop: 10 } }, "No factoring records yet. When a load is delivered it shows up above so you can start one."));
+    if (!ed) list.forEach(function (r) { var c = plFactorCalc(r), miss = plFactorMissing(r);
+        kids.push(React.createElement("div", { key: r.id, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "10px 12px", marginTop: 8, fontSize: 12, color: C.white } },
+            React.createElement("div", { style: { display: "flex", justifyContent: "space-between" } }, React.createElement("b", null, r.job_id + " - " + (r.broker || "")), React.createElement("span", { style: { color: C.orange, fontWeight: 800 } }, r.status)),
+            React.createElement("div", { style: { color: C.dim, marginTop: 3 } }, (r.factor || "No factor") + " - invoice " + plMoney(r.invoice_amount) + " - net " + plMoney(c.net) + " - funded " + plMoney(c.funded) + " - owed " + plMoney(c.owed) + (r.submitted_at ? " - submitted " + plFmtTime(r.submitted_at) : "")),
+            miss.length > 0 && React.createElement("div", { style: { color: C.red, marginTop: 3 } }, "Missing: " + miss.join(", ")),
+            r.note && React.createElement("div", { style: { color: C.dim, marginTop: 3 } }, r.note),
+            React.createElement("div", null, canWrite && btn("Edit", function () { setEd(Object.assign({}, r)); }), btn("Print packet", function () { var jb = (props.jobs || []).filter(function (j) { return j.id === r.job_id; })[0]; plPrintPacket(r, jb).then(function (ok) { if (!ok) setMsg("Could not open the packet. Allow pop-ups for this site."); }); }), btn("Copy packet summary", function () { try { navigator.clipboard.writeText(plFactorSummary(r)); setMsg("Packet summary copied."); } catch (e) { setMsg("Could not copy."); } })))); });
+    return React.createElement("div", null, kids);
+}
+// ── OPERATIONS CHARTS: every number comes from stored jobs, expenses and factoring records ──
+var PL_AGING_BUCKETS = [[0, 15, "0-15 days"], [16, 30, "16-30 days"], [31, 60, "31-60 days"], [61, 100000, "Over 60 days"]];
+function plDaysBetween(a, b) { var x = new Date(a).getTime(), y = new Date(b).getTime(); return (isNaN(x) || isNaN(y)) ? null : Math.max(0, (y - x) / 86400000); }
+function plAvg(a) { return a.length ? a.reduce(function (s, v) { return s + v; }, 0) / a.length : null; }
+function plChartData(jobs, fac, exps, days, nowMs) {
+    var cutoff = days > 0 ? nowMs - days * 86400000 : 0;
+    var inRange = function (d) { var t = new Date(d).getTime(); return !isNaN(t) && t >= cutoff; };
+    var J = (jobs || []).filter(function (j) { return inRange(j.date || j.createdAt); });
+    var F = (fac || []).filter(function (r) { return inRange(r.created_at); });
+    var E = (exps || []).filter(function (e) { return inRange(e.date); });
+    var DONE = ["Completed", "Delivered", "Paid"];
+    var out = { jobsN: J.length, facN: F.length, expN: E.length };
+    // 1 funding pipeline
+    var pipe = { "Ready to submit": 0, "Submitted": 0, "Funding pending": 0, "Funds received": 0, "Disputed": 0 };
+    F.forEach(function (r) { var c = plFactorCalc(r), a = Number(r.invoice_amount) || 0;
+        if (r.status === "Delivered" || r.status === "Documents ready") pipe["Ready to submit"] += a;
+        else if (r.status === "Submitted" || r.status === "Accepted") pipe["Submitted"] += a;
+        else if (r.status === "Funding pending" || r.status === "Partially funded") pipe["Funding pending"] += c.owed;
+        else if (r.status === "Rejected / disputed") pipe["Disputed"] += a;
+        pipe["Funds received"] += c.funded; });
+    out.pipeline = Object.keys(pipe).map(function (k) { return { label: k, value: Math.round(pipe[k] * 100) / 100 }; });
+    // 2 receivables aging: balance still owed on submitted records, by days since submission
+    out.aging = PL_AGING_BUCKETS.map(function (b) { return { label: b[2], value: 0 }; });
+    F.forEach(function (r) { if (!r.submitted_at || ["Submitted", "Accepted", "Funding pending", "Partially funded"].indexOf(r.status) < 0) return;
+        var d = plDaysBetween(r.submitted_at, nowMs); if (d === null) return; var owed = plFactorCalc(r).owed;
+        for (var i = 0; i < PL_AGING_BUCKETS.length; i++) if (d >= PL_AGING_BUCKETS[i][0] && d <= PL_AGING_BUCKETS[i][1] + 0.999) { out.aging[i].value += owed; break; } });
+    // 3 turnaround
+    var byJob = {}; J.forEach(function (j) { byJob[j.id] = j; }); (jobs || []).forEach(function (j) { byJob[j.id] = j; });
+    var d2s = [], s2f = [];
+    F.forEach(function (r) { var j = byJob[r.job_id]; if (j && j.date && r.submitted_at) { var d = plDaysBetween(j.date, r.submitted_at); if (d !== null) d2s.push(d); }
+        if (r.submitted_at && r.funded_date) { var f = plDaysBetween(r.submitted_at, r.funded_date); if (f !== null) s2f.push(f); } });
+    out.turn = { deliveredToSubmitted: plAvg(d2s), submittedToFunded: plAvg(s2f), n1: d2s.length, n2: s2f.length };
+    // 4 profit per load (factoring loads): net after fee, fuel and job expenses; BEFORE driver labor
+    var expByJob = {}; (exps || []).forEach(function (e) { if (e.jobId) expByJob[e.jobId] = (expByJob[e.jobId] || 0) + (Number(e.amount) || 0); });
+    out.loads = F.map(function (r) { var j = byJob[r.job_id] || {}, c = plFactorCalc(r), cost = (Number(j.fuel) || 0) + (expByJob[r.job_id] || 0), profit = c.net - cost, mi = Number(j.miles) || 0;
+        return { id: r.job_id, broker: r.broker, revenue: Number(r.invoice_amount) || 0, fee: c.fee, cost: cost, profit: Math.round(profit * 100) / 100, miles: mi, revPerMile: mi ? (Number(r.invoice_amount) || 0) / mi : null, profitPerMile: mi ? profit / mi : null }; })
+        .sort(function (a, b) { return b.profit - a.profit; });
+    // 5/8 monthly revenue vs expenses, weekly loads
+    var mon = {}; var mk = function (d) { return String(d).slice(0, 7); };
+    J.forEach(function (j) { if (DONE.indexOf(j.status) > -1) { var k = mk(j.date); if (k.length === 7) { mon[k] = mon[k] || { rev: 0, exp: 0, fee: 0 }; mon[k].rev += Number(j.finalPrice || j.basePrice) || 0; } } });
+    E.forEach(function (e) { var k = mk(e.date); if (k.length === 7) { mon[k] = mon[k] || { rev: 0, exp: 0, fee: 0 }; mon[k].exp += Number(e.amount) || 0; } });
+    F.forEach(function (r) { var k = mk(r.created_at); if (k.length === 7) { mon[k] = mon[k] || { rev: 0, exp: 0, fee: 0 }; mon[k].fee += plFactorCalc(r).fee; } });
+    out.months = Object.keys(mon).sort().slice(-12).map(function (k) { return { label: k, rev: mon[k].rev, exp: mon[k].exp, fee: mon[k].fee, net: mon[k].rev - mon[k].exp - mon[k].fee }; });
+    var wk = {}; J.forEach(function (j) { if (DONE.indexOf(j.status) > -1) { var t = new Date(j.date).getTime(); if (isNaN(t)) return; var wkStart = new Date(t - ((new Date(t).getUTCDay() + 6) % 7) * 86400000).toISOString().slice(0, 10); wk[wkStart] = wk[wkStart] || { n: 0, rev: 0 }; wk[wkStart].n++; wk[wkStart].rev += Number(j.finalPrice || j.basePrice) || 0; } });
+    out.weeks = Object.keys(wk).sort().slice(-8).map(function (k) { return { label: k.slice(5), value: wk[k].n, rev: wk[k].rev }; });
+    // 6 expense breakdown, 7 status distribution
+    var et = {}; E.forEach(function (e) { var k = e.type || "Other"; et[k] = (et[k] || 0) + (Number(e.amount) || 0); });
+    out.expenseTypes = Object.keys(et).map(function (k) { return { label: k, value: Math.round(et[k] * 100) / 100 }; }).sort(function (a, b) { return b.value - a.value; });
+    var st = {}; J.forEach(function (j) { st[j.status || "New"] = (st[j.status || "New"] || 0) + 1; });
+    out.statuses = Object.keys(st).map(function (k) { return { label: k, value: st[k] }; }).sort(function (a, b) { return b.value - a.value; });
+    // 9 broker performance
+    var bk = {}; F.forEach(function (r) { var k = r.broker || "(none)"; var o = bk[k] = bk[k] || { broker: k, loads: 0, invoiced: 0, s2f: [], disputed: 0 };
+        o.loads++; o.invoiced += Number(r.invoice_amount) || 0; if (r.status === "Rejected / disputed") o.disputed++; if (r.submitted_at && r.funded_date) { var d = plDaysBetween(r.submitted_at, r.funded_date); if (d !== null) o.s2f.push(d); } });
+    out.brokers = Object.keys(bk).map(function (k) { var o = bk[k]; return { broker: o.broker, loads: o.loads, invoiced: o.invoiced, avgDays: plAvg(o.s2f), disputed: o.disputed }; }).sort(function (a, b) { return b.invoiced - a.invoiced; });
+    return out;
+}
+function PlBars(props) {
+    var rows = props.rows || [], max = Math.max.apply(null, rows.map(function (r) { return Math.abs(r.value); }).concat([0.0001])), fmt = props.fmt || plMoney;
+    if (!rows.length || rows.every(function (r) { return !r.value; })) return React.createElement("div", { style: { fontSize: 12, color: C.dim } }, props.empty || "No data yet for this period.");
+    return React.createElement("div", { role: "table", "aria-label": props.label }, rows.map(function (r) {
+        return React.createElement("div", { key: r.label, role: "row", title: r.label + ": " + fmt(r.value), style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 5, fontSize: 11 } },
+            React.createElement("div", { role: "cell", style: { width: 112, color: C.dim, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, r.label),
+            React.createElement("div", { style: { flex: 1, background: C.surface, borderRadius: 4, height: 12 } }, React.createElement("div", { style: { width: Math.max(2, Math.round(Math.abs(r.value) / max * 100)) + "%", height: 12, borderRadius: 4, background: r.value < 0 ? C.red : (props.color || C.orange) } })),
+            React.createElement("div", { role: "cell", style: { width: 76, color: C.white, fontWeight: 700 } }, fmt(r.value)));
+    }));
+}
+function PlColumns(props) {
+    var rows = props.rows || [], keys = props.keys || [], mx = 0.0001;
+    rows.forEach(function (r) { keys.forEach(function (k) { mx = Math.max(mx, Math.abs(r[k[0]] || 0)); }); });
+    if (!rows.length) return React.createElement("div", { style: { fontSize: 12, color: C.dim } }, props.empty || "No data yet for this period.");
+    return React.createElement("div", null,
+        React.createElement("div", { style: { display: "flex", gap: 12, fontSize: 10, color: C.dim, marginBottom: 6 } }, keys.map(function (k) { return React.createElement("span", { key: k[0] }, React.createElement("span", { style: { display: "inline-block", width: 10, height: 10, borderRadius: 2, background: k[2], marginRight: 4 } }), k[1]); })),
+        React.createElement("div", { style: { display: "flex", alignItems: "flex-end", gap: 8, height: 120, overflowX: "auto" } }, rows.map(function (r) {
+            return React.createElement("div", { key: r.label, style: { flex: "1 0 38px", textAlign: "center" } },
+                React.createElement("div", { style: { display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 2, height: 96 } }, keys.map(function (k) { var v = r[k[0]] || 0; return React.createElement("div", { key: k[0], title: r.label + " " + k[1] + ": " + (props.fmt || plMoney)(v), style: { width: 12, height: Math.max(2, Math.round(Math.abs(v) / mx * 96)), background: v < 0 ? C.red : k[2], borderRadius: "3px 3px 0 0" } }); })),
+                React.createElement("div", { style: { fontSize: 9, color: C.dim, marginTop: 3 } }, r.label));
+        })));
+}
+function OpsCharts(props) {
+    var dS = React.useState(90); var days = dS[0], setDays = dS[1];
+    var fS = React.useState([]); var fac = fS[0], setFac = fS[1];
+    var eS = React.useState(loadExpenses()); var exps = eS[0], setExps = eS[1];
+    React.useEffect(function () {
+        plOps("factoring_receivables", "GET", "select=*&limit=1000").then(function (r) { setFac(r && r.ok && Array.isArray(r.data) ? r.data : []); });
+        loadExpensesFromServer().then(function (rows) { if (rows && rows.length) setExps(rows); });
+    }, []);
+    var D = plChartData(props.jobs, fac, exps, days, Date.now());
+    var card = function (title, note, kids) { return React.createElement("div", { key: title, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "12px 14px", marginBottom: 10 } }, React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.white } }, title), note && React.createElement("div", { style: { fontSize: 10, color: C.dim, margin: "2px 0 8px" } }, note), kids); };
+    var daysTxt = function (v) { return v === null ? "no data" : v.toFixed(1) + " days"; };
+    var sel = React.createElement("select", { value: days, onChange: function (e) { setDays(Number(e.target.value)); }, style: { background: C.surface, color: C.white, border: "1px solid " + C.border, borderRadius: 7, padding: "7px 10px", fontSize: 12, marginBottom: 10 } }, [[30, "Last 30 days"], [90, "Last 90 days"], [365, "Last 12 months"], [0, "All time"]].map(function (o) { return React.createElement("option", { key: o[0], value: o[0] }, o[1]); }));
+    var best = D.loads.filter(function (l) { return l.profitPerMile !== null; });
+    return React.createElement("div", null, sel,
+        React.createElement("div", { style: { fontSize: 10, color: C.dim, marginBottom: 8 } }, D.jobsN + " jobs, " + D.facN + " factoring records, " + D.expN + " expenses in this period. Every chart is built from those saved records."),
+        card("Revenue vs expenses (by month)", "Revenue = completed, delivered or paid jobs. Net = revenue - expenses - factoring fees.", React.createElement(PlColumns, { rows: D.months, keys: [["rev", "Revenue", C.orange], ["exp", "Expenses", C.blue], ["net", "Net", C.green]] })),
+        card("Funding pipeline", "Funds received counts only money you entered as funded.", React.createElement(PlBars, { rows: D.pipeline, label: "Funding pipeline", empty: "No factoring records yet. Start one in the Factoring tab." })),
+        card("Receivables aging", "Balance still owed by the factor, by days since submission.", React.createElement(PlBars, { rows: D.aging, label: "Receivables aging", empty: "Nothing submitted and unpaid." })),
+        card("Funding turnaround", "Average over records that have both dates.", React.createElement("div", { style: { fontSize: 12, color: C.white } }, "Delivery to submission: " + daysTxt(D.turn.deliveredToSubmitted) + " (" + D.turn.n1 + " records)", React.createElement("br"), "Submission to funding: " + daysTxt(D.turn.submittedToFunded) + " (" + D.turn.n2 + " records)")),
+        card("Profit per load", "Invoice - factoring fee - fuel - expenses logged to that job. Before driver labor.", React.createElement(PlBars, { rows: D.loads.slice(0, 12).map(function (l) { return { label: l.id + " " + (l.broker || ""), value: l.profit }; }), label: "Profit per load", empty: "No factoring loads yet." })),
+        card("Revenue per mile vs profit per mile", "Only loads with miles saved. Lowest profit per mile first.", best.length ? React.createElement("div", null, best.slice().sort(function (a, b) { return a.profitPerMile - b.profitPerMile; }).slice(0, 8).map(function (l) { return React.createElement("div", { key: l.id, style: { fontSize: 11, color: C.white, marginBottom: 3 } }, l.id + ": revenue " + plMoney(l.revPerMile) + "/mi, profit " + plMoney(l.profitPerMile) + "/mi (" + l.miles + " mi)"); })) : React.createElement("div", { style: { fontSize: 12, color: C.dim } }, "No loads with miles yet.")),
+        card("Weekly loads completed", "Last 8 weeks (week starting).", React.createElement(PlBars, { rows: D.weeks, fmt: function (n) { return String(n); }, label: "Weekly loads", empty: "No completed jobs in this period." })),
+        card("Expense breakdown", null, React.createElement(PlBars, { rows: D.expenseTypes, label: "Expenses", color: C.blue, empty: "No expenses logged in this period." })),
+        card("Load status", null, React.createElement(PlBars, { rows: D.statuses, fmt: function (n) { return String(n); }, label: "Load status", empty: "No jobs in this period." })),
+        card("Broker performance", "Loads, invoiced, average days to fund, disputes.", D.brokers.length ? React.createElement("div", null, D.brokers.map(function (b) { return React.createElement("div", { key: b.broker, style: { fontSize: 11, color: C.white, marginBottom: 3 } }, b.broker + ": " + b.loads + " loads, " + plMoney(b.invoiced) + ", avg " + daysTxt(b.avgDays) + ", " + b.disputed + " disputed"); })) : React.createElement("div", { style: { fontSize: 12, color: C.dim } }, "No factoring records yet.")));
+}
 function GrowthTools(props) {
     var tabS = React.useState("accounts"); var tab = tabS[0], setTab = tabS[1];
     var dS = React.useState({ cards: [], zones: [], tpls: [], legs: [], events: [], scopes: [] }); var d = dS[0], setD = dS[1];
@@ -3384,7 +3625,7 @@ function GrowthTools(props) {
         var b = Object.assign({}, body); delete b.created_at; delete b.org_id;
         (b.id ? plOps(table, "PATCH", "id=eq." + b.id, b) : plOps(table, "POST", "", b)).then(function (r) { if (r.ok) { setEdit(null); setMsg(""); load(); if (after) after(r); } else setMsg("Not saved: " + r.error); });
     }
-    var tabs = [["accounts", "Accounts"], ["insights", "Insights"], ["alerts", "Alerts" + (alerts.length ? " (" + alerts.length + ")" : "")], ["cards", "Rate cards"], ["zones", "Zones"], ["tpls", "Repeat jobs"], ["send", "Quotes & invoices"], ["payout", "Payout method"], ["rules", "Rules"]];
+    var tabs = [["accounts", "Accounts"], ["insights", "Insights"], ["alerts", "Alerts" + (alerts.length ? " (" + alerts.length + ")" : "")], ["cards", "Rate cards"], ["zones", "Zones"], ["tpls", "Repeat jobs"], ["send", "Quotes & invoices"], ["payout", "Payout method"], ["rules", "Rules"], ["factoring", "Factoring"], ["charts", "Charts"]];
     var body = null;
     if (tab === "accounts") {
         if (sel) {
@@ -3478,6 +3719,8 @@ function GrowthTools(props) {
     if (tab === "send") body = React.createElement(CustomerMailPanel, { jobs: props.jobs });
     if (tab === "payout") body = React.createElement(PayoutMethodCard, null);
     if (tab === "rules") body = React.createElement(BusinessRulesPanel, null);
+    if (tab === "factoring") body = React.createElement(FactoringPanel, { jobs: props.jobs });
+    if (tab === "charts") body = React.createElement(OpsCharts, { jobs: props.jobs });
     return React.createElement("div", { style: { maxWidth: 760, margin: "0 auto" } },
         React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "📈 Growth Tools"),
         React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", margin: "8px 0 12px" } }, tabs.map(function (t) { return React.createElement("button", { key: t[0], onClick: function () { setTab(t[0]); setEdit(null); setMsg(""); setSel(null); }, style: { background: tab === t[0] ? C.orange : C.card, color: tab === t[0] ? "#000" : C.white, border: "1px solid " + C.border, borderRadius: 18, padding: "6px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, t[1]); })),
@@ -6041,7 +6284,7 @@ function PhoneQuotePanelInner(props) {
                     var estLength = parseInt(form.estLength, 10) || 0;
                     var estWidth = parseInt(form.estWidth, 10) || 0;
                     var estHeight = parseInt(form.estHeight, 10) || 0;
-                    var overWeight = estWeight > 4500;
+                    var overWeight = estWeight > REAL_TRUCK_PROFILE.maxPayloadLbs;
                     var overWidth = estWidth > 87;
                     var overHeight = estHeight > 72;
                     var overLength = estLength > 190;
@@ -6054,7 +6297,7 @@ function PhoneQuotePanelInner(props) {
                             React.createElement(TxtIn, { label: "Width (in)", value: form.estWidth, onChange: function (v) { set("estWidth", v); }, type: "number", placeholder: "87 max (door)" }),
                             React.createElement(TxtIn, { label: "Height (in)", value: form.estHeight, onChange: function (v) { set("estHeight", v); }, type: "number", placeholder: "72 max (door)" })),
                         hasFlag && React.createElement("div", { style: { background: "#1a0000", border: "1px solid " + C.red + "66", borderRadius: 9, padding: "10px 14px", marginBottom: 10 } },
-                            React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.red, marginBottom: 4 } }, "\u26A0 This may not fit — truck max: 4,500 lbs, 190\"L x 87\"W door x 72\"H door"),
+                            React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.red, marginBottom: 4 } }, "\u26A0 This may not fit — truck max: 4,999 lbs, 190\"L x 87\"W door x 72\"H door"),
                             React.createElement("div", { style: { fontSize: 11, color: "#cc8888" } }, "Confirm exact measurements with the customer before booking. If measurements given are wrong and it doesn't fit on arrival, full payment is still due per policy.")));
                 })(),
                 React.createElement(TxtIn, { label: "Notes", value: form.notes, onChange: function (v) { set("notes", v); }, placeholder: "What are they moving? Any special access, fragile items, gate codes...", rows: 2, voice: true })),
@@ -15773,7 +16016,7 @@ function LiveRebuttalCards() {
             React.createElement("div", { style: { fontSize: 12, color: C.white, marginBottom: 6 } },
                 React.createElement("b", null, "Pricing: "), "$200 flat for the first 40 miles, then +$2.25/mile beyond that."),
             React.createElement("div", { style: { fontSize: 12, color: C.white, marginBottom: 6 } },
-                React.createElement("b", null, "Truck: "), "16ft dock-height, 87\"W x 72\"H door, 190\" interior length, max 4,500 lbs."),
+                React.createElement("b", null, "Truck: "), "16ft dock-height, 87\"W x 72\"H door, 190\" interior length, max 4,999 lbs."),
             React.createElement("div", { style: { fontSize: 12, color: C.white, marginBottom: 10 } },
                 React.createElement("b", null, "Opening: "), "\"Hi, this is [Name] with POTENT Logistics — I run a 16ft dock-height box truck and I'm reaching out directly because I handle one-way freight drop-offs without going through a broker app. Do you have loads that need to move that a box truck could handle?\""),
             React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "Say it simply: \"It's $200 flat for local, and for anything past about 40 miles, it's $200 plus $2.25 a mile after that.\"")),
@@ -17041,7 +17284,7 @@ var POTENT_CARRIER_INFO = {
     mcNumber: "Applying — Intrastate GA currently",
     address: "2089 Christian Cir SE, Conyers, GA 30013",
     vehicle: "16ft dock-height box truck, 2022 Ford E350",
-    capacity: "4,500 lbs max, 190\"L x 95\"W x 80\"H interior",
+    capacity: "4,999 lbs max, 190\"L x 95\"W x 80\"H interior",
     equipment: "Ramp, E-tracks, moving blankets, load bars — NO liftgate",
     serviceArea: "Georgia statewide, Atlanta metro primary",
     contact: "(470) 453-1616 \u00b7 potentlogistics@" + "proton.me",
@@ -18852,7 +19095,7 @@ var COURSE_MODULES = [
         id: "m6", title: "Module 6 — The 16-Foot Box Truck Reality",
         content: [
             "Your actual vehicle: 2022 Ford E350, 16ft box, 12,500 lb GVWR.",
-            "Real cargo limitations: your actual practical payload capacity is roughly 4,500 lbs after accounting for the truck's own weight — never take a load based on the box size alone without checking real weight.",
+            "Real cargo limitations: your actual practical payload capacity is roughly 4,999 lbs after accounting for the truck's own weight — never take a load based on the box size alone without checking real weight.",
             "Weight distribution matters — freight loaded unevenly front-to-back or side-to-side genuinely affects handling and safety, not just a theoretical concern.",
             "Dimensions: interior roughly 190\" L x 95\" W x 80\" H — measure against this before accepting anything described as 'should fit.'",
             "No liftgate: this is a hard limit. Any load requiring a liftgate for unloading is not a load you can take, full stop.",
@@ -19558,7 +19801,7 @@ function DriverProfileTab(props) {
         React.createElement("div", { style: { marginTop: 20 } }, React.createElement(PayoutMethodCard, null)),
         React.createElement("div", { style: { marginTop: 20, fontSize: 11, color: C.dim, fontWeight: 800, textTransform: "uppercase" } }, "Your Vehicle"),
         React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: 14, marginTop: 8 } },
-            [["Make/Model", "2022 Ford E-350"], ["Type", "16ft Dock-Height Box Truck"], ["Capacity", "4,500 lbs"], ["Equipment", "Ramp, E-tracks, moving blankets, load bars \u2014 no liftgate"]].map(function (r) {
+            [["Make/Model", "2022 Ford E-350"], ["Type", "16ft Dock-Height Box Truck"], ["Capacity", "4,999 lbs"], ["Equipment", "Ramp, E-tracks, moving blankets, load bars \u2014 no liftgate"]].map(function (r) {
                 return React.createElement("div", { key: r[0], style: { fontSize: 12, color: C.white, padding: "4px 0" } },
                     React.createElement("span", { style: { color: C.dim } }, r[0] + ": "), r[1]);
             })));
@@ -21993,13 +22236,13 @@ function RealCapacityCalendar(props) {
 
 // ── 1. REAL CAPACITY VALIDATION — real truck dimensions, hard limit ──
 var REAL_TRUCK_PROFILE = {
-    maxPayloadLbs: 4500, // real hard limit — never raised by historical performance
+    maxPayloadLbs: 4999, // working payload cap (single source) — never raised by historical performance
     interiorLengthIn: 190, interiorWidthIn: 94, interiorHeightIn: 80,
     doorWidthIn: 86.5, doorHeightIn: 71,
 };
 function checkRealCapacity(weightLbs, lengthIn, widthIn, heightIn) {
-    if (Number(weightLbs) >= REAL_TRUCK_PROFILE.maxPayloadLbs) {
-        return { fits: false, reason: "DOES NOT FIT \u2014 weight meets or exceeds the real " + REAL_TRUCK_PROFILE.maxPayloadLbs + " lb hard payload limit." };
+    if (Number(weightLbs) > REAL_TRUCK_PROFILE.maxPayloadLbs) {
+        return { fits: false, reason: "DOES NOT FIT \u2014 weight exceeds the real " + REAL_TRUCK_PROFILE.maxPayloadLbs + " lb hard payload limit." };
     }
     var fitsDoor = (Number(widthIn) <= REAL_TRUCK_PROFILE.doorWidthIn && Number(heightIn) <= REAL_TRUCK_PROFILE.doorHeightIn) ||
         (Number(heightIn) <= REAL_TRUCK_PROFILE.doorWidthIn && Number(widthIn) <= REAL_TRUCK_PROFILE.doorHeightIn); // real rotation check
@@ -22541,7 +22784,7 @@ function griffinAnswer(transcript, userEmail, userRole, token) {
         return Promise.resolve("One POTENT Coin equals one real dollar. You fund your wallet, and real bookings draw from that balance. POTENT doesn't offer credit or Net terms \u2014 it's prepaid only.");
     }
     if (t.indexOf("fit check") > -1 || (t.indexOf("fit") > -1 && t.indexOf("truck") > -1)) {
-        return Promise.resolve("Fit Check verifies your real shipment against the actual truck's limits \u2014 4,500 pounds maximum, and it has to physically pass through an 86 and a half inch by 71 inch door.");
+        return Promise.resolve("Fit Check verifies your real shipment against the actual truck's limits \u2014 4,999 pounds maximum, and it has to physically pass through an 86 and a half inch by 71 inch door.");
     }
     if (t.indexOf("detention") > -1) {
         return Promise.resolve("Detention is the real fee charged when a truck waits beyond the included free time at a stop \u2014 POTENT's real rate is 75 dollars per hour.");
@@ -22558,7 +22801,7 @@ function griffinAnswer(transcript, userEmail, userRole, token) {
     // Real deterministic patterns didn't match — fall back to the real
     // real, free, zero-server LLM running directly in the browser via
     // WebGPU — no VPS, no monthly cost, matching "no server yet."
-    var realKnownContext = "POTENT Logistics is a direct B2B box truck carrier based in Conyers, GA. Prepaid only, no credit or Net terms. 1 POTENT Coin = $1. Real truck: 2022 Ford E-350, 16ft box, 4,500 lb max payload, no liftgate, no pallet jack.";
+    var realKnownContext = "POTENT Logistics is a direct B2B box truck carrier based in Conyers, GA. Prepaid only, no credit or Net terms. 1 POTENT Coin = $1. Real truck: 2022 Ford E-350, 16ft box, 4,999 lb max payload, no liftgate, no pallet jack.";
     return askGriffinLocalLLM(transcript, realKnownContext);
 }
 
