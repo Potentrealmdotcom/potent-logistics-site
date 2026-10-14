@@ -38,7 +38,7 @@ input[type=file]{padding:8px;font-size:11px;}
 </div>
 
 <div class="container" id="formView">
-  <div class="note">All 7 items below are required to complete onboarding, except ELD (only if you have one). Photos upload directly — no email needed.</div>
+  <div class="note">All 8 items below are required to complete onboarding, except ELD (only if you have one). Photos upload directly — no email needed.</div>
 
   <div class="card">
     <h2>Your Info</h2>
@@ -89,8 +89,15 @@ input[type=file]{padding:8px;font-size:11px;}
     <div class="upload-status" id="status_medical_card_url"></div>
   </div>
 
+  <div class="card" style="border:2px solid #F0E000;">
+    <h2>6. Certificate of Insurance (COI) — REQUIRED for Curri</h2>
+    <div class="sub">Your truck's insurance certificate. It MUST show:<br>• <b style="color:#F0E000;">POTENT OPERATIONS LLC</b> listed as <b>Additional Insured</b><br>• <b style="color:#F0E000;">Curri</b> listed as <b>Certificate Holder</b><br>• Cargo coverage included<br><br>Ask your insurance agent to add these — it usually takes them 5 minutes. We cannot send you loads until this is on file.</div>
+    <input type="file" accept="image/*,.pdf" data-field="coi_url" class="docUpload">
+    <div class="upload-status" id="status_coi_url"></div>
+  </div>
+
   <div class="card">
-    <h2>6. Payment Details</h2>
+    <h2>7. Payment Details</h2>
     <div class="sub">Where we send your money</div>
     <label>Payment Method</label>
     <select id="paymentMethod">
@@ -159,8 +166,8 @@ function submitForm(){
     alert('Please fill in your name, phone, EIN, and payment details.');
     return;
   }
-  if (!uploadedUrls.truck_registration_url || !uploadedUrls.truck_photo_url || !uploadedUrls.license_front_url || !uploadedUrls.license_back_url || !uploadedUrls.medical_card_url) {
-    alert('Please upload all required documents (ELD is optional, everything else is required).');
+  if (!uploadedUrls.truck_registration_url || !uploadedUrls.truck_photo_url || !uploadedUrls.license_front_url || !uploadedUrls.license_back_url || !uploadedUrls.medical_card_url || !uploadedUrls.coi_url) {
+    alert('Please upload all required documents (ELD is optional, everything else is required — including your COI).');
     return;
   }
 
@@ -178,7 +185,8 @@ function submitForm(){
       license_front_url: uploadedUrls.license_front_url,
       license_back_url: uploadedUrls.license_back_url,
       eld_photo_url: uploadedUrls.eld_photo_url || null,
-      medical_card_url: uploadedUrls.medical_card_url
+      medical_card_url: uploadedUrls.medical_card_url,
+      coi_url: uploadedUrls.coi_url
     })
   }).then(function(){
     document.getElementById('formView').style.display = 'none';
