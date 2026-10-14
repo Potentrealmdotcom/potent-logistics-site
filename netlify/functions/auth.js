@@ -31,6 +31,7 @@
 
 var crypto = require("crypto");
 var billing = require("./lib/billing");
+var provision = require("./lib/provision");
 
 var SB = "https://ymvsatlrkzgxwzxybwmk.supabase.co";
 var TOKEN_TTL_MS = 30 * 24 * 3600 * 1000;
@@ -633,20 +634,31 @@ exports.handler = async function (event) {
         if (action === "createorg") {
             if (tok.orgId || tok.role !== "owner") return J(403, { ok: false, error: "Owner only" });
             var data = body.org || {};
-            if (!data.slug || !data.owner_email) return J(400, { ok: false, error: "slug and owner_email required" });
-            var ins = await sb("organizations", { method: "POST", body: data });
-            if (!ins.ok || !Array.isArray(ins.data) || !ins.data[0]) return J(500, { ok: false, error: "Could not create company: " + JSON.stringify(ins.data).slice(0, 200) });
-            var pw = tempPw();
-            var ou = await sb("org_users", {
-                method: "POST",
-                body: { org_id: ins.data[0].id, name: data.owner_name, email: String(data.owner_email).trim().toLowerCase(), phone: data.owner_phone, role: "owner", password_hash: hashPw(pw), status: "active" }
-            });
-            if (!ou.ok) return J(500, { ok: false, error: "Company created but owner login failed: " + JSON.stringify(ou.data).slice(0, 200) });
-            var oem = String(data.owner_email).trim().toLowerCase();
-            await sb("organizations?id=eq." + encodeURIComponent(ins.data[0].id), { method: "PATCH", prefer: "return=minimal", body: { owner_email: oem } });
-            await sb("license_invoices?org_id=is.null&email=ilike." + encodeURIComponent(oem), { method: "PATCH", prefer: "return=minimal", body: { org_id: String(ins.data[0].id) } });
-            var stNew = await refreshOrg(ins.data[0].id);
-            return J(200, { ok: true, org: ins.data[0], ownerEmail: data.owner_email, ownerPassword: pw, status: stNew });
+            if (!data.owner_email) return J(400, { ok: false, error: "owner_email required" });
+            try {
+                var prov = await provision.provisionCompany(sb, {
+                    companyName: data.name || data.company || data.owner_email,
+                    ownerEmail: data.owner_email,
+                    ownerName: data.owner_name,
+                    ownerPhone: data.owner_phone,
+                    tier: data.plan || data.tier,
+                    licenseStatus: data.license_status || "paid",
+                    planPrice: data.plan_price
+                });
+                // Manual create allows an explicit slug override; auto path generates one.
+                if (data.slug && data.slug !== prov.org.slug) {
+                    var slugTaken = await sb("organizations?slug=eq." + encodeURIComponent(data.slug) + "&select=id&limit=1");
+                    if (data.slug === "potent-logistics" || (slugTaken.ok && Array.isArray(slugTaken.data) && slugTaken.data.length)) {
+                        return J(409, { ok: false, error: "That slug is taken." });
+                    }
+                    await sb("organizations?id=eq." + encodeURIComponent(prov.org.id), { method: "PATCH", prefer: "return=minimal", body: { slug: data.slug } });
+                    prov.org.slug = data.slug;
+                }
+                var stNew = await refreshOrg(prov.org.id);
+                return J(200, { ok: true, org: prov.org, ownerEmail: data.owner_email, ownerPassword: prov.tempPassword, created: prov.created, status: stNew });
+            } catch (e) {
+                return J(500, { ok: false, error: "Could not create company: " + e.message });
+            }
         }
 
         // ── Company owner: staff management (scoped to own org) ───
