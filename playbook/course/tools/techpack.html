@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark only" />
+  <title>Tech Pack Template — The Potent Playbook</title>
+  <meta name="description" content="A fillable tech pack template: spec your garment like a professional brand and hand it straight to your supplier." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="tools.css">
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="wrap">
+    <nav class="tool-nav" aria-label="Tool navigation">
+      <a class="brand" href="/playbook/">THE POTENT <em>PLAYBOOK</em></a>
+      <a class="back" href="/playbook/">&larr; Back to the Playbook</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <section class="tool-hero">
+      <div class="stamp">Add-on tool &middot; fillable &middot; print-ready</div>
+      <h1 class="display">TECH PACK <span class="gold">TEMPLATE</span></h1>
+      <p class="lede">A tech pack is the blueprint your supplier builds from. Fill this out once per style, save it, print it, and send it — no more guessing, no more wrong samples. Everything saves automatically on this device.</p>
+      <span class="price-tag">$37 value &middot; included with your add-on</span>
+    </section>
+
+    <form id="techpack" onsubmit="return false">
+      <!-- 1. Brand & style -->
+      <section class="section" style="padding-top:10px">
+        <div class="section-label">Section 01</div>
+        <h2 class="display" style="font-size:clamp(1.8rem,4vw,2.8rem)">BRAND &amp; STYLE</h2>
+        <div class="panel">
+          <div class="tp-grid">
+            <div class="field"><label for="f_brand">Brand name</label><input id="f_brand" data-k="brand" type="text" placeholder="e.g. POTENT"></div>
+            <div class="field"><label for="f_style">Style name</label><input id="f_style" data-k="style" type="text" placeholder="e.g. Risk Takers Tee"></div>
+            <div class="field"><label for="f_styleno">Style number</label><input id="f_styleno" data-k="styleno" type="text" placeholder="e.g. PT-001"></div>
+            <div class="field"><label for="f_season">Season / drop</label><input id="f_season" data-k="season" type="text" placeholder="e.g. Drop 01 — Fall"></div>
+            <div class="field"><label for="f_garment">Garment type</label>
+              <select id="f_garment" data-k="garment">
+                <option value="">Select&hellip;</option>
+                <option>T-Shirt</option><option>Hoodie</option><option>Crewneck</option>
+                <option>Long Sleeve</option><option>Tank</option><option>Cargo Pants</option>
+                <option>Shorts</option><option>Jacket</option><option>Hat / Beanie</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="field"><label for="f_date">Date</label><input id="f_date" data-k="date" type="date"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Fabric -->
+      <section class="section">
+        <div class="section-label">Section 02</div>
+        <h2 class="display" style="font-size:clamp(1.8rem,4vw,2.8rem)">FABRIC &amp; CONSTRUCTION</h2>
+        <div class="panel">
+          <div class="tp-grid">
+            <div class="field"><label for="f_fabric">Fabric content</label><input id="f_fabric" data-k="fabric" type="text" placeholder="e.g. 100% ring-spun cotton"></div>
+            <div class="field"><label for="f_gsm">Fabric weight (GSM)</label><input id="f_gsm" data-k="gsm" type="text" placeholder="e.g. 240 GSM heavyweight"></div>
+            <div class="field full"><label for="f_colorways">Colorways</label><input id="f_colorways" data-k="colorways" type="text" placeholder="e.g. Black / Vintage White / Forest"></div>
+            <div class="field full"><label for="f_stitch">Stitching &amp; construction details</label><textarea id="f_stitch" data-k="stitch" placeholder="e.g. Ribbed collar, double-needle hem, side-seamed, shoulder taping&hellip;"></textarea></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Measurements -->
+      <section class="section">
+        <div class="section-label">Section 03</div>
+        <h2 class="display" style="font-size:clamp(1.8rem,4vw,2.8rem)">MEASUREMENTS <span style="font-size:.45em;vertical-align:middle;color:var(--muted)">(inches)</span></h2>
+        <div class="panel" style="overflow-x:auto">
+          <table class="measure-table" aria-label="Garment measurements in inches">
+            <thead><tr><th>Point of measure</th><th>XS</th><th>S</th><th>M</th><th>L</th><th>XL</th><th>2XL</th><th>3XL</th></tr></thead>
+            <tbody id="measureBody"></tbody>
+          </table>
+          <p class="hint" style="margin-top:12px">Measure a garment you love the fit of, lay it flat, and copy the numbers. Tolerance: &plusmn; 0.5&Prime;.</p>
+        </div>
+      </section>
+
+      <!-- 4. Print / embroidery -->
+      <section class="section">
+        <div class="section-label">Section 04</div>
+        <h2 class="display" style="font-size:clamp(1.8rem,4vw,2.8rem)">PRINT / EMBROIDERY SPECS</h2>
+        <div class="panel">
+          <div class="tp-grid">
+            <div class="field"><label for="f_method">Method</label>
+              <select id="f_method" data-k="method">
+                <option value="">Select&hellip;</option>
+                <option>Screen Print</option><option>DTG</option><option>Embroidery</option>
+                <option>Puff Print</option><option>Vinyl / Heat Transfer</option><option>None</option>
+              </select>
+            </div>
+            <div class="field"><label for="f_placement">Placement</label><input id="f_placement" data-k="placement" type="text" placeholder="e.g. Full front, center chest"></div>
+            <div class="field"><label for="f_printsize">Print size (W &times; H)</label><input id="f_printsize" data-k="printsize" type="text" placeholder="e.g. 12&Prime; × 14&Prime;"></div>
+            <div class="field"><label for="f_inkcolors">Ink / thread colors</label><input id="f_inkcolors" data-k="inkcolors" type="text" placeholder="e.g. Metallic gold + black"></div>
+            <div class="field full"><label for="f_artnotes">Artwork notes</label><textarea id="f_artnotes" data-k="artnotes" placeholder="Reference the artwork file name, colors, distressing, exact placement from collar, anything the printer must not guess on&hellip;"></textarea></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Labels & packaging -->
+      <section class="section">
+        <div class="section-label">Section 05</div>
+        <h2 class="display" style="font-size:clamp(1.8rem,4vw,2.8rem)">LABELS &amp; PACKAGING</h2>
+        <div class="panel">
+          <div class="tp-grid">
+            <div class="field full"><label for="f_necklabel">Neck label spec</label><textarea id="f_necklabel" data-k="necklabel" placeholder="e.g. Woven damask, black with gold text, size printed on right&hellip;"></textarea></div>
+            <div class="field full"><label for="f_hangtag">Hang tag &amp; extras</label><textarea id="f_hangtag" data-k="hangtag" placeholder="e.g. Hang tag with story card, branded sticker, thank-you insert&hellip;"></textarea></div>
+            <div class="field full"><label for="f_packaging">Packaging</label><input id="f_packaging" data-k="packaging" type="text" placeholder="e.g. Black poly mailer, tissue wrap"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Supplier -->
+      <section class="section">
+        <div class="section-label">Section 06</div>
+        <h2 class="display" style="font-size:clamp(1.8rem,4vw,2.8rem)">SUPPLIER NOTES</h2>
+        <div class="panel">
+          <div class="tp-grid">
+            <div class="field"><label for="f_supplier">Supplier name</label><input id="f_supplier" data-k="supplier" type="text"></div>
+            <div class="field"><label for="f_contact">Contact</label><input id="f_contact" data-k="contact" type="text" placeholder="Name / email / WhatsApp"></div>
+            <div class="field"><label for="f_moq">MOQ</label><input id="f_moq" data-k="moq" type="text" placeholder="e.g. 50 units"></div>
+            <div class="field"><label for="f_unitcost">Unit cost</label><input id="f_unitcost" data-k="unitcost" type="text" placeholder="e.g. $18.50"></div>
+            <div class="field"><label for="f_leadtime">Lead time</label><input id="f_leadtime" data-k="leadtime" type="text" placeholder="e.g. 14 days"></div>
+            <div class="field"><label for="f_sample">Sample status</label>
+              <select id="f_sample" data-k="sample">
+                <option value="">Select&hellip;</option>
+                <option>Not requested</option><option>Requested</option>
+                <option>Received — approved</option><option>Received — revisions needed</option>
+              </select>
+            </div>
+            <div class="field full"><label for="f_snotes">Notes</label><textarea id="f_snotes" data-k="snotes" placeholder="Anything else: quality notes, backup suppliers, negotiated terms&hellip;"></textarea></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="tp-actions">
+        <button class="button small" type="button" id="printBtn">Print / Save PDF</button>
+        <button class="button ghost small" type="button" id="clearBtn">Clear form</button>
+        <span class="saved-flash" id="savedFlash">Saved ✓</span>
+      </div>
+    </form>
+
+    <!-- Walkthrough -->
+    <section class="section walk-section">
+      <div class="section-label">Field-by-field walkthrough</div>
+      <h2 class="display" style="font-size:clamp(2rem,4.5vw,3.4rem)">HOW TO FILL THIS OUT</h2>
+      <div class="panel">
+        <div class="walk-step"><span class="n">01</span><div><h3>Brand &amp; Style</h3><p>This is the ID block. The style number is your internal SKU root — make it short and consistent (brand initials + number). The season/drop tells the supplier which run this belongs to. Fill this first so every revision of the pack stays organized.</p></div></div>
+        <div class="walk-step"><span class="n">02</span><div><h3>Fabric &amp; Construction</h3><p>Fabric content and GSM decide how the garment feels and what it costs. Heavyweight streetwear lives at 220–260 GSM. Write the exact blend (e.g. 100% cotton vs 80/20) — a supplier will substitute cheaper fabric if you leave this vague. List every construction detail: collar type, hem stitching, side seams. What isn&rsquo;t written doesn&rsquo;t get built.</p></div></div>
+        <div class="walk-step"><span class="n">03</span><div><h3>Measurements</h3><p>Take your favorite-fitting garment in this category, lay it flat, and measure each point with a tape. Chest: armpit to armpit, doubled. Length: highest shoulder point to hem. Sleeve: shoulder seam to cuff. Fill every size you&rsquo;ll sell — suppliers grade from your base size, so get Medium right first. Allow &plusmn;0.5&Prime; tolerance.</p></div></div>
+        <div class="walk-step"><span class="n">04</span><div><h3>Print / Embroidery Specs</h3><p>Name the exact method — screen print, DTG, embroidery, puff — because each has different cost, feel, and minimums. Placement must be specific (&ldquo;full front, 3&Prime; below collar&rdquo; beats &ldquo;front&rdquo;). Give print size in inches and list every ink/thread color. Reference your artwork file by name so there&rsquo;s zero confusion about which version to print.</p></div></div>
+        <div class="walk-step"><span class="n">05</span><div><h3>Labels &amp; Packaging</h3><p>The neck label is what turns a blank into your brand — spec the material (woven damask, printed satin), colors, and where the size goes. Hang tags and inserts are your unboxing moment: write exactly what&rsquo;s included. Packaging gets one line, but it&rsquo;s the first thing the customer touches.</p></div></div>
+        <div class="walk-step"><span class="n">06</span><div><h3>Supplier Notes</h3><p>One supplier per tech pack. Record the MOQ, the unit cost you were quoted, and the lead time in writing — this is what you hold them to. Track sample status here so you always know where each style stands. Notes are for anything you&rsquo;d forget in two weeks: backup suppliers, negotiated terms, quality flags.</p></div></div>
+        <div class="walk-step" style="border-bottom:1px solid var(--line)"><span class="n">07</span><div><h3>Send it</h3><p>Export this page to PDF (Print / Save PDF button) and send it with your artwork files. When the sample comes back wrong, you point at the line in the pack — that&rsquo;s the whole point. A supplier who gets a real tech pack treats you like a real brand.</p></div></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="tool-foot"><div class="wrap"><span>&copy; 2026 Potent Playbook by Anthony Emmanuel Figueroa</span><span class="motto">Tools over talk. Always.</span></div></footer>
+
+  <div class="gate" id="gate" hidden>
+    <div class="gate-card">
+      <div class="stamp">Add-on tool</div>
+      <h2 class="display">PURCHASE<br>REQUIRED</h2>
+      <p class="gate-copy">The Tech Pack Template is a paid add-on to The Potent Playbook. Unlock it to spec your garments like a professional brand.</p>
+      <a class="button" href="/playbook/">Get Access</a>
+      <small>All sales final.</small>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    var ok=false;
+    try{
+      var e=JSON.parse(localStorage.getItem('pb_entitlements')||'null');
+      ok=!!(e&&Array.isArray(e.addons)&&e.addons.indexOf('techpack')>-1);
+    }catch(_){}
+    if(!ok){
+      var g=document.getElementById('gate');
+      g.hidden=false;
+      document.body.classList.add('is-gated');
+    }
+  })();
+  </script>
+
+  <script>
+  (function(){
+    var KEY='pb_tool_techpack';
+    var SIZES=['xs','s','m','l','xl','2xl','3xl'];
+    var ROWS=['Chest width','Body length','Sleeve length','Shoulder width','Hem width','Neck rib height'];
+
+    /* build measurement table */
+    var body=document.getElementById('measureBody');
+    ROWS.forEach(function(row){
+      var tr=document.createElement('tr');
+      var rk=row.toLowerCase().replace(/[^a-z]+/g,'_');
+      var html='<td><input type="text" value="'+row+'" data-k="m_label_'+rk+'" aria-label="Measurement row label"></td>';
+      SIZES.forEach(function(s){
+        html+='<td><input type="text" inputmode="decimal" data-k="m_'+rk+'_'+s+'" aria-label="'+row+' '+s.toUpperCase()+'"></td>';
+      });
+      tr.innerHTML=html;
+      body.appendChild(tr);
+    });
+
+    /* load */
+    var data={};
+    try{ data=JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(_){ data={}; }
+    document.querySelectorAll('#techpack [data-k]').forEach(function(el){
+      var k=el.getAttribute('data-k');
+      if(data[k]!==undefined) el.value=data[k];
+    });
+
+    /* autosave */
+    var flash=document.getElementById('savedFlash'), t=null;
+    function showFlash(){
+      flash.classList.add('on');
+      clearTimeout(t);
+      t=setTimeout(function(){ flash.classList.remove('on'); },1200);
+    }
+    var deb=null;
+    document.getElementById('techpack').addEventListener('input',function(ev){
+      var el=ev.target;
+      if(el&&el.hasAttribute('data-k')){
+        data[el.getAttribute('data-k')]=el.value;
+        clearTimeout(deb);
+        deb=setTimeout(function(){
+          try{ localStorage.setItem(KEY,JSON.stringify(data)); }catch(_){}
+          showFlash();
+        },500);
+      }
+    });
+
+    document.getElementById('printBtn').addEventListener('click',function(){ window.print(); });
+    document.getElementById('clearBtn').addEventListener('click',function(){
+      if(confirm('Clear the entire tech pack? This cannot be undone.')){
+        data={};
+        try{ localStorage.removeItem(KEY); }catch(_){}
+        document.querySelectorAll('#techpack [data-k]').forEach(function(el){
+          var k=el.getAttribute('data-k');
+          if(k.indexOf('m_label_')===0){
+            el.value=el.value; /* keep row labels */
+          }else{
+            el.value='';
+          }
+        });
+        /* restore default row labels */
+        var labels=body.querySelectorAll('tr td:first-child input');
+        ROWS.forEach(function(row,i){ if(labels[i]) labels[i].value=row; });
+        showFlash();
+      }
+    });
+  })();
+  </script>
+</body>
+</html>

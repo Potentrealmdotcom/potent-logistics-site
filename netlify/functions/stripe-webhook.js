@@ -22,6 +22,7 @@
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { fulfillSession: fulfillCcml } = require("./lib/ccml");
+const { fulfillSession: fulfillPlaybook } = require("./lib/playbook");
 const { deriveStatus } = require("./lib/billing");
 const { provisionCompany } = require("./lib/provision");
 
@@ -315,6 +316,10 @@ exports.handler = async function (event) {
       // Credit Changed My Life (separate purchase): unlock the plan / add letter credits. Idempotent per Stripe session.
       const res = await fulfillCcml(obj);
       if (res && res.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "CCML fulfillment failed, retry" }) };
+    } else if (String(product).indexOf("PLAYBOOK") === 0 && isCheckoutSession) {
+      // Potent Playbook (separate purchase): record purchase rows, raise the buyer's tier. Idempotent per Stripe session.
+      const res = await fulfillPlaybook(obj);
+      if (res && res.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Playbook fulfillment failed, retry" }) };
     }
   } catch (err) {
     console.error("Webhook handling failed after payment:", err.message);

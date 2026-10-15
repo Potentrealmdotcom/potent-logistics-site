@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="icon" href="data:," />
+  <title>The Potent Playbook — Build a Real Clothing Brand with $0 in Inventory</title>
+  <meta name="description" content="The complete clothing brand startup system. Choose Regular ($100) or Deluxe ($297, $3,000 value): suppliers, AI visuals, templates, videos and the exact launch workflow. All sales final." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      color-scheme:light dark;
+      --bg:#0a0a0a;--panel:#111110;--panel-2:#181713;--ink:#f7f4ec;--muted:#b8b3a8;
+      --gold:#d4af37;--gold-bright:#e3bd43;--gold-ink:#0a0803;--line:rgba(255,255,255,.16);
+      --inverse:#f2eee3;--inverse-ink:#10100f;--shadow:0 22px 80px rgba(0,0,0,.55);
+    }
+    @media (prefers-color-scheme:light){
+      :root{--bg:#0a0a0a;--panel:#111110;--panel-2:#181713;--ink:#f7f4ec;--muted:#b8b3a8;
+        --gold:#d4af37;--gold-bright:#e3bd43;--gold-ink:#0a0803;--line:rgba(255,255,255,.16);
+        --inverse:#f2eee3;--inverse-ink:#10100f;--shadow:0 22px 80px rgba(0,0,0,.55)}
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth;background:var(--bg)}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:"Manrope",sans-serif;line-height:1.55;overflow-x:hidden}
+    img{max-width:100%;display:block}
+    a{color:inherit}
+    button,a{font:inherit}
+    .grain{position:fixed;inset:0;pointer-events:none;opacity:.035;z-index:9;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E")}
+    .wrap{width:min(1180px,calc(100% - 40px));margin:auto}
+    .section{padding:88px 0}
+    .rule{height:1px;background:var(--line)}
+    .nav{height:76px;display:flex;justify-content:space-between;align-items:center;gap:26px}
+    .brand{display:flex;align-items:center;gap:12px;text-decoration:none;font-family:"Bebas Neue",sans-serif;font-size:1.35rem;letter-spacing:.04em}
+    .brand img{width:40px;height:40px;object-fit:cover;border:1px solid var(--gold)}
+    .brand span{color:var(--gold)}
+    .nav-links{display:flex;align-items:center;gap:26px;font-size:.77rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+    .nav-links a{text-decoration:none;color:var(--muted)}.nav-links a:hover{color:var(--gold)}
+    .nav-links .nav-cta{color:var(--gold);border-bottom:1px solid currentColor;padding-bottom:3px}
+    .hero{min-height:calc(100vh - 76px);display:grid;grid-template-columns:1.05fr .95fr;align-items:center;gap:4vw;padding:44px 0 70px}
+    .stamp{display:inline-flex;align-items:center;gap:10px;font-size:.72rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+    .stamp:before{content:"";width:30px;height:2px;background:currentColor}
+    h1,h2,h3,p{margin-top:0}
+    h1{font-family:"Bebas Neue",sans-serif;font-size:clamp(5rem,9vw,9rem);line-height:.78;letter-spacing:-.025em;margin:22px 0 30px;max-width:680px;font-weight:400}
+    h1>span{display:block;max-width:100%}
+    h1 .gold{color:var(--gold)}
+    .hero-copy h2{font-size:clamp(1.28rem,2.4vw,2.15rem);line-height:1.2;max-width:650px;margin-bottom:18px;letter-spacing:-.025em}
+    .hero-copy>p{max-width:650px;color:var(--muted);font-size:1rem}
+    .actions{display:flex;align-items:center;gap:18px;margin-top:32px;flex-wrap:wrap}
+    .button{display:inline-flex;align-items:center;justify-content:center;gap:12px;text-decoration:none;background:var(--gold);color:var(--gold-ink);font-weight:900;text-transform:uppercase;letter-spacing:.06em;padding:16px 22px;min-height:56px;border:1px solid var(--gold);box-shadow:8px 8px 0 var(--ink);transition:transform .18s ease,box-shadow .18s ease;cursor:pointer}
+    .button:hover{transform:translate(3px,3px);box-shadow:5px 5px 0 var(--ink)}
+    .button:disabled{opacity:.55;cursor:wait;transform:none}
+    .button svg{width:18px;height:18px}
+    .actions small{color:var(--muted);font-weight:700;max-width:180px}
+    .hero-art{position:relative;min-height:660px}
+    .hero-art:before{content:"";position:absolute;top:2%;right:-4%;width:70%;height:88%;border:1px solid var(--gold)}
+    .hero-main{position:absolute;inset:0 14% 8% 0;width:86%;height:92%;object-fit:cover;filter:saturate(.82) contrast(1.06);box-shadow:var(--shadow)}
+    .hero-inset{position:absolute;width:43%;right:0;bottom:0;border:8px solid var(--bg);box-shadow:var(--shadow)}
+    .vertical{position:absolute;right:-28px;top:34%;writing-mode:vertical-rl;transform:rotate(180deg);font-size:.64rem;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--gold)}
+    .manifesto{display:grid;grid-template-columns:.78fr 1.22fr;gap:8vw;align-items:start}
+    .section-label{color:var(--gold);font-size:.72rem;font-weight:900;letter-spacing:.17em;text-transform:uppercase;margin-bottom:13px}
+    .display{font-family:"Bebas Neue",sans-serif;font-size:clamp(3.2rem,7vw,6.6rem);line-height:.9;letter-spacing:-.01em;font-weight:400;margin-bottom:20px}
+    .manifesto-quote{font-family:"Playfair Display",serif;font-style:italic;font-size:clamp(1.55rem,3vw,2.7rem);line-height:1.25;color:var(--muted);margin-top:40px}
+    .problem-list{display:grid;gap:0;border-top:1px solid var(--line)}
+    .problem{display:grid;grid-template-columns:64px 1fr;align-items:center;gap:20px;padding:24px 0;border-bottom:1px solid var(--line)}
+    .problem span{font-family:"Bebas Neue";font-size:2rem;color:var(--gold)}
+    .problem strong{font-size:clamp(1.05rem,2vw,1.45rem);line-height:1.2}
+    .inside-head{display:flex;justify-content:space-between;align-items:end;gap:30px;margin-bottom:45px}
+    .inside-head p{color:var(--muted);max-width:440px;margin-bottom:8px}
+    .system-grid{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);border-left:1px solid var(--line)}
+    .system-card{min-height:190px;padding:22px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);position:relative;background:linear-gradient(135deg,transparent,rgba(212,175,55,.025))}
+    .system-card .num{font-family:"Bebas Neue";color:var(--gold);font-size:1.4rem}
+    .system-card h3{font-size:1rem;line-height:1.25;margin:32px 0 8px}
+    .system-card p{font-size:.78rem;color:var(--muted);margin:0}
+    .system-card:nth-child(7),.system-card:nth-child(14){background:var(--gold);color:var(--gold-ink)}
+    .system-card:nth-child(7) .num,.system-card:nth-child(7) p,.system-card:nth-child(14) .num,.system-card:nth-child(14) p{color:var(--gold-ink)}
+    .upgrades{background:var(--panel-2);padding:100px 0}
+    .upgrade-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+    .upgrade{background:var(--panel);padding:34px;display:grid;grid-template-columns:auto 1fr;gap:24px;box-shadow:var(--shadow)}
+    .upgrade-no{font-family:"Bebas Neue";font-size:4.7rem;line-height:.8;color:var(--gold)}
+    .upgrade h3{font-size:1.22rem;line-height:1.2;margin-bottom:12px}.upgrade p{color:var(--muted);font-size:.9rem}
+    .upgrade ul{padding:0;margin:17px 0 0;list-style:none;display:grid;gap:9px;font-size:.82rem;font-weight:700}
+    .upgrade li:before{content:"→";color:var(--gold);margin-right:9px}
+    .supplier{display:grid;grid-template-columns:1fr 1fr;gap:0;align-items:stretch}
+    .supplier-image{height:100%;min-height:580px;width:100%;object-fit:cover}
+    .supplier-copy{background:var(--gold);color:var(--gold-ink);padding:clamp(36px,7vw,90px);display:flex;flex-direction:column;justify-content:center}
+    .supplier-copy .section-label{color:var(--gold-ink)}
+    .supplier-copy ul{list-style:none;padding:0;margin:22px 0 32px;display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;font-weight:800;font-size:.86rem}
+    .supplier-copy li:before{content:"+";margin-right:8px}
+    .supplier-copy .button{background:var(--gold-ink);color:var(--gold);border-color:var(--gold-ink);box-shadow:8px 8px 0 rgba(255,255,255,.42);align-self:flex-start}
+    .prompts{display:grid;grid-template-columns:.8fr 1.2fr;gap:7vw;align-items:start}
+    .prompt-note{font-family:"Playfair Display";font-style:italic;font-size:1.4rem;color:var(--muted);border-top:1px solid var(--line);padding-top:18px}
+    .prompt-list{counter-reset:prompts;display:grid;gap:12px}
+    .prompt{counter-increment:prompts;background:var(--panel);border:1px solid var(--line);padding:22px 24px;display:grid;grid-template-columns:42px 1fr;gap:14px;box-shadow:0 8px 26px rgba(0,0,0,.06)}
+    .prompt:before{content:"0" counter(prompts);font-family:"Bebas Neue";font-size:1.7rem;color:var(--gold)}
+    .prompt p{font-size:.84rem;color:var(--muted);margin:0}.prompt strong{display:block;color:var(--ink);margin-bottom:5px}
+    .gallery-section{padding-top:40px}
+    .gallery{display:grid;grid-template-columns:repeat(12,1fr);grid-auto-rows:70px;gap:10px}
+    .gallery figure{margin:0;overflow:hidden;position:relative;background:var(--panel-2)}
+    .gallery img{width:100%;height:100%;object-fit:cover;transition:filter .25s ease}
+    .gallery figure:hover img{filter:saturate(1.15)}
+    .g1{grid-column:1/6;grid-row:1/9}.g2{grid-column:6/10;grid-row:1/6}.g3{grid-column:10/13;grid-row:1/6}.g4{grid-column:6/13;grid-row:6/13}.g5{grid-column:1/6;grid-row:9/13}
+    .g6{grid-column:1/7;grid-row:13/20}.g7{grid-column:7/13;grid-row:13/20}.g8{grid-column:1/13;grid-row:20/26}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+    .stat{padding:34px 28px;border-right:1px solid var(--line)}.stat:last-child{border:0}
+    .stat strong{display:block;font-family:"Bebas Neue";font-size:clamp(2.4rem,4vw,4.1rem);line-height:1;color:var(--gold);font-weight:400}
+    .stat span{display:block;font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin-top:10px}
+    /* ---- Sales / checkout ---- */
+    .sale-head{text-align:center;max-width:760px;margin:0 auto 54px}
+    .sale-head .display{margin-bottom:14px}
+    .sale-head p{color:var(--muted)}
+    .pricing-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:stretch}
+    .price-card{background:var(--panel);border:1px solid var(--line);padding:40px 36px;display:flex;flex-direction:column;box-shadow:var(--shadow);position:relative}
+    .price-card.featured{border:2px solid var(--gold);background:linear-gradient(160deg,#151310,var(--panel) 60%)}
+    .price-badge{position:absolute;top:-17px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--gold-ink);font-size:.68rem;font-weight:900;letter-spacing:.16em;text-transform:uppercase;padding:8px 20px;white-space:nowrap}
+    .price-tier{font-family:"Bebas Neue";font-size:2rem;letter-spacing:.02em;margin-bottom:6px}
+    .price-tier span{color:var(--gold)}
+    .price{font-family:"Bebas Neue";font-size:4.6rem;line-height:1;color:var(--ink);margin:10px 0 2px}
+    .price small{font-size:1.3rem;color:var(--muted);vertical-align:top}
+    .price-note{color:var(--muted);font-size:.8rem;font-weight:700;margin-bottom:22px}
+    .price-list{list-style:none;padding:0;margin:0 0 28px;display:grid;gap:11px;font-size:.86rem;font-weight:600}
+    .price-list li{padding-left:26px;position:relative;color:var(--muted)}
+    .price-list li strong{color:var(--ink)}
+    .price-list li:before{content:"✓";position:absolute;left:0;color:var(--gold);font-weight:900}
+    .price-list li.locked{opacity:.55}
+    .price-list li.locked:before{content:"—"}
+    .price-card .button{margin-top:auto;width:100%}
+    .value-stack{margin-top:34px;border-top:1px solid var(--line);padding-top:22px}
+    .value-stack h4{font-size:.72rem;font-weight:900;letter-spacing:.17em;text-transform:uppercase;color:var(--gold);margin:0 0 14px}
+    .value-row{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:9px 0;border-bottom:1px dashed rgba(255,255,255,.12);font-size:.84rem}
+    .value-row .v{font-weight:800;color:var(--gold);white-space:nowrap}
+    .value-total{display:flex;justify-content:space-between;align-items:baseline;padding:14px 0 4px;font-weight:900;font-size:.95rem}
+    .value-total .strike{color:var(--muted);text-decoration:line-through;font-weight:700}
+    .value-total .today{color:var(--gold);font-family:"Bebas Neue";font-size:2rem}
+    .checkout-panel{margin-top:56px;background:var(--panel-2);border:1px solid var(--line);padding:clamp(28px,4vw,48px);box-shadow:var(--shadow)}
+    .bumps{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 0 8px}
+    .bump{display:flex;gap:14px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);padding:18px 20px;cursor:pointer;transition:border-color .15s ease}
+    .bump:hover{border-color:var(--gold)}
+    .bump input{width:20px;height:20px;margin-top:3px;accent-color:var(--gold);flex:none;cursor:pointer}
+    .bump .bump-body{flex:1}
+    .bump .bump-name{font-weight:800;font-size:.9rem;display:block}
+    .bump .bump-desc{color:var(--muted);font-size:.78rem;display:block;margin-top:3px}
+    .bump .bump-price{font-family:"Bebas Neue";font-size:1.5rem;color:var(--gold);white-space:nowrap}
+    .terms-box{background:#0d0c0a;border:1px solid var(--line);padding:24px 26px;max-height:230px;overflow-y:auto;font-size:.78rem;color:var(--muted);margin-top:8px}
+    .terms-box h4{color:var(--ink);font-size:.82rem;text-transform:uppercase;letter-spacing:.1em;margin:0 0 10px}
+    .terms-box p{margin:0 0 12px}
+    .terms-box strong{color:var(--ink)}
+    .terms-agree{display:flex;gap:14px;align-items:flex-start;margin-top:20px;padding:18px 20px;border:1px solid var(--line);cursor:pointer;background:var(--panel)}
+    .terms-agree input{width:22px;height:22px;margin-top:2px;accent-color:var(--gold);flex:none;cursor:pointer}
+    .terms-agree span{font-weight:800;font-size:.92rem}
+    .terms-agree small{display:block;font-weight:600;color:var(--muted);font-size:.76rem;margin-top:4px}
+    .terms-error{color:#ff7a6b;font-weight:800;font-size:.85rem;margin-top:14px}
+    .checkout-note{text-align:center;color:var(--muted);font-size:.76rem;margin-top:18px}
+    .faq-wrap{display:grid;grid-template-columns:.7fr 1.3fr;gap:8vw;align-items:start}
+    .faq-list{border-top:1px solid var(--line)}
+    .faq-item{border-bottom:1px solid var(--line)}
+    .faq-q{appearance:none;width:100%;border:0;background:transparent;color:var(--ink);text-align:left;padding:22px 40px 22px 0;font-weight:900;position:relative;cursor:pointer;font-size:.95rem}
+    .faq-q:after{content:"+";position:absolute;right:4px;top:20px;color:var(--gold);font-size:1.4rem}.faq-q[aria-expanded="true"]:after{content:"—"}
+    .faq-a{display:grid;grid-template-rows:0fr;transition:grid-template-rows .22s ease}.faq-a>div{overflow:hidden}.faq-a p{color:var(--muted);font-size:.88rem;padding:0 34px 20px 0;margin:0}.faq-q[aria-expanded="true"]+.faq-a{grid-template-rows:1fr}
+    footer{padding:36px 0 110px;border-top:1px solid var(--line);font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+    footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center}
+    .foot-brand{display:flex;align-items:center;gap:12px}
+    .foot-brand img{width:34px;height:34px;object-fit:cover;border:1px solid var(--gold)}
+    .motto{color:var(--gold);font-weight:900}
+    @media(max-width:900px){
+      .hero{grid-template-columns:1fr;min-height:auto}.hero-art{min-height:600px;margin-top:30px}.manifesto,.prompts,.faq-wrap{grid-template-columns:1fr}.system-grid{grid-template-columns:repeat(2,1fr)}
+      .upgrade-grid{grid-template-columns:1fr}.supplier{grid-template-columns:1fr}.supplier-image{min-height:500px}
+      .stats{grid-template-columns:1fr 1fr}.stat:nth-child(2){border-right:0}.stat:nth-child(-n+2){border-bottom:1px solid var(--line)}
+      .pricing-grid{grid-template-columns:1fr}.bumps{grid-template-columns:1fr}
+    }
+    @media(max-width:620px){
+      .wrap{width:min(100% - 28px,1180px)}.section{padding:68px 0}.nav-links{display:none}h1{font-size:clamp(3.6rem,15vw,4.2rem);margin-top:18px;line-height:.83;letter-spacing:-.045em}.hero{padding-top:42px}.hero-copy h2{font-size:1.2rem}.hero-art{min-height:490px}.hero-main{inset:0 10% 6% 0;width:90%}.hero-inset{width:46%;border-width:5px}.vertical{display:none}
+      .inside-head{display:block}.system-grid{grid-template-columns:1fr}.system-card{min-height:150px}.system-card h3{margin-top:24px}.upgrade{grid-template-columns:1fr;gap:8px;padding:26px}.upgrade-no{font-size:3.4rem}.supplier-image{min-height:410px}.supplier-copy ul{grid-template-columns:1fr}.prompt{padding:19px 17px;grid-template-columns:34px 1fr}
+      .gallery{grid-template-columns:1fr 1fr;grid-auto-rows:200px}.g1,.g2,.g3,.g4,.g5,.g6,.g7,.g8{grid-column:auto;grid-row:auto}.g1{grid-column:1/3;grid-row:span 2}.g4{grid-column:1/3;grid-row:span 2}.g8{grid-column:1/3;grid-row:span 2}
+      .stats{grid-template-columns:1fr}.stat{border-right:0;border-bottom:1px solid var(--line)}.stat:nth-child(-n+3){border-bottom:1px solid var(--line)}
+      .price-card{padding:30px 24px}.faq-wrap{gap:20px}footer{padding-bottom:80px}
+    }
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.button,.gallery img,.faq-a{transition:none}}
+  </style>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <header class="wrap">
+    <nav class="nav" aria-label="Page sections">
+      <a class="brand" href="#top"><img src="assets/griffin-logo.jpg" alt="Potent griffin brand mark">POTENT <span>PLAYBOOK</span></a>
+      <div class="nav-links">
+        <a href="#inside">Inside</a><a href="#suppliers">Suppliers</a><a href="#visuals">Visuals</a><a href="#faq">FAQ</a><a class="nav-cta" href="#get-it">Get it</a>
+      </div>
+    </nav>
+  </header>
+  <main id="top">
+    <section class="hero wrap">
+      <div class="hero-copy">
+        <div class="stamp">The complete brand system</div>
+        <h1><span>THE</span><span>POTENT</span><span class="gold">PLAYBOOK</span></h1>
+        <h2>Build a Real Clothing Brand — with $0 in Inventory.</h2>
+        <p>The exact system for launching a sell-out streetwear brand: suppliers, AI campaign visuals, legal setup, SMS drops, and the launch workflow in the right order. No minimums. No gatekeepers.</p>
+        <div class="actions">
+          <a class="button" href="#get-it">Get The Playbook
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <small>Regular $100 · Deluxe $297. One payment.</small>
+        </div>
+      </div>
+      <div class="hero-art" aria-label="Potent streetwear campaign">
+        <img class="hero-main" src="assets/campaign-gallery.jpg" alt="Potent streetwear campaign staged as a large-scale gallery installation">
+        <img class="hero-inset" src="assets/product-risktakers.jpg" alt="Red pinstripe Potent Risk Takers shirt">
+        <span class="vertical">Built different · sold direct</span>
+      </div>
+    </section>
+
+    <div class="rule"></div>
+    <section class="section wrap manifesto">
+      <div>
+        <div class="section-label">The problem</div>
+        <h2 class="display">WHAT MOST PEOPLE NEVER FIGURE OUT</h2>
+        <p class="manifesto-quote">“You don’t need permission. You need the system.”</p>
+      </div>
+      <div class="problem-list">
+        <div class="problem"><span>01</span><strong>They order inventory first — then pray it sells.</strong></div>
+        <div class="problem"><span>02</span><strong>They pay $2,000 for tech packs before the first order.</strong></div>
+        <div class="problem"><span>03</span><strong>They chase algorithms instead of building pipelines.</strong></div>
+      </div>
+    </section>
+
+    <section id="inside" class="section wrap">
+      <div class="inside-head">
+        <div><div class="section-label">What’s inside</div><h2 class="display">THE 14-PART SYSTEM</h2></div>
+        <p>Not theory. The full sequence from the first idea to a premium drop that looks established before it is big.</p>
+      </div>
+      <div class="system-grid">
+        <article class="system-card"><span class="num">01</span><h3>The Myth &amp; Results</h3><p>What changed when I stopped playing by old rules.</p></article>
+        <article class="system-card"><span class="num">02</span><h3>Who I Am &amp; Gatekeepers</h3><p>The real barriers — and the route around them.</p></article>
+        <article class="system-card"><span class="num">03</span><h3>Edgewood Avenue</h3><p>Community over ads. Build where culture already lives.</p></article>
+        <article class="system-card"><span class="num">04</span><h3>Brand Identity</h3><p>Position, language, world, and a reason to belong.</p></article>
+        <article class="system-card"><span class="num">05</span><h3>Design — No School Needed</h3><p>A repeatable process for original, ownable concepts.</p></article>
+        <article class="system-card"><span class="num">06</span><h3>Legal Setup</h3><p>USPTO, EIN, LLC — handled in the right order.</p></article>
+        <article class="system-card"><span class="num">07</span><h3>Luxury Blanks &amp; Fabric</h3><p>Weight, hand-feel, fit, cotton, and supplier decisions.</p></article>
+        <article class="system-card"><span class="num">08</span><h3>Neck Labels &amp; AI Visuals</h3><p>Turn a blank into a brand and a concept into a campaign.</p></article>
+        <article class="system-card"><span class="num">09</span><h3>The Sell-Out Drop System</h3><p>Scarcity, sequencing, presentation, and release mechanics.</p></article>
+        <article class="system-card"><span class="num">10</span><h3>SMS List Building</h3><p>Own the audience. Launch with urgency, not hope.</p></article>
+        <article class="system-card"><span class="num">11</span><h3>Average Order Value</h3><p>Build the offer so every buyer is worth more.</p></article>
+        <article class="system-card"><span class="num">12</span><h3>Website &amp; Premium Details</h3><p>Product pages, close-ups, fabric specs, and trust.</p></article>
+        <article class="system-card"><span class="num">13</span><h3>Your First Drop Checklist</h3><p>Every step, in sequence, with nothing left to guess.</p></article>
+        <article class="system-card"><span class="num">14</span><h3>Complete Resource Index</h3><p>The tools, suppliers, platforms, and links in one place.</p></article>
+      </div>
+    </section>
+
+    <section class="upgrades">
+      <div class="wrap">
+        <div class="section-label">Move like a bigger brand</div><h2 class="display">THE UPGRADES</h2>
+        <div class="upgrade-grid">
+          <article class="upgrade"><div class="upgrade-no">01</div><div><h3>Jumbo DTG + Full Branding</h3><p>Use PodPartner to make print-on-demand stop looking like print-on-demand.</p><ul><li>Oversized print areas</li><li>Custom neck labels</li><li>Branded packaging</li></ul></div></article>
+          <article class="upgrade"><div class="upgrade-no">02</div><div><h3>Kittl Design System</h3><p>The $15/month workflow that replaces the expensive stack.</p><ul><li>Photoshop + Illustrator alternative</li><li>Mockup and visual generation</li><li>Tech pack-style presentation</li></ul></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="suppliers" class="supplier">
+      <img class="supplier-image" src="assets/campaign-misfits-car.jpg" alt="Model wearing a Potent Misfits shirt beside a vintage red car">
+      <div class="supplier-copy">
+        <div class="section-label">Secret suppliers</div>
+        <h2 class="display">MY PERSONAL SUPPLIER LIST</h2>
+        <p>The sources that remove the usual upfront barriers — from the blank to the finishing details. The complete directory ships inside Deluxe.</p>
+        <ul><li>USA Supima cotton blanks — no MOQ</li><li>Custom PVC patches</li><li>Blacklight brand verification</li><li>Leather embossers</li><li>Chinese / Alibaba sources</li><li>Accessories with no upfront cost</li></ul>
+        <a class="button" href="#get-it">Unlock the full list in Deluxe</a>
+      </div>
+    </section>
+
+    <section class="section wrap prompts">
+      <div>
+        <div class="section-label">The visual engine</div>
+        <h2 class="display">10 PHOTOROOM + 10 KIVE.AI PROMPTS</h2>
+        <p>Build campaign visuals with the polish of a $1,000 shoot — without a studio, a crew, or a campaign budget.</p>
+        <p class="prompt-note">Art direction you can repeat, not one lucky image.</p>
+      </div>
+      <div class="prompt-list" aria-label="Three example creative prompts">
+        <article class="prompt"><p><strong>Editorial estate campaign</strong>Place the model outside an old-world stone estate beside a vintage red sports car. Natural daylight, quiet luxury, centered editorial composition, realistic fabric detail.</p></article>
+        <article class="prompt"><p><strong>Street-level launch visual</strong>Two models walking through a real city intersection in coordinated graphic pieces. Documentary street photography, low contrast, visible garment texture, authentic movement.</p></article>
+        <article class="prompt"><p><strong>Gallery-scale statement</strong>Turn the campaign into a monumental contemporary gallery installation. Oversized figures, restrained white exhibition space, small visitors for scale, surreal but photographic.</p></article>
+      </div>
+    </section>
+
+    <section id="visuals" class="section gallery-section wrap">
+      <div class="section-label">Built with the system</div><h2 class="display">CAMPAIGN VISUALS</h2>
+      <div class="gallery">
+        <figure class="g1"><img src="assets/campaign-enemy.jpg" alt="Model in an oversized illustrated graphic T-shirt" loading="lazy"></figure>
+        <figure class="g2"><img src="assets/campaign-potent36.jpg" alt="Two models in coordinated Potent jersey streetwear" loading="lazy"></figure>
+        <figure class="g3"><img src="assets/product-spider.jpg" alt="White Potent graphic T-shirt with spider artwork" loading="lazy"></figure>
+        <figure class="g4"><img src="assets/campaign-edgewood.jpg" alt="Two models wearing Potent pieces at a city intersection" loading="lazy"></figure>
+        <figure class="g5"><img src="assets/campaign-misfits-back.jpg" alt="Back view of a black Potent Misfits T-shirt" loading="lazy"></figure>
+        <figure class="g6"><img src="assets/campaign-demon-hoodie.jpg" alt="Potent demon graphic hoodie campaign visual" loading="lazy"></figure>
+        <figure class="g7"><img src="assets/campaign-desert-atv.jpg" alt="Potent streetwear desert ATV campaign visual" loading="lazy"></figure>
+        <figure class="g8"><img src="assets/campaign-risktakers-studio.jpg" alt="Potent Risk Takers studio campaign visual" loading="lazy"></figure>
+      </div>
+    </section>
+
+    <section class="section wrap" aria-label="Results">
+      <div class="stats">
+        <div class="stat"><strong>&lt;86</strong><span>Sessions to first sale</span></div>
+        <div class="stat"><strong>$5K</strong><span>Days</span></div>
+        <div class="stat"><strong>30K</strong><span>Monthly sellouts</span></div>
+        <div class="stat"><strong>$0</strong><span>Ad spend</span></div>
+      </div>
+    </section>
+    <section id="get-it" class="section wrap">
+      <div class="sale-head">
+        <div class="section-label">One payment. Instant access.</div>
+        <h2 class="display">CHOOSE YOUR PACKAGE</h2>
+        <p>Two ways in. Same proven system — Deluxe hands you the suppliers, the visuals engine, the templates, and the videos so you move faster.</p>
+      </div>
+      <div class="pricing-grid">
+        <article class="price-card" aria-label="Regular package">
+          <div class="price-tier">REGULAR</div>
+          <div class="price"><small>$</small>100</div>
+          <div class="price-note">One-time payment. Yours forever.</div>
+          <ul class="price-list">
+            <li><strong>The complete 14-part Potent Playbook</strong> — every step, in order</li>
+            <li>Your first-drop <strong>launch checklist</strong></li>
+            <li>Complete <strong>resource index</strong> — tools, platforms, links</li>
+            <li>No-inventory launch route — <strong>$0 in inventory</strong></li>
+            <li>Legal setup walkthrough — LLC, EIN, USPTO</li>
+            <li class="locked">Secret supplier directory</li>
+            <li class="locked">20 AI prompt packs</li>
+            <li class="locked">Template pack + tech pack template</li>
+            <li class="locked">AI campaign visual collection</li>
+          </ul>
+          <button class="button" type="button" data-buy="regular">Get Regular — $100</button>
+        </article>
+        <article class="price-card featured" aria-label="Deluxe package">
+          <div class="price-badge">Most popular · $3,000 value</div>
+          <div class="price-tier"><span>DELUXE</span></div>
+          <div class="price"><small>$</small>297</div>
+          <div class="price-note">One-time payment. Everything below, yours forever.</div>
+          <ul class="price-list">
+            <li><strong>Everything in Regular</strong> — the full 14-part system</li>
+            <li><strong>Secret supplier directory</strong> — my personal sources, no MOQs</li>
+            <li><strong>20 AI prompt packs</strong> — PhotoRoom + Kive.ai campaign engine</li>
+            <li><strong>Template pack</strong> — product pages, drop assets, SMS flows</li>
+            <li><strong>AI campaign visual collection</strong> — campaign stills + cinematic video prompts</li>
+          </ul>
+          <div class="value-stack" aria-label="Deluxe value breakdown">
+            <h4>Your $3,000 value stack</h4>
+            <div class="value-row"><span>The Playbook system</span><span class="v">$497</span></div>
+            <div class="value-row"><span>Secret supplier directory</span><span class="v">$997</span></div>
+            <div class="value-row"><span>20 AI prompt packs</span><span class="v">$497</span></div>
+            <div class="value-row"><span>Template pack</span><span class="v">$497</span></div>
+            <div class="value-row"><span>AI campaign visuals + video prompts</span><span class="v">$512</span></div>
+            <div class="value-total"><span>Total value <span class="strike">$3,000</span></span><span class="today">TODAY $297</span></div>
+          </div>
+          <button class="button" type="button" data-buy="deluxe" style="margin-top:26px">Get Deluxe — $297</button>
+        </article>
+      </div>
+
+      <div class="checkout-panel" id="checkout-panel">
+        <div class="section-label">Add to your order</div>
+        <h3 class="display" style="font-size:clamp(2.2rem,4.5vw,3.6rem)">ORDER BUMPS</h3>
+        <p style="color:var(--muted);max-width:640px">One-click add-ons. They attach to whichever package you choose above — no second checkout.</p>
+        <div class="bumps">
+          <label class="bump"><input type="checkbox" value="themes"><span class="bump-body"><span class="bump-name">Streetwear Website Themes</span><span class="bump-desc">2 customizable themes built for clothing brands — product pages, drops, lookbooks.</span></span><span class="bump-price">$300</span></label>
+          <label class="bump"><input type="checkbox" value="calendar"><span class="bump-body"><span class="bump-name">30-Day Launch Calendar</span><span class="bump-desc">Day-by-day content and task plan from idea to drop day.</span></span><span class="bump-price">$47</span></label>
+          <label class="bump"><input type="checkbox" value="calculator"><span class="bump-body"><span class="bump-name">Drop Profit Calculator</span><span class="bump-desc">Price every drop for profit — costs, margins, and break-even in one sheet.</span></span><span class="bump-price">$27</span></label>
+          <label class="bump"><input type="checkbox" value="techpack"><span class="bump-body"><span class="bump-name">Tech Pack Template</span><span class="bump-desc">Factory-ready tech pack template so your first run comes back right.</span></span><span class="bump-price">$37</span></label>
+        </div>
+
+        <div class="section-label" style="margin-top:38px">Terms of sale</div>
+        <h3 class="display" style="font-size:clamp(2.2rem,4.5vw,3.6rem)">ALL SALES FINAL</h3>
+        <div class="terms-box" id="terms-box" tabindex="0" aria-label="Full terms of sale">
+          <h4>Potent Playbook — Terms of Sale</h4>
+          <p><strong>1. All sales are final.</strong> Every Potent Playbook product is a digital download delivered instantly upon payment. Because of the nature of digital products, <strong>all sales are final — no refunds, returns, chargebacks, or exchanges</strong> will be issued for any reason, including but not limited to change of mind, failure to use the materials, or results not meeting expectations.</p>
+          <p><strong>2. What you receive.</strong> Your purchase grants you instant digital access to the package you selected (Regular or Deluxe) plus any order-bump add-ons chosen at checkout. Access details are delivered to the email used at purchase. Reply to your delivery email if you need support.</p>
+          <p><strong>3. License.</strong> Your purchase is a single-user, non-transferable license for your personal business use only. You may not share, resell, redistribute, upload, or republish any part of the Playbook, supplier directory, prompts, templates, videos, or add-ons — in whole or in part — with any other person or entity. Violation terminates your access immediately without refund.</p>
+          <p><strong>4. No earnings or results guarantee.</strong> The Playbook documents one founder's system and results. Your results depend on your effort, market, and execution. Nothing in the Playbook is financial, legal, or business advice; consult licensed professionals for legal, tax, and trademark matters.</p>
+          <p><strong>5. Chargebacks and disputes.</strong> Filing a payment dispute or chargeback after receiving digital delivery is a violation of these terms. Confirmed disputes will result in permanent revocation of access and a ban from future purchases, in addition to any remedies available at law.</p>
+          <p><strong>6. Pricing.</strong> Prices shown at checkout are in USD. Promotional pricing may change at any time; the price locked at your moment of purchase is the price you pay.</p>
+          <p><strong>7. Acceptance.</strong> By checking the box below and completing your purchase, you confirm you have read, understood, and agree to these terms in full, and you acknowledge that <strong>all sales are final</strong>.</p>
+        </div>
+        <label class="terms-agree">
+          <input type="checkbox" id="terms-agree">
+          <span>I agree all sales are final.
+            <small>Required — your order cannot be processed without this box checked. You confirm you have read the terms above and accept that no refunds will be issued.</small>
+          </span>
+        </label>
+        <p class="terms-error" id="terms-error" hidden>⚠ You must check “I agree all sales are final” before your order can go through.</p>
+        <p class="checkout-note">Secure checkout · Instant digital delivery · Prices set at checkout — this page never handles your payment details.</p>
+      </div>
+    </section>
+
+    <section id="faq" class="section wrap faq-wrap">
+      <div><div class="section-label">Straight answers</div><h2 class="display">FAQ</h2></div>
+      <div class="faq-list">
+        <div class="faq-item"><button class="faq-q" aria-expanded="false">Do I need money to start?</button><div class="faq-a"><div><p>You do not need to begin with a bulk inventory order. The system shows how to validate demand, build visuals, and take the first steps without minimums. You will still need to budget for the business choices you make.</p></div></div></div>
+        <div class="faq-item"><button class="faq-q" aria-expanded="false">Do I need design skills?</button><div class="faq-a"><div><p>No. The playbook gives you a tool stack and a practical creative workflow so you can develop and present strong ideas without design school or a full Adobe setup.</p></div></div></div>
+        <div class="faq-item"><button class="faq-q" aria-expanded="false">What if I have no audience?</button><div class="faq-a"><div><p>That is exactly why the pipeline matters. You will learn how community, SMS, email, creator relationships, and a focused launch sequence work together before the drop.</p></div></div></div>
+        <div class="faq-item"><button class="faq-q" aria-expanded="false">Is this a POD course?</button><div class="faq-a"><div><p>It includes a no-inventory route, but it is not a shortcut to generic merch. The focus is a real brand: identity, original art, premium blanks, custom details, presentation, and a controlled drop system.</p></div></div></div>
+        <div class="faq-item"><button class="faq-q" aria-expanded="false">How do I get the supplier list?</button><div class="faq-a"><div><p>The complete secret supplier directory is included in the Deluxe package, organized with the rest of the resource index so you can move from product idea to source.</p></div></div></div>
+        <div class="faq-item"><button class="faq-q" aria-expanded="false">Are there really no refunds?</button><div class="faq-a"><div><p>Correct — all sales are final. These are digital products delivered instantly, and the terms are shown in full before you pay. You must check the agreement box to complete your order.</p></div></div></div>
+        <div class="faq-item"><button class="faq-q" aria-expanded="false">How do I receive the playbook?</button><div class="faq-a"><div><p>Instantly. The moment your payment clears, your download access is delivered to the email you used at checkout. Check spam or reply to your delivery email if anything is missing.</p></div></div></div>
+      </div>
+    </section>
+  </main>
+  <footer>
+    <div class="wrap">
+      <span class="foot-brand"><img src="assets/griffin-logo.jpg" alt="Potent griffin brand mark">© 2026 Potent Playbook by Anthony Emmanuel Figueroa</span>
+      <span class="motto">Tools over talk. Always.</span>
+    </div>
+  </footer>
+  <script>
+    (function(){
+      var faqItems=document.querySelectorAll('.faq-q');
+      faqItems.forEach(function(button){
+        button.addEventListener('click',function(){
+          var open=button.getAttribute('aria-expanded')==='true';
+          faqItems.forEach(function(other){other.setAttribute('aria-expanded','false')});
+          button.setAttribute('aria-expanded',open?'false':'true');
+        });
+      });
+
+      var CHECKOUT_URL='/.netlify/functions/playbook-checkout';
+      var terms=document.getElementById('terms-agree');
+      var termsError=document.getElementById('terms-error');
+
+      function setLoading(btn,loading,label){
+        btn.disabled=loading;
+        if(loading){btn.dataset.label=btn.textContent;btn.textContent='Processing…';}
+        else if(btn.dataset.label){btn.textContent=btn.dataset.label;delete btn.dataset.label;}
+      }
+
+      document.querySelectorAll('[data-buy]').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          if(!terms.checked){
+            termsError.hidden=false;
+            document.getElementById('checkout-panel').scrollIntoView({behavior:'smooth',block:'center'});
+            return;
+          }
+          termsError.hidden=true;
+          var items=[btn.getAttribute('data-buy')];
+          document.querySelectorAll('.bump input[type="checkbox"]:checked').forEach(function(box){
+            items.push(box.value);
+          });
+          setLoading(btn,true);
+          fetch(CHECKOUT_URL,{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({items:items})
+          }).then(function(res){
+            return res.json().then(function(data){return {ok:res.ok,data:data};});
+          }).then(function(result){
+            if(!result.ok||!result.data||!result.data.url){
+              throw new Error((result.data&&result.data.error)||'Checkout could not be started.');
+            }
+            window.location.href=result.data.url;
+          }).catch(function(err){
+            setLoading(btn,false);
+            termsError.hidden=false;
+            termsError.textContent='⚠ '+err.message+' Please try again.';
+          });
+        });
+      });
+    }());
+  </script>
+</body>
+</html>

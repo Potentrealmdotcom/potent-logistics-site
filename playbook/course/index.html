@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>The Potent Playbook — Course</title>
+  <meta name="description" content="The Potent Playbook course: the complete $0-inventory clothing brand system, step by step." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,600;1,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="../../potent-griffin-icon.png" />
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <div class="scrim" id="scrim" aria-hidden="true"></div>
+
+  <div class="shell">
+    <aside class="sidebar" id="sidebar" aria-label="Course navigation">
+      <div class="brand">
+        <img src="../../potent-griffin-icon.png" alt="Potent griffin mark" />
+        <div class="brand-name">THE POTENT<em>PLAYBOOK</em></div>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-label"><span>Your progress</span><strong id="progressPct">0%</strong></div>
+        <div class="progress-bar"><i id="progressBar"></i></div>
+      </div>
+
+      <nav class="nav" id="courseNav" aria-label="Lessons"></nav>
+
+      <div class="side-foot">
+        <div id="tierBadge" class="tier-badge">Preview access</div>
+        <div id="emailGate">
+          <div class="email-gate">
+            <input type="email" id="pbEmail" placeholder="Purchase email" aria-label="Purchase email" />
+            <button id="pbEmailBtn" type="button">Unlock my access</button>
+          </div>
+          <p style="margin:10px 0 0">Bought the playbook? Enter your purchase email to unlock your lessons.</p>
+        </div>
+        <p style="margin:12px 0 0">© 2026 Potent Playbook · Anthony Emmanuel Figueroa<br /><span style="color:var(--gold)">Tools over talk. Always.</span></p>
+      </div>
+    </aside>
+
+    <div class="main">
+      <div class="topbar">
+        <button class="menu-btn" id="menuBtn" type="button" aria-label="Open navigation">☰ Menu</button>
+        <span class="crumb" id="crumb">The Potent Playbook</span>
+        <span class="spacer"></span>
+        <span class="lesson-count" id="lessonCount"></span>
+      </div>
+      <main class="content" id="content" aria-live="polite"></main>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script src="lessons.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

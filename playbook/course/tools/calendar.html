@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark only" />
+  <title>30-Day Launch Calendar — The Potent Playbook</title>
+  <meta name="description" content="The day-by-day launch checklist: from no brand to your first sell-out drop in 30 days." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="tools.css">
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="wrap">
+    <nav class="tool-nav" aria-label="Tool navigation">
+      <a class="brand" href="/playbook/">THE POTENT <em>PLAYBOOK</em></a>
+      <a class="back" href="/playbook/">&larr; Back to the Playbook</a>
+    </nav>
+  </header>
+
+  <div class="progress-shell">
+    <div class="wrap">
+      <div class="progress-row">
+        <span class="stamp">Your launch progress</span>
+        <div class="progress-bar" role="progressbar" aria-label="Launch checklist progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressBar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <span class="progress-pct" id="progressPct">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <main class="wrap">
+    <section class="tool-hero">
+      <div class="stamp">Add-on tool &middot; 30 days</div>
+      <h1 class="display">30-DAY <span class="gold">LAUNCH</span><br>CALENDAR</h1>
+      <p class="lede">From no brand to your first sell-out drop. Every day has concrete moves — check them off as you go. Your progress saves automatically on this device.</p>
+      <span class="price-tag">$47 value &middot; included with your add-on</span>
+    </section>
+
+    <div id="calendar"></div>
+
+    <div class="cal-actions">
+      <button class="button ghost small" id="resetBtn" type="button">Reset progress</button>
+    </div>
+    <p class="accent" style="font-size:1.15rem;max-width:640px;margin-bottom:60px">&ldquo;You don&rsquo;t need permission. You need the system &mdash; and you need to actually do the reps.&rdquo;</p>
+  </main>
+
+  <footer class="tool-foot"><div class="wrap"><span>&copy; 2026 Potent Playbook by Anthony Emmanuel Figueroa</span><span class="motto">Tools over talk. Always.</span></div></footer>
+
+  <div class="gate" id="gate" hidden>
+    <div class="gate-card">
+      <div class="stamp">Add-on tool</div>
+      <h2 class="display">PURCHASE<br>REQUIRED</h2>
+      <p class="gate-copy">The 30-Day Launch Calendar is a paid add-on to The Potent Playbook. Unlock it to get the full day-by-day launch system.</p>
+      <a class="button" href="/playbook/">Get Access</a>
+      <small>All sales final.</small>
+    </div>
+  </div>
+
+  <script>
+  /* ---------- entitlement gate ---------- */
+  (function(){
+    var ok=false;
+    try{
+      var e=JSON.parse(localStorage.getItem('pb_entitlements')||'null');
+      ok=!!(e&&Array.isArray(e.addons)&&e.addons.indexOf('calendar')>-1);
+    }catch(_){}
+    if(!ok){
+      var g=document.getElementById('gate');
+      g.hidden=false;
+      document.body.classList.add('is-gated');
+    }
+  })();
+  </script>
+
+  <script>
+  /* ---------- 30-day data ---------- */
+  var WEEKS=[
+    {range:[1,7],  title:"FOUNDATION", sub:"Build the base — name, legal, money."},
+    {range:[8,14], title:"PRODUCT",    sub:"Make it real — blanks, design, visuals."},
+    {range:[15,21],title:"PIPELINE",   sub:"Build the audience before you need it."},
+    {range:[22,30],title:"THE DROP",   sub:"Launch it like you mean it."}
+  ];
+  var DAYS=[
+    {t:"Pick your lane",tasks:["Write down the one world your brand lives in (one sentence).","Name 3 brands you want to sit next to on the shelf.","Set your 30-day goal in writing (e.g. first 50 orders)."]},
+    {t:"Lock the name",tasks:["Write 3 name candidates — say each one out loud.","Google + USPTO TESS search every candidate for conflicts.","Pick the winner and claim the Instagram handle today."]},
+    {t:"Write your identity doc",tasks:["Write your one-line promise: \u201cwe are X for Y.\u201d","Choose 2 brand colors + 1 headline font + 1 body font.","Write your 150-character bio — post it on your profile."]},
+    {t:"Make it legal",tasks:["File your LLC with your Secretary of State.","Apply for your EIN on irs.gov (it\u2019s free).","Open a separate business bank account — no mixing money."]},
+    {t:"Set up money flow",tasks:["Connect a payment processor (Stripe / Shop Pay).","Decide your price anchors ($40s, $60s, $80s?).","Set your cost ceiling per piece — write it down."]},
+    {t:"Protect the name",tasks:["Start your USPTO trademark application for the brand name.","Screenshot and save proof of first use (posts, site).","Put every filing + receipt in one folder you won\u2019t lose."]},
+    {t:"Supplier research",tasks:["Read the Playbook supplier list end to end.","Request 2 blank samples from different suppliers.","Compare 3 blanks on weight, hand-feel, and fit."]},
+    {t:"Decide your fabric",tasks:["Set your GSM target (220+ for heavyweight feel).","Pick 2 blank finalists.","Order samples of each in your actual size."]},
+    {t:"Design concepts",tasks:["Draft 3 design concepts (Kittl or pen and paper).","Write the story behind each design in 2 sentences.","Kill the weakest one — two designs move forward."]},
+    {t:"Lock the hero design",tasks:["Finalize your hero graphic — no more tweaks after today.","Export print-ready: 300 DPI, transparent PNG.","Get one honest second opinion before you lock it."]},
+    {t:"Neck labels & details",tasks:["Design your neck label (this is what makes it a brand).","Order neck label samples.","Plan inside-label + hem tag details."]},
+    {t:"Choose your print method",tasks:["Decide: DTG vs screen print for drop one.","Get 2 quotes — compare price AND turnaround.","Confirm oversized print area is available."]},
+    {t:"Build mockups",tasks:["Build 3 product mockups of your hero piece.","Shoot flat lays with your phone in natural light.","Pick the 3 strongest angles for the site."]},
+    {t:"Generate campaign visuals",tasks:["Write 5 AI prompts from the Prompt Vault.","Generate 10 campaign images.","Pick the best 3 for launch content."]},
+    {t:"Product page prep",tasks:["Write product descriptions: fabric, fit, care.","Shoot close-up fabric detail photos.","Write your size guide in plain language."]},
+    {t:"Build the website",tasks:["Set up your store and connect your domain.","Build the hero section + product pages.","Add trust details: shipping, returns, contact."]},
+    {t:"Capture the audience",tasks:["Add email + SMS capture to your site.","Write the welcome text message.","Write the welcome email."]},
+    {t:"Build your content bank",tasks:["Film 5 short-form clips (phone is fine).","Write 10 captions in your brand voice.","Schedule 7 days of posts in advance."]},
+    {t:"Enter the community",tasks:["Post value (not links) in 3 communities you belong in.","DM 10 micro-creators about seeding.","Build your seeding list: 20 names."]},
+    {t:"Push the SMS list",tasks:["Share your signup link everywhere you exist online.","Hit your first 100 numbers — ask directly.","Send a \u201cdrop is coming\u201d teaser."]},
+    {t:"Finalize pricing",tasks:["Lock your sale prices — no changing after today.","Run every piece through the Drop Profit Calculator.","Set bundle / deal pricing to lift order value."]},
+    {t:"Packaging",tasks:["Order mailers + poly bags.","Design your thank-you card.","Plan the unboxing: sticker, card, tissue."]},
+    {t:"Drop page goes live",tasks:["Publish the drop collection page.","Test checkout end-to-end with a real $1 test order.","Set inventory counts — scarcity is the strategy."]},
+    {t:"Launch content",tasks:["Post the hero campaign visual.","Post the story behind the drop — go live if you can.","Pin the drop post to the top of your profile."]},
+    {t:"Seed the creators",tasks:["Ship seed packages to 10 creators.","Send tracking numbers + ask for unboxing content.","Repost every single tag the same day."]},
+    {t:"Final countdown",tasks:["Send the \u201c48 hours\u201d SMS + email.","Post countdown content.","Double-check inventory + your fulfillment plan."]},
+    {t:"Pre-launch",tasks:["Send the \u201ctomorrow\u201d SMS to your list.","Post try-on / fit content.","Charge your phone and clear your schedule."]},
+    {t:"DROP DAY",tasks:["Launch at your announced time — no delays.","Post every 2 hours while it\u2019s live.","Answer every DM within the hour."]},
+    {t:"Sell-through push",tasks:["Post social proof: orders being packed.","Send \u201calmost gone\u201d SMS for low sizes.","Write the restock plan for your winners."]},
+    {t:"Review & reload",tasks:["Count it: revenue, profit, sell-through %.","Write down 3 lessons — what worked, what didn\u2019t.","Set the date for drop two."]}
+  ];
+
+  /* ---------- render + progress ---------- */
+  var KEY='pb_tool_calendar';
+  var state={};
+  try{ state=JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(_){ state={}; }
+
+  function save(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(_){} }
+
+  var cal=document.getElementById('calendar');
+  var totalTasks=0;
+
+  WEEKS.forEach(function(w){
+    var head=document.createElement('div');
+    head.className='week-head';
+    head.innerHTML='<div class="section-label">Days '+w.range[0]+'–'+w.range[1]+'</div>'+
+      '<h2 class="display">'+w.title+'</h2><p class="lede">'+w.sub+'</p>';
+    cal.appendChild(head);
+    for(var d=w.range[0]; d<=w.range[1]; d++){
+      (function(day){
+        var data=DAYS[day-1];
+        var card=document.createElement('div');
+        card.className='day-card';
+        card.id='day-'+day;
+        var num=String(day).padStart(2,'0');
+        var bodyHtml='<div class="day-body"><h3>Day '+num+' — '+data.t+'</h3>';
+        data.tasks.forEach(function(task,i){
+          var id='d'+day+'t'+i;
+          totalTasks++;
+          var checked=state[id]?'checked':'';
+          bodyHtml+='<label class="task"><input type="checkbox" data-id="'+id+'" '+checked+'><span>'+task+'</span></label>';
+        });
+        bodyHtml+='</div>';
+        card.innerHTML='<div class="day-num"><span class="d">'+num+'</span><span class="t">Day '+day+'</span></div>'+bodyHtml;
+        cal.appendChild(card);
+      })(d);
+    }
+  });
+
+  function update(){
+    var done=0;
+    var boxes=cal.querySelectorAll('input[type="checkbox"]');
+    boxes.forEach(function(b){ if(b.checked) done++; });
+    var pct=totalTasks?Math.round(done/totalTasks*100):0;
+    document.getElementById('progressFill').style.width=pct+'%';
+    document.getElementById('progressPct').textContent=pct+'%';
+    document.getElementById('progressBar').setAttribute('aria-valuenow',pct);
+    WEEKS.forEach(function(w){
+      for(var d=w.range[0]; d<=w.range[1]; d++){
+        var card=document.getElementById('day-'+d);
+        var all=card.querySelectorAll('input[type="checkbox"]');
+        var allDone=true;
+        all.forEach(function(b){ if(!b.checked) allDone=false; });
+        card.classList.toggle('done',allDone);
+      }
+    });
+  }
+
+  cal.addEventListener('change',function(ev){
+    var b=ev.target;
+    if(b&&b.matches('input[type="checkbox"]')){
+      if(b.checked) state[b.getAttribute('data-id')]=true;
+      else delete state[b.getAttribute('data-id')];
+      save(); update();
+    }
+  });
+
+  document.getElementById('resetBtn').addEventListener('click',function(){
+    if(confirm('Reset all 30 days of progress?')){
+      state={}; save();
+      cal.querySelectorAll('input[type="checkbox"]').forEach(function(b){ b.checked=false; });
+      update();
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+  });
+
+  update();
+  </script>
+</body>
+</html>

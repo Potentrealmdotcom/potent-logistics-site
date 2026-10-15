@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark only" />
+  <title>Drop Profit Calculator — The Potent Playbook</title>
+  <meta name="description" content="Price your drop like a business: profit per piece, margin, break-even units, and total drop profit — calculated live." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="tools.css">
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="wrap">
+    <nav class="tool-nav" aria-label="Tool navigation">
+      <a class="brand" href="/playbook/">THE POTENT <em>PLAYBOOK</em></a>
+      <a class="back" href="/playbook/">&larr; Back to the Playbook</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <section class="tool-hero">
+      <div class="stamp">Add-on tool &middot; price it right</div>
+      <h1 class="display">DROP PROFIT <span class="gold">CALCULATOR</span></h1>
+      <p class="lede">Type your numbers. Watch your drop turn into a real business plan — profit per piece, margin, and exactly how many units you need to sell to break even.</p>
+      <span class="price-tag">$27 value &middot; included with your add-on</span>
+    </section>
+
+    <section class="section" style="padding-top:10px">
+      <div class="calc-grid">
+        <div class="panel" aria-label="Cost inputs">
+          <div class="section-label">Your numbers</div>
+          <div class="field">
+            <label for="blankCost">Blank cost <span style="text-transform:none;letter-spacing:0">(per unit)</span></label>
+            <div class="input-money"><input id="blankCost" type="number" min="0" step="0.01" value="12.50" inputmode="decimal"></div>
+            <div class="hint">What you pay for the blank garment itself.</div>
+          </div>
+          <div class="field">
+            <label for="printCost">Print / embroidery cost <span style="text-transform:none;letter-spacing:0">(per unit)</span></label>
+            <div class="input-money"><input id="printCost" type="number" min="0" step="0.01" value="8.00" inputmode="decimal"></div>
+            <div class="hint">DTG, screen print, or embroidery — per piece.</div>
+          </div>
+          <div class="field">
+            <label for="shipCost">Shipping + packaging <span style="text-transform:none;letter-spacing:0">(per unit)</span></label>
+            <div class="input-money"><input id="shipCost" type="number" min="0" step="0.01" value="6.50" inputmode="decimal"></div>
+            <div class="hint">Mailer, label, postage — averaged per order.</div>
+          </div>
+          <div class="field">
+            <label for="salePrice">Sale price <span style="text-transform:none;letter-spacing:0">(per unit)</span></label>
+            <div class="input-money"><input id="salePrice" type="number" min="0" step="0.01" value="65.00" inputmode="decimal"></div>
+            <div class="hint">What the customer pays.</div>
+          </div>
+          <div class="field">
+            <label for="units">Units per drop</label>
+            <input id="units" type="number" min="0" step="1" value="100" inputmode="numeric">
+            <div class="hint">How many pieces you&rsquo;re releasing.</div>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label for="fixedCost">One-time drop costs <span style="text-transform:none;letter-spacing:0">(optional)</span></label>
+            <div class="input-money"><input id="fixedCost" type="number" min="0" step="0.01" value="150.00" inputmode="decimal"></div>
+            <div class="hint">Labels, design time, samples — costs that don&rsquo;t scale per unit. Used for break-even.</div>
+          </div>
+        </div>
+
+        <div class="result-panel" aria-live="polite" aria-label="Results">
+          <div class="section-label">Your drop, decoded</div>
+          <div class="result-hero" id="rProfitPiece">$38.00</div>
+          <div class="result-hero-sub">Profit per piece</div>
+          <div class="result-rows">
+            <div class="result-row"><span class="k">Cost per unit</span><span class="v" id="rCostUnit">$27.00</span></div>
+            <div class="result-row"><span class="k">Total revenue</span><span class="v" id="rRevenue">$6,500</span></div>
+            <div class="result-row"><span class="k">Profit per drop</span><span class="v" id="rProfitDrop">$3,650</span></div>
+            <div class="result-row"><span class="k">Margin</span><span class="v" id="rMargin">58.5%</span></div>
+            <div class="result-row"><span class="k">Break-even units</span><span class="v" id="rBreakEven">4</span></div>
+          </div>
+          <p class="result-note" id="rNote">Sell 4 of 100 units and the drop pays for itself. Everything after that is profit.</p>
+        </div>
+      </div>
+      <p class="calc-note"><span class="accent">Rule of thumb:</span> if your margin is under 50%, your price is too low or your costs are too high. Premium brands live at 60%+ margin — that&rsquo;s what funds the next drop.</p>
+    </section>
+  </main>
+
+  <footer class="tool-foot"><div class="wrap"><span>&copy; 2026 Potent Playbook by Anthony Emmanuel Figueroa</span><span class="motto">Tools over talk. Always.</span></div></footer>
+
+  <div class="gate" id="gate" hidden>
+    <div class="gate-card">
+      <div class="stamp">Add-on tool</div>
+      <h2 class="display">PURCHASE<br>REQUIRED</h2>
+      <p class="gate-copy">The Drop Profit Calculator is a paid add-on to The Potent Playbook. Unlock it to price your drops like a business.</p>
+      <a class="button" href="/playbook/">Get Access</a>
+      <small>All sales final.</small>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    var ok=false;
+    try{
+      var e=JSON.parse(localStorage.getItem('pb_entitlements')||'null');
+      ok=!!(e&&Array.isArray(e.addons)&&e.addons.indexOf('calculator')>-1);
+    }catch(_){}
+    if(!ok){
+      var g=document.getElementById('gate');
+      g.hidden=false;
+      document.body.classList.add('is-gated');
+    }
+  })();
+  </script>
+
+  <script>
+  (function(){
+    var $=function(id){return document.getElementById(id);};
+    var inputs=['blankCost','printCost','shipCost','salePrice','units','fixedCost'].map($);
+
+    function num(el){ var v=parseFloat(el.value); return isNaN(v)||v<0?0:v; }
+    function money(v){
+      return '$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    }
+    function money0(v){
+      return '$'+Math.round(v).toLocaleString('en-US');
+    }
+
+    function calc(){
+      var blank=num($('blankCost')), print=num($('printCost')), ship=num($('shipCost'));
+      var price=num($('salePrice')), units=Math.floor(num($('units'))), fixed=num($('fixedCost'));
+
+      var costUnit=blank+print+ship;
+      var profitPiece=price-costUnit;
+      var revenue=price*units;
+      var profitDrop=profitPiece*units-fixed;
+      var margin=price>0?(profitPiece/price*100):0;
+      var breakEven=profitPiece>0?Math.ceil(fixed/profitPiece):(fixed>0?Infinity:0);
+
+      $('rProfitPiece').textContent=money(profitPiece);
+      $('rCostUnit').textContent=money(costUnit);
+      $('rRevenue').textContent=money0(revenue);
+      $('rProfitDrop').textContent=money0(profitDrop);
+      $('rMargin').textContent=margin.toFixed(1)+'%';
+      $('rBreakEven').textContent=(breakEven===Infinity)?'—':breakEven.toLocaleString('en-US');
+
+      var note;
+      if(profitPiece<=0){
+        note='Your price doesn\u2019t cover costs — raise the price or cut costs before this drop.';
+      }else if(breakEven===0){
+        note='No fixed costs to cover — every single sale is pure profit from unit one.';
+      }else{
+        note='Sell '+breakEven+' of '+units.toLocaleString('en-US')+' units and the drop pays for itself. Everything after that is profit.';
+      }
+      $('rNote').textContent=note;
+    }
+
+    inputs.forEach(function(el){ el.addEventListener('input',calc); });
+    calc();
+  })();
+  </script>
+</body>
+</html>

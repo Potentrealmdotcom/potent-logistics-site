@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark only" />
+  <title>AI Prompt Vault — The Potent Playbook</title>
+  <meta name="description" content="50 extra AI image and video prompts: product shots, campaign looks, lookbook styles, cinematic ads, and TikTok-ready visuals." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="tools.css">
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="wrap">
+    <nav class="tool-nav" aria-label="Tool navigation">
+      <a class="brand" href="/playbook/">THE POTENT <em>PLAYBOOK</em></a>
+      <a class="back" href="/playbook/">&larr; Back to the Playbook</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <section class="tool-hero">
+      <div class="stamp">Add-on tool &middot; 50 prompts</div>
+      <h1 class="display">AI PROMPT <span class="gold">VAULT</span></h1>
+      <p class="lede">50 extra prompts on top of the playbook library — 25 image prompts for product shots, campaign looks, and lookbook styles, plus 25 video prompts for cinematic ads, TikTok-style clips, model walks, and product spins. Tap any card to copy.</p>
+      <span class="price-tag">$27 value &middot; included with your add-on</span>
+
+      <div class="disclaimer">
+        <p>AI doesn&rsquo;t come out 100% accurate &mdash; you have to edit it, mess around with it, play around with it to get what you want.</p>
+        <span class="who">&mdash; Tony, Potent Playbook</span>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:0">
+      <div class="vault-tabs" role="tablist" aria-label="Prompt categories">
+        <button class="vault-tab active" data-filter="all" role="tab" aria-selected="true">All 50</button>
+        <button class="vault-tab" data-filter="image" role="tab" aria-selected="false">Image &middot; 25</button>
+        <button class="vault-tab" data-filter="video" role="tab" aria-selected="false">Video &middot; 25</button>
+      </div>
+      <input class="vault-search" id="vaultSearch" type="search" placeholder="Search prompts — try &ldquo;night&rdquo;, &ldquo;hoodie&rdquo;, &ldquo;spin&rdquo;&hellip;" aria-label="Search prompts">
+      <div class="prompt-grid" id="promptGrid"></div>
+      <p class="vault-count" id="vaultCount"></p>
+    </section>
+  </main>
+
+  <footer class="tool-foot"><div class="wrap"><span>&copy; 2026 Potent Playbook by Anthony Emmanuel Figueroa</span><span class="motto">Tools over talk. Always.</span></div></footer>
+
+  <div class="gate" id="gate" hidden>
+    <div class="gate-card">
+      <div class="stamp">Add-on tool</div>
+      <h2 class="display">PURCHASE<br>REQUIRED</h2>
+      <p class="gate-copy">The AI Prompt Vault is a paid add-on to The Potent Playbook. Unlock it to get all 50 image and video prompts.</p>
+      <a class="button" href="/playbook/">Get Access</a>
+      <small>All sales final.</small>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    var ok=false;
+    try{
+      var e=JSON.parse(localStorage.getItem('pb_entitlements')||'null');
+      ok=!!(e&&Array.isArray(e.addons)&&e.addons.indexOf('vault')>-1);
+    }catch(_){}
+    if(!ok){
+      var g=document.getElementById('gate');
+      g.hidden=false;
+      document.body.classList.add('is-gated');
+    }
+  })();
+  </script>
+
+  <script>
+  (function(){
+    var PROMPTS=[
+      /* ============ 25 IMAGE PROMPTS ============ */
+      {type:"image",title:"Concrete Royalty",text:"Editorial fashion photo of a model in an oversized black heavyweight tee with gold chest embroidery, standing before brutalist concrete architecture, overcast daylight, sharp fabric detail, quiet power, high-end streetwear campaign."},
+      {type:"image",title:"Night Market Drop",text:"Two models in matching graphic hoodies walking through a neon-lit night market, cinematic street photography, slight motion blur in the background, garments tack sharp, steam and signage glowing."},
+      {type:"image",title:"Desert Minimal",text:"Lone model in sand-colored cargo pants and a clean white tee in a vast desert at golden hour, long shadows stretching across the sand, high-fashion minimalism, warm muted tones."},
+      {type:"image",title:"Rooftop Blue Hour",text:"Model in a black puffer jacket and cargo pants on a city rooftop at blue hour, skyline bokeh behind, moody editorial lighting, wind catching the jacket, cinematic streetwear campaign."},
+      {type:"image",title:"Barbershop Classic",text:"Model in a vintage-wash graphic tee getting a lineup in a classic barbershop, warm tungsten light, clippers and mirrors in frame, documentary photography style, authentic and timeless."},
+      {type:"image",title:"Gallery White",text:"Model in an all-white sweatsuit inside a stark white art gallery, single overhead spotlight, sculptural pose, fine-art fashion photography, shadows crisp against the wall."},
+      {type:"image",title:"Rain City Shell",text:"Model in a technical shell jacket holding a clear umbrella on a rainy downtown street, reflections rippling across wet asphalt, cinematic color grade, water beading on the fabric."},
+      {type:"image",title:"Gas Station Noir",text:"Model leaning on a vintage American car at a retro gas station at night, buzzing neon sign glow, film-noir streetwear editorial, deep shadows, grainy 35mm look."},
+      {type:"image",title:"Skate Park Motion",text:"Skater frozen mid-trick in baggy jeans and an oversized graphic tee, harsh midday sun, dust in the air, raw skate photography energy, every fold of the fabric visible."},
+      {type:"image",title:"Marble Staircase",text:"Model descending a grand marble staircase in a tailored tracksuit, old-money estate interior, soft window light falling across the steps, quiet luxury lookbook photography."},
+      {type:"image",title:"Bodega Morning",text:"Model in a heavyweight hoodie buying coffee at a corner bodega, morning light streaming through the door, shelves of color behind, authentic slice-of-life street photography."},
+      {type:"image",title:"Parking Garage",text:"Model in all-black techwear standing in an empty concrete parking garage under a single fluorescent tube, harsh directional shadows, brutalist fashion editorial, cold tones."},
+      {type:"image",title:"Overcast Shore",text:"Model in swim shorts and an open overshirt on an empty overcast beach, muted grey-blue tones, wind in the fabric, melancholic high-fashion editorial."},
+      {type:"image",title:"Boxing Gym Grit",text:"Model in heavyweight sweats shadowboxing in a gritty boxing gym, dust floating in shafts of window light, raw and powerful, documentary fight photography."},
+      {type:"image",title:"Subway Layers",text:"Model in layered streetwear riding a moving subway car, tunnel lights blurred through the windows, candid commuter energy, realistic city fashion photography."},
+      {type:"image",title:"Flower Market Color",text:"Model in a bold color-block hoodie at a flower market, explosions of color from the stalls contrasting the garment, joyful editorial photography, shallow depth of field."},
+      {type:"image",title:"Industrial Loft Denim",text:"Model in double denim inside a raw industrial loft, exposed brick and steel beams, soft directional window light, timeless workwear-inspired lookbook."},
+      {type:"image",title:"Snowfall Parka",text:"Model in a heavy parka and beanie on a city street in light snowfall, breath visible in the cold air, winter campaign mood, soft diffused light."},
+      {type:"image",title:"Night Car Meet",text:"Model in a racing-inspired jacket leaning on a JDM sports car at a night car meet, headlights flaring and underglow reflecting off the pavement, cinematic automotive streetwear."},
+      {type:"image",title:"Library Quiet Luxury",text:"Model in a knit polo and pleated trousers inside a grand old library, warm lamplight on dark wood shelves, quiet-luxury lookbook photography, composed and still."},
+      {type:"image",title:"Rooftop Laundry",text:"Model in a crisp white tee among hanging laundry lines on a sunlit rooftop, bright daylight, nostalgic film photography look, fabric glowing in the sun."},
+      {type:"image",title:"Golden Hour Site",text:"Model in workwear-inspired cargos and boots at a construction site at golden hour, dust drifting through warm light, rugged premium workwear editorial."},
+      {type:"image",title:"Flash Mirror Fit",text:"Model taking a mirror selfie in a full streetwear fit in a dim bedroom, direct flash photography aesthetic, authentic social-media style, unpolished and real."},
+      {type:"image",title:"Stadium Tunnel",text:"Model in a varsity jacket walking through a dark stadium tunnel toward bright daylight, dramatic backlight and long shadow, cinematic sports-luxury campaign."},
+      {type:"image",title:"Dusk Corner Store",text:"Model in a graphic tee outside a corner store at dusk, neon OPEN sign buzzing in the window, cinematic Americana streetwear photography, deep blue sky."},
+      /* ============ 25 VIDEO PROMPTS ============ */
+      {type:"video",title:"Drop Teaser Reveal",text:"Cinematic teaser: slow push-in on a folded stack of graphic tees as dust particles float through a shaft of light, deep bass hit, brand logo slams in with a film-shake cut. 8 seconds, 24fps, anamorphic feel."},
+      {type:"video",title:"Model Walk Loop",text:"Seamless loop of a model walking toward camera in slow motion down an empty city street, jacket and tee moving in the wind, overcast sky, hypnotic and endless, perfect for a homepage hero."},
+      {type:"video",title:"360 Product Spin",text:"Hoodie rotating on an invisible mannequin against a pure black void, dramatic studio rim lighting tracing the silhouette, seamless 360-degree spin, ultra-clean e-commerce luxury."},
+      {type:"video",title:"TikTok Fit Check",text:"Fast-cut fit check: three angles of the same outfit with snap transitions landing on the beat, bedroom mirror plus flash photo inserts, trending audio energy, 15 seconds vertical."},
+      {type:"video",title:"Unboxing POV",text:"First-person POV hands opening a branded mailer: tissue paper pulled back, sticker revealed, thank-you card flipped, tee unfolded to show the graphic. Satisfying, bright, real."},
+      {type:"video",title:"Night Drive Backseat",text:"POV from the passenger seat of a car at night, model in the backseat wearing the new drop, city lights streaking past the windows, lo-fi cinematic mood, 20 seconds."},
+      {type:"video",title:"Fabric Macro",text:"Extreme macro shot of heavyweight cotton weave, fingers slowly running across the fabric, shallow depth of field, every thread visible — sells quality without a single word."},
+      {type:"video",title:"Screen Print Pull",text:"Close-up of screen printing in action: squeegee pulling ink across the screen in one smooth pass, ink flooding the design, deeply satisfying process footage, workshop ambience."},
+      {type:"video",title:"Embroidery Stitch",text:"Macro of an embroidery machine stitching a chest logo, needle and gold thread in razor-sharp focus, rhythmic mechanical motion, premium craftsmanship on display."},
+      {type:"video",title:"Rooftop Wind Orbit",text:"Model on a rooftop at golden hour, jacket billowing in strong wind, drone slowly orbiting around them, city sprawling below — epic, weightless, campaign-grade."},
+      {type:"video",title:"Skate Follow Cam",text:"Follow-cam gliding behind a skater wearing the full fit through city streets, low angle, sun flares hitting the lens, effortless motion, 15 seconds of pure energy."},
+      {type:"video",title:"Rain Walk Slow-Mo",text:"Model walking through heavy rain in dramatic slow motion, water beading and rolling off a shell jacket, neon signs reflecting in puddles, cinematic and defiant."},
+      {type:"video",title:"Lookbook Blitz",text:"Rapid-fire editorial stills cut to a hard beat, each look held half a second, film grain and flash frames between cuts, ends on the brand logo — hype in 12 seconds."},
+      {type:"video",title:"Countdown Hype",text:"Bold typography countdown over flashing product shots, glitch transitions between numbers, drop date slams onto screen with a bass drop, built for Stories and Reels."},
+      {type:"video",title:"Try-On Haul",text:"Creator try-on video: tops swapped on the beat with quick whip transitions, honest first reactions, bedroom setting, authentic energy that feels like a friend recommending, not an ad."},
+      {type:"video",title:"Steam Reveal",text:"Garment steamer smoothing a wrinkled tee, steam slowly clearing to reveal a crisp graphic print underneath, deeply satisfying and clean — quality you can see."},
+      {type:"video",title:"Night Market Steadicam",text:"Smooth steadicam following two models through a crowded night market, neon glow washing over their faces, ambient market sound, garments popping against the chaos."},
+      {type:"video",title:"Vintage Car Lean",text:"Model leaning against a vintage car at night, camera circling slowly, engine idling low in the mix, streetlight sweeping across the fit — cool without trying."},
+      {type:"video",title:"Shadow Silhouette",text:"Model moving behind a backlit white sheet, the outfit rendered as a pure silhouette, mysterious and artistic, fabric shapes telling the whole story."},
+      {type:"video",title:"Fold and Stack",text:"Hands folding fresh tees into a perfect crisp stack on a clean tabletop, oddly satisfying ASMR-adjacent pacing, top-down angle, ends on the logo facing camera."},
+      {type:"video",title:"Mirror Snap Transition",text:"Model snaps fingers in a mirror and the outfit instantly changes with the snap, trending transition format, three fits in 10 seconds, playful and rewatchable."},
+      {type:"video",title:"Stair Descent",text:"Slow-motion descent down a grand marble staircase, fabric flowing with each step, orchestral sting underneath, old-money estate setting — luxury drop announcement energy."},
+      {type:"video",title:"Street Fit Interview",text:"\u201cWhat are you wearing\u201d style street clip: interviewer stops the model, who breaks down the fit piece by piece with prices, authentic hypebeast-interview format."},
+      {type:"video",title:"City Timelapse",text:"Model standing perfectly still while the city timelapses around them — light trails, rushing crowds, day turning to night — then the drop date burns onto screen."},
+      {type:"video",title:"Drop Live Montage",text:"Rapid montage of every look from the collection, beat drops, \u201cDROP LIVE NOW\u201d text slams in with a screen shake, website flashes at the end — the launch-day nuke, 15 seconds."}
+    ];
+
+    var grid=document.getElementById('promptGrid');
+    var count=document.getElementById('vaultCount');
+    var search=document.getElementById('vaultSearch');
+    var filter='all', query='';
+
+    function copyText(text,btn){
+      function done(){
+        btn.textContent='Copied ✓';
+        btn.classList.add('copied');
+        setTimeout(function(){ btn.textContent='Copy prompt'; btn.classList.remove('copied'); },1600);
+      }
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done).catch(function(){ fallback(); });
+      }else{ fallback(); }
+      function fallback(){
+        var ta=document.createElement('textarea');
+        ta.value=text;
+        ta.style.position='fixed'; ta.style.opacity='0';
+        document.body.appendChild(ta);
+        ta.select();
+        try{ document.execCommand('copy'); }catch(_){}
+        document.body.removeChild(ta);
+        done();
+      }
+    }
+
+    function render(){
+      grid.innerHTML='';
+      var shown=0, n=0;
+      PROMPTS.forEach(function(p){
+        n++;
+        if(filter!=='all'&&p.type!==filter) return;
+        if(query){
+          var hay=(p.title+' '+p.text).toLowerCase();
+          if(hay.indexOf(query)<0) return;
+        }
+        shown++;
+        var card=document.createElement('article');
+        card.className='prompt-card';
+        var tag=p.type==='video'?'VIDEO PROMPT':'IMAGE PROMPT';
+        card.innerHTML='<span class="pnum">'+String(n).padStart(2,'0')+'</span>'+
+          '<span class="ptag'+(p.type==='video'?' video':'')+'">'+tag+'</span>'+
+          '<h3></h3><p class="ptext"></p>';
+        card.querySelector('h3').textContent=p.title;
+        card.querySelector('.ptext').textContent=p.text;
+        var btn=document.createElement('button');
+        btn.type='button';
+        btn.className='copy-btn';
+        btn.textContent='Copy prompt';
+        btn.setAttribute('aria-label','Copy prompt: '+p.title);
+        (function(text,button){
+          button.addEventListener('click',function(){ copyText(text,button); });
+        })(p.text,btn);
+        card.appendChild(btn);
+        grid.appendChild(card);
+      });
+      count.textContent='Showing '+shown+' of 50 prompts';
+    }
+
+    document.querySelectorAll('.vault-tab').forEach(function(tab){
+      tab.addEventListener('click',function(){
+        document.querySelectorAll('.vault-tab').forEach(function(t){
+          t.classList.remove('active'); t.setAttribute('aria-selected','false');
+        });
+        tab.classList.add('active'); tab.setAttribute('aria-selected','true');
+        filter=tab.getAttribute('data-filter');
+        render();
+      });
+    });
+    search.addEventListener('input',function(){
+      query=search.value.trim().toLowerCase();
+      render();
+    });
+
+    render();
+  })();
+  </script>
+</body>
+</html>

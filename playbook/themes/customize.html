@@ -1,0 +1,1088 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="Potent Playbook Theme Studio — customize the NOIR and GILT streetwear themes and export your own." />
+  <link rel="icon" href="data:," />
+  <title>Theme Studio — Potent Playbook</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,500;1,700&display=swap" rel="stylesheet" />
+  <style>
+    /* ============ THEME STUDIO chrome (dark luxury) ============ */
+    :root{
+      --bg:#0a0a0a; --panel:#121211; --panel-2:#171613;
+      --ink:#f7f4ec; --muted:#b8b3a8;
+      --gold:#d4af37; --gold-bright:#e8c65a; --gold-ink:#0a0803;
+      --line:rgba(255,255,255,.14);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:"Manrope",sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+    img{display:block;max-width:100%}
+    button,input,select,textarea{font:inherit}
+
+    .grain{position:fixed;inset:0;pointer-events:none;opacity:.05;z-index:200;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E")}
+
+    /* top bar */
+    .topbar{height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px;
+      padding:0 22px;border-bottom:1px solid var(--line);background:rgba(10,10,10,.9);position:relative;z-index:20}
+    .topbar .mark{display:flex;align-items:center;gap:12px}
+    .topbar .mark img{width:32px;height:32px;border-radius:50%;object-fit:cover;border:1px solid var(--gold)}
+    .topbar .mark strong{font-family:"Bebas Neue",sans-serif;font-size:1.4rem;letter-spacing:.18em;font-weight:400}
+    .topbar .mark small{color:var(--gold);font-size:.66rem;font-weight:800;letter-spacing:.22em;text-transform:uppercase}
+    .top-actions{display:flex;gap:10px;align-items:center}
+    .btn{appearance:none;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer;
+      font-size:.72rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;padding:12px 18px;transition:border-color .2s,color .2s}
+    .btn:hover{border-color:var(--gold);color:var(--gold)}
+    .btn.primary{background:var(--gold);border-color:var(--gold);color:var(--gold-ink)}
+    .btn.primary:hover{background:var(--gold-bright);color:var(--gold-ink)}
+    .status{font-size:.72rem;color:var(--muted);letter-spacing:.04em;min-height:1.2em}
+
+    /* layout */
+    .studio{display:grid;grid-template-columns:400px 1fr;height:calc(100vh - 64px)}
+    .panel{overflow-y:auto;border-right:1px solid var(--line);background:var(--panel);padding:26px 24px 60px}
+    .panel::-webkit-scrollbar{width:8px}
+    .panel::-webkit-scrollbar-thumb{background:#2c2a24;border-radius:4px}
+
+    .ctl{margin-bottom:34px;padding-bottom:30px;border-bottom:1px solid var(--line)}
+    .ctl:last-child{border-bottom:0}
+    .ctl h2{font-family:"Bebas Neue",sans-serif;font-weight:400;font-size:1.5rem;letter-spacing:.1em;margin:0 0 18px;display:flex;align-items:center;gap:12px}
+    .ctl h2 span{font-size:.95rem;color:var(--gold);border:1px solid var(--gold);width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%}
+    .ctl label{display:block;font-size:.7rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 14px}
+    .ctl input[type=text],.ctl textarea,.ctl select{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);
+      padding:12px 14px;font-size:.9rem;font-weight:600;letter-spacing:.02em;margin-top:8px;text-transform:none}
+    .ctl input:focus,.ctl textarea:focus,.ctl select:focus{outline:none;border-color:var(--gold)}
+    .ctl textarea{resize:vertical;min-height:74px;line-height:1.5}
+
+    .theme-pick{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .theme-card{appearance:none;cursor:pointer;border:1px solid var(--line);background:var(--bg);color:var(--ink);
+      padding:20px 14px;text-align:center;transition:border-color .2s,transform .2s}
+    .theme-card strong{display:block;font-family:"Bebas Neue",sans-serif;font-size:1.9rem;letter-spacing:.14em;font-weight:400}
+    .theme-card small{color:var(--muted);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700}
+    .theme-card.noir-card strong{color:var(--gold)}
+    .theme-card.gilt-card{background:#f7f3e9;color:#161410;border-color:#d8cfb8}
+    .theme-card.gilt-card strong{color:#8f6a14}
+    .theme-card.gilt-card small{color:#6f6a5e}
+    .theme-card.active{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+    .theme-card:hover{transform:translateY(-2px)}
+
+    .logo-row{display:flex;gap:14px;align-items:flex-start}
+    .logo-row img{width:64px;height:64px;object-fit:cover;border-radius:50%;border:1px solid var(--gold);background:#000;flex:none}
+    .logo-row img.text-only{visibility:hidden}
+    .logo-btns{display:grid;gap:8px;flex:1}
+    .file-btn{display:inline-block;text-align:center;border:1px dashed var(--gold);color:var(--gold);cursor:pointer;
+      font-size:.7rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;padding:11px 10px;transition:background .2s}
+    .file-btn:hover{background:rgba(212,175,55,.12)}
+    .mini-btn{appearance:none;background:transparent;border:1px solid var(--line);color:var(--muted);cursor:pointer;
+      font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:10px}
+    .mini-btn:hover{color:var(--ink);border-color:var(--muted)}
+
+    .swatches{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+    .swatch{appearance:none;cursor:pointer;border:1px solid var(--line);background:transparent;padding:6px;transition:transform .15s,border-color .2s}
+    .swatch i{display:block;height:38px;border-radius:2px}
+    .swatch small{display:block;margin-top:6px;font-size:.58rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    .swatch.active{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+    .swatch:hover{transform:translateY(-2px)}
+
+    .img-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .img-grid button{appearance:none;border:2px solid transparent;background:#000;padding:0;cursor:pointer;position:relative;transition:border-color .2s}
+    .img-grid button img{width:100%;aspect-ratio:1;object-fit:cover;opacity:.75;transition:opacity .2s}
+    .img-grid button:hover img{opacity:1}
+    .img-grid button.active{border-color:var(--gold)}
+    .img-grid button.active img{opacity:1}
+    .img-grid button span{position:absolute;left:0;right:0;bottom:0;font-size:.52rem;font-weight:800;letter-spacing:.06em;
+      text-transform:uppercase;background:rgba(0,0,0,.65);color:var(--ink);padding:4px 2px}
+
+    #products{display:grid;gap:14px;margin-bottom:14px}
+    .prod{border:1px solid var(--line);background:var(--bg);padding:12px;display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:start}
+    .prod-thumb{width:64px;height:80px;object-fit:cover;background:#000}
+    .prod-fields{display:grid;gap:8px}
+    .prod-fields input,.prod-fields select{margin-top:0 !important;padding:9px 10px !important;font-size:.82rem !important}
+    .prod-row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .prod-del{appearance:none;background:transparent;border:1px solid var(--line);color:var(--muted);cursor:pointer;
+      width:30px;height:30px;font-size:1.1rem;line-height:1;border-radius:50%}
+    .prod-del:hover{color:#ff7b7b;border-color:#ff7b7b}
+    .mini-file{display:inline-block;text-align:center;border:1px dashed var(--line);color:var(--muted);cursor:pointer;
+      font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:9px 6px}
+    .mini-file:hover{color:var(--gold);border-color:var(--gold)}
+    .add-prod{width:100%;appearance:none;background:transparent;border:1px dashed var(--gold);color:var(--gold);cursor:pointer;
+      font-size:.74rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;padding:14px}
+    .add-prod:hover{background:rgba(212,175,55,.1)}
+
+    /* preview stage */
+    .stage{display:flex;flex-direction:column;min-width:0;background:#000}
+    .stage-bar{height:48px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;
+      border-bottom:1px solid var(--line);background:var(--panel)}
+    .stage-bar strong{font-size:.72rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+    .stage-bar .hint{font-size:.68rem;color:var(--muted);letter-spacing:.06em}
+    #preview{flex:1;width:100%;border:0;background:#fff}
+
+    /* gating overlay */
+    .gate{position:fixed;inset:0;z-index:300;background:rgba(6,6,6,.97);display:flex;align-items:center;justify-content:center;padding:24px}
+    .gate.hidden{display:none}
+    .gate-card{max-width:560px;width:100%;text-align:center;border:1px solid var(--gold);background:var(--panel);
+      padding:60px 48px;position:relative;box-shadow:0 30px 120px rgba(212,175,55,.12)}
+    .gate-card:before{content:"";position:absolute;inset:10px;border:1px solid rgba(212,175,55,.35);pointer-events:none}
+    .gate-card .kicker{color:var(--gold);font-size:.7rem;font-weight:800;letter-spacing:.3em;text-transform:uppercase}
+    .gate-card h1{font-family:"Bebas Neue",sans-serif;font-weight:400;font-size:clamp(3rem,8vw,4.6rem);letter-spacing:.04em;margin:18px 0 8px;line-height:.9}
+    .gate-card h1 .gold{color:var(--gold)}
+    .gate-card .serif{font-family:"Playfair Display",serif;font-style:italic;color:var(--muted);font-size:1.05rem;margin:0 0 22px}
+    .gate-card p.copy{color:var(--muted);font-size:.92rem;max-width:42ch;margin:0 auto 30px}
+    .gate-card .button{display:inline-flex;align-items:center;gap:12px;text-decoration:none;background:var(--gold);color:var(--gold-ink);
+      font-weight:900;text-transform:uppercase;letter-spacing:.08em;font-size:.86rem;padding:18px 34px;border:1px solid var(--gold);
+      box-shadow:8px 8px 0 rgba(247,244,236,.9);transition:transform .18s,box-shadow .18s}
+    .gate-card .button:hover{transform:translate(3px,3px);box-shadow:5px 5px 0 rgba(247,244,236,.9)}
+    .gate-card .fine{margin-top:26px;font-size:.66rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+    .gate-themes{display:flex;gap:10px;justify-content:center;margin-bottom:26px}
+    .gate-themes span{font-family:"Bebas Neue",sans-serif;font-size:1.1rem;letter-spacing:.2em;border:1px solid var(--line);padding:8px 18px;color:var(--muted)}
+
+    @media(max-width:900px){
+      body{overflow:auto}
+      .studio{grid-template-columns:1fr;height:auto}
+      .panel{border-right:0;border-bottom:1px solid var(--line);max-height:none}
+      .stage{height:80vh}
+      .topbar{flex-wrap:wrap;height:auto;padding:14px 18px;gap:10px}
+    }
+  </style>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- purchase gate: requires the 'themes' addon in localStorage pb_entitlements -->
+  <div class="gate hidden" id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+    <div class="gate-card">
+      <div class="kicker">Potent Playbook · Upgrade</div>
+      <h1 id="gate-title">THE THEME <span class="gold">STUDIO</span></h1>
+      <p class="serif">Two couture themes. Your brand. Your colors. Your drop.</p>
+      <div class="gate-themes" aria-hidden="true"><span>NOIR</span><span>GILT</span></div>
+      <p class="copy">The Theme Studio is included with the Potent Playbook. Customize either theme with your brand name, logo, colors, hero and products — then export a finished website file.</p>
+      <a class="button" href="/playbook/">Get the Playbook</a>
+      <p class="fine">All sales final · Instant access</p>
+    </div>
+  </div>
+
+  <header class="topbar">
+    <div class="mark">
+      <img src="assets/griffin-logo.jpg" alt="" />
+      <div><strong>POTENT</strong><br /><small>Theme Studio</small></div>
+    </div>
+    <div class="top-actions">
+      <span class="status" id="status" role="status"></span>
+      <button class="btn" id="btn-reset" type="button">Reset</button>
+      <button class="btn primary" id="btn-export" type="button">Export theme ↓</button>
+    </div>
+  </header>
+
+  <div class="studio">
+    <aside class="panel" aria-label="Theme controls">
+      <section class="ctl">
+        <h2><span>01</span> Theme</h2>
+        <div class="theme-pick">
+          <button type="button" class="theme-card noir-card active" data-theme="noir"><strong>NOIR</strong><small>Dark luxury</small></button>
+          <button type="button" class="theme-card gilt-card" data-theme="gilt"><strong>GILT</strong><small>Cream &amp; gold</small></button>
+        </div>
+      </section>
+
+      <section class="ctl">
+        <h2><span>02</span> Brand</h2>
+        <label>Brand name
+          <input type="text" id="in-brand" maxlength="24" autocomplete="off" />
+        </label>
+        <label>Logo</label>
+        <div class="logo-row">
+          <img id="logo-preview" src="assets/griffin-logo.jpg" alt="Logo preview" />
+          <div class="logo-btns">
+            <label class="file-btn">Upload logo<input type="file" id="in-logo" accept="image/*" hidden /></label>
+            <button type="button" class="mini-btn" id="btn-logo-default">Use griffin mark</button>
+            <button type="button" class="mini-btn" id="btn-logo-none">Text only</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="ctl">
+        <h2><span>03</span> Accent color</h2>
+        <div class="swatches" id="swatches"></div>
+      </section>
+
+      <section class="ctl">
+        <h2><span>04</span> Hero</h2>
+        <label>Headline <small style="text-transform:none;letter-spacing:0">(line breaks = new lines)</small>
+          <textarea id="in-headline" rows="3"></textarea>
+        </label>
+        <label>Gold accent word
+          <input type="text" id="in-accentword" maxlength="24" autocomplete="off" />
+        </label>
+        <label>Subline
+          <input type="text" id="in-sub" maxlength="120" autocomplete="off" />
+        </label>
+        <label>Hero image</label>
+        <div class="img-grid" id="hero-pick"></div>
+      </section>
+
+      <section class="ctl">
+        <h2><span>05</span> Products</h2>
+        <div id="products"></div>
+        <button type="button" class="add-prod" id="btn-add-product">+ Add product</button>
+      </section>
+    </aside>
+
+    <main class="stage">
+      <div class="stage-bar">
+        <strong id="preview-label">NOIR · Live preview</strong>
+        <span class="hint">Every edit updates instantly</span>
+      </div>
+      <iframe id="preview" title="Theme preview" sandbox="allow-scripts"></iframe>
+    </main>
+  </div>
+<script>
+(function(){
+"use strict";
+
+/* ================= GATING =================
+   Requires the 'themes' addon inside localStorage `pb_entitlements`.
+   Accepted shapes: ["themes"], {addons:["themes"]}, {products:["themes"]}, {themes:true} */
+function hasThemes(){
+  try{
+    var raw = localStorage.getItem("pb_entitlements");
+    if(!raw) return false;
+    var t = raw.trim();
+    if(t.charAt(0) !== "{" && t.charAt(0) !== "[") return t.indexOf("themes") !== -1;
+    var e = JSON.parse(raw);
+    if(Array.isArray(e)) return e.indexOf("themes") !== -1;
+    if(e && Array.isArray(e.addons)) return e.addons.indexOf("themes") !== -1;
+    if(e && Array.isArray(e.products)) return e.products.indexOf("themes") !== -1;
+    if(e && e.themes === true) return true;
+    return false;
+  }catch(err){ return false; }
+}
+if(!hasThemes()) document.getElementById("gate").classList.remove("hidden");
+
+/* ================= DATA ================= */
+var GALLERY = [
+  {file:"campaign-goldteeth.jpg",        label:"Gold Teeth"},
+  {file:"campaign-demon-hoodie.jpg",     label:"Demon Hoodie"},
+  {file:"campaign-desert-atv.jpg",       label:"Desert ATV"},
+  {file:"campaign-gallery.jpg",          label:"Gallery"},
+  {file:"campaign-geisha.jpg",           label:"Geisha"},
+  {file:"campaign-risktakers-closeup.jpg",label:"Closeup"},
+  {file:"campaign-risktakers-shades.jpg", label:"Shades"},
+  {file:"campaign-risktakers-studio.jpg", label:"Studio"},
+  {file:"campaign-rooftop.jpg",          label:"Rooftop"},
+  {file:"campaign-skyjump.jpg",          label:"Skyjump"},
+  {file:"campaign-cap-gorilla.jpg",      label:"Cap Gorilla"},
+  {file:"griffin-logo.jpg",              label:"Griffin Mark"}
+];
+var SWATCHES = [
+  {name:"Classic Gold", hex:"#d4af37"},
+  {name:"Champagne",    hex:"#e6c76a"},
+  {name:"Copper",       hex:"#b0703a"},
+  {name:"Rose Gold",    hex:"#cf9b86"},
+  {name:"Platinum",     hex:"#b9b9b9"}
+];
+function mkProd(name, price, file, sizes){ return {name:name, price:price, img:"assets/"+file, sizes:sizes||"S \u2014 XXL"}; }
+
+var NOIR_LOOKBOOK = [
+  {img:"assets/campaign-risktakers-studio.jpg",  cap:"Studio \u00B7 01", cls:"l1", alt:"Risk Takers studio campaign"},
+  {img:"assets/campaign-geisha.jpg",             cap:"Portrait \u00B7 02", cls:"l2", alt:"Geisha campaign portrait"},
+  {img:"assets/campaign-risktakers-shades.jpg",  cap:"Street \u00B7 03", cls:"l3", alt:"Risk Takers shades campaign"},
+  {img:"assets/campaign-risktakers-closeup.jpg", cap:"Detail \u00B7 04", cls:"l4", alt:"Risk Takers closeup campaign"},
+  {img:"assets/campaign-skyjump.jpg",            cap:"Motion \u00B7 05", cls:"l5", alt:"Sky jump campaign"}
+];
+var GILT_LOOKBOOK = [
+  {img:"assets/campaign-gallery.jpg",      cap:"Gallery \u00B7 01", cls:"l1", alt:"GILT gallery installation campaign"},
+  {img:"assets/campaign-geisha.jpg",       cap:"Portrait \u00B7 02", cls:"l2", alt:"GILT portrait campaign"},
+  {img:"assets/campaign-skyjump.jpg",      cap:"Motion \u00B7 03", cls:"l3", alt:"GILT motion campaign"},
+  {img:"assets/campaign-desert-atv.jpg",   cap:"Desert \u00B7 04", cls:"l4", alt:"GILT desert campaign"},
+  {img:"assets/campaign-demon-hoodie.jpg", cap:"Studio \u00B7 05", cls:"l5", alt:"GILT studio campaign"}
+];
+
+var DEFAULTS = {
+  noir: {
+    theme:"noir", brand:"NOIR", accent:"#d4af37", logo:"assets/griffin-logo.jpg",
+    headline:"WEAR THE\nNIGHT IN\nGOLD", accentWord:"GOLD",
+    sub:"Heavyweight essentials cut for the ones who move when the city sleeps.",
+    heroImage:"assets/campaign-goldteeth.jpg", dropLabel:"Drop 001",
+    products:[
+      mkProd("Demon Heavyweight Hoodie","$148","campaign-demon-hoodie.jpg"),
+      mkProd("Gold Teeth Graphic Tee","$68","campaign-goldteeth.jpg"),
+      mkProd("Desert Ops Cargo Set","$225","campaign-desert-atv.jpg"),
+      mkProd("Gallery Exhibition Tee","$85","campaign-gallery.jpg"),
+      mkProd("Rooftop Selvedge Jacket","$265","campaign-rooftop.jpg"),
+      mkProd("Risk Taker Snapback","$48","campaign-cap-gorilla.jpg","One size")
+    ]
+  },
+  gilt: {
+    theme:"gilt", brand:"GILT", accent:"#d4af37", logo:"assets/griffin-logo.jpg",
+    headline:"DRESSED\nIN SUNLIGHT", accentWord:"SUNLIGHT",
+    sub:"Refined streetwear in cream and gold \u2014 made to be seen in the light.",
+    heroImage:"assets/campaign-rooftop.jpg", dropLabel:"Collection 001",
+    products:[
+      mkProd("Gallery Cream Oversized Tee","$85","campaign-gallery.jpg","XS \u2014 XL"),
+      mkProd("Rooftop Gold-Hour Jacket","$265","campaign-rooftop.jpg","XS \u2014 XL"),
+      mkProd("Desert Sand Cargo Set","$225","campaign-desert-atv.jpg","XS \u2014 XL"),
+      mkProd("Porcelain Portrait Tee","$78","campaign-geisha.jpg","XS \u2014 XL"),
+      mkProd("Skyline Motion Hoodie","$148","campaign-skyjump.jpg","XS \u2014 XL"),
+      mkProd("Gilt Classic Cap","$48","campaign-cap-gorilla.jpg","One size")
+    ]
+  }
+};
+
+/* ================= HELPERS ================= */
+function esc(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+function cssWord(s){ return String(s||"").toUpperCase().replace(/["\\]/g,"").slice(0,14); }
+function hexRgb(hex){
+  var h = hex.replace("#","");
+  if(h.length === 3) h = h.split("").map(function(c){return c+c;}).join("");
+  var n = parseInt(h,16);
+  return [n>>16 & 255, n>>8 & 255, n & 255];
+}
+function mix(a, b, t){ /* t=0 -> a, t=1 -> b */
+  var A = hexRgb(a), B = hexRgb(b);
+  var c = A.map(function(v,i){ return Math.round(v + (B[i]-v)*t); });
+  return "#" + c.map(function(v){ var h=v.toString(16); return h.length<2?"0"+h:h; }).join("");
+}
+function accentCSS(theme, accent){
+  if(theme === "gilt")
+    return ":root{--gold:"+accent+";--gold-deep:"+mix(accent,"#000000",.30)+";--gold-soft:"+mix(accent,"#ffffff",.62)+";}";
+  return ":root{--gold:"+accent+";--gold-bright:"+mix(accent,"#ffffff",.28)+";}";
+}
+function headlineHTML(text, word){
+  var w = String(word||"").trim();
+  return esc(text).split("\n").map(function(line){
+    if(w){
+      var idx = line.toLowerCase().indexOf(w.toLowerCase());
+      if(idx !== -1){
+        line = line.slice(0,idx) + '<span class="gold">' + line.slice(idx, idx+w.length) + "</span>" + line.slice(idx+w.length);
+      }
+    }
+    return line;
+  }).join("<br>");
+}
+function logoImg(s){
+  if(!s.logo) return "";
+  return '<img src="'+s.logo+'" alt="'+esc(s.brand)+' logo" />';
+}
+function debounce(fn, ms){
+  var t; return function(){ clearTimeout(t); var a=arguments, s=this; t=setTimeout(function(){ fn.apply(s,a); }, ms); };
+}
+function slug(s){ return String(s||"brand").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"") || "brand"; }
+
+/* ================= STATE ================= */
+var state;
+try{
+  var saved = JSON.parse(localStorage.getItem("pb_theme_studio") || "null");
+  state = (saved && saved.theme && DEFAULTS[saved.theme]) ? saved : JSON.parse(JSON.stringify(DEFAULTS.noir));
+}catch(e){ state = JSON.parse(JSON.stringify(DEFAULTS.noir)); }
+function persist(){ try{ localStorage.setItem("pb_theme_studio", JSON.stringify(state)); }catch(e){} }
+
+/* ================= THEME CSS (matches the standalone noir/gilt pages) ================= */
+var NOIR_CSS = `
+    :root{
+      --bg:#0a0a0a; --panel:#111110; --panel-2:#161512;
+      --ink:#f7f4ec; --muted:#b8b3a8;
+      --gold:#d4af37; --gold-bright:#e8c65a; --gold-ink:#0a0803;
+      --line:rgba(255,255,255,.14); --shadow:0 24px 80px rgba(0,0,0,.55);
+      --font-display:"Bebas Neue",sans-serif; --font-body:"Manrope",sans-serif; --font-serif:"Playfair Display",serif;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth;background:var(--bg)}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+    img{max-width:100%;display:block} a{color:inherit} h1,h2,h3,p{margin:0}
+    ::selection{background:var(--gold);color:var(--gold-ink)}
+    .grain{position:fixed;inset:0;pointer-events:none;opacity:.05;z-index:60;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E")}
+    .wrap{width:min(1240px,calc(100% - 48px));margin:0 auto}
+    .section{padding:110px 0}
+    .section-label{color:var(--gold);font-size:.72rem;font-weight:800;letter-spacing:.24em;text-transform:uppercase;margin-bottom:16px}
+    .display{font-family:var(--font-display);font-weight:400;font-size:clamp(3.4rem,7vw,6.8rem);line-height:.88;letter-spacing:-.01em}
+    .display .gold{color:var(--gold)}
+    .nav{position:sticky;top:0;z-index:50;background:rgba(10,10,10,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+    .nav-inner{width:min(1240px,calc(100% - 48px));margin:0 auto;height:72px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+    .brand{display:flex;align-items:center;gap:12px;text-decoration:none}
+    .brand img{width:38px;height:38px;object-fit:cover;border-radius:50%;border:1px solid var(--gold)}
+    .brand-name{font-family:var(--font-display);font-size:1.9rem;letter-spacing:.14em;line-height:1}
+    .nav-links{display:flex;gap:34px;font-size:.74rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+    .nav-links a{text-decoration:none;color:var(--muted);transition:color .2s}
+    .nav-links a:hover{color:var(--gold)}
+    .nav-cta{display:inline-flex;align-items:center;gap:10px;text-decoration:none;background:var(--gold);color:var(--gold-ink);font-size:.74rem;font-weight:900;letter-spacing:.14em;text-transform:uppercase;padding:13px 22px;transition:background .2s,transform .2s}
+    .nav-cta:hover{background:var(--gold-bright);transform:translateY(-1px)}
+    .hero{position:relative;min-height:calc(100svh - 72px);display:flex;align-items:flex-end;overflow:hidden}
+    .hero-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(.85) contrast(1.08)}
+    .hero-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,10,.62) 0%,rgba(10,10,10,.18) 42%,rgba(10,10,10,.92) 100%)}
+    .hero-content{position:relative;z-index:1;width:min(1240px,calc(100% - 48px));margin:0 auto;padding:120px 0 90px}
+    .hero-stamp{display:inline-flex;align-items:center;gap:12px;color:var(--gold);font-size:.74rem;font-weight:800;letter-spacing:.26em;text-transform:uppercase;margin-bottom:24px}
+    .hero-stamp:before{content:"";width:44px;height:2px;background:currentColor}
+    .hero h1{font-family:var(--font-display);font-weight:400;font-size:clamp(4.6rem,13vw,12rem);line-height:.8;letter-spacing:-.015em;max-width:10ch}
+    .hero h1 .gold{color:var(--gold)}
+    .hero-sub{font-family:var(--font-serif);font-style:italic;font-size:clamp(1.15rem,2.4vw,1.7rem);color:var(--ink);opacity:.92;max-width:44ch;margin-top:26px}
+    .hero-actions{display:flex;gap:18px;align-items:center;margin-top:38px;flex-wrap:wrap}
+    .button{display:inline-flex;align-items:center;gap:12px;text-decoration:none;background:var(--gold);color:var(--gold-ink);font-weight:900;text-transform:uppercase;letter-spacing:.08em;font-size:.86rem;padding:18px 30px;min-height:58px;border:1px solid var(--gold);box-shadow:8px 8px 0 rgba(247,244,236,.9);transition:transform .18s,box-shadow .18s,background .2s}
+    .button:hover{transform:translate(3px,3px);box-shadow:5px 5px 0 rgba(247,244,236,.9);background:var(--gold-bright)}
+    .button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);box-shadow:none}
+    .button.ghost:hover{border-color:var(--gold);color:var(--gold);transform:none;box-shadow:none}
+    .hero-meta{position:absolute;right:34px;bottom:96px;z-index:1;writing-mode:vertical-rl;transform:rotate(180deg);font-size:.66rem;font-weight:800;letter-spacing:.3em;text-transform:uppercase;color:var(--gold)}
+    .scroll-cue{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:1;width:1px;height:56px;background:var(--line);overflow:hidden}
+    .scroll-cue:after{content:"";position:absolute;top:-40%;left:0;width:100%;height:40%;background:var(--gold);animation:cue 2.2s ease-in-out infinite}
+    @keyframes cue{to{top:110%}}
+    .marquee{background:var(--gold);color:var(--gold-ink);overflow:hidden;white-space:nowrap;border-top:1px solid var(--gold);border-bottom:1px solid var(--gold)}
+    .marquee-track{display:inline-flex;padding:16px 0;animation:slide 26s linear infinite}
+    .marquee span{font-family:var(--font-display);font-size:1.5rem;letter-spacing:.1em;padding:0 28px;display:inline-flex;align-items:center;gap:28px}
+    .marquee span:after{content:"\\25C6";font-size:.8rem}
+    @keyframes slide{to{transform:translateX(-50%)}}
+    .shop-head{display:flex;justify-content:space-between;align-items:flex-end;gap:30px;margin-bottom:54px;flex-wrap:wrap}
+    .shop-head p{color:var(--muted);max-width:420px;font-size:.95rem}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
+    .card{background:var(--panel);border:1px solid var(--line);position:relative;overflow:hidden;transition:transform .25s ease,border-color .25s}
+    .card:hover{transform:translateY(-6px);border-color:rgba(212,175,55,.55)}
+    .card-media{position:relative;aspect-ratio:4/5;overflow:hidden;background:var(--panel-2)}
+    .card-media img{width:100%;height:100%;object-fit:cover;filter:saturate(.85) contrast(1.05);transition:transform .6s ease,filter .3s}
+    .card:hover .card-media img{transform:scale(1.06);filter:saturate(1.05) contrast(1.05)}
+    .card-tag{position:absolute;top:14px;left:14px;background:var(--gold);color:var(--gold-ink);font-size:.64rem;font-weight:900;letter-spacing:.18em;text-transform:uppercase;padding:7px 12px}
+    .card-num{position:absolute;top:10px;right:16px;font-family:var(--font-display);font-size:1.6rem;color:rgba(247,244,236,.35)}
+    .card-body{padding:22px 22px 24px}
+    .card-body h3{font-size:1.02rem;font-weight:800;letter-spacing:.01em}
+    .card-body .price{font-family:var(--font-display);font-size:1.5rem;color:var(--gold);margin-top:8px;letter-spacing:.04em}
+    .card-foot{display:flex;justify-content:space-between;align-items:center;margin-top:16px}
+    .add-btn{appearance:none;background:transparent;border:1px solid var(--line);color:var(--ink);font-size:.72rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;padding:12px 18px;cursor:pointer;transition:border-color .2s,color .2s,background .2s}
+    .add-btn:hover{border-color:var(--gold);color:var(--gold)}
+    .add-btn.added{background:var(--gold);border-color:var(--gold);color:var(--gold-ink)}
+    .sizes{font-size:.68rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+    .lookbook{background:var(--panel-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+    .look-grid{display:grid;grid-template-columns:repeat(12,1fr);grid-auto-rows:88px;gap:12px;margin-top:54px}
+    .look-grid figure{margin:0;overflow:hidden;position:relative;background:var(--panel)}
+    .look-grid img{width:100%;height:100%;object-fit:cover;filter:saturate(.8) contrast(1.06);transition:transform .7s ease,filter .3s}
+    .look-grid figure:hover img{transform:scale(1.05);filter:saturate(1.1)}
+    .look-grid figcaption{position:absolute;left:16px;bottom:14px;font-size:.66rem;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--ink);background:rgba(10,10,10,.55);backdrop-filter:blur(6px);padding:8px 12px;border-left:2px solid var(--gold)}
+    .l1{grid-column:1/6;grid-row:1/9}.l2{grid-column:6/10;grid-row:1/6}.l3{grid-column:10/13;grid-row:1/6}
+    .l4{grid-column:6/13;grid-row:6/12}.l5{grid-column:1/6;grid-row:9/12}
+    .story{display:grid;grid-template-columns:.85fr 1.15fr;gap:7vw;align-items:start}
+    .story-quote{font-family:var(--font-serif);font-style:italic;font-size:clamp(1.5rem,2.8vw,2.5rem);line-height:1.3;color:var(--muted);margin-top:44px}
+    .story-quote strong{color:var(--gold);font-weight:700}
+    .story-copy p{color:var(--muted);margin-bottom:20px;max-width:56ch}
+    .story-copy p:first-of-type{color:var(--ink);font-size:1.06rem}
+    .story-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-top:44px}
+    .stat{padding:28px 22px;border-right:1px solid var(--line)}
+    .stat:last-child{border-right:0}
+    .stat strong{display:block;font-family:var(--font-display);font-weight:400;font-size:clamp(2.2rem,3.6vw,3.4rem);line-height:1;color:var(--gold)}
+    .stat span{display:block;font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-top:10px}
+    .signup{position:relative;overflow:hidden;background:var(--gold);color:var(--gold-ink);padding:clamp(60px,9vw,120px) 0}
+    .signup:after{position:absolute;right:-24px;bottom:-70px;font-family:var(--font-display);font-size:clamp(10rem,24vw,22rem);line-height:1;color:rgba(10,8,3,.06);pointer-events:none}
+    .signup .display{max-width:12ch}
+    .signup p{max-width:46ch;margin-top:18px;font-weight:600;opacity:.85}
+    .signup-form{display:flex;gap:0;margin-top:34px;max-width:560px;position:relative;z-index:1}
+    .signup-form input{flex:1;background:var(--gold-ink);color:var(--ink);border:1px solid var(--gold-ink);padding:0 22px;min-height:60px;font:inherit;font-size:.92rem}
+    .signup-form input::placeholder{color:var(--muted)}
+    .signup-form button{appearance:none;background:var(--gold-ink);color:var(--gold);border:1px solid var(--gold-ink);padding:0 30px;min-height:60px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;font-size:.8rem;cursor:pointer;transition:color .2s}
+    .signup-form button:hover{color:var(--gold-bright)}
+    .signup-note{font-size:.72rem;font-weight:700;letter-spacing:.06em;margin-top:16px;opacity:.7;position:relative;z-index:1}
+    .signup-done{display:none;margin-top:34px;font-family:var(--font-serif);font-style:italic;font-size:1.4rem;position:relative;z-index:1}
+    footer{border-top:1px solid var(--line);padding:70px 0 40px}
+    .foot-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:40px;margin-bottom:60px}
+    .foot-brand .brand-name{font-size:2.4rem}
+    .foot-brand p{color:var(--muted);font-size:.86rem;max-width:32ch;margin-top:14px}
+    .foot-col h4{font-size:.72rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin:0 0 18px}
+    .foot-col ul{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+    .foot-col a{text-decoration:none;color:var(--muted);font-size:.86rem;transition:color .2s}
+    .foot-col a:hover{color:var(--ink)}
+    .foot-bottom{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-top:28px;border-top:1px solid var(--line);font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+    .foot-bottom .motto{color:var(--gold);font-weight:900}
+    .reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease}
+    .reveal.in{opacity:1;transform:none}
+    @media(max-width:960px){
+      .grid{grid-template-columns:1fr 1fr}
+      .story{grid-template-columns:1fr}
+      .look-grid{grid-template-columns:1fr 1fr;grid-auto-rows:240px}
+      .l1,.l2,.l3,.l4,.l5{grid-column:auto;grid-row:auto}
+      .l1{grid-column:1/3;grid-row:span 2}.l4{grid-column:1/3;grid-row:span 2}
+      .foot-grid{grid-template-columns:1fr 1fr}
+    }
+    @media(max-width:640px){
+      .section{padding:76px 0}
+      .nav-links{display:none}
+      .grid{grid-template-columns:1fr}
+      .hero-meta{display:none}
+      .signup-form{flex-direction:column;gap:12px}
+      .signup-form input,.signup-form button{min-height:56px;width:100%}
+      .story-stats{grid-template-columns:1fr}
+      .stat{border-right:0;border-bottom:1px solid var(--line)}
+      .stat:last-child{border-bottom:0}
+      .foot-grid{grid-template-columns:1fr}
+    }
+    @media(prefers-reduced-motion:reduce){
+      html{scroll-behavior:auto}.marquee-track{animation:none}.scroll-cue:after{animation:none}.reveal{opacity:1;transform:none}
+    }
+`;
+
+/* ---- NOIR body template ---- */
+function noirCards(s){
+  return s.products.map(function(p, i){
+    var n = ("0"+(i+1)).slice(-2);
+    return '<article class="card reveal">'
+      + '<div class="card-media"><img src="'+p.img+'" alt="'+esc(p.name)+'" loading="lazy" />'
+      + '<span class="card-tag">'+esc(s.dropLabel)+'</span><span class="card-num">'+n+'</span></div>'
+      + '<div class="card-body"><h3>'+esc(p.name)+'</h3><div class="price">'+esc(p.price)+'</div>'
+      + '<div class="card-foot"><button class="add-btn" type="button">Add to cart</button>'
+      + '<span class="sizes">'+esc(p.sizes)+'</span></div></div></article>';
+  }).join("");
+}
+function noirLookbook(){
+  return NOIR_LOOKBOOK.map(function(f){
+    return '<figure class="'+f.cls+' reveal"><img src="'+f.img+'" alt="'+esc(f.alt)+'" loading="lazy" /><figcaption>'+esc(f.cap)+'</figcaption></figure>';
+  }).join("");
+}
+function noirPage(s){
+  var brand = esc(s.brand), brandUp = cssWord(s.brand);
+  return '<!doctype html>\n<html lang="en">\n<head>\n'
+    + '  <meta charset="utf-8" />\n  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />\n'
+    + '  <meta name="description" content="'+brand+' \u2014 dark luxury streetwear." />\n  <link rel="icon" href="data:," />\n'
+    + '  <title>'+brand+' \u2014 Dark Luxury Streetwear</title>\n'
+    + '  <link rel="preconnect" href="https://fonts.googleapis.com" />\n  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />\n'
+    + '  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,500;1,700&display=swap" rel="stylesheet" />\n'
+    + '  <style>'+NOIR_CSS+'</style>\n'
+    + '  <style>'+accentCSS("noir", s.accent)+'.signup:after{content:"'+brandUp+'"}</style>\n'
+    + '</head>\n<body>\n  <div class="grain" aria-hidden="true"></div>\n'
+    + '  <header class="nav"><div class="nav-inner">\n'
+    + '    <a class="brand" href="#top" aria-label="'+brand+' home">'+logoImg(s)+'<span class="brand-name">'+brand+'</span></a>\n'
+    + '    <nav class="nav-links" aria-label="Sections"><a href="#shop">Shop</a><a href="#lookbook">Lookbook</a><a href="#about">About</a></nav>\n'
+    + '    <a class="nav-cta" href="#shop">Shop the drop <span aria-hidden="true">\u2192</span></a>\n'
+    + '  </div></header>\n  <main id="top">\n'
+    + '    <section class="hero">\n'
+    + '      <img class="hero-bg" src="'+s.heroImage+'" alt="'+brand+' campaign" fetchpriority="high" />\n'
+    + '      <div class="hero-shade" aria-hidden="true"></div>\n'
+    + '      <div class="hero-content">\n'
+    + '        <span class="hero-stamp">'+esc(s.dropLabel)+' \u00B7 After hours</span>\n'
+    + '        <h1>'+headlineHTML(s.headline, s.accentWord)+'</h1>\n'
+    + '        <p class="hero-sub">'+esc(s.sub)+'</p>\n'
+    + '        <div class="hero-actions"><a class="button" href="#shop">Shop the collection</a><a class="button ghost" href="#lookbook">View lookbook</a></div>\n'
+    + '      </div>\n'
+    + '      <span class="hero-meta" aria-hidden="true">Est. after midnight \u00B7 No restocks</span>\n'
+    + '      <span class="scroll-cue" aria-hidden="true"></span>\n    </section>\n'
+    + '    <div class="marquee" aria-hidden="true"><div class="marquee-track">'
+    + '<span>'+esc(s.dropLabel)+' live now</span><span>No restocks</span><span>Free shipping over $150</span><span>Heavyweight only</span>'
+    + '<span>'+esc(s.dropLabel)+' live now</span><span>No restocks</span><span>Free shipping over $150</span><span>Heavyweight only</span>'
+    + '</div></div>\n'
+    + '    <section id="shop" class="section wrap">\n'
+    + '      <div class="shop-head reveal"><div><div class="section-label">The collection</div>'
+    + '<h2 class="display">'+esc(s.dropLabel.split(" ")[0]).toUpperCase()+' <span class="gold">'+esc(s.dropLabel.split(" ").slice(1).join(" ")).toUpperCase()+'</span></h2></div>\n'
+    + '      <p>Six pieces. Cut heavy, printed oversized, finished like gallery work. When a size sells through, it is gone.</p></div>\n'
+    + '      <div class="grid">'+noirCards(s)+'</div>\n    </section>\n'
+    + '    <section id="lookbook" class="section lookbook"><div class="wrap">\n'
+    + '      <div class="section-label reveal">Shot after dark</div>\n'
+    + '      <h2 class="display reveal">THE <span class="gold">LOOKBOOK</span></h2>\n'
+    + '      <div class="look-grid">'+noirLookbook()+'</div>\n    </div></section>\n'
+    + '    <section id="about" class="section wrap story">\n'
+    + '      <div class="reveal"><div class="section-label">The house</div>\n'
+    + '      <h2 class="display">BUILT FOR<br />THE <span class="gold">BOLD</span></h2>\n'
+    + '      <p class="story-quote">\u201CLuxury is not a price tag. It is <strong>refusing to blend in</strong>.\u201D</p></div>\n'
+    + '      <div class="story-copy reveal">\n'
+    + '        <p>'+brand+' started the way every real brand starts \u2014 with a refusal. A refusal to wait for permission, to water the vision down, to make it for everyone.</p>\n'
+    + '        <p>Every piece is cut from heavyweight fabric, printed oversized, and finished by hand. No fast fashion. No restocks. No apologies. We shoot our campaigns like gallery exhibitions because that is what they are: proof that streetwear belongs in the museum and the museum belongs in the street.</p>\n'
+    + '        <p>'+esc(s.dropLabel)+' is the opening statement. Six pieces, one night, zero repeats.</p>\n'
+    + '        <div class="story-stats">\n'
+    + '          <div class="stat"><strong>480</strong><span>GSM heavyweight fabric</span></div>\n'
+    + '          <div class="stat"><strong>06</strong><span>Pieces per drop</span></div>\n'
+    + '          <div class="stat"><strong>00</strong><span>Restocks. Ever.</span></div>\n'
+    + '        </div>\n      </div>\n    </section>\n'
+    + '    <section class="signup"><div class="wrap">\n'
+    + '      <div class="section-label" style="color:var(--gold-ink)">First access</div>\n'
+    + '      <h2 class="display">GET THE NEXT DROP BEFORE IT SELLS OUT</h2>\n'
+    + '      <p>One email per drop. Early links, private sizes, zero spam. The list eats first \u2014 the public gets leftovers.</p>\n'
+    + '      <form class="signup-form" id="signup-form"><input type="email" name="email" placeholder="your@email.com" required aria-label="Email address" /><button type="submit">Join the list</button></form>\n'
+    + '      <p class="signup-note">By joining you agree to receive drop alerts. Unsubscribe anytime.</p>\n'
+    + '      <p class="signup-done" id="signup-done">You are on the list. Watch your inbox \u2014 the next drop moves fast.</p>\n'
+    + '    </div></section>\n  </main>\n'
+    + '  <footer><div class="wrap">\n'
+    + '    <div class="foot-grid">\n'
+    + '      <div class="foot-brand"><span class="brand-name">'+brand+'</span><p>Dark luxury streetwear. Heavyweight essentials, gallery-grade campaigns, limited drops.</p></div>\n'
+    + '      <div class="foot-col"><h4>Shop</h4><ul><li><a href="#shop">'+esc(s.dropLabel)+'</a></li><li><a href="#lookbook">Lookbook</a></li><li><a href="#about">About</a></li></ul></div>\n'
+    + '      <div class="foot-col"><h4>Help</h4><ul><li><a href="#top">Shipping</a></li><li><a href="#top">Returns</a></li><li><a href="#top">Size guide</a></li></ul></div>\n'
+    + '      <div class="foot-col"><h4>Follow</h4><ul><li><a href="#top">Instagram</a></li><li><a href="#top">TikTok</a></li><li><a href="#top">X</a></li></ul></div>\n'
+    + '    </div>\n'
+    + '    <div class="foot-bottom"><span>\u00A9 2026 '+brand+'. All rights reserved.</span><span class="motto">Built different \u00B7 Sold direct</span></div>\n'
+    + '  </div></footer>\n'
+    + THEME_SCRIPT + '\n</body>\n</html>';
+}
+
+/* Shared interaction script for exported/preview pages */
+var THEME_SCRIPT = '<script>(function(){"use strict";'
+  + 'var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);}});},{threshold:.12});'
+  + 'document.querySelectorAll(".reveal").forEach(function(el){io.observe(el);});'
+  + 'document.querySelectorAll(".add-btn").forEach(function(b){b.addEventListener("click",function(){var a=b.classList.toggle("added");b.textContent=a?"Added \\u2713":b.dataset.label||"Add to cart";});});'
+  + 'var f=document.getElementById("signup-form");'
+  + 'if(f){f.addEventListener("submit",function(ev){ev.preventDefault();f.style.display="none";var n=document.querySelector(".signup-note");if(n)n.style.display="none";document.getElementById("signup-done").style.display="block";});}'
+  + '})();<\/script>';
+
+/* ================= GILT template ================= */
+var GILT_CSS = `
+    :root{
+      --bg:#f7f3e9; --cream:#faf7ef; --panel:#fffdf7;
+      --ink:#161410; --muted:#6f6a5e;
+      --gold:#b98a1f; --gold-deep:#8f6a14; --gold-soft:#e9d9a8;
+      --line:rgba(22,20,16,.14); --dark:#14120d;
+      --shadow:0 24px 70px rgba(143,106,20,.14);
+      --font-display:"Bebas Neue",sans-serif; --font-body:"Manrope",sans-serif; --font-serif:"Playfair Display",serif;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth;background:var(--bg)}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+    img{max-width:100%;display:block} a{color:inherit} h1,h2,h3,p{margin:0}
+    ::selection{background:var(--gold);color:var(--cream)}
+    .grain{position:fixed;inset:0;pointer-events:none;opacity:.05;z-index:60;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E")}
+    .wrap{width:min(1240px,calc(100% - 48px));margin:0 auto}
+    .section{padding:110px 0}
+    .section-label{color:var(--gold-deep);font-size:.72rem;font-weight:800;letter-spacing:.24em;text-transform:uppercase;margin-bottom:16px}
+    .display{font-family:var(--font-display);font-weight:400;font-size:clamp(3.4rem,7vw,6.8rem);line-height:.88;letter-spacing:-.01em}
+    .display .gold{color:var(--gold-deep)}
+    .nav{position:sticky;top:0;z-index:50;background:rgba(247,243,233,.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+    .nav-inner{width:min(1240px,calc(100% - 48px));margin:0 auto;height:72px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+    .brand{display:flex;align-items:center;gap:12px;text-decoration:none}
+    .brand img{width:38px;height:38px;object-fit:cover;border-radius:50%;border:1px solid var(--gold)}
+    .brand-name{font-family:var(--font-display);font-size:1.9rem;letter-spacing:.14em;line-height:1}
+    .nav-links{display:flex;gap:34px;font-size:.74rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+    .nav-links a{text-decoration:none;color:var(--muted);transition:color .2s}
+    .nav-links a:hover{color:var(--gold-deep)}
+    .nav-cta{display:inline-flex;align-items:center;gap:10px;text-decoration:none;background:var(--dark);color:var(--cream);font-size:.74rem;font-weight:900;letter-spacing:.14em;text-transform:uppercase;padding:13px 22px;transition:background .2s,transform .2s}
+    .nav-cta:hover{background:var(--gold-deep);transform:translateY(-1px)}
+    .hero{position:relative;min-height:calc(100svh - 72px);display:flex;align-items:flex-end;overflow:hidden}
+    .hero-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(1.02) contrast(1.02)}
+    .hero-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(247,243,233,.35) 0%,rgba(247,243,233,.05) 38%,rgba(20,18,13,.78) 100%)}
+    .hero-content{position:relative;z-index:1;width:min(1240px,calc(100% - 48px));margin:0 auto;padding:120px 0 90px;color:var(--cream)}
+    .hero-stamp{display:inline-flex;align-items:center;gap:12px;color:var(--gold-soft);font-size:.74rem;font-weight:800;letter-spacing:.26em;text-transform:uppercase;margin-bottom:24px}
+    .hero-stamp:before{content:"";width:44px;height:2px;background:currentColor}
+    .hero h1{font-family:var(--font-display);font-weight:400;font-size:clamp(4.6rem,13vw,12rem);line-height:.8;letter-spacing:-.015em;max-width:10ch;text-shadow:0 4px 40px rgba(0,0,0,.45)}
+    .hero h1 .gold{color:var(--gold-soft)}
+    .hero-sub{font-family:var(--font-serif);font-style:italic;font-size:clamp(1.15rem,2.4vw,1.7rem);max-width:44ch;margin-top:26px;text-shadow:0 2px 18px rgba(0,0,0,.5)}
+    .hero-actions{display:flex;gap:18px;align-items:center;margin-top:38px;flex-wrap:wrap}
+    .button{display:inline-flex;align-items:center;gap:12px;text-decoration:none;background:var(--gold);color:var(--dark);font-weight:900;text-transform:uppercase;letter-spacing:.08em;font-size:.86rem;padding:18px 30px;min-height:58px;border:1px solid var(--gold);box-shadow:8px 8px 0 rgba(20,18,13,.85);transition:transform .18s,box-shadow .18s,background .2s}
+    .button:hover{transform:translate(3px,3px);box-shadow:5px 5px 0 rgba(20,18,13,.85);background:var(--gold-soft)}
+    .button.ghost{background:rgba(247,243,233,.08);color:var(--cream);border:1px solid rgba(247,243,233,.4);box-shadow:none;backdrop-filter:blur(6px)}
+    .button.ghost:hover{border-color:var(--gold-soft);color:var(--gold-soft);transform:none;box-shadow:none}
+    .hero-meta{position:absolute;right:34px;bottom:96px;z-index:1;writing-mode:vertical-rl;transform:rotate(180deg);font-size:.66rem;font-weight:800;letter-spacing:.3em;text-transform:uppercase;color:var(--gold-soft)}
+    .scroll-cue{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:1;width:1px;height:56px;background:rgba(247,243,233,.35);overflow:hidden}
+    .scroll-cue:after{content:"";position:absolute;top:-40%;left:0;width:100%;height:40%;background:var(--gold-soft);animation:cue 2.2s ease-in-out infinite}
+    @keyframes cue{to{top:110%}}
+    .marquee{background:var(--dark);color:var(--gold-soft);overflow:hidden;white-space:nowrap}
+    .marquee-track{display:inline-flex;padding:16px 0;animation:slide 26s linear infinite}
+    .marquee span{font-family:var(--font-display);font-size:1.5rem;letter-spacing:.1em;padding:0 28px;display:inline-flex;align-items:center;gap:28px}
+    .marquee span:after{content:"\\25C6";font-size:.8rem;color:var(--gold)}
+    @keyframes slide{to{transform:translateX(-50%)}}
+    .shop-head{display:flex;justify-content:space-between;align-items:flex-end;gap:30px;margin-bottom:54px;flex-wrap:wrap}
+    .shop-head p{color:var(--muted);max-width:420px;font-size:.95rem}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
+    .card{background:var(--panel);border:1px solid var(--line);position:relative;overflow:hidden;box-shadow:var(--shadow);transition:transform .25s ease,box-shadow .25s}
+    .card:hover{transform:translateY(-6px);box-shadow:0 34px 90px rgba(143,106,20,.22)}
+    .card-media{position:relative;aspect-ratio:4/5;overflow:hidden;background:var(--cream)}
+    .card-media img{width:100%;height:100%;object-fit:cover;transition:transform .6s ease}
+    .card:hover .card-media img{transform:scale(1.06)}
+    .card-tag{position:absolute;top:14px;left:14px;background:var(--dark);color:var(--gold-soft);font-size:.64rem;font-weight:900;letter-spacing:.18em;text-transform:uppercase;padding:7px 12px}
+    .card-num{position:absolute;top:10px;right:16px;font-family:var(--font-display);font-size:1.6rem;color:rgba(22,20,16,.3)}
+    .card-body{padding:22px 22px 24px;border-top:1px solid var(--line)}
+    .card-body h3{font-size:1.02rem;font-weight:800;letter-spacing:.01em}
+    .card-body .price{font-family:var(--font-display);font-size:1.5rem;color:var(--gold-deep);margin-top:8px;letter-spacing:.04em}
+    .card-foot{display:flex;justify-content:space-between;align-items:center;margin-top:16px}
+    .add-btn{appearance:none;background:transparent;border:1px solid var(--line);color:var(--ink);font-size:.72rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;padding:12px 18px;cursor:pointer;transition:border-color .2s,color .2s,background .2s}
+    .add-btn:hover{border-color:var(--gold-deep);color:var(--gold-deep)}
+    .add-btn.added{background:var(--dark);border-color:var(--dark);color:var(--gold-soft)}
+    .sizes{font-size:.68rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+    .lookbook{background:var(--dark);color:var(--cream)}
+    .lookbook .section-label{color:var(--gold-soft)}
+    .lookbook .display{color:var(--cream)}
+    .lookbook .display .gold{color:var(--gold-soft)}
+    .look-grid{display:grid;grid-template-columns:repeat(12,1fr);grid-auto-rows:88px;gap:12px;margin-top:54px}
+    .look-grid figure{margin:0;overflow:hidden;position:relative;background:#1e1b14}
+    .look-grid img{width:100%;height:100%;object-fit:cover;transition:transform .7s ease}
+    .look-grid figure:hover img{transform:scale(1.05)}
+    .look-grid figcaption{position:absolute;left:16px;bottom:14px;font-size:.66rem;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--cream);background:rgba(20,18,13,.55);backdrop-filter:blur(6px);padding:8px 12px;border-left:2px solid var(--gold)}
+    .l1{grid-column:1/6;grid-row:1/9}.l2{grid-column:6/10;grid-row:1/6}.l3{grid-column:10/13;grid-row:1/6}
+    .l4{grid-column:6/13;grid-row:6/12}.l5{grid-column:1/6;grid-row:9/12}
+    .story{display:grid;grid-template-columns:.85fr 1.15fr;gap:7vw;align-items:start}
+    .story-quote{font-family:var(--font-serif);font-style:italic;font-size:clamp(1.5rem,2.8vw,2.5rem);line-height:1.3;color:var(--muted);margin-top:44px}
+    .story-quote strong{color:var(--gold-deep);font-weight:700}
+    .story-copy p{color:var(--muted);margin-bottom:20px;max-width:56ch}
+    .story-copy p:first-of-type{color:var(--ink);font-size:1.06rem}
+    .story-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-top:44px}
+    .stat{padding:28px 22px;border-right:1px solid var(--line)}
+    .stat:last-child{border-right:0}
+    .stat strong{display:block;font-family:var(--font-display);font-weight:400;font-size:clamp(2.2rem,3.6vw,3.4rem);line-height:1;color:var(--gold-deep)}
+    .stat span{display:block;font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-top:10px}
+    .signup{position:relative;overflow:hidden;background:var(--dark);color:var(--cream);padding:clamp(60px,9vw,120px) 0}
+    .signup:after{position:absolute;right:-24px;bottom:-70px;font-family:var(--font-display);font-size:clamp(10rem,24vw,22rem);line-height:1;color:rgba(233,217,168,.05);pointer-events:none}
+    .signup .section-label{color:var(--gold-soft)}
+    .signup .display{color:var(--cream);max-width:12ch}
+    .signup .display .gold{color:var(--gold-soft)}
+    .signup p{max-width:46ch;margin-top:18px;color:rgba(247,243,233,.75);font-weight:500}
+    .signup-form{display:flex;gap:0;margin-top:34px;max-width:560px;position:relative;z-index:1}
+    .signup-form input{flex:1;background:rgba(247,243,233,.08);color:var(--cream);border:1px solid rgba(247,243,233,.3);padding:0 22px;min-height:60px;font:inherit;font-size:.92rem}
+    .signup-form input::placeholder{color:rgba(247,243,233,.45)}
+    .signup-form button{appearance:none;background:var(--gold);color:var(--dark);border:1px solid var(--gold);padding:0 30px;min-height:60px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;font-size:.8rem;cursor:pointer;transition:background .2s}
+    .signup-form button:hover{background:var(--gold-soft)}
+    .signup-note{font-size:.72rem;font-weight:700;letter-spacing:.06em;margin-top:16px;color:rgba(247,243,233,.5);position:relative;z-index:1}
+    .signup-done{display:none;margin-top:34px;font-family:var(--font-serif);font-style:italic;font-size:1.4rem;color:var(--gold-soft);position:relative;z-index:1}
+    footer{background:var(--cream);border-top:1px solid var(--line);padding:70px 0 40px}
+    .foot-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:40px;margin-bottom:60px}
+    .foot-brand .brand-name{font-size:2.4rem}
+    .foot-brand p{color:var(--muted);font-size:.86rem;max-width:32ch;margin-top:14px}
+    .foot-col h4{font-size:.72rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-deep);margin:0 0 18px}
+    .foot-col ul{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+    .foot-col a{text-decoration:none;color:var(--muted);font-size:.86rem;transition:color .2s}
+    .foot-col a:hover{color:var(--ink)}
+    .foot-bottom{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-top:28px;border-top:1px solid var(--line);font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+    .foot-bottom .motto{color:var(--gold-deep);font-weight:900}
+    .reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease}
+    .reveal.in{opacity:1;transform:none}
+    @media(max-width:960px){
+      .grid{grid-template-columns:1fr 1fr}
+      .story{grid-template-columns:1fr}
+      .look-grid{grid-template-columns:1fr 1fr;grid-auto-rows:240px}
+      .l1,.l2,.l3,.l4,.l5{grid-column:auto;grid-row:auto}
+      .l1{grid-column:1/3;grid-row:span 2}.l4{grid-column:1/3;grid-row:span 2}
+      .foot-grid{grid-template-columns:1fr 1fr}
+    }
+    @media(max-width:640px){
+      .section{padding:76px 0}
+      .nav-links{display:none}
+      .grid{grid-template-columns:1fr}
+      .hero-meta{display:none}
+      .signup-form{flex-direction:column;gap:12px}
+      .signup-form input,.signup-form button{min-height:56px;width:100%}
+      .story-stats{grid-template-columns:1fr}
+      .stat{border-right:0;border-bottom:1px solid var(--line)}
+      .stat:last-child{border-bottom:0}
+      .foot-grid{grid-template-columns:1fr}
+    }
+    @media(prefers-reduced-motion:reduce){
+      html{scroll-behavior:auto}.marquee-track{animation:none}.scroll-cue:after{animation:none}.reveal{opacity:1;transform:none}
+    }
+`;
+
+function giltCards(s){
+  return s.products.map(function(p, i){
+    var n = ("0"+(i+1)).slice(-2);
+    return '<article class="card reveal">'
+      + '<div class="card-media"><img src="'+p.img+'" alt="'+esc(p.name)+'" loading="lazy" />'
+      + '<span class="card-tag">'+esc(s.dropLabel)+'</span><span class="card-num">'+n+'</span></div>'
+      + '<div class="card-body"><h3>'+esc(p.name)+'</h3><div class="price">'+esc(p.price)+'</div>'
+      + '<div class="card-foot"><button class="add-btn" type="button" data-label="Add to bag">Add to bag</button>'
+      + '<span class="sizes">'+esc(p.sizes)+'</span></div></div></article>';
+  }).join("");
+}
+function giltLookbook(){
+  return GILT_LOOKBOOK.map(function(f){
+    return '<figure class="'+f.cls+' reveal"><img src="'+f.img+'" alt="'+esc(f.alt)+'" loading="lazy" /><figcaption>'+esc(f.cap)+'</figcaption></figure>';
+  }).join("");
+}
+function giltPage(s){
+  var brand = esc(s.brand), brandUp = cssWord(s.brand);
+  return '<!doctype html>\n<html lang="en">\n<head>\n'
+    + '  <meta charset="utf-8" />\n  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />\n'
+    + '  <meta name="description" content="'+brand+' \u2014 gold and cream luxury streetwear." />\n  <link rel="icon" href="data:," />\n'
+    + '  <title>'+brand+' \u2014 Gold &amp; Cream Luxury Streetwear</title>\n'
+    + '  <link rel="preconnect" href="https://fonts.googleapis.com" />\n  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />\n'
+    + '  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,500;1,700&display=swap" rel="stylesheet" />\n'
+    + '  <style>'+GILT_CSS+'</style>\n'
+    + '  <style>'+accentCSS("gilt", s.accent)+'.signup:after{content:"'+brandUp+'"}</style>\n'
+    + '</head>\n<body>\n  <div class="grain" aria-hidden="true"></div>\n'
+    + '  <header class="nav"><div class="nav-inner">\n'
+    + '    <a class="brand" href="#top" aria-label="'+brand+' home">'+logoImg(s)+'<span class="brand-name">'+brand+'</span></a>\n'
+    + '    <nav class="nav-links" aria-label="Sections"><a href="#shop">Shop</a><a href="#lookbook">Lookbook</a><a href="#about">About</a></nav>\n'
+    + '    <a class="nav-cta" href="#shop">Shop the release <span aria-hidden="true">\u2192</span></a>\n'
+    + '  </div></header>\n  <main id="top">\n'
+    + '    <section class="hero">\n'
+    + '      <img class="hero-bg" src="'+s.heroImage+'" alt="'+brand+' campaign" fetchpriority="high" />\n'
+    + '      <div class="hero-shade" aria-hidden="true"></div>\n'
+    + '      <div class="hero-content">\n'
+    + '        <span class="hero-stamp">'+esc(s.dropLabel)+' \u00B7 Golden hour</span>\n'
+    + '        <h1>'+headlineHTML(s.headline, s.accentWord)+'</h1>\n'
+    + '        <p class="hero-sub">'+esc(s.sub)+'</p>\n'
+    + '        <div class="hero-actions"><a class="button" href="#shop">Shop the collection</a><a class="button ghost" href="#lookbook">View lookbook</a></div>\n'
+    + '      </div>\n'
+    + '      <span class="hero-meta" aria-hidden="true">Cut in daylight \u00B7 Worn everywhere</span>\n'
+    + '      <span class="scroll-cue" aria-hidden="true"></span>\n    </section>\n'
+    + '    <div class="marquee" aria-hidden="true"><div class="marquee-track">'
+    + '<span>'+esc(s.dropLabel)+' now live</span><span>Small-batch only</span><span>Complimentary shipping over $150</span><span>Cream \u00B7 Gold \u00B7 Nothing else</span>'
+    + '<span>'+esc(s.dropLabel)+' now live</span><span>Small-batch only</span><span>Complimentary shipping over $150</span><span>Cream \u00B7 Gold \u00B7 Nothing else</span>'
+    + '</div></div>\n'
+    + '    <section id="shop" class="section wrap">\n'
+    + '      <div class="shop-head reveal"><div><div class="section-label">The collection</div>'
+    + '<h2 class="display">'+esc(s.dropLabel.split(" ")[0]).toUpperCase()+' <span class="gold">'+esc(s.dropLabel.split(" ").slice(1).join(" ")).toUpperCase()+'</span></h2></div>\n'
+    + '      <p>Six refined pieces in a sunlit palette. Small batches, tailored fits, details worth a second look.</p></div>\n'
+    + '      <div class="grid">'+giltCards(s)+'</div>\n    </section>\n'
+    + '    <section id="lookbook" class="section lookbook"><div class="wrap">\n'
+    + '      <div class="section-label reveal">Shot in daylight</div>\n'
+    + '      <h2 class="display reveal">THE <span class="gold">LOOKBOOK</span></h2>\n'
+    + '      <div class="look-grid">'+giltLookbook()+'</div>\n    </div></section>\n'
+    + '    <section id="about" class="section wrap story">\n'
+    + '      <div class="reveal"><div class="section-label">The house</div>\n'
+    + '      <h2 class="display">QUIET<br />LUXURY,<br /><span class="gold">LOUD</span> TASTE</h2>\n'
+    + '      <p class="story-quote">\u201CElegance is <strong>refusal</strong> \u2014 of the ordinary, the loud, the rushed.\u201D</p></div>\n'
+    + '      <div class="story-copy reveal">\n'
+    + '        <p>'+brand+' is streetwear finished like fine jewelry. We start with a cream canvas and let gold do the talking \u2014 tailored fits, considered fabrics, and campaigns shot in natural light.</p>\n'
+    + '        <p>Every release is small-batch by design. We would rather sell through a hundred pieces that people keep for a decade than ten thousand that end up forgotten. That is the whole philosophy: less, better, brighter.</p>\n'
+    + '        <p>'+esc(s.dropLabel)+' is the first chapter. Wear it well.</p>\n'
+    + '        <div class="story-stats">\n'
+    + '          <div class="stat"><strong>100%</strong><span>Considered fabrics</span></div>\n'
+    + '          <div class="stat"><strong>06</strong><span>Pieces per collection</span></div>\n'
+    + '          <div class="stat"><strong>01</strong><span>Palette: cream &amp; gold</span></div>\n'
+    + '        </div>\n      </div>\n    </section>\n'
+    + '    <section class="signup"><div class="wrap">\n'
+    + '      <div class="section-label">Private list</div>\n'
+    + '      <h2 class="display">FIRST TO <span class="gold">KNOW</span></h2>\n'
+    + '      <p>One letter per collection. Early access, private fittings, and first refusal on one-of-one pieces.</p>\n'
+    + '      <form class="signup-form" id="signup-form"><input type="email" name="email" placeholder="your@email.com" required aria-label="Email address" /><button type="submit">Join the list</button></form>\n'
+    + '      <p class="signup-note">By joining you agree to receive collection letters. Unsubscribe anytime.</p>\n'
+    + '      <p class="signup-done" id="signup-done">Welcome to the private list. Your first letter is on its way.</p>\n'
+    + '    </div></section>\n  </main>\n'
+    + '  <footer><div class="wrap">\n'
+    + '    <div class="foot-grid">\n'
+    + '      <div class="foot-brand"><span class="brand-name">'+brand+'</span><p>Gold and cream luxury streetwear. Refined essentials, sunlit campaigns, limited releases.</p></div>\n'
+    + '      <div class="foot-col"><h4>Shop</h4><ul><li><a href="#shop">'+esc(s.dropLabel)+'</a></li><li><a href="#lookbook">Lookbook</a></li><li><a href="#about">About</a></li></ul></div>\n'
+    + '      <div class="foot-col"><h4>Care</h4><ul><li><a href="#top">Shipping</a></li><li><a href="#top">Returns</a></li><li><a href="#top">Size guide</a></li></ul></div>\n'
+    + '      <div class="foot-col"><h4>Follow</h4><ul><li><a href="#top">Instagram</a></li><li><a href="#top">TikTok</a></li><li><a href="#top">Pinterest</a></li></ul></div>\n'
+    + '    </div>\n'
+    + '    <div class="foot-bottom"><span>\u00A9 2026 '+brand+'. All rights reserved.</span><span class="motto">Less, better, brighter</span></div>\n'
+    + '  </div></footer>\n'
+    + THEME_SCRIPT + '\n</body>\n</html>';
+}
+
+function buildPage(s){ return s.theme === "gilt" ? giltPage(s) : noirPage(s); }
+
+/* ================= CONTROLS ================= */
+var $ = function(id){ return document.getElementById(id); };
+var preview = $("preview"), statusEl = $("status");
+
+var refreshPreview = debounce(function(){
+  try{ preview.srcdoc = buildPage(state); }catch(e){ setStatus("Preview error: " + e.message); }
+  persist();
+}, 120);
+function setStatus(msg){ statusEl.textContent = msg || ""; }
+
+/* --- theme picker --- */
+document.querySelectorAll(".theme-card").forEach(function(card){
+  card.addEventListener("click", function(){
+    var t = card.dataset.theme;
+    if(t === state.theme) return;
+    var keep = {brand:state.brand, logo:state.logo, accent:state.accent, products:state.products};
+    state = JSON.parse(JSON.stringify(DEFAULTS[t]));
+    state.brand = keep.brand; state.logo = keep.logo; state.accent = keep.accent; state.products = keep.products;
+    syncControls(); refreshPreview();
+  });
+});
+
+/* --- brand --- */
+$("in-brand").addEventListener("input", function(e){ state.brand = e.target.value || "YOUR BRAND"; refreshPreview(); });
+
+/* --- logo --- */
+function setLogo(src){
+  state.logo = src;
+  var pv = $("logo-preview");
+  if(src){ pv.src = src; pv.classList.remove("text-only"); }
+  else { pv.classList.add("text-only"); }
+  refreshPreview();
+}
+$("in-logo").addEventListener("change", function(e){
+  var f = e.target.files && e.target.files[0]; if(!f) return;
+  var r = new FileReader();
+  r.onload = function(){ setLogo(r.result); setStatus("Logo uploaded."); };
+  r.readAsDataURL(f);
+  e.target.value = "";
+});
+$("btn-logo-default").addEventListener("click", function(){ setLogo("assets/griffin-logo.jpg"); });
+$("btn-logo-none").addEventListener("click", function(){ setLogo(null); });
+
+/* --- accent swatches --- */
+var swWrap = $("swatches");
+SWATCHES.forEach(function(sw){
+  var b = document.createElement("button");
+  b.type = "button"; b.className = "swatch"; b.dataset.hex = sw.hex; b.title = sw.name;
+  b.innerHTML = '<i style="background:'+sw.hex+'"></i><small>'+sw.name+'</small>';
+  b.addEventListener("click", function(){
+    state.accent = sw.hex;
+    swWrap.querySelectorAll(".swatch").forEach(function(x){ x.classList.toggle("active", x.dataset.hex === sw.hex); });
+    refreshPreview();
+  });
+  swWrap.appendChild(b);
+});
+
+/* --- hero --- */
+$("in-headline").addEventListener("input", function(e){ state.headline = e.target.value; refreshPreview(); });
+$("in-accentword").addEventListener("input", function(e){ state.accentWord = e.target.value; refreshPreview(); });
+$("in-sub").addEventListener("input", function(e){ state.sub = e.target.value; refreshPreview(); });
+
+var heroPick = $("hero-pick");
+GALLERY.forEach(function(g){
+  if(g.file === "griffin-logo.jpg") return;
+  var b = document.createElement("button");
+  b.type = "button"; b.dataset.file = "assets/" + g.file; b.title = g.label;
+  b.innerHTML = '<img src="assets/'+g.file+'" alt="'+g.label+'" loading="lazy" /><span>'+g.label+'</span>';
+  b.addEventListener("click", function(){
+    state.heroImage = b.dataset.file;
+    heroPick.querySelectorAll("button").forEach(function(x){ x.classList.toggle("active", x === b); });
+    refreshPreview();
+  });
+  heroPick.appendChild(b);
+});
+
+/* --- products --- */
+var prodWrap = $("products");
+function galleryOptions(selected){
+  return GALLERY.map(function(g){
+    var v = "assets/" + g.file;
+    return '<option value="'+v+'"'+(v===selected?' selected':'')+'>'+g.label+'</option>';
+  }).join("");
+}
+function renderProducts(){
+  prodWrap.innerHTML = "";
+  state.products.forEach(function(p, i){
+    var d = document.createElement("div");
+    d.className = "prod";
+    d.innerHTML =
+      '<img class="prod-thumb" src="'+p.img+'" alt="" />'
+      + '<div class="prod-fields">'
+      +   '<input type="text" class="p-name" value="'+esc(p.name)+'" maxlength="60" aria-label="Product name" />'
+      +   '<div class="prod-row2">'
+      +     '<input type="text" class="p-price" value="'+esc(p.price)+'" maxlength="12" aria-label="Price" />'
+      +     '<input type="text" class="p-sizes" value="'+esc(p.sizes)+'" maxlength="20" aria-label="Sizes" />'
+      +   '</div>'
+      +   '<select class="p-img" aria-label="Product image">'+galleryOptions(p.img)+'</select>'
+      +   '<label class="mini-file">Upload image<input type="file" class="p-upload" accept="image/*" hidden /></label>'
+      + '</div>'
+      + '<button type="button" class="prod-del" aria-label="Remove product">&times;</button>';
+    var thumb = d.querySelector(".prod-thumb");
+    d.querySelector(".p-name").addEventListener("input", function(e){ p.name = e.target.value; refreshPreview(); });
+    d.querySelector(".p-price").addEventListener("input", function(e){ p.price = e.target.value; refreshPreview(); });
+    d.querySelector(".p-sizes").addEventListener("input", function(e){ p.sizes = e.target.value; refreshPreview(); });
+    d.querySelector(".p-img").addEventListener("change", function(e){ p.img = e.target.value; thumb.src = p.img; refreshPreview(); });
+    d.querySelector(".p-upload").addEventListener("change", function(e){
+      var f = e.target.files && e.target.files[0]; if(!f) return;
+      var r = new FileReader();
+      r.onload = function(){
+        p.img = r.result; thumb.src = p.img;
+        var sel = d.querySelector(".p-img");
+        var opt = document.createElement("option"); opt.value = p.img; opt.textContent = "Uploaded image"; opt.selected = true;
+        sel.appendChild(opt);
+        refreshPreview(); setStatus("Product image uploaded.");
+      };
+      r.readAsDataURL(f);
+      e.target.value = "";
+    });
+    d.querySelector(".prod-del").addEventListener("click", function(){
+      state.products.splice(i,1); renderProducts(); refreshPreview();
+    });
+    prodWrap.appendChild(d);
+  });
+}
+$("btn-add-product").addEventListener("click", function(){
+  if(state.products.length >= 12){ setStatus("Maximum 12 products."); return; }
+  state.products.push(mkProd("New Product", "$00", "campaign-gallery.jpg"));
+  renderProducts(); refreshPreview();
+});
+
+/* --- sync all controls from state --- */
+function syncControls(){
+  document.querySelectorAll(".theme-card").forEach(function(c){ c.classList.toggle("active", c.dataset.theme === state.theme); });
+  $("preview-label").textContent = state.theme.toUpperCase() + " \u00B7 Live preview";
+  $("in-brand").value = state.brand;
+  $("in-headline").value = state.headline;
+  $("in-accentword").value = state.accentWord;
+  $("in-sub").value = state.sub;
+  var pv = $("logo-preview");
+  if(state.logo){ pv.src = state.logo; pv.classList.remove("text-only"); } else { pv.classList.add("text-only"); }
+  swWrap.querySelectorAll(".swatch").forEach(function(x){
+    var on = x.dataset.hex.toLowerCase() === String(state.accent).toLowerCase();
+    x.classList.toggle("active", on);
+  });
+  heroPick.querySelectorAll("button").forEach(function(x){ x.classList.toggle("active", x.dataset.file === state.heroImage); });
+  renderProducts();
+}
+$("btn-reset").addEventListener("click", function(){
+  if(!window.confirm("Reset this theme to its defaults?")) return;
+  var t = state.theme;
+  state = JSON.parse(JSON.stringify(DEFAULTS[t]));
+  syncControls(); refreshPreview(); setStatus("Reset to defaults.");
+});
+
+/* ================= EXPORT ================= */
+function collectImages(s){
+  var seen = {};
+  function add(u){ if(u && u.indexOf("data:") !== 0) seen[u] = true; }
+  add(s.heroImage); add(s.logo);
+  s.products.forEach(function(p){ add(p.img); });
+  (s.theme === "gilt" ? GILT_LOOKBOOK : NOIR_LOOKBOOK).forEach(function(f){ add(f.img); });
+  return Object.keys(seen);
+}
+function blobToDataURL(blob){
+  return new Promise(function(res, rej){
+    var r = new FileReader();
+    r.onload = function(){ res(r.result); };
+    r.onerror = rej;
+    r.readAsDataURL(blob);
+  });
+}
+function inlineImages(html, urls){
+  var failed = [];
+  var chain = Promise.resolve(html);
+  urls.forEach(function(u){
+    chain = chain.then(function(h){
+      return fetch(u).then(function(resp){
+        if(!resp.ok) throw new Error("HTTP " + resp.status);
+        return resp.blob();
+      }).then(blobToDataURL).then(function(dataUrl){
+        return h.split(u).join(dataUrl);
+      }).catch(function(){
+        failed.push(u); return h;
+      });
+    });
+  });
+  return chain.then(function(h){ return {html:h, failed:failed}; });
+}
+$("btn-export").addEventListener("click", function(){
+  var btn = $("btn-export");
+  btn.disabled = true;
+  setStatus("Building your theme\u2026");
+  try{
+    var html = buildPage(state);
+    var urls = collectImages(state);
+    setStatus("Inlining " + urls.length + " images\u2026");
+    inlineImages(html, urls).then(function(result){
+      var out = result.html;
+      var kb = Math.round(new Blob([out]).size / 1024);
+      var name = slug(state.brand) + "-" + state.theme + "-theme.html";
+      var blob = new Blob([out], {type:"text/html"});
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      document.body.appendChild(a); a.click();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+      if(result.failed.length){
+        setStatus("Exported " + name + " (" + kb + " KB). Note: could not inline: "
+          + result.failed.map(function(u){ return u.replace("assets/",""); }).join(", ")
+          + " \u2014 keep the assets/ folder next to the file.");
+      }else{
+        setStatus("Exported " + name + " (" + kb + " KB) \u2014 fully standalone.");
+      }
+      btn.disabled = false;
+    }).catch(function(err){
+      setStatus("Export failed: " + err.message);
+      btn.disabled = false;
+    });
+  }catch(err){
+    setStatus("Export failed: " + err.message);
+    btn.disabled = false;
+  }
+});
+
+/* ================= INIT ================= */
+syncControls();
+refreshPreview();
+setStatus(state.theme === "gilt" ? "GILT theme loaded." : "NOIR theme loaded.");
+
+})();
+</script>
+</body>
+</html>
