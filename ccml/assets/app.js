@@ -23799,9 +23799,8 @@
   }
 
   // src/supabase.js
-  var import_meta = {};
-  var SUPABASE_URL = import_meta.env.VITE_SUPABASE_URL || "";
-  var SUPABASE_KEY = import_meta.env.VITE_SUPABASE_ANON_KEY || "";
+  var SUPABASE_URL = "https://ymvsatlrkzgxwzxybwmk.supabase.co";
+  var SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltdnNhdGxya3pneHd6eHlid21rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4NzgwMTQsImV4cCI6MjEwMzQ1NDAxNH0.KbW0enJr5FOzJmDQnT3Thhr5NJdbI4Ehp1vkhVEyPEg";
   var supabase = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { storageKey: "ccml-auth" } });
   var signOut = () => supabase.auth.signOut();
   var onAuthChange = (cb) => supabase.auth.onAuthStateChange(cb);
