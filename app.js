@@ -8124,6 +8124,19 @@ function DemoModeView(props) {
             React.createElement("button", { onClick: start, disabled: !email && !phone, style: { width: "100%", background: (!email && !phone) ? "#333" : C.orange, color: "#000", border: "none", borderRadius: 9, padding: "14px", fontSize: 15, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "Start My Demo \u2192")));
 }
 
+// Hero video sound toggle. State-driven (the old handler used `this`, which is undefined in React handlers and crashed the page).
+function HeroSoundButton() {
+    var [muted, setMuted] = React.useState(true);
+    var toggle = function () {
+        var v = document.getElementById("potent-hero-vid");
+        if (!v) return;
+        var next = !muted;
+        v.muted = next;
+        if (!next) { var pr = v.play(); if (pr && pr.catch) pr.catch(function () { }); }
+        setMuted(next);
+    };
+    return React.createElement("button", { onClick: toggle, "aria-label": muted ? "Turn video sound on" : "Turn video sound off", style: { position: "absolute", bottom: 12, right: 12, zIndex: 20, background: "rgba(0,0,0,0.75)", color: "#fff", border: "1px solid #666", borderRadius: 20, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, muted ? "\uD83D\uDD07 Tap for Sound" : "\uD83D\uDD0A Sound On");
+}
 function PublicApp(props) {
     if (typeof window !== "undefined" && window.location.search.indexOf("demo") > -1 && window.location.search.indexOf("demo=") < 0) { try { if (/[?&]demo([&#]|$)/.test(window.location.search)) return React.createElement(DemoModeView, null); } catch (e) {} }
     var _bt_publicTab = useBackableTab("home", "publicTab"); var tab = _bt_publicTab[0], setTab = _bt_publicTab[1];
@@ -8220,14 +8233,14 @@ function PublicApp(props) {
                         style: { color: C.dim, textDecoration: "none", fontSize: 12, fontWeight: 700, padding: "12px 14px", whiteSpace: "nowrap", flexShrink: 0 }
                     }, s[1]);
                 })),
-            React.createElement("div", { style: { position: "relative", width: "100%", minHeight: 480, overflow: "hidden", background: "#000" } },
-                React.createElement("video", { id: "potent-hero-vid", autoPlay: true, muted: true, loop: true, playsInline: true, style: { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "100%", height: "100%", objectFit: "contain", background: "#000" } },
-                    React.createElement("source", { src: "/potent-commercial.mp4", type: "video/mp4" })),
-                React.createElement("button", { onClick: function () { var v = document.getElementById("potent-hero-vid"); if (v) { v.muted = !v.muted; if (!v.muted) { v.play(); } this.textContent = v.muted ? "\uD83D\uDD07 Tap for Sound" : "\uD83D\uDD0A Sound On"; } }, style: { position: "absolute", bottom: 12, right: 12, zIndex: 20, background: "rgba(0,0,0,0.7)", color: "#fff", border: "1px solid #555", borderRadius: 20, padding: "6px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" } }, "\uD83D\uDD07 Tap for Sound"),
-                React.createElement("div", { style: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "linear-gradient(to bottom,#00000044 0%,#000000bb 60%,#080808 100%)" } }),
-                React.createElement("div", { style: { position: "relative", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 480, padding: "60px 24px 80px", textAlign: "center" } },
+            React.createElement("div", { style: { width: "100%", background: "#080808" } },
+                React.createElement("div", { style: { position: "relative", width: "100%", aspectRatio: "16 / 9", maxHeight: "78vh", background: "#000", overflow: "hidden" } },
+                    React.createElement("video", { id: "potent-hero-vid", autoPlay: true, muted: true, loop: true, playsInline: true, preload: "metadata", style: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "contain", background: "#000" } },
+                        React.createElement("source", { src: "/potent-commercial.mp4", type: "video/mp4" })),
+                    React.createElement(HeroSoundButton, null)),
+                React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 24px 36px", textAlign: "center", background: "linear-gradient(to bottom,#000 0%,#080808 100%)" } },
                     React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", marginBottom: 14, background: C.orange + "18", border: "1px solid " + C.orange + "44", borderRadius: 20, padding: "4px 14px" } }, "24/7 LOGISTICS \u00B7 COURIER \u00B7 PROPERTY CLEANOUTS \u00B7 JUNK REMOVAL \u00B7 DEMOLITION"),
-                    React.createElement("div", { style: { fontSize: 48, fontWeight: 900, color: "#fff", lineHeight: 1.1, marginBottom: 12, letterSpacing: -1, textShadow: "0 2px 20px #00000088" } },
+                    React.createElement("div", { style: { fontSize: "clamp(32px, 8vw, 48px)", fontWeight: 900, color: "#fff", lineHeight: 1.1, marginBottom: 12, letterSpacing: -1 } },
                         t("heroTitle"),
                         React.createElement("br", null),
                         React.createElement("span", { style: { color: C.orange } }, t("heroTitleSpan"))),
@@ -8242,6 +8255,17 @@ function PublicApp(props) {
                         React.createElement("a", { href: "https://wa.me/14704531616", target: "_blank", rel: "noopener noreferrer", style: { textDecoration: "none" } },
                             React.createElement("button", { style: { background: "#25D366", color: "#000", border: "none", borderRadius: 9, padding: "13px 28px", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "💬 WhatsApp")),
                         React.createElement("button", { onClick: function () { setTab("track"); }, style: { background: "transparent", color: "rgba(255,255,255,0.6)", border: "1.5px solid rgba(255,255,255,0.2)", borderRadius: 9, padding: "13px 28px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCCD Track My Job")))),
+            React.createElement("div", { id: "partners", style: { padding: "18px 16px", borderTop: "1px solid " + C.border, borderBottom: "1px solid " + C.border, background: "#0a0a0a", scrollMarginTop: 44 } },
+                React.createElement("div", { style: { maxWidth: 680, margin: "0 auto", textAlign: "center" } },
+                    React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 10 } }, "Our Partners"),
+                    React.createElement("div", { style: { display: "flex", gap: 12, justifyContent: "center", alignItems: "stretch", flexWrap: "wrap" } },
+                        [["cashway-logo.png", "Cashway Funding", "Freight factoring, fuel discounts & credit checks"], ["trinity-logo.png", "Trinity Logistics", "Nationwide freight partner"]].map(function (p) {
+                            return React.createElement("div", { key: p[1], style: { background: "#fff", borderRadius: 12, padding: "12px 16px", flex: "1 1 200px", maxWidth: 260, display: "flex", alignItems: "center", gap: 12, textAlign: "left" } },
+                                React.createElement("img", { src: "/" + p[0], alt: p[1], style: { width: 64, height: 44, objectFit: "contain", flexShrink: 0 } }),
+                                React.createElement("div", null,
+                                    React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: "#000" } }, p[1]),
+                                    React.createElement("div", { style: { fontSize: 10, color: "#555", lineHeight: 1.4 } }, p[2])));
+                        })))),
             React.createElement("div", { id: "services", style: { background: "linear-gradient(135deg,#0d0d00,#080808)", borderBottom: "2px solid " + C.orange, padding: "36px 20px", scrollMarginTop: 44 } },
                 React.createElement("div", { style: { maxWidth: 720, margin: "0 auto", textAlign: "center" } },
                     React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 8 } }, "Conyers \u00B7 Covington \u00B7 Lithonia \u00B7 Surrounding Areas"),
@@ -8332,18 +8356,6 @@ function PublicApp(props) {
                             React.createElement("button", { style: { background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: "13px 32px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCBB See POTENT OS Pricing")),
                         React.createElement("a", { href: "?apply", style: { textDecoration: "none" } },
                             React.createElement("button", { style: { background: "transparent", color: C.orange, border: "1.5px solid " + C.orange, borderRadius: 9, padding: "13px 32px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDCCB Apply for Early Access"))))),
-            React.createElement("div", { id: "partners", style: { padding: "44px 24px", borderBottom: "1px solid " + C.border, background: "#080808", scrollMarginTop: 44 } },
-                React.createElement("div", { style: { maxWidth: 680, margin: "0 auto", textAlign: "center" } },
-                    React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 8 } }, "Our Partners"),
-                    React.createElement("div", { style: { fontSize: 22, fontWeight: 900, color: "#fff", marginBottom: 6 } }, "Backed By The Best In The Business."),
-                    React.createElement("div", { style: { fontSize: 13, color: C.dim, maxWidth: 560, margin: "0 auto 24px", lineHeight: 1.7 } }, "We\u0027re partnered with a company that keeps our drivers moving \u2014 and now we also offer net accounts."),
-                    React.createElement("div", { style: { display: "flex", gap: 16, justifyContent: "center", alignItems: "stretch", flexWrap: "wrap", marginBottom: 20 } },
-                        [["cashway-logo.png", "Cashway Funding", "Freight factoring, fuel discounts & credit checks"], ["trinity-logo.png", "Trinity Logistics", "Nationwide freight partner"]].map(function (p) {
-                            return React.createElement("div", { key: p[1], style: { background: "#fff", borderRadius: 12, padding: "20px 24px", width: 220 } },
-                                React.createElement("img", { src: "/" + p[0], alt: p[1], style: { maxWidth: 150, maxHeight: 70, objectFit: "contain", marginBottom: 8 } }),
-                                React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: "#000", marginBottom: 4 } }, p[1]),
-                                React.createElement("div", { style: { fontSize: 11, color: "#555", lineHeight: 1.5 } }, p[2]));
-                        })))),
             React.createElement("div", { id: "about", style: { background: C.surface, borderBottom: "1px solid " + C.border, padding: "40px 24px", scrollMarginTop: 44 } },
                 React.createElement("div", { style: { maxWidth: 680, margin: "0 auto" } },
                     React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 12 } }, "Who We Are"),
