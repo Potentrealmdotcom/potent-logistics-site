@@ -3604,7 +3604,6 @@ function OpsCharts(props) {
 var PL_OFFERINGS = [
     { id: "ccml", icon: "💳", name: "Credit Changed My Life", tag: "Credit repair course + done-for-you funding prep", url: "/ccml/",
       lines: ["DIY Course - $79 (course, 26 letter and motion templates, tracker, 4 bonus tools)", "Done-For-You - $2,999 (we prepare your documents and funding plan)", "Certified mail letters - 1 for $20, 5 for $90, 10 for $170, 25 for $400"] },
-    { id: "clothing", icon: "👕", name: "Clothing Playbook", tag: "Coming soon", url: "", lines: [] },
     { id: "kids", icon: "🧸", name: "AceHeals Kids App", tag: "Manny & Maverick's World - 22 games, beat studio, learning fun", url: "https://aceheals.netlify.app", lines: ["22 interactive games", "Beat Studio & Song Studio", "Parent controls & PIN gate"] }
 ];
 function plCcmlAdmin(body) {
@@ -3659,8 +3658,8 @@ function OfferingsScreen() {
     var isOwner = !plIsTenant() && plOpsRole() === "owner";
     var [showAdmin, setShowAdmin] = useState(false);
     return React.createElement("div", { style: { maxWidth: 760 } },
-        React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "Offerings & Apps"),
-        React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 12 } }, "Separate products from POTENT. Each is bought on its own, outside your OS license."),
+        React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "POTENT APPS"),
+        React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 12 } }, "Every POTENT app in one place. Each is bought on its own, outside your OS license."),
         PL_OFFERINGS.map(function (o) {
             return React.createElement("div", { key: o.id, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "12px 14px", marginBottom: 10 } },
                 React.createElement("div", { style: { fontSize: 15, fontWeight: 800, color: C.white } }, o.icon + " " + o.name),
@@ -7527,7 +7526,7 @@ function getTabGroups() {
         { label: "🚗 Fleet", color: "#F6AD55", tabs: [["fleet", "🚗 Fleet"], ["fleetmap", "🗺️ Live Map"], ["vendors", "\uD83D\uDE9B Vendors & Disposal"], ["properties", "\uD83C\uDFE2 Properties"], ["driveravail", "\uD83D\uDC65 Driver Availability"], ["vehicleavail", "\uD83D\uDE9B Vehicle Availability"], ["storagepartners", "\uD83D\uDCE6 Storage Partners"], ["compliance", "🛡 Compliance"], ["documents", "📁 Documents"], ["docpackages", "\uD83D\uDCC1 Document Packages"], ["safetyscore", "🛡️ Safety Scores"], ["geofence", "📍 Geofencing"], ["carriers", "🤝 " + t("carriers")], ["safety", "🔒 Safety Alerts"]] },
         { label: "💰 Money", color: C.orange, tabs: [["reports", "📊 " + t("reports")], ["advanced", "📈 " + t("analytics")], ["sales", "🏆 " + t("sales")], ["expenses", "💸 " + t("expenses")], ["accounts", "🏢 " + t("accounts")], ["payroll", "💰 " + t("payroll")], ["growthtools", "📈 Growth Tools"], ["ceodash", "📊 CEO Dashboard"], ["referrals", "🎟️ Referral Codes"], ["marketrates", "📊 Market Rates"], ["claims", "⚠ Claims & Recovery"], ["ratecards", "\uD83D\uDCB2 Rate Cards"], ["deadlines", "\u23F0 Deadlines"], ["ledger", "\uD83D\uDCD2 Accounting Ledger"], ["marginleak", "\uD83D\uDCB0 Margin Leak Detector"], ["teamwallets", "\uD83D\uDCB3 Team Wallets"]] },
         { label: "⚙ Team", color: "#FC8181", tabs: [["setup", "\uD83D\uDE80 Get Started"], ["ownerSettings", "⚙ Settings"], ["licenses", "\uD83C\uDFE2 Customers & Licenses"], ["mycompany", "\uD83C\uDFE2 My Company"], ["datatools", "\uD83D\uDCE6 Data & Imports"], ["teamaccts", "\uD83D\uDC65 Team Accounts"], ["pricingsetup", "\uD83D\uDCB2 Pricing Setup"], ["audit", "👁 " + t("audit")], ["loginActivity", "🔐 Login Activity"], ["loginimages", "\uD83D\uDCF8 Login Images"], ["shifthandoff", "\uD83D\uDD04 Shift Handoff"], ["ai", "🤖 " + t("aiDocs")], ["demo", "🎬 " + t("demo"), ["ext_guide", "\U0001F4CB Prices Page", "guide.html"], ["ext_osguide", "\U0001F4BB POTENT OS Guide", "os-guide.html"], ["ext_team", "\U0001F465 Team Guide", "team.html"], ["ext_training", "\U0001F393 Sales Training", "training.html"]]] },
-        { label: "\uD83E\uDDE9 Our Services", color: "#9F7AEA", tabs: [["offerings", "\uD83E\uDDE9 Offerings & Apps"]] },
+        { label: "\uD83E\uDDE9 POTENT APPS", color: "#9F7AEA", tabs: [["offerings", "\uD83E\uDDE9 POTENT APPS"]] },
     ];
 }
 // ── TAB NAVIGATION — dropdown "More" sheet, 5 simplified groups ──
