@@ -3603,9 +3603,9 @@ function OpsCharts(props) {
 // Entries with no url are shown as "Coming soon" (no invented prices or links).
 var PL_OFFERINGS = [
     { id: "ccml", icon: "💳", name: "Credit Changed My Life", tag: "Credit repair course + done-for-you funding prep", url: "/ccml/",
-      lines: ["DIY Course - $50 (course, 20 letter and motion templates, tracker)", "Done-For-You - $2,999 (we prepare your documents and funding plan)", "Certified mail letters - 1 for $20, 5 for $90, 10 for $170, 25 for $400"] },
+      lines: ["DIY Course - $79 (course, 26 letter and motion templates, tracker, 4 bonus tools)", "Done-For-You - $2,999 (we prepare your documents and funding plan)", "Certified mail letters - 1 for $20, 5 for $90, 10 for $170, 25 for $400"] },
     { id: "clothing", icon: "👕", name: "Clothing Playbook", tag: "Coming soon", url: "", lines: [] },
-    { id: "kids", icon: "🧸", name: "Kids App", tag: "Coming soon", url: "", lines: [] }
+    { id: "kids", icon: "🧸", name: "AceHeals Kids App", tag: "Manny & Maverick's World - 22 games, beat studio, learning fun", url: "https://aceheals.netlify.app", lines: ["22 interactive games", "Beat Studio & Song Studio", "Parent controls & PIN gate"] }
 ];
 function plCcmlAdmin(body) {
     return fetch("/.netlify/functions/ccml-admin", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + plTokenGet() }, body: JSON.stringify(body) })
