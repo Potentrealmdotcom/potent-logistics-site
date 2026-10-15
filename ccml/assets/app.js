@@ -1914,6 +1914,9 @@
       }
     }
   });
+  // Fix: expose bundled React as global (code uses React.createElement directly)
+  var React = require_react();
+  if (typeof window !== "undefined") window.React = React;
 
   // node_modules/scheduler/cjs/scheduler.development.js
   var require_scheduler_development = __commonJS({
