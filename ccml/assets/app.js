@@ -24885,7 +24885,7 @@
   }
 
   // src/App.jsx
-  var import_meta2 = {};
+  var import_meta2 = { env: { BASE_URL: "/ccml/" } };
   var C2 = {
     bg: "#08080F",
     surface: "#0F0F1A",
