@@ -8180,25 +8180,6 @@ function HeroSoundButton() {
     };
     return React.createElement("button", { onClick: toggle, "aria-label": muted ? "Turn video sound on" : "Turn video sound off", style: { position: "absolute", bottom: 12, right: 12, zIndex: 20, background: "rgba(0,0,0,0.75)", color: "#fff", border: "1px solid #666", borderRadius: 20, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, muted ? "\uD83D\uDD07 Tap for Sound" : "\uD83D\uDD0A Sound On");
 }
-function FooterCopyright(props) {
-    var [taps, setTaps] = React.useState({ n: 0, t: 0 });
-    var [show, setShow] = React.useState(false);
-    function tap() {
-        var now = Date.now(), n = (now - taps.t < 3000 ? taps.n : 0) + 1;
-        if (n >= 5) { setTaps({ n: 0, t: 0 }); setShow(true); } else setTaps({ n: n, t: now });
-    }
-    var row = { display: "block", width: "100%", textAlign: "left", background: C.surface, border: "1px solid " + C.border, color: C.white, borderRadius: 10, padding: "12px 14px", marginBottom: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", textDecoration: "none", boxSizing: "border-box" };
-    return React.createElement(React.Fragment, null,
-        React.createElement("img", { src: "/potent-griffin-icon.png", alt: "POTENT\u00AE", style: { height: 22, width: 22, verticalAlign: "middle", marginRight: 6, opacity: 0.7 } }),
-        React.createElement("span", { onClick: tap, style: { color: C.faint, fontSize: 11, userSelect: "none" } }, "\u00A9 2026 POTENT\u00AE \u00B7 ANTHONY EMMANUEL FIGUEROA MENDES\u00AE \u00B7 POTENT PR\u00C4D\u018FKT\u00AE \u00B7 All Rights Reserved"),
-        show && React.createElement("div", { onClick: function () { setShow(false); }, style: { position: "fixed", inset: 0, background: "rgba(0,0,0,.75)", zIndex: 9600, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 } },
-            React.createElement("div", { onClick: function (e) { e.stopPropagation(); }, style: { background: C.card, border: "1px solid " + C.orange, borderRadius: 16, padding: 16, width: "100%", maxWidth: 340, textAlign: "left" } },
-                React.createElement("b", { style: { color: C.white, fontSize: 16, display: "block", marginBottom: 10 } }, "\uD83D\uDD12 Admin"),
-                React.createElement("button", { onClick: function () { setShow(false); props.onStaff && props.onStaff(); }, style: row }, "\uD83D\uDC51 POTENT OS \u2014 Owner / Staff Login"),
-                React.createElement("a", { href: "/legit/admin/", style: row }, "\uD83D\uDD25 LEGIT Admin Console"),
-                React.createElement("a", { href: "/beatman/", style: row }, "\uD83C\uDFB5 Beat Man \u2014 Owner"),
-                React.createElement("button", { onClick: function () { setShow(false); }, style: Object.assign({}, row, { textAlign: "center", color: C.dim }) }, "Close"))));
-}
 function LandingMenuSheet(props) {
     var sets = {
         guides: ["\uD83D\uDCDA Guides & Training", [["\uD83D\uDCDA Prices & How It Works", "/guide.html"], ["\uD83D\uDCBB POTENT OS Guide", "/os-guide.html"], ["\uD83C\uDF93 Training", "/training.html"], ["\uD83D\uDC65 Team Guide", "/team.html"]]],
@@ -10457,7 +10438,7 @@ function Root() {
         showFooterTos && React.createElement(TermsOfServiceModal, { onClose: function () { setShowFooterTos(false); } }),
         React.createElement(PublicApp, { jobs: jobs, onBook: addJob, gasPPG: gasPPG, blockedDates: blockedDates, onOpenLogin: function(){ setShowLogin(true); } }),
         React.createElement("div", { style: { borderTop: "1px solid " + C.border, textAlign: "center", padding: "12px 0 20px", fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
-            React.createElement(FooterCopyright, { onStaff: function () { setShowLogin(true); } }),
+            React.createElement("span", { style: { color: C.faint, fontSize: 11, userSelect: "none" } }, "\u00A9 2026 ANTHONY EMMANUEL FIGUEROA MENDES\u00AE \u00B7 POTENT PR\u00C4D\u018FKT\u00AE \u00B7 All Rights Reserved"),
             React.createElement("span", { style: { color: C.faint, fontSize: 11 } }, " \u00B7 "),
             React.createElement("span", { onClick: function () { setShowFooterTos(true); }, style: { color: C.faint, fontSize: 11, cursor: "pointer", userSelect: "none", textDecoration: "underline" } }, "Terms of Service")));
 }
