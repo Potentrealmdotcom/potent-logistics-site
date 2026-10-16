@@ -1,15 +1,15 @@
-// POTENT OS Service Worker — v6 cache bust — real push notifications added
-var CACHE = “potent-os-v6”;
-var ASSETS = [”/”, “/index.html”, “/app.js”, “/manifest.json”];
+// POTENT OS Service Worker — v7 cache bust (fixed curly quotes) — real push notifications added
+var CACHE = "potent-os-v7";
+var ASSETS = ["/", "/index.html", "/app.js", "/manifest.json"];
 
-self.addEventListener(“install”, function(e){
+self.addEventListener("install", function(e){
 self.skipWaiting();
 e.waitUntil(
 caches.open(CACHE).then(function(c){ return c.addAll(ASSETS); })
 );
 });
 
-self.addEventListener(“activate”, function(e){
+self.addEventListener("activate", function(e){
 e.waitUntil(
 caches.keys().then(function(keys){
 return Promise.all(
@@ -20,8 +20,8 @@ keys.filter(function(k){ return k !== CACHE; })
 );
 });
 
-self.addEventListener(“fetch”, function(e){
-if(e.request.method !== “GET”) return;
+self.addEventListener("fetch", function(e){
+if(e.request.method !== "GET") return;
 e.respondWith(
 fetch(e.request).then(function(res){
 var clone = res.clone();
@@ -37,28 +37,28 @@ return caches.match(e.request);
 // iOS 16.4+ once installed to the Home Screen. This is what actually
 // makes a notification pop up on the lock screen / in the background,
 // not just while the tab is open.
-self.addEventListener(“push”, function(e){
+self.addEventListener("push", function(e){
 var data = {};
-try { data = e.data ? e.data.json() : {}; } catch(err) { data = { title: “POTENT OS”, body: e.data ? e.data.text() : “You have a new update.” }; }
-var title = data.title || “POTENT OS”;
+try { data = e.data ? e.data.json() : {}; } catch(err) { data = { title: "POTENT OS", body: e.data ? e.data.text() : "You have a new update." }; }
+var title = data.title || "POTENT OS";
 var options = {
-body: data.body || “”,
-icon: “https://raw.githubusercontent.com/potent-logistics-site/main/icon-192.png”,
-badge: “https://raw.githubusercontent.com/potent-logistics-site/main/icon-192.png”,
-data: { url: data.url || “/” },
+body: data.body || "",
+icon: "https://raw.githubusercontent.com/potent-logistics-site/main/icon-192.png",
+badge: "https://raw.githubusercontent.com/potent-logistics-site/main/icon-192.png",
+data: { url: data.url || "/" },
 vibrate: [200, 100, 200],
-tag: data.tag || “potent-general”
+tag: data.tag || "potent-general"
 };
 e.waitUntil(self.registration.showNotification(title, options));
 });
 
-self.addEventListener(“notificationclick”, function(e){
+self.addEventListener("notificationclick", function(e){
 e.notification.close();
-var url = (e.notification.data && e.notification.data.url) || “/”;
+var url = (e.notification.data && e.notification.data.url) || "/";
 e.waitUntil(
-clients.matchAll({ type: “window”, includeUncontrolled: true }).then(function(clientList){
+clients.matchAll({ type: "window", includeUncontrolled: true }).then(function(clientList){
 for (var i = 0; i < clientList.length; i++) {
-if (clientList[i].url.indexOf(self.registration.scope) === 0 && “focus” in clientList[i]) {
+if (clientList[i].url.indexOf(self.registration.scope) === 0 && "focus" in clientList[i]) {
 return clientList[i].focus();
 }
 }
