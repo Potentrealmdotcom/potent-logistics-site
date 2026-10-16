@@ -14,6 +14,33 @@ function money(v) { const n = Math.round(Number(v)); return isFinite(n) ? n : Na
 function pubProducer(p) { return { id: p.id, name: p.name, email: p.email, country: p.country, payout_method: p.payout_method, payout_handle: p.payout_handle, splits: p.splits, hold_days: p.hold_days, deduct_fees: p.deduct_fees, active: p.active }; }
 function pubBeat(b) { return { id: b.id, title: b.title, lease_cents: b.lease_cents, exclusive_cents: b.exclusive_cents, preview_url: b.preview_url, deliver_url: b.deliver_url, exclusive_sold: b.exclusive_sold, active: b.active }; }
 
+
+async function ownerUpload(pid, b) {
+  const kind = b.kind === "deliver" ? "deliver" : "preview";
+  const name = clip(b.name, 120).replace(/[^A-Za-z0-9._-]/g, "_");
+  const ok = kind === "preview" ? /\.(mp3|wav|m4a|ogg)$/i : /\.(mp3|wav|m4a|flac|zip)$/i;
+  if (!ok.test(name)) return B.J(400, { error: kind === "preview" ? "Preview must be MP3, WAV, M4A or OGG" : "Files must be MP3, WAV, M4A, FLAC or ZIP" });
+  const bucket = kind === "preview" ? "beat-previews" : "beat-files", path = pid + "/" + Date.now() + "-" + name;
+  const sg = await fetch(B.SB + "/storage/v1/object/upload/sign/" + bucket + "/" + path, { method: "POST", headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: "Bearer " + process.env.SUPABASE_SERVICE_ROLE_KEY, "Content-Type": "application/json" }, body: "{}" });
+  const sj = await sg.json().catch(function () { return {}; });
+  if (!sg.ok || !sj.url) return B.J(500, { error: "Uploads are not set up yet. Run the beat-uploads SQL in Supabase." });
+  return B.J(200, { ok: true, uploadUrl: B.SB + "/storage/v1" + sj.url, ref: kind === "preview" ? B.SB + "/storage/v1/object/public/" + bucket + "/" + path : "storage:" + bucket + "/" + path });
+}
+function beatRow(b, pid) {
+  const title = clip(b.title, 120);
+  const lease = b.lease_cents === "" || b.lease_cents == null ? null : money(b.lease_cents);
+  const excl = b.exclusive_cents === "" || b.exclusive_cents == null ? null : money(b.exclusive_cents);
+  if (!title) return { error: "Enter a title" };
+  if ((lease === null && excl === null) || [lease, excl].some(function (v) { return v !== null && !(v >= 100 && v <= 5000000); })) return { error: "Set at least one price ($1 or more)" };
+  const url = function (v) { v = clip(v, 500); return /^https:\/\//i.test(v) || (/^storage:beat-files\/[0-9a-f-]{36}\//i.test(v) && v.indexOf(pid) > 0) ? v : null; };
+  const row = { title: title, lease_cents: lease, exclusive_cents: excl, active: b.active !== false };
+  if (b.preview_url !== undefined) row.preview_url = url(b.preview_url);
+  if (b.deliver_url !== undefined) row.deliver_url = url(b.deliver_url);
+  if (Array.isArray(b.tags)) row.tags = b.tags.map(function (t) { return clip(t, 30).toLowerCase(); }).filter(Boolean).slice(0, 10);
+  if (b.bpm !== undefined && b.bpm !== "") { const n = parseInt(b.bpm, 10); row.bpm = n >= 40 && n <= 250 ? n : null; }
+  if (b.key !== undefined) row.musical_key = clip(b.key, 12) || null;
+  return { row: row };
+}
 async function loadProducer(id) {
   const r = await B.sb("beat_producers?id=eq." + id + "&select=*");
   return r.ok && Array.isArray(r.data) && r.data[0] ? r.data[0] : null;
@@ -38,10 +65,10 @@ exports.handler = async function (event) {
 
   // ───────── public ─────────
   if (a === "catalog") {
-    const r = await B.sb("beat_items?active=eq.true&select=id,title,lease_cents,exclusive_cents,preview_url,exclusive_sold,producer_id,beat_producers(name)&order=created_at.desc&limit=200");
+    const r = await B.sb("beat_items?active=eq.true&select=id,title,lease_cents,exclusive_cents,preview_url,exclusive_sold,producer_id,tags,bpm,musical_key,beat_producers(name)&order=created_at.desc&limit=200");
     const rows = Array.isArray(r.data) ? r.data : [];
     return B.J(200, { ok: true, beats: rows.map(function (x) { return { id: x.id, title: x.title, producer: x.beat_producers && x.beat_producers.name, preview_url: x.preview_url,
-      lease_cents: x.lease_cents, exclusive_cents: x.exclusive_sold ? null : x.exclusive_cents }; }) });
+      lease_cents: x.lease_cents, exclusive_cents: x.exclusive_sold ? null : x.exclusive_cents, tags: x.tags || [], bpm: x.bpm || null, key: x.musical_key || null }; }) });
   }
   if (a === "delivery") { // after paying: show the buyer their download link (verified with Stripe)
     const sid = clip(b.session_id, 200);
@@ -126,6 +153,9 @@ exports.handler = async function (event) {
       if (b.__bad || (lease === null && excl === null)) return B.J(400, { error: "Set at least one price ($1 or more)" });
       const url = function (v) { v = clip(v, 500); return /^https:\/\//i.test(v) || (/^storage:beat-files\/[0-9a-f-]{36}\//i.test(v) && v.indexOf(p.id) > 0) ? v : null; };
       const row = { title: title, lease_cents: lease, exclusive_cents: excl, preview_url: url(b.preview_url), deliver_url: url(b.deliver_url), active: b.active !== false };
+      if (Array.isArray(b.tags)) row.tags = b.tags.map(function (t) { return clip(t, 30).toLowerCase(); }).filter(Boolean).slice(0, 10);
+      if (b.bpm !== undefined && b.bpm !== "") { const n = parseInt(b.bpm, 10); row.bpm = n >= 40 && n <= 250 ? n : null; }
+      if (b.key !== undefined) row.musical_key = clip(b.key, 12) || null;
       if (a === "addbeat") { row.producer_id = p.id; const r = await B.sb("beat_items", { method: "POST", prefer: "return=minimal", body: row }); if (!r.ok) return B.J(500, { error: "Could not save" }); }
       else { if (!UUID.test(String(b.id || ""))) return B.J(400, { error: "Bad id" }); await B.sb("beat_items?id=eq." + b.id + "&producer_id=eq." + p.id, { method: "PATCH", prefer: "return=minimal", body: row }); }
       return B.J(200, await dash(p));
@@ -146,14 +176,29 @@ exports.handler = async function (event) {
   if (!owner) return B.J(403, { error: "POTENT owner only" });
 
   if (a === "o_list") {
-    const [prods, pays, sales] = await Promise.all([
+    const [prods, pays, sales, beatsR] = await Promise.all([
       B.sb("beat_producers?select=*&order=created_at.asc&limit=200"),
       B.sb("beat_payouts?select=*,beat_producers(name,email)&order=requested_at.desc&limit=100"),
-      B.sb("beat_sales?select=title,sale_type,gross_cents,producer_cents,status,created_at,beat_producers(name)&order=created_at.desc&limit=50")
+      B.sb("beat_sales?select=title,sale_type,gross_cents,producer_cents,status,created_at,beat_producers(name)&order=created_at.desc&limit=50"),
+      B.sb("beat_items?select=id,title,lease_cents,exclusive_cents,preview_url,deliver_url,exclusive_sold,active,tags,bpm,musical_key,producer_id,created_at,beat_producers(name)&order=created_at.desc&limit=500")
     ]);
     const list = [];
     for (const p of (prods.data || [])) list.push(Object.assign(pubProducer(p), { balance: await B.balances(p.id) }));
-    return B.J(200, { ok: true, producers: list, payouts: pays.data || [], sales: sales.data || [] });
+    return B.J(200, { ok: true, producers: list, payouts: pays.data || [], sales: sales.data || [], beats: beatsR.data || [] });
+  }
+  if (a === "o_upload_url") {
+    if (!UUID.test(String(b.producer_id || "")) || !(await loadProducer(b.producer_id))) return B.J(400, { error: "Pick a producer" });
+    return ownerUpload(b.producer_id, b);
+  }
+  if (a === "o_addbeat" || a === "o_setbeat") {
+    const isNew = a === "o_addbeat";
+    let pid = String(b.producer_id || "");
+    if (!isNew) { if (!UUID.test(String(b.id || ""))) return B.J(400, { error: "Bad id" }); const cur = await B.sb("beat_items?id=eq." + b.id + "&select=producer_id"); if (!cur.ok || !cur.data || !cur.data[0]) return B.J(404, { error: "Not found" }); if (!pid) pid = cur.data[0].producer_id; }
+    if (!UUID.test(pid) || !(await loadProducer(pid))) return B.J(400, { error: "Pick a producer" });
+    const v = beatRow(b, pid); if (v.error) return B.J(400, { error: v.error });
+    if (isNew) { v.row.producer_id = pid; const r = await B.sb("beat_items", { method: "POST", prefer: "return=minimal", body: v.row }); if (!r.ok) return B.J(500, { error: "Could not save" }); }
+    else { if (b.producer_id) v.row.producer_id = pid; const r = await B.sb("beat_items?id=eq." + b.id, { method: "PATCH", prefer: "return=minimal", body: v.row }); if (!r.ok) return B.J(500, { error: "Could not save" }); }
+    return B.J(200, { ok: true });
   }
   if (a === "o_create") {
     const email = clip(b.email, 200).toLowerCase(), name = clip(b.name, 80);

@@ -10,32 +10,75 @@
 <style>
 :root{color-scheme:dark light;--bg:#0a0a0a;--panel:#141412;--ink:#f7f4ec;--muted:#b8b3a8;--gold:#d4af37;--line:rgba(255,255,255,.16)}
 @media (prefers-color-scheme:light){:root{--bg:#f6f3ea;--panel:#fff;--ink:#16140f;--muted:#6d675a;--line:rgba(0,0,0,.14)}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:16px;max-width:760px;margin-inline:auto}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:16px 16px 110px;max-width:900px;margin-inline:auto}
 h1{color:var(--gold);margin:8px 0 2px}.muted{color:var(--muted)}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
-button,a.btn{font:inherit;font-weight:700;border:0;border-radius:10px;padding:11px 16px;background:var(--gold);color:#120d00;cursor:pointer;text-decoration:none;display:inline-block}
-a.alt{background:transparent;color:var(--ink);border:1px solid var(--line)}.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
-audio{width:100%;margin-top:8px}
+button,a.btn{font:inherit;font-weight:700;border:0;border-radius:10px;padding:10px 14px;background:var(--gold);color:#120d00;cursor:pointer;text-decoration:none;display:inline-block}
+a.alt,button.alt{background:transparent;color:var(--ink);border:1px solid var(--line)}.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;align-items:center}
+input,select{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+#filters{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}#filters input{flex:1 1 220px}
+.chip{font-size:12px;border:1px solid var(--line);border-radius:99px;padding:5px 11px;cursor:pointer;color:var(--muted);white-space:nowrap}.chip.on{background:var(--gold);color:#120d00;border-color:var(--gold);font-weight:700}
+#tags{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px}
+.beat{display:flex;gap:12px;align-items:center;padding:10px;border-bottom:1px solid var(--line)}
+.play{flex:0 0 46px;height:46px;border-radius:50%;padding:0;font-size:18px;display:flex;align-items:center;justify-content:center}
+.bi{flex:1;min-width:0}.bi b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tg{font-size:11px;color:var(--muted)}
+.buy{flex:0 0 auto}
+#bar{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:10px 14px;display:none;z-index:5}
+#bar .in{max-width:900px;margin:0 auto;display:flex;gap:10px;align-items:center}#pbar{flex:1;height:6px;background:var(--line);border-radius:4px;cursor:pointer;overflow:hidden}#pfill{height:100%;width:0;background:var(--gold)}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:16px;z-index:9}#modal .m{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;max-width:440px;width:100%}
+.opt{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:10px}.opt ul{margin:6px 0 10px;padding-left:18px;color:var(--muted);font-size:14px}
 </style>
 </head>
 <body>
 <h1>🎵 POTENT Beats</h1>
-<div class="muted">Lease a beat or buy exclusive rights. Your download link appears the moment you pay.</div>
+<div class="muted">Find a beat. Lease it or buy exclusive rights. Your download link appears the moment you pay.</div>
 <div id="thanks"></div>
-<div id="list"><div class="muted">Loading…</div></div>
-<p class="muted"><small>Digital products. All sales final. A lease gives you a license to use the beat as described by the seller; exclusive rights are sold once.</small></p>
+<div id="filters"><input id="srch" placeholder="Search beats, tags, producers, BPM or key..." aria-label="Search"><select id="sort" aria-label="Sort"><option value="new">Newest</option><option value="lo">Price: low to high</option><option value="hi">Price: high to low</option><option value="bpm">BPM</option></select><input id="bmin" inputmode="numeric" placeholder="Min BPM" style="flex:0 0 100px"><input id="bmax" inputmode="numeric" placeholder="Max BPM" style="flex:0 0 100px"><select id="key" aria-label="Key"><option value="">Any key</option></select></div>
+<div id="tags"></div>
+<div class="card" id="list" style="padding:4px 8px"><div class="muted" style="padding:12px">Loading…</div></div>
+<p class="muted"><small>Digital products. All sales final. A lease is a non-exclusive license: the beat stays on sale for others. Exclusive rights are sold once, the beat is then removed from the store, and the exclusive includes two revisions (up to two rounds of changes by the producer). Read the license terms the producer provides with your download.</small></p>
+<div id="bar"><div class="in"><button class="alt" id="prev" aria-label="Previous">⏮</button><button id="pp" aria-label="Play or pause">▶</button><button class="alt" id="next" aria-label="Next">⏭</button><div style="min-width:0;flex:0 1 200px"><b id="pt" style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></b></div><div id="pbar"><div id="pfill"></div></div></div></div>
+<div id="modal"><div class="m" id="mb"></div></div>
+<audio id="au" preload="none"></audio>
 <script>
 var API="/.netlify/functions/";
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
-function usd(c){return"$"+(c/100).toFixed(2)}
+function usd(c){return"$"+(c/100).toFixed(2).replace(/\.00$/,"")}
 function post(fn,b){return fetch(API+fn,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||"Something went wrong");return j})})}
 function buy(id,lic,btn){btn.disabled=true;post("beat-checkout",{beat_id:id,license:lic}).then(function(j){location.href=j.url}).catch(function(e){alert(e.message);btn.disabled=false})}
 var q=new URLSearchParams(location.search);
 if(q.get("paid")&&q.get("session_id")){post("beat-api",{action:"delivery",session_id:q.get("session_id")}).then(function(j){document.getElementById("thanks").innerHTML='<div class="card"><b>Payment received. Thank you!</b><br>'+esc(j.title||"Your beat")+' ('+esc(j.license||"")+')<div class="row">'+(j.url?'<a class="btn" href="'+esc(j.url)+'" target="_blank" rel="noopener">Download your beat</a>':'<span class="muted">The producer will email your files shortly.</span>')+'</div></div>'}).catch(function(){document.getElementById("thanks").innerHTML='<div class="card">We are confirming your payment. Refresh in a minute, or contact POTENT with your receipt.</div>'})}
-post("beat-api",{action:"catalog"}).then(function(j){var L=document.getElementById("list");if(!j.beats.length){L.innerHTML='<div class="card muted">New beats are coming soon.</div>';return}
-L.innerHTML=j.beats.map(function(b){var p=b.preview_url;var aud=p&&/\.(mp3|wav|m4a|ogg)(\?|$)/i.test(p)?'<audio controls preload="none" src="'+esc(p)+'"></audio>':(p?'<div class="row"><a class="btn alt" href="'+esc(p)+'" target="_blank" rel="noopener">▶ Listen</a></div>':'');
-return'<div class="card"><b>'+esc(b.title)+'</b><div class="muted"><small>by '+esc(b.producer||"POTENT")+'</small></div>'+aud+'<div class="row">'+(b.lease_cents?'<button data-i="'+b.id+'" data-l="lease">Lease — '+usd(b.lease_cents)+'</button>':'')+(b.exclusive_cents?'<button data-i="'+b.id+'" data-l="exclusive">Exclusive — '+usd(b.exclusive_cents)+'</button>':'')+'</div></div>'}).join("");
-[].forEach.call(L.querySelectorAll("button[data-i]"),function(x){x.onclick=function(){buy(x.dataset.i,x.dataset.l,x)}})}).catch(function(){document.getElementById("list").innerHTML='<div class="card muted">Could not load beats. Please refresh.</div>'});
+var ALL=[],FT="",VIEW=[],cur=-1,au=document.getElementById("au");
+function $(i){return document.getElementById(i)}
+function low(b){var a=[b.lease_cents,b.exclusive_cents].filter(Boolean);return a.length?Math.min.apply(null,a):0}
+function filtered(){var qq=$("srch").value.toLowerCase().trim(),mn=parseInt($("bmin").value,10),mx=parseInt($("bmax").value,10),k=$("key").value;
+ var r=ALL.filter(function(b){var hay=(b.title+" "+(b.tags||[]).join(" ")+" "+(b.bpm||"")+" "+(b.key||"")+" "+(b.producer||"")).toLowerCase();
+  return (!qq||hay.indexOf(qq)>=0)&&(!FT||(b.tags||[]).indexOf(FT)>=0)&&(!k||b.key===k)&&(!mn||(b.bpm&&b.bpm>=mn))&&(!mx||(b.bpm&&b.bpm<=mx))});
+ var s=$("sort").value;if(s==="lo")r.sort(function(a,b){return low(a)-low(b)});if(s==="hi")r.sort(function(a,b){return low(b)-low(a)});if(s==="bpm")r.sort(function(a,b){return (a.bpm||999)-(b.bpm||999)});return r}
+function draw(){VIEW=filtered();var L=$("list");if(!VIEW.length){L.innerHTML='<div class="muted" style="padding:14px">No beats match. Try another search.</div>';return}
+ L.innerHTML=VIEW.map(function(b,i){var meta=[b.bpm?b.bpm+" BPM":"",b.key||""].filter(Boolean).join(" · ");var tg=(b.tags||[]).slice(0,5).map(function(t){return'#'+esc(t)}).join(" ");
+  var pr=b.lease_cents||b.exclusive_cents?'<button class="buy" data-b="'+i+'">'+(b.lease_cents?'Lease '+usd(b.lease_cents):'Exclusive '+usd(b.exclusive_cents))+'</button>':'<span class="muted">Sold</span>';
+  return'<div class="beat"><button class="play" data-p="'+i+'" aria-label="Play '+esc(b.title)+'" '+(b.preview_url?'':'disabled')+'>'+(cur===i&&!au.paused?'⏸':'▶')+'</button><div class="bi"><b>'+esc(b.title)+'</b><small class="muted">'+esc(b.producer||"POTENT")+(meta?' · '+esc(meta):'')+'</small><div class="tg">'+tg+'</div></div>'+pr+'</div>'}).join("");
+ [].forEach.call(L.querySelectorAll("[data-p]"),function(x){x.onclick=function(){play(+x.dataset.p)}});
+ [].forEach.call(L.querySelectorAll("[data-b]"),function(x){x.onclick=function(){openLic(VIEW[+x.dataset.b])}})}
+function tagbar(){var c={};ALL.forEach(function(b){(b.tags||[]).forEach(function(t){c[t]=(c[t]||0)+1})});var top=Object.keys(c).sort(function(a,b){return c[b]-c[a]}).slice(0,24);
+ $("tags").innerHTML=top.map(function(t){return'<span class="chip'+(FT===t?' on':'')+'" data-f="'+esc(t)+'">#'+esc(t)+'</span>'}).join("");
+ [].forEach.call(document.querySelectorAll("#tags [data-f]"),function(x){x.onclick=function(){FT=FT===x.dataset.f?"":x.dataset.f;tagbar();draw()}})}
+function keybar(){var ks={};ALL.forEach(function(b){if(b.key)ks[b.key]=1});$("key").innerHTML='<option value="">Any key</option>'+Object.keys(ks).sort().map(function(k){return'<option>'+esc(k)+'</option>'}).join("")}
+function play(i){var b=VIEW[i];if(!b||!b.preview_url)return;if(cur===i&&!au.paused){au.pause();return}if(cur!==i){au.src=b.preview_url;cur=i;$("pt").textContent=b.title}au.play();$("bar").style.display="block"}
+au.onplay=au.onpause=function(){$("pp").textContent=au.paused?"▶":"⏸";draw()};au.onended=function(){nxt(1)};
+au.ontimeupdate=function(){$("pfill").style.width=(au.duration?au.currentTime/au.duration*100:0)+"%"};
+$("pbar").onclick=function(e){if(au.duration){var r=this.getBoundingClientRect();au.currentTime=(e.clientX-r.left)/r.width*au.duration}};
+function nxt(d){var i=cur;for(var n=0;n<VIEW.length;n++){i=(i+d+VIEW.length)%VIEW.length;if(VIEW[i].preview_url){play(i);return}}}
+$("pp").onclick=function(){if(cur<0){nxt(1)}else if(au.paused){au.play()}else{au.pause()}};$("next").onclick=function(){nxt(1)};$("prev").onclick=function(){nxt(-1)};
+function openLic(b){var m=$("mb");m.innerHTML='<b style="font-size:18px">'+esc(b.title)+'</b><div class="muted"><small>by '+esc(b.producer||"POTENT")+'</small></div>'+
+ (b.lease_cents?'<div class="opt"><b>Lease — '+usd(b.lease_cents)+'</b><ul><li>Non-exclusive license</li><li>Instant download after payment</li><li>Beat stays available to other buyers</li></ul><button data-l="lease" style="width:100%">Lease for '+usd(b.lease_cents)+'</button></div>':'')+
+ (b.exclusive_cents?'<div class="opt"><b>Exclusive — '+usd(b.exclusive_cents)+'</b><ul><li>Exclusive rights: sold once, then removed from the store</li><li>Includes 2 revisions</li><li>Instant download after payment</li></ul><button data-l="exclusive" style="width:100%">Buy exclusive for '+usd(b.exclusive_cents)+'</button></div>':'')+
+ '<button class="alt" id="cl" style="width:100%;margin-top:12px">Close</button>';$("modal").style.display="flex";
+ [].forEach.call(m.querySelectorAll("[data-l]"),function(x){x.onclick=function(){buy(b.id,x.dataset.l,x)}});$("cl").onclick=function(){$("modal").style.display="none"}}
+$("modal").onclick=function(e){if(e.target===this)this.style.display="none"};
+["srch","bmin","bmax"].forEach(function(i){$(i).oninput=draw});$("sort").onchange=draw;$("key").onchange=draw;
+post("beat-api",{action:"catalog"}).then(function(j){if(!j.beats.length){$("list").innerHTML='<div class="muted" style="padding:14px">New beats are coming soon.</div>';return}ALL=j.beats;tagbar();keybar();draw()}).catch(function(){$("list").innerHTML='<div class="muted" style="padding:14px">Could not load beats. Please refresh.</div>'});
 </script>
 </body>
 </html>
