@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="data:,">
+<title>Beat Man — Producer Wallet</title>
+<style>
+:root{color-scheme:dark light;--bg:#0a0a0a;--panel:#141412;--panel2:#1c1b17;--ink:#f7f4ec;--muted:#b8b3a8;--gold:#d4af37;--line:rgba(255,255,255,.16);--ok:#2ecc71;--bad:#e74c3c}
+@media (prefers-color-scheme:light){:root{--bg:#f6f3ea;--panel:#fff;--panel2:#f1ede0;--ink:#16140f;--muted:#6d675a;--line:rgba(0,0,0,.14)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:16px;max-width:760px;margin-inline:auto}
+h1{font-size:26px;margin:8px 0 2px;color:var(--gold)}h2{font-size:18px;margin:0 0 10px}small,.muted{color:var(--muted)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+input,select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font:inherit;margin:4px 0 8px}
+button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:12px 16px;background:var(--gold);color:#120d00;cursor:pointer}
+button.alt{background:transparent;color:var(--ink);border:1px solid var(--line)}button.sm{padding:7px 12px;font-size:13px}button:disabled{opacity:.5}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1 1 140px}
+.big{font-size:34px;font-weight:800}.pill{display:inline-block;padding:2px 10px;border-radius:99px;border:1px solid var(--line);font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{text-align:left;padding:7px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+.pos{color:var(--ok)}.neg{color:var(--bad)}.err{color:var(--bad);min-height:20px}.tabs{display:flex;gap:8px;margin:10px 0}.tabs button{flex:1}
+.hide{display:none}
+</style>
+</head>
+<body>
+<h1>🎵 Beat Man</h1>
+<div class="muted">Your sales, your split, your wallet — updated the moment a beat sells.</div>
+
+<div id="login" class="card">
+  <div class="tabs"><button id="tabP">Producer login</button><button id="tabO" class="alt">POTENT owner</button></div>
+  <div id="fP">
+    <label>Email<input id="pe" type="email" autocomplete="username"></label>
+    <label>Password<input id="pp" type="password" autocomplete="current-password"></label>
+    <button id="goP">Sign in</button>
+  </div>
+  <div id="fO" class="hide">
+    <label>Staff ID<input id="oid" value="potent" autocomplete="username"></label>
+    <label>Password<input id="op" type="password" autocomplete="current-password"></label>
+    <button id="goO">Owner sign in</button>
+  </div>
+  <div class="err" id="lerr"></div>
+</div>
+
+<div id="app" class="hide"></div>
+
+<script>
+var API="/.netlify/functions/beat-api",tok="",mode="",D=null;
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function usd(c){var n=(c||0)/100;return(n<0?"-":"")+"$"+Math.abs(n).toFixed(2)}
+function call(a,b){return fetch(API,{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+tok},body:JSON.stringify(Object.assign({action:a},b||{}))}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||"Something went wrong");return j})})}
+function dt(s){return s?new Date(s).toLocaleDateString():""}
+var METHOD_NAMES={paypal:"PayPal",airtm:"Airtm",zinli:"Zinli",usdt:"USDT (crypto dollars)",binance:"Binance Pay",westernunion:"Western Union / MoneyGram",wise:"Wise",zelle:"Zelle (US only)",other:"Other"};
+
+$("tabP").onclick=function(){$("fP").classList.remove("hide");$("fO").classList.add("hide");$("tabP").classList.remove("alt");$("tabO").classList.add("alt")};
+$("tabO").onclick=function(){$("fO").classList.remove("hide");$("fP").classList.add("hide");$("tabO").classList.remove("alt");$("tabP").classList.add("alt")};
+$("goP").onclick=function(){$("lerr").textContent="";call("login",{email:$("pe").value,password:$("pp").value}).then(function(j){tok=j.token;mode="p";D=j;try{sessionStorage.setItem("bm",JSON.stringify({t:tok,m:"p"}))}catch(e){}show()}).catch(function(e){$("lerr").textContent=e.message})};
+$("goO").onclick=function(){$("lerr").textContent="";fetch("/.netlify/functions/auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"staff",userId:$("oid").value,password:$("op").value})}).then(function(r){return r.json()}).then(function(j){if(!j.ok||j.role!=="owner")throw new Error(j.error||"Owner only");tok=j.token;mode="o";try{sessionStorage.setItem("bm",JSON.stringify({t:tok,m:"o"}))}catch(e){}return call("o_list")}).then(function(j){D=j;show()}).catch(function(e){$("lerr").textContent=e.message})};
+function out(){tok="";mode="";D=null;try{sessionStorage.removeItem("bm")}catch(e){}$("app").classList.add("hide");$("login").classList.remove("hide");$("pp").value="";$("op").value=""}
+function refresh(){return call(mode==="p"?"me":"o_list").then(function(j){D=j;show()}).catch(function(e){alert(e.message);if(/Session|Sign in|owner only/i.test(e.message))out()})}
+function show(){$("login").classList.add("hide");$("app").classList.remove("hide");$("app").innerHTML=mode==="p"?producerHTML():ownerHTML();wire()}
+
+function producerHTML(){
+  var p=D.producer,b=D.balance,h='<div class="row" style="align-items:center;justify-content:space-between"><div><b>'+esc(p.name)+'</b><br><small>'+esc(p.email)+'</small></div><button class="alt sm" id="out">Sign out</button></div>';
+  h+='<div class="card"><div class="muted">Available to withdraw</div><div class="big pos">'+usd(b.available)+'</div><small>Pending (clears after '+p.hold_days+' days): '+usd(b.pending)+'</small>';
+  h+='<div class="row" style="margin-top:10px"><button id="cash"'+(b.available>=D.minPayoutCents?'':' disabled')+'>Cash out all</button></div><small>Minimum payout '+usd(D.minPayoutCents)+'. Your split: lease '+p.splits.lease+'%, exclusive '+p.splits.exclusive+'% of each sale'+(p.deduct_fees?' (after card fees)':'')+'.</small></div>';
+  h+='<div class="card"><h2>How you get paid</h2><select id="pm"><option value="">Choose a method…</option>'+D.methods.map(function(m){return'<option value="'+m+'"'+(p.payout_method===m?' selected':'')+'>'+esc(METHOD_NAMES[m]||m)+'</option>'}).join("")+'</select><input id="ph" placeholder="Your account email, username or wallet label" value="'+esc(p.payout_handle||"")+'"><small>Never type a full card or bank number here.</small><br><button class="alt" id="savepm">Save payout method</button></div>';
+  h+='<div class="card"><h2>My beats</h2><div id="beats">'+(D.beats.length?'<table><tr><th>Title</th><th>Lease</th><th>Exclusive</th><th></th></tr>'+D.beats.map(function(x){return'<tr><td>'+esc(x.title)+(x.exclusive_sold?' <span class="pill">sold exclusive</span>':'')+(x.active?'':' <span class="pill">hidden</span>')+'</td><td>'+(x.lease_cents?usd(x.lease_cents):"—")+'</td><td>'+(x.exclusive_cents?usd(x.exclusive_cents):"—")+'</td><td><button class="alt sm" data-tg="'+x.id+'">'+(x.active?'Hide':'Show')+'</button></td></tr>'}).join("")+'</table>':'<small>No beats listed yet.</small>')+'</div>';
+  h+='<h2 style="margin-top:14px">Add a beat</h2><input id="bt" placeholder="Title"><div class="row"><input id="bl" inputmode="decimal" placeholder="Lease price $ (blank = not offered)"><input id="be" inputmode="decimal" placeholder="Exclusive price $ (blank = not offered)"></div><input id="bp" placeholder="Public preview link (https://…)"><input id="bd" placeholder="Private download link buyers get after paying (https://…)"><button id="addb">Add beat to the store</button><div class="err" id="berr"></div></div>';
+  h+='<div class="card"><h2>Sales</h2>'+(D.sales.length?'<table><tr><th>Date</th><th>Beat</th><th>Sold</th><th>You earn</th></tr>'+D.sales.map(function(s){return'<tr><td>'+dt(s.created_at)+'</td><td>'+esc(s.title)+'<br><small>'+esc(s.sale_type)+(s.status==="refunded"?" · refunded":"")+'</small></td><td>'+usd(s.gross_cents)+'</td><td class="pos">'+usd(s.producer_cents)+'</td></tr>'}).join("")+'</table>':'<small>No sales yet. They appear here the second a buyer pays.</small>')+'</div>';
+  h+='<div class="card"><h2>Wallet history</h2>'+(D.txns.length?'<table>'+D.txns.map(function(t){return'<tr><td>'+dt(t.created_at)+'</td><td>'+esc(t.note||t.type)+'</td><td class="'+(t.amount_cents<0?'neg':'pos')+'">'+usd(t.amount_cents)+'</td></tr>'}).join("")+'</table>':'<small>Nothing yet.</small>')+'</div>';
+  h+='<div class="card"><h2>Payouts</h2>'+(D.payouts.length?'<table>'+D.payouts.map(function(t){return'<tr><td>'+dt(t.requested_at)+'</td><td>'+usd(t.amount_cents)+'<br><small>'+esc(METHOD_NAMES[t.method]||t.method)+'</small></td><td><span class="pill">'+esc(t.status)+'</span>'+(t.reference?'<br><small>Ref '+esc(t.reference)+'</small>':'')+'</td></tr>'}).join("")+'</table>':'<small>No payouts yet.</small>')+'</div>';
+  return h;
+}
+function ownerHTML(){
+  var h='<div class="row" style="align-items:center;justify-content:space-between"><b>POTENT owner</b><button class="alt sm" id="out">Sign out</button></div>';
+  h+='<div class="card"><h2>Pending payouts</h2>';
+  var pend=D.payouts.filter(function(x){return x.status==="pending"});
+  h+=pend.length?'<table>'+pend.map(function(x){return'<tr><td>'+esc(x.beat_producers&&x.beat_producers.name)+'<br><small>'+dt(x.requested_at)+'</small></td><td><b>'+usd(x.amount_cents)+'</b><br><small>'+esc(METHOD_NAMES[x.method]||x.method)+': '+esc(x.handle)+'</small></td><td><button class="sm" data-paid="'+x.id+'">Mark paid</button> <button class="alt sm" data-cx="'+x.id+'">Cancel</button></td></tr>'}).join("")+'</table>':'<small>None waiting.</small>';
+  h+='</div><div class="card"><h2>Producers</h2>'+(D.producers.length?'<table><tr><th>Name</th><th>Wallet</th><th></th></tr>'+D.producers.map(function(p){return'<tr><td>'+esc(p.name)+'<br><small>'+esc(p.email)+' · '+esc(p.country||"")+'<br>lease '+p.splits.lease+'% · excl '+p.splits.exclusive+'% · hold '+p.hold_days+'d'+(p.active?'':' · OFF')+'</small></td><td>'+usd(p.balance.available)+'<br><small>+'+usd(p.balance.pending)+' pending</small></td><td><button class="alt sm" data-sp="'+p.id+'">Splits</button> <button class="alt sm" data-adj="'+p.id+'">Bonus/adjust</button> <button class="alt sm" data-pw="'+p.id+'">Reset pw</button></td></tr>'}).join("")+'</table>':'<small>No producers yet.</small>')+'</div>';
+  h+='<div class="card"><h2>Add a producer</h2><input id="cn" placeholder="Name"><input id="ce" type="email" placeholder="Email (their login)"><input id="cc" placeholder="Country"><div class="row"><input id="cl" inputmode="numeric" placeholder="Lease % to producer" value="50"><input id="cx" inputmode="numeric" placeholder="Exclusive % to producer" value="50"></div><button id="mk">Create account</button><div class="err" id="cerr"></div><div id="cout"></div></div>';
+  h+='<div class="card"><h2>Recent sales</h2>'+(D.sales.length?'<table>'+D.sales.map(function(s){return'<tr><td>'+dt(s.created_at)+'</td><td>'+esc(s.title)+' <small>'+esc(s.sale_type)+'</small></td><td>'+usd(s.gross_cents)+'</td><td class="pos">'+usd(s.producer_cents)+'</td></tr>'}).join("")+'</table>':'<small>No sales yet.</small>')+'</div>';
+  return h;
+}
+function wire(){
+  var o=$("out");if(o)o.onclick=out;
+  if(mode==="p"){
+    $("savepm").onclick=function(){call("savepayout",{method:$("pm").value,handle:$("ph").value}).then(function(j){D=j;show();alert("Saved")}).catch(function(e){alert(e.message)})};
+    $("cash").onclick=function(){if(confirm("Request a payout of "+usd(D.balance.available)+"?"))call("requestpayout",{amount_cents:"all"}).then(function(j){D=j;show();alert("Requested. POTENT will pay you and add the confirmation number here.")}).catch(function(e){alert(e.message)})};
+    $("addb").onclick=function(){var d=function(v){v=String(v).replace(/[$,\s]/g,"");return v===""?"":Math.round(parseFloat(v)*100)};call("addbeat",{title:$("bt").value,lease_cents:d($("bl").value),exclusive_cents:d($("be").value),preview_url:$("bp").value,deliver_url:$("bd").value}).then(function(j){D=j;show()}).catch(function(e){$("berr").textContent=e.message})};
+    [].forEach.call(document.querySelectorAll("[data-tg]"),function(b){b.onclick=function(){var x=D.beats.filter(function(z){return z.id===b.dataset.tg})[0];call("setbeat",{id:x.id,title:x.title,lease_cents:x.lease_cents==null?"":x.lease_cents,exclusive_cents:x.exclusive_cents==null?"":x.exclusive_cents,preview_url:x.preview_url||"",deliver_url:x.deliver_url||"",active:!x.active}).then(function(j){D=j;show()}).catch(function(e){alert(e.message)})}});
+  }else{
+    $("mk").onclick=function(){$("cerr").textContent="";call("o_create",{name:$("cn").value,email:$("ce").value,country:$("cc").value,lease_pct:$("cl").value,exclusive_pct:$("cx").value}).then(function(j){$("cout").innerHTML='<p><b>Created.</b> Send them this login:<br>Email: <b>'+esc(j.producer.email)+'</b><br>Temporary password: <b>'+esc(j.tempPassword)+'</b><br><small>Shown once. They sign in at /beatman/ and should change it.</small></p>';refresh2()}).catch(function(e){$("cerr").textContent=e.message})};
+    function refresh2(){call("o_list").then(function(j){var keep=$("cout").innerHTML;D=j;show();$("cout").innerHTML=keep})}
+    [].forEach.call(document.querySelectorAll("[data-paid]"),function(b){b.onclick=function(){var r=prompt("After you send the money, enter the confirmation / transaction number:");if(r)call("o_markpaid",{id:b.dataset.paid,reference:r}).then(refresh).catch(function(e){alert(e.message)})}});
+    [].forEach.call(document.querySelectorAll("[data-cx]"),function(b){b.onclick=function(){if(confirm("Cancel this payout and return the money to the wallet?"))call("o_cancelpayout",{id:b.dataset.cx}).then(refresh).catch(function(e){alert(e.message)})}});
+    [].forEach.call(document.querySelectorAll("[data-pw]"),function(b){b.onclick=function(){if(confirm("Reset this producer's password?"))call("o_resetpw",{id:b.dataset.pw}).then(function(j){alert("New temporary password: "+j.tempPassword)}).catch(function(e){alert(e.message)})}});
+    [].forEach.call(document.querySelectorAll("[data-sp]"),function(b){b.onclick=function(){var l=prompt("Producer % on LEASE sales (0-100):");if(l===null)return;var x=prompt("Producer % on EXCLUSIVE sales (0-100):");if(x===null)return;call("o_setproducer",{id:b.dataset.sp,lease_pct:l,exclusive_pct:x}).then(refresh).catch(function(e){alert(e.message)})}});
+    [].forEach.call(document.querySelectorAll("[data-adj]"),function(b){b.onclick=function(){var v=prompt("Amount in dollars (use a minus sign to take money out). Example: 250 for a referral bonus:");if(v===null)return;var cents=Math.round(parseFloat(String(v).replace(/[$,]/g,""))*100);var n=prompt("Note (what is this for?)","Referral bonus")||"";call("o_adjust",{id:b.dataset.adj,amount_cents:cents,note:n,kind:/bonus|referral/i.test(n)?"bonus":"adjustment"}).then(refresh).catch(function(e){alert(e.message)})}});
+  }
+}
+try{var s=JSON.parse(sessionStorage.getItem("bm")||"null");if(s&&s.t){tok=s.t;mode=s.m;call(mode==="p"?"me":"o_list").then(function(j){D=j;show()}).catch(function(){out()})}}catch(e){}
+</script>
+</body>
+</html>

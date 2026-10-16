@@ -23,6 +23,7 @@
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { fulfillSession: fulfillCcml } = require("./lib/ccml");
 const { fulfillSession: fulfillPlaybook } = require("./lib/playbook");
+const { fulfillSession: fulfillBeat, handleRefund: refundBeat } = require("./lib/beats");
 const { deriveStatus } = require("./lib/billing");
 const { provisionCompany } = require("./lib/provision");
 
@@ -235,6 +236,13 @@ exports.handler = async function (event) {
       return { statusCode: 200, headers, body: JSON.stringify({ received: true }) };
     }
 
+    // ── Beat Man: a refund takes back the producer's share automatically ──
+    if (type === "charge.refunded") {
+      const rr = await refundBeat(obj);
+      if (rr && rr.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Beat refund failed, retry" }) };
+      return { statusCode: 200, headers, body: JSON.stringify({ received: true, beatRefund: !!(rr && rr.ok) }) };
+    }
+
     // ── first payment: license, Flex down payment, or checkout ─────
     const isCheckoutSession = type === "checkout.session.completed";
     const isPaymentIntent = type === "payment_intent.succeeded";
@@ -316,6 +324,10 @@ exports.handler = async function (event) {
       // Credit Changed My Life (separate purchase): unlock the plan / add letter credits. Idempotent per Stripe session.
       const res = await fulfillCcml(obj);
       if (res && res.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "CCML fulfillment failed, retry" }) };
+    } else if (product === "BEAT" && isCheckoutSession) {
+      // Beat Man: record the sale and credit the producer's wallet right now. Idempotent per Stripe session.
+      const res = await fulfillBeat(obj);
+      if (res && res.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Beat fulfillment failed, retry" }) };
     } else if (String(product).indexOf("PLAYBOOK") === 0 && isCheckoutSession) {
       // Potent Playbook (separate purchase): record purchase rows, raise the buyer's tier. Idempotent per Stripe session.
       const res = await fulfillPlaybook(obj);
@@ -331,6 +343,6 @@ exports.handler = async function (event) {
 
 // SETUP: Stripe Dashboard > Developers > Webhooks > endpoint
 //   https://potentoperations.netlify.app/.netlify/functions/stripe-webhook
-//   events: checkout.session.completed, payment_intent.succeeded, invoice.paid,
+//   events: checkout.session.completed, payment_intent.succeeded, charge.refunded, invoice.paid,
 //           invoice.payment_failed, customer.subscription.deleted
 //   Netlify env: STRIPE_WEBHOOK_SECRET (whsec_...), STRIPE_SECRET_KEY, SUPABASE_SERVICE_ROLE_KEY

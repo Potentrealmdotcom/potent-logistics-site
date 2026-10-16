@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="data:,">
+<title>POTENT Beats — Lease or Buy</title>
+<meta name="description" content="Original beats from POTENT producers. Lease or buy exclusive rights. Instant download after payment.">
+<style>
+:root{color-scheme:dark light;--bg:#0a0a0a;--panel:#141412;--ink:#f7f4ec;--muted:#b8b3a8;--gold:#d4af37;--line:rgba(255,255,255,.16)}
+@media (prefers-color-scheme:light){:root{--bg:#f6f3ea;--panel:#fff;--ink:#16140f;--muted:#6d675a;--line:rgba(0,0,0,.14)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:16px;max-width:760px;margin-inline:auto}
+h1{color:var(--gold);margin:8px 0 2px}.muted{color:var(--muted)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+button,a.btn{font:inherit;font-weight:700;border:0;border-radius:10px;padding:11px 16px;background:var(--gold);color:#120d00;cursor:pointer;text-decoration:none;display:inline-block}
+a.alt{background:transparent;color:var(--ink);border:1px solid var(--line)}.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+audio{width:100%;margin-top:8px}
+</style>
+</head>
+<body>
+<h1>🎵 POTENT Beats</h1>
+<div class="muted">Lease a beat or buy exclusive rights. Your download link appears the moment you pay.</div>
+<div id="thanks"></div>
+<div id="list"><div class="muted">Loading…</div></div>
+<p class="muted"><small>Digital products. All sales final. A lease gives you a license to use the beat as described by the seller; exclusive rights are sold once.</small></p>
+<script>
+var API="/.netlify/functions/";
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function usd(c){return"$"+(c/100).toFixed(2)}
+function post(fn,b){return fetch(API+fn,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||"Something went wrong");return j})})}
+function buy(id,lic,btn){btn.disabled=true;post("beat-checkout",{beat_id:id,license:lic}).then(function(j){location.href=j.url}).catch(function(e){alert(e.message);btn.disabled=false})}
+var q=new URLSearchParams(location.search);
+if(q.get("paid")&&q.get("session_id")){post("beat-api",{action:"delivery",session_id:q.get("session_id")}).then(function(j){document.getElementById("thanks").innerHTML='<div class="card"><b>Payment received. Thank you!</b><br>'+esc(j.title||"Your beat")+' ('+esc(j.license||"")+')<div class="row">'+(j.url?'<a class="btn" href="'+esc(j.url)+'" target="_blank" rel="noopener">Download your beat</a>':'<span class="muted">The producer will email your files shortly.</span>')+'</div></div>'}).catch(function(){document.getElementById("thanks").innerHTML='<div class="card">We are confirming your payment. Refresh in a minute, or contact POTENT with your receipt.</div>'})}
+post("beat-api",{action:"catalog"}).then(function(j){var L=document.getElementById("list");if(!j.beats.length){L.innerHTML='<div class="card muted">New beats are coming soon.</div>';return}
+L.innerHTML=j.beats.map(function(b){var p=b.preview_url;var aud=p&&/\.(mp3|wav|m4a|ogg)(\?|$)/i.test(p)?'<audio controls preload="none" src="'+esc(p)+'"></audio>':(p?'<div class="row"><a class="btn alt" href="'+esc(p)+'" target="_blank" rel="noopener">▶ Listen</a></div>':'');
+return'<div class="card"><b>'+esc(b.title)+'</b><div class="muted"><small>by '+esc(b.producer||"POTENT")+'</small></div>'+aud+'<div class="row">'+(b.lease_cents?'<button data-i="'+b.id+'" data-l="lease">Lease — '+usd(b.lease_cents)+'</button>':'')+(b.exclusive_cents?'<button data-i="'+b.id+'" data-l="exclusive">Exclusive — '+usd(b.exclusive_cents)+'</button>':'')+'</div></div>'}).join("");
+[].forEach.call(L.querySelectorAll("button[data-i]"),function(x){x.onclick=function(){buy(x.dataset.i,x.dataset.l,x)}})}).catch(function(){document.getElementById("list").innerHTML='<div class="card muted">Could not load beats. Please refresh.</div>'});
+</script>
+</body>
+</html>

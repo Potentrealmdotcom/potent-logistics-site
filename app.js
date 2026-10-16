@@ -8206,6 +8206,8 @@ function PublicApp(props) {
                             else if (v === "ccml") window.location.href = "/ccml/";
                             else if (v === "aceheals") window.location.href = "https://aceheals.netlify.app";
                             else if (v === "playbook") window.location.href = "/playbook/";
+                            else if (v === "beatman") window.location.href = "/beatman/";
+                            else if (v === "beats") window.location.href = "/beats/";
                             e.target.value = ""; // reset back to placeholder after navigating
                         },
                         style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }
@@ -8227,7 +8229,9 @@ function PublicApp(props) {
                         React.createElement("optgroup", { label: "\uD83C\uDF10 POTENT Affiliate & Partner Apps" },
                             React.createElement("option", { value: "ccml" }, "\uD83D\uDCB3 Credit Changed My Life \u2014 Credit Book"),
                             React.createElement("option", { value: "aceheals" }, "\uD83E\uDDF8 AceHeals Kids App"),
-                            React.createElement("option", { value: "playbook" }, "\uD83D\uDC57 Potent Playbook \u2014 Fashion"))),
+                            React.createElement("option", { value: "playbook" }, "\uD83D\uDC57 Potent Playbook \u2014 Fashion"),
+                            React.createElement("option", { value: "beats" }, "\uD83C\uDFA7 POTENT Beats \u2014 Lease or Buy"),
+                            React.createElement("option", { value: "beatman" }, "\uD83C\uDFB5 Beat Man \u2014 Producer Login"))),
                     React.createElement(LangSwitcher, { lang: lang, changeLang: changeLang }),
                     React.createElement(EasyModeToggle, null),
                     React.createElement("a", { href: "tel:" + DISPATCH_PHONE_DISPLAY.replace(/\D/g,""), title: "Dispatch & Sales: " + DISPATCH_EMAIL, style: { textDecoration: "none", background: C.orange, color: "#000", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" } }, "📞 " + DISPATCH_PHONE_DISPLAY),
