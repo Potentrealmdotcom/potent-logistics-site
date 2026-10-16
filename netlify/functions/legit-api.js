@@ -195,6 +195,25 @@ exports.handler = async function (event) {
         await logAdmin(me.id, took ? "report_action" : "report_no_violation", rp.id, "");
         return J(200, { ok: true });
       }
+      if (a === "a_users") {
+        const r = await sb("legit_users?select=id,email,name,age,gender,identity_verified,verified_at,paid_lifetime_access,paid_at,trial_started_at,strike_count,banned,ban_source,is_admin,last_seen,created_at&order=created_at.desc&limit=1000");
+        return J(200, { ok: true, users: r.data || [] });
+      }
+      if (a === "a_payments") {
+        const r = await sb("legit_payments?select=*,legit_users(name,email)&order=created_at.desc&limit=500");
+        const rows = r.data || [];
+        return J(200, { ok: true, payments: rows, totalCents: rows.reduce((t, x) => t + (x.amount_cents || 0), 0) });
+      }
+      if (a === "a_user_act") {
+        if (!UUID.test(String(b.id || "")) || b.id === me.id) return J(400, { ok: false, error: "Not allowed on your own account" });
+        const act = String(b.act || ""), note = clip(b.note, 300), u = await userById(b.id); if (!u) return J(404, { ok: false, error: "Not found" });
+        if (act === "ban") await sb("legit_users?id=eq." + u.id, { method: "PATCH", prefer: "return=minimal", body: { banned: true, ban_source: "admin" } });
+        else if (act === "unban") await sb("legit_users?id=eq." + u.id, { method: "PATCH", prefer: "return=minimal", body: { banned: false, ban_source: null } });
+        else if (act === "grant_paid") await sb("legit_users?id=eq." + u.id, { method: "PATCH", prefer: "return=minimal", body: { paid_lifetime_access: true, paid_at: new Date().toISOString() } });
+        else return J(400, { ok: false, error: "Unknown action" });
+        await logAdmin(me.id, "user_" + act, u.id, note);
+        return J(200, { ok: true });
+      }
       if (a === "a_stats") {
         await expireFuses();
         const day = new Date(); day.setUTCHours(0, 0, 0, 0); const mon = new Date(day); mon.setUTCDate(1);
