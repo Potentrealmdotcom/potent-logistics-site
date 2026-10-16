@@ -8183,7 +8183,7 @@ function HeroSoundButton() {
 function LandingMenuSheet(props) {
     var sets = {
         guides: ["\uD83D\uDCDA Guides & Training", [["\uD83D\uDCDA Prices & How It Works", "/guide.html"], ["\uD83D\uDCBB POTENT OS Guide", "/os-guide.html"], ["\uD83C\uDF93 Training", "/training.html"], ["\uD83D\uDC65 Team Guide", "/team.html"]]],
-        partners: ["\uD83C\uDF10 Partner Apps", [["\uD83D\uDCB3 Credit Changed My Life \u2014 Credit Book", "/ccml/"], ["\uD83E\uDDF8 AceHeals Kids App", "https://aceheals.netlify.app"], ["\uD83D\uDC57 Potent Playbook \u2014 Fashion", "/playbook/"], ["\uD83C\uDFA7 POTENT Beats \u2014 Lease or Buy", "/beats/"], ["\uD83C\uDFB5 Beat Man \u2014 Producer Login", "/beatman/"], ["\uD83E\uDDE0 LIFE OS \u2014 Your AI Operator", "/life/"]]]
+        partners: ["\uD83C\uDF10 Partner Apps", [["\uD83D\uDCB3 Credit Changed My Life \u2014 Credit Book", "/ccml/"], ["\uD83E\uDDF8 AceHeals Kids App", "https://aceheals.netlify.app"], ["\uD83D\uDC57 Potent Playbook \u2014 Fashion", "/playbook/"], ["\uD83C\uDFA7 POTENT Beats \u2014 Lease or Buy", "/beats/"], ["\uD83C\uDFB5 Beat Man \u2014 Producer Login", "/beatman/"], ["\uD83E\uDDE0 LIFE OS \u2014 Your AI Operator", "/life/"], ["\uD83D\uDCAC POTENT PLAYER OS \u2014 AI Wingman", "/player/"]]]
     };
     var set = sets[props.kind]; if (!set) return null;
     return React.createElement("div", { onClick: props.onClose, style: { position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", zIndex: 9500, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 } },
