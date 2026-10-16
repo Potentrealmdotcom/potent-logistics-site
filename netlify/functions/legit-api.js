@@ -206,6 +206,12 @@ exports.handler = async function (event) {
         const rows = r.data || [];
         return J(200, { ok: true, payments: rows, totalCents: rows.reduce((t, x) => t + (x.amount_cents || 0), 0) });
       }
+      if (a === "a_user_setpw") {
+        if (!UUID.test(String(b.id || "")) || String(b.password || "").length < 8) return J(400, { ok: false, error: "Password needs 8+ characters." });
+        await sb("legit_users?id=eq." + b.id, { method: "PATCH", prefer: "return=minimal", body: { password_hash: L.hashPw(b.password) } });
+        await logAdmin(me.id, "user_setpw", b.id, "");
+        return J(200, { ok: true });
+      }
       if (a === "a_user_act") {
         if (!UUID.test(String(b.id || "")) || b.id === me.id) return J(400, { ok: false, error: "Not allowed on your own account" });
         const act = String(b.act || ""), note = clip(b.note, 300), u = await userById(b.id); if (!u) return J(404, { ok: false, error: "Not found" });
