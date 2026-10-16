@@ -37,7 +37,7 @@ nav button.on{color:var(--red)}nav .dot{position:absolute;top:6px;right:22%;back
 .sheet{position:fixed;inset:0;background:#000c;display:flex;align-items:flex-end;justify-content:center;z-index:20}.sheet>div{background:var(--card);border-radius:20px 20px 0 0;padding:18px;width:100%;max-width:520px;max-height:88vh;overflow:auto}
 pre.snap{white-space:pre-wrap;background:#0b0b0d;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px;max-height:160px;overflow:auto}
 </style></head><body>
-<div id="app" aria-live="polite"></div><nav id="nav" hidden><div id="navin"></div></nav>
+<div id="app" aria-live="polite"></div><footer id="ft" style="text-align:center;padding:6px 0 30px;color:var(--dim);font-size:11px"><img src="/potent-griffin-icon.png" alt="POTENT&reg;" style="height:20px;width:20px;vertical-align:middle;margin-right:6px;opacity:.7"><span id="cp" style="user-select:none;-webkit-user-select:none">&copy; 2026 POTENT&reg; &middot; LEGIT &middot; All Rights Reserved</span> &middot; <a href="/legit/terms.html" style="color:var(--dim)">Terms &amp; Privacy</a></footer><nav id="nav" hidden><div id="navin"></div></nav>
 <script>
 var API="/.netlify/functions/legit-api", TK="legit_token", S={user:null,access:null,tab:"discover",intentions:[],complete:false,pendingLB:0,unread:0};
 var $=function(s){return document.querySelector(s)}, app=$("#app");
@@ -210,5 +210,6 @@ async function adminUsers(){var d=await api("a_users");if(!d.ok)return;var f=fun
   document.querySelectorAll("[data-u]").forEach(function(b){b.onclick=async function(){if(!confirm(b.dataset.a+" this account?"))return;var r=await api("a_user_act",{id:b.dataset.u,act:b.dataset.a});if(!r.ok)alert(r.error);adminUsers()}})}
 async function adminPay(){var d=await api("a_payments");if(!d.ok)return;$("#ad").className="";
   $("#ad").innerHTML='<div class="card"><div class="dim">Total collected</div><div class="h" style="font-size:32px">$'+(d.totalCents/100).toFixed(2)+'</div></div>'+(d.payments.length?d.payments.map(function(p){var u=p.legit_users||{};return '<div class="card"><b>$'+((p.amount_cents||0)/100).toFixed(2)+'</b> · '+esc(u.name||"deleted user")+' <span class="dim">'+esc(u.email||"")+'</span><div class="dim" style="font-size:12px">'+new Date(p.created_at).toLocaleString()+'<br>Stripe ref '+esc(p.stripe_session_id)+'</div></div>'}).join(""):'<div class="card dim">No payments yet.</div>')}
+(function(){var n=0,t=0;document.getElementById("cp").onclick=function(){var now=Date.now();n=(now-t<3000?n:0)+1;t=now;if(n>=5){n=0;location.href="/legit/admin/"}}})();
 boot();
 </script></body></html>
