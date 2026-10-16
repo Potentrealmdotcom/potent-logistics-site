@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<style>html{color-scheme:light dark}body{margin:0}</style>
+<title>POTENT Dispatch Booking Playbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: sticky header with tabs and search; left contents rail on wide screens; live-call shortcut strip under the header. Black and gold from the POTENT brand. */
+:root {
+  --bg: #F3F3F0; --surface: #FFFFFF; --ink: #151514; --muted: #5C5B56; --line: #D8D7D0;
+  --gold: #8A6D00; --goldfill: #C9A227; --on-gold: #151514; --say-bg: #FFF7D6; --say-bar: #C9A227;
+  --link: #0B5CAD; --stop: #B00020; --stop-bg: #FDECEE; --warn: #9A5300; --warn-bg: #FFF1DC;
+  --note-bg: #ECECE7; --head-bg: #111110; --head-ink: #F2F0E8; --head-gold: #D9B53A;
+  --display: "Archivo Black", "Arial Black", Impact, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0D0D0C; --surface: #171715; --ink: #EEECE4; --muted: #A8A69C; --line: #2F2E2A;
+  --gold: #D9B53A; --goldfill: #C9A227; --on-gold: #111110; --say-bg: #211D0E; --say-bar: #C9A227;
+  --link: #8DBBF5; --stop: #FF8A9A; --stop-bg: #2B1417; --warn: #F0B15A; --warn-bg: #2A1F10;
+  --note-bg: #1F1F1C; --head-bg: #000000; --head-ink: #F2F0E8; --head-gold: #D9B53A; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0D0D0C; --surface: #171715; --ink: #EEECE4; --muted: #A8A69C; --line: #2F2E2A;
+  --gold: #D9B53A; --goldfill: #C9A227; --on-gold: #111110; --say-bg: #211D0E; --say-bar: #C9A227;
+  --link: #8DBBF5; --stop: #FF8A9A; --stop-bg: #2B1417; --warn: #F0B15A; --warn-bg: #2A1F10;
+  --note-bg: #1F1F1C; --head-bg: #000000; --head-ink: #F2F0E8; --head-gold: #D9B53A; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.5; padding-block: 0 4rem; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); background: var(--head-bg); z-index: 30; }
+a { color: var(--link); }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid var(--goldfill); outline-offset: 2px; }
+
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); background: var(--head-bg); color: var(--head-ink); border-bottom: 3px solid var(--goldfill); }
+.topin { max-width: 1180px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; padding-block: 10px; }
+.brand { font-family: var(--display); font-size: 15px; letter-spacing: .06em; color: var(--head-gold); white-space: nowrap; }
+.brand small { display: block; font-family: var(--body); font-weight: 600; font-size: 12px; letter-spacing: .04em; color: var(--head-ink); opacity: .75; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; flex: 1 1 340px; min-width: 0; }
+.tabs button { font: 700 14px/1.2 var(--body); background: transparent; color: var(--head-ink); border: 1.5px solid #4a4840; border-radius: 6px; padding: 9px 12px; cursor: pointer; text-align: left; min-height: 44px; }
+.tabs button[aria-selected="true"] { background: var(--goldfill); color: var(--on-gold); border-color: var(--goldfill); }
+.tabs button span { display: block; font-weight: 400; font-size: 12px; opacity: .85; }
+.search { position: relative; flex: 1 1 220px; min-width: 0; }
+.search input { width: 100%; font: 16px var(--body); padding: 10px 12px; border-radius: 6px; border: 1.5px solid #4a4840; background: #1b1b19; color: #F2F0E8; min-height: 44px; }
+.search input::placeholder { color: #A8A69C; }
+.results { position: absolute; left: 0; right: 0; top: calc(100% + 6px); background: var(--surface); color: var(--ink); border: 1.5px solid var(--line); border-radius: 8px; max-height: 60vh; overflow: auto; box-shadow: 0 10px 30px rgba(0,0,0,.35); z-index: 40; }
+.results a { display: block; padding: 10px 12px; text-decoration: none; color: var(--ink); border-bottom: 1px solid var(--line); }
+.results a:hover, .results a:focus-visible { background: var(--note-bg); }
+.results .rt { font-weight: 700; }
+.results .rs { font-size: 13px; color: var(--muted); }
+.results .rn { padding: 12px; color: var(--muted); }
+
+.quick { position: sticky; z-index: 15; background: var(--bg); top: calc(env(safe-area-inset-top, 0px) + var(--hh, 110px) - 1px); display: flex; gap: 8px; align-items: center; overflow-x: auto; padding: 10px 0; margin-bottom: 8px; scrollbar-width: thin; }
+.quick a { white-space: nowrap; text-decoration: none; font-weight: 700; font-size: 14px; color: var(--ink); background: var(--surface); border: 1.5px solid var(--line); border-radius: 999px; padding: 8px 14px; min-height: 40px; display: inline-flex; align-items: center; }
+.quick a:hover { border-color: var(--goldfill); }
+.quicklab { font: 700 12px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--gold); white-space: nowrap; }
+
+.pane { max-width: 1180px; margin: 0 auto; padding-top: 14px; }
+.layout { display: grid; grid-template-columns: 1fr; gap: 24px; }
+@media (min-width: 1000px) { .layout { grid-template-columns: 270px minmax(0, 1fr); } .toc { position: sticky; top: calc(var(--hh, 110px) + 70px); align-self: start; max-height: calc(100vh - var(--hh, 110px) - 90px); overflow: auto; } .tocbtn { display: none; } }
+.toc { font-size: 15px; border-right: 1px solid var(--line); padding-right: 12px; min-width: 0; }
+.toc[data-empty] { display: none; }
+.tocbtn { font: 700 15px var(--body); background: var(--surface); color: var(--ink); border: 1.5px solid var(--line); border-radius: 8px; padding: 10px 14px; width: 100%; text-align: left; min-height: 44px; cursor: pointer; }
+@media (max-width: 999px) { .toc { display: none; border: 0; padding: 0; } .toc.open { display: block; background: var(--surface); border: 1.5px solid var(--line); border-radius: 8px; padding: 10px 14px; } }
+.navstep { margin-bottom: 14px; }
+.navhead { display: block; font-family: var(--display); font-size: 13px; letter-spacing: .03em; text-decoration: none; color: var(--gold); padding: 4px 0; }
+.navsec { display: block; text-decoration: none; color: var(--ink); padding: 5px 0 5px 10px; border-left: 2px solid var(--line); font-size: 14.5px; }
+.navsec:hover { border-left-color: var(--goldfill); }
+.content { min-width: 0; max-width: 880px; }
+
+.parthead { background: var(--head-bg); color: var(--head-ink); border-radius: 10px; padding: 22px 22px 20px; margin-bottom: 22px; scroll-margin-top: calc(var(--hh, 110px) + 64px); border-left: 8px solid var(--goldfill); }
+.parthead h1 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 5vw, 40px); line-height: 1.08; margin: 4px 0 6px; text-wrap: balance; color: var(--head-gold); }
+.parthead .sub { margin: 0; color: var(--head-ink); opacity: .85; }
+.eyebrow { margin: 0; font: 700 12px var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--head-ink); opacity: .7; }
+
+.step { margin-bottom: 44px; scroll-margin-top: calc(var(--hh, 110px) + 64px); }
+.stephead { font-family: var(--display); font-weight: 400; font-size: clamp(22px, 4vw, 30px); margin: 0; padding: 12px 0 4px; border-top: 4px solid var(--goldfill); text-wrap: balance; }
+.stepsub { margin: 0 0 14px; color: var(--muted); font-style: italic; }
+.sec { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px 16px; margin: 0 0 18px; scroll-margin-top: calc(var(--hh, 110px) + 64px); }
+.sectitle { font-family: var(--display); font-weight: 400; font-size: clamp(18px, 3vw, 22px); margin: 14px 0 10px; padding-bottom: 8px; border-bottom: 2px solid var(--goldfill); text-wrap: balance; }
+h3 { font: 700 17px/1.25 var(--body); margin: 20px 0 6px; color: var(--ink); text-wrap: balance; }
+h3:first-child { margin-top: 6px; }
+p { margin: 8px 0; max-width: 70ch; }
+ul { margin: 8px 0; padding-left: 1.3em; max-width: 70ch; }
+li { margin: 3px 0; }
+.num { display: flex; gap: 8px; } .num b { color: var(--gold); flex: none; min-width: 1.6em; }
+.src { font-size: 13px; font-style: italic; color: var(--muted); margin: 6px 0 12px; }
+.say { background: var(--say-bg); border-left: 5px solid var(--say-bar); padding: 10px 14px; border-radius: 0 8px 8px 0; font-style: italic; font-size: 17.5px; }
+.say strong { font-style: normal; }
+.box { border: 1.5px solid var(--line); border-left-width: 6px; border-radius: 8px; padding: 8px 14px 10px; margin: 12px 0; background: var(--note-bg); }
+.box p, .box ul { max-width: none; }
+.boxlab { font: 700 12px var(--body); letter-spacing: .1em; text-transform: uppercase; margin: 2px 0 4px; color: var(--muted); }
+.box.stop, .box.must { background: var(--stop-bg); border-color: var(--stop); } .box.stop .boxlab, .box.must .boxlab { color: var(--stop); }
+.box.warn { background: var(--warn-bg); border-color: var(--warn); } .box.warn .boxlab { color: var(--warn); }
+.box.script { background: var(--say-bg); border-color: var(--say-bar); } .box.script .boxlab { color: var(--gold); }
+.box.note { border-color: var(--gold); }
+.check { list-style: none; padding-left: 0; }
+.check label { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; cursor: pointer; }
+.check input { width: 22px; height: 22px; margin-top: 1px; accent-color: var(--goldfill); flex: none; }
+
+.tablewrap { overflow-x: auto; margin: 10px 0; border: 1px solid var(--line); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: 15.5px; }
+th { background: var(--head-bg); color: var(--head-gold); text-align: left; padding: 9px 12px; font-size: 13px; letter-spacing: .05em; text-transform: uppercase; }
+td { padding: 9px 12px; border-top: 1px solid var(--line); vertical-align: top; }
+tbody tr:nth-child(even) td { background: var(--note-bg); }
+.ver { padding: 7px 0; border-top: 1px dashed var(--line); } .ver:first-child { border-top: 0; padding-top: 0; }
+table.tree td:first-child { font-weight: 700; width: 17%; }
+table.tree td:nth-child(2) { width: 50%; }
+@media (max-width: 800px) {
+  table.tree thead { display: none; } table.tree, table.tree tbody, table.tree tr, table.tree td { display: block; width: 100% !important; }
+  table.tree tr { border-top: 6px solid var(--goldfill); padding: 4px 0 8px; } table.tree tr:first-child { border-top: 0; }
+  table.tree td { border: 0; padding: 6px 12px; background: transparent !important; }
+  table.tree td::before { content: attr(data-label); display: block; font: 700 11px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--gold); margin-bottom: 2px; }
+  table.tree td:first-child { font-size: 18px; }
+}
+@media (max-width: 700px) {
+  .topin { gap: 6px 10px; padding-block: 8px; }
+  .brand small { display: none; }
+  .tabs { flex-wrap: nowrap; overflow-x: auto; flex: 1 1 100%; order: 3; scrollbar-width: none; }
+  .tabs button { white-space: nowrap; padding: 8px 12px; min-height: 40px; }
+  .tabs button span { display: inline; font-size: 13px; }
+  .tabs button span::before { content: " · "; }
+  .search { flex: 1 1 0; order: 2; }
+  .search input { min-height: 40px; padding: 8px 12px; }
+  .brand { order: 1; }
+  .quick { padding: 8px 0; }
+}
+.foot { margin: 40px auto 0; max-width: 1180px; color: var(--muted); font-size: 13px; }
+</style>
+
+</head>
+<body>
+<header class="top">
+  <div class="topin">
+    <div class="brand">POTENT<small>Dispatch Booking Playbook</small></div>
+    <div class="tabs" role="tablist" aria-label="Playbook tabs">
+      <button role="tab" id="t-home" data-tab="home" data-go="choose" aria-selected="true">Start</button>
+      <button role="tab" id="t-j" data-tab="j" data-go="j" aria-selected="false">Tab 1<span>Junk Removal</span></button>
+      <button role="tab" id="t-r" data-tab="r" data-go="r" aria-selected="false">Tab 2<span>Recurring · Events · Everything Else</span></button>
+      <button role="tab" id="t-oi" data-tab="oi" data-go="oi" aria-selected="false">Open Items</button>
+    </div>
+    <div class="search">
+      <input id="q" type="search" placeholder="Search any word: “too high”, liftgate, Net 7…" autocomplete="off" aria-label="Search the playbook">
+      <div class="results" id="results" hidden></div>
+    </div>
+  </div>
+</header>
+
+<main class="pane" id="pane-home" data-tab="home" hidden><div class="layout"><nav class="toc" aria-label="Contents"><div class="navstep"><a class="navhead" href="#choose">Choose Your Tab</a></div></nav><div class="content"><section class="step" id="choose"><h2 class="stephead">Choose Your Tab</h2><p class="stepsub">Two tabs · five steps each</p><div class="box note"><div class="boxlab">Note</div><p>Pick the tab for the call you are on. Each tab has the same five steps.</p></div>
+<div class="tablewrap"><table class=""><thead><tr><th>Tab</th><th>Use it for</th><th>Start</th></tr></thead><tbody><tr><td data-label="Tab"><strong>Tab 1 — Junk Removal</strong></td><td data-label="Use it for">Junk removal, cleanouts, property cleanouts</td><td data-label="Start"><a class="xref" href="#j-s1">Open Tab 1</a></td></tr><tr><td data-label="Tab"><strong>Tab 2 — Recurring Routes, Pop-Up Events &amp; Everything Else</strong></td><td data-label="Use it for">Freight and delivery, recurring routes and contract accounts, one-time and pop-up events, and every other service</td><td data-label="Start"><a class="xref" href="#r-s1">Open Tab 2</a></td></tr></tbody></table></div>
+<h3>The five steps (same in both tabs)</h3>
+<div class="tablewrap"><table class=""><thead><tr><th>Step</th><th>What is in it</th></tr></thead><tbody><tr><td data-label="Step">1 — Start Here</td><td data-label="What is in it">Table of contents, how to use the tab, quick reference, framework index</td></tr><tr><td data-label="Step">2 — Call Script</td><td data-label="What is in it">The 3A framework and every opening and cold-call script, word for word</td></tr><tr><td data-label="Step">3 — Rebuttal Decision Tree</td><td data-label="What is in it">Customer objection → existing response → next step → script</td></tr><tr><td data-label="Step">4 — Industry Scripts</td><td data-label="What is in it">Warehouses, Manufacturing, Tire distributors, Contractors, Property businesses</td></tr><tr><td data-label="Step">5 — Booking, Follow-Up &amp; Tracking</td><td data-label="What is in it">Closing scripts, rate negotiation, booking checklist, recurring routes, follow-up, CRM statuses, daily reporting</td></tr></tbody></table></div>
+<p>Also: <a class="xref" href="#oi">Open Items &amp; Sources</a> lists every place the books disagree or have nothing written.</p></section></div></div></main><main class="pane" id="pane-j" data-tab="j" hidden><div class="quick" aria-label="Live-call shortcuts"><span class="quicklab">Live call</span><a href="#j-quick">Prices &amp; policy</a><a href="#j-t-price">Too high</a><a href="#j-t-junk">Junk pushback</a><a href="#j-t-think">Think about it</a><a href="#j-t-who">Someone else</a><a href="#j-close">Close</a><a href="#j-check">Booking checklist</a></div><div class="layout"><nav class="toc" aria-label="Contents"><div class="navstep"><a class="navhead" href="#j-s1">Step 1 — Start Here</a><a class="navsec" href="#j-how">How To Use This Tab</a><a class="navsec" href="#j-quick">Junk Removal Quick Reference</a><a class="navsec" href="#j-index">Framework Index</a></div><div class="navstep"><a class="navhead" href="#j-s2">Step 2 — Call Script</a><a class="navsec" href="#j-3a">The POTENT 3A Framework (Acknowledge · Associate · Ask)</a><a class="navsec" href="#j-open">The Opening, Discovery &amp; The 1–10 Question</a><a class="navsec" href="#j-inbound">Inbound Junk Removal Call</a><a class="navsec" href="#j-cold">Cold-Call, Email, Voicemail &amp; LinkedIn Scripts</a><a class="navsec" href="#j-qual">Qualification Framework</a></div><div class="navstep"><a class="navhead" href="#j-s3">Step 3 — Rebuttal Decision Tree</a><a class="navsec" href="#j-tree">Rebuttal Decision Tree</a><a class="navsec" href="#j-t-junk">Junk Removal Pushback</a><a class="navsec" href="#j-t-price">Price Objections</a><a class="navsec" href="#j-t-think">“I Need To Think About It” · “Call Me Later”</a><a class="navsec" href="#j-t-carrier">“We Already Have A Carrier” · “Send Me Information”</a><a class="navsec" href="#j-t-who">“I Have Someone Else” · “Why Should I Use You?”</a></div><div class="navstep"><a class="navhead" href="#j-s4">Step 4 — Industry Scripts</a><a class="navsec" href="#j-ind-prop">Property Businesses</a><a class="navsec" href="#j-ind-con">Contractors</a><a class="navsec" href="#j-ind-wh">Warehouses &amp; Distribution Centers</a></div><div class="navstep"><a class="navhead" href="#j-s5">Step 5 — Booking, Follow-Up &amp; Tracking</a><a class="navsec" href="#j-close">Existing Closing Scripts</a><a class="navsec" href="#j-rate">Rate Negotiation</a><a class="navsec" href="#j-check">Booking Checklist</a><a class="navsec" href="#j-recur">Turning A Cleanout Into A Repeat Account</a><a class="navsec" href="#j-follow">Follow-Up Messages &amp; Timeline</a><a class="navsec" href="#j-crm">CRM Statuses &amp; Call Outcomes</a><a class="navsec" href="#j-daily">Daily Reporting</a></div></nav><div class="content"><header class="parthead" id="j"><p class="eyebrow">Tab</p><h1>Junk Removal</h1><p class="sub">Junk removal and cleanouts</p></header>
+<section class="step" id="j-s1"><h2 class="stephead">Step 1 — Start Here</h2><p class="stepsub">Table of contents · how to use this tab · quick reference · framework index</p><section class="sec" id="j-how"><h3 class="sectitle">How To Use This Tab</h3><div class="box note"><div class="boxlab">Note</div><p>This page was written to help you find things. Everything else in this tab is copied from the original POTENT books, word for word. Where a book disagrees with another, both are shown and flagged — see <a class="xref" href="#oi">Open Items</a>.</p></div>
+<p class="num"><b>1.</b> <span>Customer on the phone about a junk removal or cleanout? Go to <a class="xref" href="#j-quick">Junk Quick Reference</a> first (prices, questions, policy).</span></p>
+<p class="num"><b>2.</b> <span>Customer pushes back? Go to <a class="xref" href="#j-tree">Step 3 — Rebuttal Decision Tree</a> and find their words.</span></p>
+<p class="num"><b>3.</b> <span>Not sure what to say next? <a class="xref" href="#j-s2">Step 2 — Call Script</a> has the 3A framework and the opening.</span></p>
+<p class="num"><b>4.</b> <span>Calling a property manager, warehouse or contractor? <a class="xref" href="#j-s4">Step 4 — Industry Scripts</a>.</span></p>
+<p class="num"><b>5.</b> <span>Ready to book? <a class="xref" href="#j-s5">Step 5 — Booking, Follow-Up &amp; Tracking</a>.</span></p>
+<p class="num"><b>6.</b> <span>Freight, recurring routes, events or anything that is not junk removal? Use Tab 2 — <a class="xref" href="#r-s1">Recurring Routes, Pop-Up Events &amp; Everything Else</a>.</span></p>
+<h3>During a live call</h3>
+<ul><li>Keep this tab open on the Quick Reference page.</li><li>Words in blue are links. Tap or click one to jump. Use your back button (web) or Alt+← (PDF) to return.</li><li>Say the quoted words as written. The gold-bar lines are the lines to say.</li></ul>
+<h3>Rules that never change</h3>
+<ul><li>Never make the customer feel sold. (Ch.7, The POTENT Rule)</li><li>Never defend. Never argue. Discover. (Ch.9, The POTENT Rule)</li><li>Stop talking. Let them respond. (Ch.7, The Close)</li></ul></section><section class="sec" id="j-quick"><h3 class="sectitle">Junk Removal Quick Reference</h3><p class="src">Source — Junk Removal — Dispatcher Cheat Sheet, Junk Removal Pricing and Junk Removal One-Pager (all “Effective October 2026”). Original wording.</p>
+<h3>Real pricing — read exactly as shown</h3>
+<div class="tablewrap"><table class=""><thead><tr><th>Load size</th><th>Price</th><th>What it looks like</th></tr></thead><tbody><tr><td data-label="Load size">Single Item</td><td data-label="Price">$179</td><td data-label="What it looks like">One item — couch, mattress, appliance</td></tr><tr><td data-label="Load size">Quarter Load</td><td data-label="Price">$250</td><td data-label="What it looks like">A few items, small cleanout</td></tr><tr><td data-label="Load size">Half Load</td><td data-label="Price">$350–$400</td><td data-label="What it looks like">Bedroom set, multiple appliances</td></tr><tr><td data-label="Load size">Three-Quarter Load</td><td data-label="Price">$500–$600</td><td data-label="What it looks like">Garage or large room cleanout</td></tr><tr><td data-label="Load size">Full Load</td><td data-label="Price">$750–$850</td><td data-label="What it looks like">Full 16ft truck — biggest single trip</td></tr></tbody></table></div>
+<h3>On the call — what to ask</h3>
+<ul><li>“What are you getting rid of?” — get the real item list</li><li>“Is it a single item, or more like a room's worth?” — sizes the load</li><li>“Where is it — curbside, garage, or inside the home?” — access check</li><li>“Any mattresses, tires, appliances, or electronics?” — these carry real disposal surcharges</li><li>“When works for you?” — same-day available, confirm real timing</li></ul>
+<h3>Add-ons</h3>
+<ul><li>Extra worker: $40/hour, flat.</li><li>Heavy/special items (mattress, tires, fridge, TV): real disposal surcharge, confirm exact fee before quoting final price.</li><li>Heavy items (mattress, tires, refrigerators, etc.): real disposal surcharge applies based on actual Georgia landfill rates.</li></ul>
+<h3>Real policy — say this out loud if asked</h3>
+<ul><li>Time starts the moment the truck arrives on site.</li><li>Payment is collected before we leave the job site — cards or cash only. No checks, ever.</li><li>Prices shown are for standard access. Stairs beyond one flight or unusual access may affect the final price — confirm before booking if it sounds unusual.</li><li>Prices shown are starting points for standard access. Stairs beyond one flight, long carries, or unusual access may affect final price — confirmed before work begins.</li></ul>
+<div class="box warn"><div class="boxlab">Check before you quote</div><ul><li>Older books show a different junk price list ($149 · $249 · $399 · $549 · $699). The October 2026 list above is the newest dated one. See <a class="xref" href="#oi">Open Items OI-1</a>.</li><li>The Master Sales Book says POTENT does not enter homes for junk removal; the junk sheets ask “inside the home?”. See <a class="xref" href="#oi">Open Items OI-2</a>.</li></ul></div>
+<h3>Property cleanouts — starting estimates</h3>
+<p class="src">Source — Master Booking Playbook — All Services (undated). “Starting prices. Final price always confirmed by phone after a quick walkthrough.”</p>
+<div class="tablewrap"><table class=""><thead><tr><th>Cleanout</th><th>Starting estimate</th></tr></thead><tbody><tr><td data-label="Cleanout">Studio / 1 Bedroom</td><td data-label="Starting estimate">$499</td></tr><tr><td data-label="Cleanout">2 Bedroom</td><td data-label="Starting estimate">$799</td></tr><tr><td data-label="Cleanout">3 Bedroom</td><td data-label="Starting estimate">$1299</td></tr><tr><td data-label="Cleanout">4 Bedroom</td><td data-label="Starting estimate">$1799</td></tr><tr><td data-label="Cleanout">5+ Bedroom</td><td data-label="Starting estimate">$2299</td></tr><tr><td data-label="Cleanout">Hoarder House</td><td data-label="Starting estimate">$3500</td></tr><tr><td data-label="Cleanout">Commercial / School / Warehouse</td><td data-label="Starting estimate">Custom Quote Only</td></tr></tbody></table></div>
+<div class="tablewrap"><table class=""><thead><tr><th>Subtype</th><th>Minimum</th></tr></thead><tbody><tr><td data-label="Subtype">Estate Cleanout</td><td data-label="Minimum">$499 min</td></tr><tr><td data-label="Subtype">Foreclosure Cleanout</td><td data-label="Minimum">$599 min</td></tr><tr><td data-label="Subtype">Eviction Cleanout</td><td data-label="Minimum">$499 min</td></tr><tr><td data-label="Subtype">Realtor Property Prep</td><td data-label="Minimum">$499 min</td></tr><tr><td data-label="Subtype">Office Cleanout</td><td data-label="Minimum">$1500 min</td></tr><tr><td data-label="Subtype">School Cleanout</td><td data-label="Minimum">$2000 min</td></tr><tr><td data-label="Subtype">Warehouse Cleanout</td><td data-label="Minimum">$3000 min</td></tr></tbody></table></div>
+<p>Emergency / rush add-ons (stack onto anything): 24/7 Emergency Dispatch +$250 · Same-Day Guaranteed Arrival +$150 · Holiday Service +$300</p>
+<h3>Commercial cleanouts — Master Sales Book</h3>
+<h3>Revenue Channel #1 — Commercial Cleanout &amp; Removal Jobs</h3>
+<p>Purpose: create immediate revenue opportunities while building relationships with businesses. These are NOT residential moving services. We focus on:</p>
+<ul><li>Commercial cleanouts</li><li>Business removals</li><li>Warehouse cleanouts</li><li>Store fixture removal</li><li>Large furniture/appliance removal</li><li>Commercial debris removal</li></ul>
+<h3>Job Requirements</h3>
+<p>Minimum target: $500+ jobs. We focus on profitable opportunities. We do NOT chase:</p>
+<ul><li>Small pickup jobs</li><li>Household moving</li><li>Inside house removal</li><li>Hazardous materials</li><li>Paint, chemicals, or unsafe materials</li></ul>
+<h3>Payment Expectations</h3>
+<p>For approved cleanout jobs, preferred: same-day payment (cash, business check, or approved payment methods).</p>
+<p>The goal: complete the job, document completion, collect payment.</p></section><section class="sec" id="j-index"><h3 class="sectitle">Framework Index</h3><div class="tablewrap"><table class=""><thead><tr><th>Framework</th><th>Use it when</th><th>Jump to</th></tr></thead><tbody><tr><td data-label="Framework">POTENT 3A Framework (Acknowledge · Associate · Ask)</td><td data-label="Use it when">Every objection</td><td data-label="Jump to"><a class="xref" href="#j-3a">Go</a></td></tr><tr><td data-label="Framework">The POTENT Opening</td><td data-label="Use it when">First 30 seconds of a call</td><td data-label="Jump to"><a class="xref" href="#j-open">Go</a></td></tr><tr><td data-label="Framework">The 1–10 Question</td><td data-label="Use it when">Learn how satisfied they are today</td><td data-label="Jump to"><a class="xref" href="#j-open">Go</a></td></tr><tr><td data-label="Framework">Digging Deeper / “Why isn’t it lower?”</td><td data-label="Use it when">Find out how much the problem matters</td><td data-label="Jump to"><a class="xref" href="#j-open">Go</a></td></tr><tr><td data-label="Framework">Current State → Desired State</td><td data-label="Use it when">Find the gap POTENT sells into</td><td data-label="Jump to"><a class="xref" href="#j-open">Go</a></td></tr><tr><td data-label="Framework">Cold-call, gatekeeper, email, voicemail, LinkedIn scripts</td><td data-label="Use it when">Outbound contact</td><td data-label="Jump to"><a class="xref" href="#j-cold">Go</a></td></tr><tr><td data-label="Framework">Qualification Framework (Need · Impact · Timing · Authority · Fit)</td><td data-label="Use it when">Before you chase</td><td data-label="Jump to"><a class="xref" href="#j-qual">Go</a></td></tr><tr><td data-label="Framework">Lead Temperature (Hot · Warm · Cold) and Opportunity Score</td><td data-label="Use it when">Decide where your time goes</td><td data-label="Jump to"><a class="xref" href="#j-crm">Go</a></td></tr><tr><td data-label="Framework">Agreement stacking and closing techniques</td><td data-label="Use it when">Asking for the business</td><td data-label="Jump to"><a class="xref" href="#j-close">Go</a></td></tr><tr><td data-label="Framework">Follow-Up Timeline and follow-up messages</td><td data-label="Use it when">After the call</td><td data-label="Jump to"><a class="xref" href="#j-follow">Go</a></td></tr><tr><td data-label="Framework">CRM Standard, statuses and call outcomes</td><td data-label="Use it when">Logging the call</td><td data-label="Jump to"><a class="xref" href="#j-crm">Go</a></td></tr><tr><td data-label="Framework">Daily Sales Standard and Scorecard</td><td data-label="Use it when">End of day</td><td data-label="Jump to"><a class="xref" href="#j-daily">Go</a></td></tr></tbody></table></div></section></section>
+<section class="step" id="j-s2"><h2 class="stephead">Step 2 — Call Script</h2><p class="stepsub">The 3A framework and every opening and cold-call script, word for word</p><section class="sec" id="j-3a"><h3 class="sectitle">The POTENT 3A Framework (Acknowledge · Associate · Ask)</h3><p class="src">Source — Master Sales Book, Chapter 7 — “The POTENT 3A Framework”, and Chapter 9 — “The 3 A Framework”. Original wording, unchanged.</p>
+<p>When someone gives you an objection:</p>
+<p class="num"><b>1.</b> <span>Acknowledge — “I understand. You're concerned about the price.”</span></p>
+<p class="num"><b>2.</b> <span>Associate — “Absolutely. Usually when pricing becomes the concern, it's because we're comparing the transportation cost against the normal rate.”</span></p>
+<p class="num"><b>3.</b> <span>Ask — “What were you expecting it to cost?”</span></p>
+<p>Then listen.</p>
+<h3>Chapter 9 version</h3>
+<h3>The POTENT Rule</h3>
+<p>Never defend. Never argue. Discover.</p>
+<p>When someone pushes back, do not immediately explain. Do not become emotional. Do not try to prove them wrong. Become curious.</p>
+<h3>The 3 A Framework</h3>
+<p class="num"><b>1.</b> <span>Acknowledge</span></p>
+<p>Show the customer you heard them: “That makes sense.” “I understand.” “I appreciate you sharing that.”</p>
+<p class="num"><b>2.</b> <span>Associate</span></p>
+<p>Connect their concern to a bigger conversation: “I hear that from many companies we speak with. Most already have transportation options in place. The reason they look for another partner is usually when their normal option cannot cover an urgent situation.”</p>
+<p class="num"><b>3.</b> <span>Ask</span></p>
+<p>Return control through a question: “What specifically makes you feel that way?” “What would need to happen for this to make sense?” “What is the biggest concern preventing you from moving forward?”</p>
+<p class="src">Source — Master Role Playbooks, Part 1 (Chapter 6 — “The 3 A’s Framework”) — same framework, same three steps.</p>
+<p>See it applied: <a class="xref" href="#j-tree">Step 3 — Rebuttal Decision Tree</a></p></section><section class="sec" id="j-open"><h3 class="sectitle">The Opening, Discovery &amp; The 1–10 Question</h3><p class="src">Source — Master Sales Book, Chapter 7 — “The POTENT Calling &amp; Conversation System”. Original wording, unchanged.</p>
+<h3>The POTENT Opening</h3>
+<p>Don't sound like a telemarketer. Don't rush. Don't read the script like you're trying to finish it.</p>
+<p class="say">“Hey, this is [NAME] with POTENT Operations. How are you doing today?”</p>
+<p>Let them answer. Then:</p>
+<p class="say">“I'll keep this quick—I know you've got a business to run. Did I catch you with about 30 seconds?”</p>
+<p>That's Southern hospitality. You're respecting their time. If yes:</p>
+<p class="say">“I appreciate it. The reason I'm calling is pretty simple. We help businesses when they have freight that needs to move quickly, when their regular transportation can't cover something, or when they need another reliable option. Out of curiosity, how are you currently handling those situations?”</p>
+<p>Then STOP. Listen.</p>
+<p>Why We Ask “Out Of Curiosity”</p>
+<p>Because we're genuinely trying to understand.</p>
+<ul><li>“Out of curiosity, how often does that happen?”</li><li>“Out of curiosity, what normally happens when your regular carrier can't cover it?”</li><li>“Out of curiosity, what's the biggest headache with that process?”</li></ul>
+<p>Questions make people think. And your Playbook principle remains:</p>
+<p>Questions are more valuable than answers.</p>
+<h3>The 1–10 Question</h3>
+<p>Once you've learned about their current system:</p>
+<p class="say">“Just so I understand where you're at, on a scale of 1–10, how satisfied are you with the way you're handling urgent transportation right now?”</p>
+<p>If they say 10: “That's great. What makes it a 10?” Learn.</p>
+<p>If they say 7: “Got you. Why isn't it a 10?” That's where the conversation gets interesting.</p>
+<p>Never tell them why they're wrong. Let them tell you.</p>
+<h3>Digging Deeper</h3>
+<p>When they identify a problem:</p>
+<ul><li>“How long has that been an issue?”</li><li>“What have you tried so far?”</li><li>“Why hasn't that completely solved it?”</li><li>“What happens when that occurs?”</li><li>“How does that affect your operation?”</li><li>“How important is it for you to fix that?”</li></ul>
+<p>Then: “On a scale of 1–10, how important is it?” If they say 6: “Why isn't it lower?”</p>
+<p>Don't ask: “Why isn't it higher?”</p>
+<p>Ask: “Why isn't it lower?”</p>
+<p>They will sell themselves on the importance of solving their own problem.</p>
+<h3>Current State → Desired State</h3>
+<p>Ask: “Where are you now?” Understand it. Then: “Where would you like to be instead?” Then: “What's keeping you from getting there?”</p>
+<p>Now you have the gap. That's what POTENT sells into.</p>
+<p>Not a truck. Not a mile. Not a transportation service. A solution to a problem they already told you they have.</p>
+<h3>The Customer Is Not An Interruption</h3>
+<p>If the phone rings while you're doing something else — that's the business. Don't make the customer feel like they're bothering you. Answer with energy.</p>
+<p class="say">“POTENT Operations, this is [NAME]. How can I help you?”</p>
+<p>Then listen. Don't immediately interrupt with “What's the pickup?” First understand what they need.</p></section><section class="sec" id="j-inbound"><h3 class="sectitle">Inbound Junk Removal Call</h3><p class="src">Source — Master Sales Book Ch.7; Logistics &amp; Sales Workflow v2 — “How to handle a customer call — start to finish”; Junk Removal Dispatcher Cheat Sheet.</p>
+<h3>The Customer Is Not An Interruption</h3>
+<p>If the phone rings while you're doing something else — that's the business. Don't make the customer feel like they're bothering you. Answer with energy.</p>
+<p class="say">“POTENT Operations, this is [NAME]. How can I help you?”</p>
+<p>Then listen. Don't immediately interrupt with “What's the pickup?” First understand what they need.</p>
+<h3>Customer call — start to finish (Workflow v2)</h3>
+<p class="num"><b>1.</b> <span>PICK UP — Answer within 3 rings. "Thank you for calling POTENT Operations, this is [Name]. How can I help you today?"</span></p>
+<p class="num"><b>2.</b> <span>LISTEN FIRST — Let them explain completely. Do not interrupt. Take mental notes on: what they need, timeline, location, size.</span></p>
+<p class="num"><b>3.</b> <span>OPEN THE APP — Pull up POTENT OS while they talk. Quote tab ready before they finish.</span></p>
+<p class="num"><b>4.</b> <span>ASK THE KEY QUESTIONS — "What are you moving?" / "From where to where?" / "When do you need this done?" / "How soon can you be ready?"</span></p>
+<p class="num"><b>5.</b> <span>SET TIER FIRST — Standard (new customer) · Family/Loyalty -15% (repeat/referral) · Lowest Floor -20% (last resort to close only)</span></p>
+<p class="num"><b>6.</b> <span>ENTER ADDRESSES — Street + City + State both locations. Let geocoding calculate miles. Manual override only if needed.</span></p>
+<p class="num"><b>7.</b> <span>SELECT SERVICE — Standard Delivery · Freight · Junk Removal · Cleanout · Emergency · Specialty</span></p>
+<p class="num"><b>8.</b> <span>SELECT SPEED — Standard x1.0 / Urgent x1.3 / After-Hours x1.6 / Overnight x1.8 / Emergency x2.0</span></p>
+<p class="num"><b>9.</b> <span>READ THE PRICE — "Based on what you need, your price today is $[X]." Say the number. Be confident. Do not apologize for it.</span></p>
+<p class="num"><b>10.</b> <span>HANDLE OBJECTION — See objection table below. Never drop price without asking what they expected first.</span></p>
+<p class="num"><b>11.</b> <span>CONFIRM PAYMENT — Cash (10% discount auto) or Card (Stripe charge at booking). Confirm before booking.</span></p>
+<p class="num"><b>12.</b> <span>BOOK IT — Click Book It. System creates job, sends confirmation email, generates Job ID (PL-XXXX).</span></p>
+<p class="num"><b>13.</b> <span>ASSIGN DRIVER — Jobs tab → find job → assign driver. Do this before hanging up if possible.</span></p>
+<p class="num"><b>14.</b> <span>CLOSE THE CALL — "You are confirmed. Your driver will be in touch. Your Job ID is [PL-XXXX]. Is there anything else I can do for you?"</span></p>
+<h3>Junk removal — what to ask</h3>
+<p>See the questions on <a class="xref" href="#j-quick">Junk Removal Quick Reference</a>.</p></section><section class="sec" id="j-cold"><h3 class="sectitle">Cold-Call, Email, Voicemail &amp; LinkedIn Scripts</h3><p class="src">Source — Master Sales Book, Chapter 7 (First Contact &amp; Cold Outreach) and Chapter 16 (The Sales Conversation System). Every script is word for word.</p>
+<h3>The Goal Of The First Contact</h3>
+<p>The biggest mistake in cold outreach is trying to sell immediately. A cold call is not where you close a deal. A cold call is where you earn the next conversation.</p>
+<p>The objective: start a relationship. Find the right person. Discover a problem.</p>
+<h3>The POTENT First Contact Mindset</h3>
+<p>You are not interrupting. You are not begging for business. You are introducing a potential solution.</p>
+<p>Businesses have problems every day. Your job is to find out if one of those problems exists.</p>
+<h3>The First 10 Seconds</h3>
+<p>People decide quickly if they want to continue listening.</p>
+<p>Do not start with: “Hi, I'm calling from POTENT OPERATIONS and we offer...”</p>
+<p>Everyone sounds the same. Instead: be direct. Be professional. Create curiosity.</p>
+<h3>Cold Call Framework</h3>
+<h3>Step 1 — Permission</h3>
+<p class="say">“Hi, this is [Name] with POTENT OPERATIONS. Did I catch you with a quick minute?”</p>
+<p>Why this works: it shows respect. It lowers resistance.</p>
+<h3>Step 2 — Reason For Calling</h3>
+<p class="say">“I'll be brief. We work with companies that need reliable transportation support when normal options cannot cover urgent situations.”</p>
+<h3>Step 3 — Ask A Question</h3>
+<p class="say">“I'm curious, how does your company currently handle emergency or time-sensitive transportation needs?”</p>
+<p>Then listen.</p>
+<h3>The Complete Freight Introduction Script</h3>
+<p>Prospect: “Hello.”</p>
+<p class="say">“Hi, this is [Name] with POTENT OPERATIONS. Did I catch you with a quick minute?”</p>
+<p>(Wait.)</p>
+<p class="say">“Great. The reason I'm reaching out is we work with businesses that need reliable transportation support for urgent or time-sensitive shipments. I was curious, how does your team currently handle situations when a shipment needs to move quickly and your normal carrier isn't available?”</p>
+<p>STOP TALKING. Let them answer.</p>
+<p>If They Say:</p>
+<p class="say">“We already have carriers.”</p>
+<p class="say"><strong>Response:</strong> “That makes sense. Most companies we speak with already have transportation providers. I'm not looking to replace anyone. I'm curious, what happens when those carriers are at capacity or cannot cover an urgent request?”</p>
+<p class="say">“We don't need anyone right now.”</p>
+<p class="say"><strong>Response:</strong> “I understand. Most companies don't need emergency support every day. The reason I reached out is because these situations usually happen when nobody expects them. Do you currently have a backup option in place if something urgent comes up?”</p>
+<p class="say">“Send me information.”</p>
+<p class="say"><strong>Response:</strong> “Absolutely, I can send that over. So I make sure I send something relevant, can I ask what transportation challenges your team deals with most often?”</p>
+<h3>Gatekeeper Strategy</h3>
+<p>Gatekeepers are not obstacles. They are people. Treat them professionally. Their job is protecting someone's time. Your job is earning trust.</p>
+<p>Do NOT say: “I need to speak to whoever is in charge.”</p>
+<p>That creates resistance.</p>
+<p>Say: “I was hoping you could point me in the right direction. Who handles transportation decisions for your company?”</p>
+<p>If they ask, “What is this regarding?” say:</p>
+<p class="say">“We help companies with backup transportation and urgent delivery situations. I just want to make sure I connect with the person responsible for that area.”</p>
+<h3>Email Outreach</h3>
+<h3>Subject Lines</h3>
+<p>Keep them simple.</p>
+<ul><li>Backup transportation support</li><li>Question about your shipping process</li><li>Emergency freight coverage</li><li>Transportation support for [Company Name]</li></ul>
+<h3>First Email</h3>
+<div class="box script"><div class="boxlab">Say it like this</div><p>Hello [Name],</p>
+<p>I'm reaching out because POTENT OPERATIONS helps businesses with time-sensitive transportation needs, emergency freight situations, and backup transportation support.</p>
+<p>I was curious how your team currently handles situations when your normal transportation options are unavailable.</p>
+<p>Would it make sense to have a quick conversation and see if we could be a resource when those situations happen?</p>
+<p>Thank you, [Name] — POTENT OPERATIONS</p></div>
+<h3>Follow-Up Email</h3>
+<div class="box script"><div class="boxlab">Say it like this</div><p>Hello [Name],</p>
+<p>I wanted to follow up on my previous message. The reason I reached out is many companies already have transportation partners, but unexpected situations happen: missed pickups, urgent shipments, overflow needs, time-sensitive deliveries.</p>
+<p>We help provide another option when timing matters.</p>
+<p>Would it make sense to connect for a few minutes?</p>
+<p>Thank you, [Name]</p></div>
+<h3>Voicemail Script</h3>
+<div class="box script"><div class="boxlab">Say it like this</div><p>“Hi [Name], this is [Name] with POTENT OPERATIONS. The reason for my call is we help companies with urgent transportation needs and backup freight solutions.</p>
+<p>I had a quick question about how your team handles time-sensitive shipments. I'll send over my information as well.</p>
+<p>Again, this is [Name] with POTENT OPERATIONS. I look forward to connecting.”</p></div>
+<h3>LinkedIn Message</h3>
+<div class="box script"><div class="boxlab">Say it like this</div><p>Hi [Name], I noticed you work with [Company].</p>
+<p>I work with POTENT OPERATIONS helping businesses with expedited transportation and backup solutions when timing matters.</p>
+<p>I'd like to connect and learn how your team currently handles urgent transportation needs.</p></div>
+<h3>The Follow-Up Rule</h3>
+<p>Most salespeople quit too early. Professional follow-up is not bothering someone. It is staying available.</p>
+<p class="say">“Hi [Name], just checking back in. I know timing may not be right today, but I wanted to stay connected as a transportation resource if something urgent comes up.”</p>
+<h3>The POTENT Standard</h3>
+<p>Every first interaction should leave the customer thinking, “That was different.” Not because we had the best pitch. Because we showed respect, curiosity, professionalism, and understanding.</p>
+<h3>Chapter Summary</h3>
+<p>The first contact is not about selling. It is about opening a door.</p>
+<p>Ask questions. Create curiosity. Find the problem. Earn the next conversation.</p>
+<p>That is the POTENT way.</p>
+<h3>Chapter 16 — Cold Call Introduction &amp; Discovery Questions</h3>
+<h3>The First Contact</h3>
+<h3>Cold Call Introduction</h3>
+<p class="say">“Hi, this is [NAME] with POTENT OPERATIONS. Did I catch you with a quick minute?”</p>
+<p>(wait)</p>
+<p class="say">“We work with businesses that need reliable transportation solutions when normal options are unavailable. I was curious — how are you currently handling urgent or last-minute transportation needs?”</p>
+<h3>If They Say</h3>
+<p class="say">“We already have carriers.”</p>
+<p class="say"><strong>Response:</strong> “That makes sense. Most companies we speak with already have transportation partners. I'm actually curious — when those carriers are unavailable or something urgent comes up, what is your current backup plan?”</p>
+<p class="say">“We don't need anything right now.”</p>
+<p class="say"><strong>Response:</strong> “I understand. Most companies don't need emergency transportation every day. The reason I'm reaching out is because problems usually happen unexpectedly. Would it make sense to have a reliable backup option available if something comes up?”</p>
+<p class="say">“Send me information.”</p>
+<p class="say"><strong>Response:</strong> “Absolutely. I can send something over. Before I do, can I ask you one quick question so I send something relevant? What type of transportation challenges does your company usually run into?”</p>
+<h3>Discovery Questions</h3>
+<h3>Company Questions</h3>
+<ul><li>“What does your company specialize in?”</li><li>“How does transportation fit into your operation?”</li><li>“How often are shipments moving?”</li></ul>
+<h3>Current Process Questions</h3>
+<ul><li>“Who currently handles your transportation?”</li><li>“Are you using your own fleet, brokers, or carriers?”</li><li>“How has that process been working?”</li></ul>
+<h3>Problem Questions</h3>
+<ul><li>“What happens when a carrier misses a pickup?”</li><li>“Have you ever had a shipment become urgent unexpectedly?”</li><li>“How does that affect your operation?”</li></ul>
+<h3>Impact Questions</h3>
+<ul><li>“What does a delay cost your company?”</li><li>“Does a missed shipment affect production or customers?”</li><li>“How important is reliability in your transportation process?”</li></ul>
+<h3>Future Questions</h3>
+<ul><li>“If transportation was running perfectly, what would that look like?”</li><li>“What would make a transportation partner valuable to you?”</li></ul>
+<h3>Email Template</h3>
+<div class="box note"><div class="boxlab">BACKUP TRANSPORTATION SUPPORT FOR YOUR COMPANY</div><p>Hello [NAME],</p>
+<p>I am reaching out from POTENT OPERATIONS. We help businesses with time-sensitive transportation needs, emergency freight, and overflow situations when normal transportation options cannot respond.</p>
+<p>I was curious how your company currently handles urgent transportation requests.</p>
+<p>Would it make sense to have an additional transportation resource available when needed?</p>
+<p>Thank you, [NAME] — POTENT OPERATIONS</p></div>
+<h3>LinkedIn Message</h3>
+<div class="box script"><div class="boxlab">Say it like this</div><p>Hi [NAME], I came across your company and noticed you operate in the [industry] space.</p>
+<p>I work with POTENT OPERATIONS helping businesses solve urgent transportation needs and backup capacity challenges.</p>
+<p>I would like to connect and learn how your company currently handles transportation needs.</p></div>
+<h3>The Closing Frame</h3>
+<p>Do not ask: “Are you interested?”</p>
+<p>Ask: “Based on what we discussed, does it make sense for POTENT to be a transportation resource for your team?”</p></section><section class="sec" id="j-qual"><h3 class="sectitle">Qualification Framework</h3><p class="src">Source — Master Sales Book, Chapter 8 — Qualification. Original wording.</p>
+<h3>Qualify Before You Chase</h3>
+<p>Not every lead deserves equal time. A salesperson needs to qualify opportunities.</p>
+<h3>The POTENT Qualification Framework</h3>
+<h3>1. Need</h3>
+<p>Do they have a problem we solve?</p>
+<p class="say">“How often do urgent transportation situations happen?”</p>
+<p class="say">“What challenges do you experience with your current setup?”</p>
+<h3>2. Impact</h3>
+<p>Does the problem matter?</p>
+<p class="say">“What happens when that occurs?”</p>
+<p class="say">“Does that create delays or additional costs?”</p>
+<h3>3. Timing</h3>
+<p>When could this become important?</p>
+<p class="say">“Is this something you are currently dealing with?”</p>
+<p class="say">“Are there upcoming projects or changes where additional support would help?”</p>
+<h3>4. Authority</h3>
+<p>Can this person make decisions?</p>
+<p class="say">“Who else is involved when choosing transportation partners?”</p>
+<p class="say">“What does your approval process usually look like?”</p>
+<h3>5. Fit</h3>
+<p>Are we a good match?</p>
+<p class="say">“Are you looking for a reliable backup option, or are you mainly focused on finding the lowest possible price?”</p></section></section>
+<section class="step" id="j-s3"><h2 class="stephead">Step 3 — Rebuttal Decision Tree</h2><p class="stepsub">Customer objection → existing response → next step → script</p><section class="sec" id="j-tree"><h3 class="sectitle">Rebuttal Decision Tree</h3><div class="box note"><div class="boxlab">Note</div><p>Find the customer's words in the left column. Say the response in the second column. Then do what the third column says. The last column jumps to the matching script. Where more than one book has an answer, every version is printed and labeled with its book.</p></div>
+<p>Jump to: <a class="xref" href="#j-t-price">Price</a> · <a class="xref" href="#j-t-think">“I need to think about it” / “Call me later”</a> · <a class="xref" href="#j-t-carrier">“We already have a carrier” / “Send me information”</a> · <a class="xref" href="#j-t-who">“I have someone else” / “Why you?”</a> · <a class="xref" href="#j-t-junk">Junk removal</a></p></section><section class="sec" id="j-t-junk"><h3 class="sectitle">Junk Removal Pushback</h3><div class="tablewrap treewrap"><table class="tree"><thead><tr><th>Customer objection</th><th>Existing rebuttal response</th><th>Next step (as written in the source)</th><th>Go to</th></tr></thead><tbody><tr><td data-label="Customer objection">“That’s too much for junk removal.”</td><td data-label="Existing rebuttal response"><div class="ver"><strong>Live Rebuttal Card JUNK1:</strong> I hear you. Our $149 single-item and $699 full-load are the best price in the city, guaranteed. / What are you comparing it to? Most companies won't even give you a price until they see it. / We show up same-day, haul from inside your home, and include disposal fees. That's the full price. ⚠ older price series — see Open Items</div></td><td data-label="Next step (as written in the source)"><div class="ver">—  (no further line written in the source)</div></td><td data-label="Go to"><a class="xref" href="#j-quick">Junk quick reference</a> · <a class="xref" href="#oi">Open Items OI-1, OI-2</a></td></tr><tr><td data-label="Customer objection">“I’ll just do it myself.”</td><td data-label="Existing rebuttal response"><div class="ver"><strong>Live Rebuttal Card JUNK2:</strong> Totally fair. Just so you know, a dump run costs $50-80 in fees plus your truck, gas, and 3 hours. / We do it for $149 and you're done in 20 minutes. Worth it? ⚠ older price series — see Open Items</div></td><td data-label="Next step (as written in the source)"><div class="ver">—</div></td><td data-label="Go to"><a class="xref" href="#j-quick">Junk quick reference</a> · <a class="xref" href="#oi">Open Items OI-1</a></td></tr></tbody></table></div></section><section class="sec" id="j-t-price"><h3 class="sectitle">Price Objections</h3><div class="tablewrap treewrap"><table class="tree"><thead><tr><th>Customer objection</th><th>Existing rebuttal response</th><th>Next step (as written in the source)</th><th>Go to</th></tr></thead><tbody><tr><td data-label="Customer objection">“Your price is too high.” / “Too high.”</td><td data-label="Existing rebuttal response"><div class="ver"><strong>Sales Book Ch.9:</strong> Never immediately discount. Price is a symptom. Find the real concern. POTENT response: “I understand. When you say the price is high, is the concern the budget itself, or are you comparing it to another option?” Then: “Besides price, what is most important when choosing a transportation partner?”</div><div class="ver"><strong>Sales Book Ch.7:</strong> Don't get defensive. “I understand. Is it higher than what you're currently paying, or higher than what you expected this particular shipment to cost?”</div><div class="ver"><strong>Sales Book Ch.16:</strong> “When you say high, compared to what?” (wait) “Is the concern the price itself, or making sure the value matches the investment?”</div><div class="ver"><strong>Master Booking Book:</strong> Compared to what? What number were you expecting?</div><div class="ver"><strong>Live Rebuttal Card 1:</strong> Compared to what? / What gap do we need to close to get this covered? / If I close that gap, are you awarding it now?</div><div class="ver"><strong>Workflow v2 — “Too expensive”:</strong> “What were you expecting to pay?” Let them answer. Then: “How important is the timeline for you today?”</div></td><td data-label="Next step (as written in the source)"><div class="ver"><strong>Ch.7:</strong> Then: “How important is the delivery timeline?” Then: “What happens to your operation if it doesn't arrive when you need it?”</div><div class="ver"><strong>Ch.7:</strong> You're not defending yourself. You're understanding the value.</div><div class="ver"><strong>Workflow v2:</strong> Never drop price without asking what they expected first.</div></td><td data-label="Go to"><a class="xref" href="#j-rate">Step 5 — Rate negotiation</a></td></tr><tr><td data-label="Customer objection">“Can you come down?”</td><td data-label="Existing rebuttal response"><div class="ver"><strong>Live Rebuttal Card 2:</strong> Possibly. If I move, are you awarding it? / How much do I need to move to book it right now? / If I move to $___, can you send the rate confirmation now?</div></td><td data-label="Next step (as written in the source)"><div class="ver">—</div></td><td data-label="Go to"><a class="xref" href="#j-rate">Rate negotiation</a></td></tr><tr><td data-label="Customer objection">“What’s your lowest?”</td><td data-label="Existing rebuttal response"><div class="ver"><strong>Live Rebuttal Card 3:</strong> What number gets this covered today? / If I meet it, are you awarding it? / If I meet that number, are you booking it now?</div><div class="ver"><strong>Live Rebuttal Card R2:</strong> I don't have a lowest until I know the load. What's the weight, pallets, pickup and delivery times, and any liftgate or tarp? / Push: "My lowest is the number that gets this covered. What are you working with?" / They give a number: "Is that the posted rate or the number you need to hit?"</div></td><td data-label="Next step (as written in the source)"><div class="ver">—</div></td><td data-label="Go to"><a class="xref" href="#j-rate">Rate negotiation</a></td></tr><tr><td data-label="Customer objection">“We only pay $___.”</td><td data-label="Existing rebuttal response"><div class="ver"><strong>Live Rebuttal Card 4:</strong> Is that your maximum, or your target? / What's the gap between what you can pay and what you need? / If we close that gap, can we commit the truck?</div></td><td data-label="Next step (as written in the source)"><div class="ver">—</div></td><td data-label="Go to"><a class="xref" href="#j-rate">Rate negotiation</a></td></tr><tr><td data-label="Customer objection">“I can get it cheaper.”</td><td data-label="Existing rebuttal response"><div class="ver"><strong>Workflow v2:</strong> “Absolutely. What are they offering?” Then: “Do they have GPS tracking and same-day availability?” Sell the difference.</div></td><td data-label="Next step (as written in the source)"><div class="ver">—</div></td><td data-label="Go to"><a class="xref" href="#j-rate">Rate negotiation</a></td></tr></tbody></table></div></section><section class="sec" id="j-t-think"><h3 class="sectitle">“I Need To Think About It” · “Call Me Later”</h3><div class="tablewrap treewrap"><table class="tree"><thead><tr><th>Customer objection</th><th>Existing rebuttal response</th><th>Next step (as written in the source)</th><th>Go to</th></tr></thead><tbody><tr><td data-label="Customer objection">“I need to think about it.”</td><td data-label="Existing rebuttal response"><div class="ver"><strong>Sales Book Ch.9:</strong> “Of course. Usually when someone says they need to think about it, there is something specific they are considering. Can I ask what part you want to think through?” Follow-up: “Is there anything that would prevent this from moving forward?”</div><div class="ver"><strong>Sales Book Ch.7:</strong> Acknowledge: “Absolutely. Take your time.” Associate: “Usually when someone tells me they need to think about it, there's one part they're not completely comfortable with.” Ask: “What's the main concern?” Then: “What would make this a no?” Then: “What would it take for you to feel comfortable saying yes?”</div><div class="ver"><strong>Sales Book Ch.10:</strong> “Of course. Before you do, is there anything specific you're unsure about?”</div><div class="ver"><strong>Sales Book Ch.16:</strong> “Of course. Usually when someone says that, there is something specific they are thinking about. What would you say is the biggest thing you need to consider?”</div><div class="ver"><strong>Live Rebuttal Card 6:</strong> What specifically do you need to think about? / Is it price, timing, equipment, or something else? / What would you need to know to make the decision?</div></td><td data-label="Next step (as written in the source)"><div class="ver"><strong>Ch.7:</strong> No arguing. No pressure. Questions.</div></td><td data-label="Go to"><a class="xref" href="#j-3a">3A</a> · <a class="xref" href="#j-close">Closing</a></td></tr><tr><td data-label="Customer objection">“I need to talk to my partner / boss.”</td><td data-label="Existing rebuttal response"><div class="ver"><strong>Sales Book Ch.10:</strong> “That makes sense. What do you think they will want to know before making a decision?”</div></td><td data-label="Next step (as written in the source)"><div class="ver">—</div></td><td data-label="Go to"><a class="xref" href="#j-close">Closing</a></td></tr><tr><td data-label="Customer objection">“Send me a proposal.” / “Send me a quote by email.”</td><td data-label="Existing rebuttal response"><div class="ver"><strong>Sales Book Ch.10:</strong> “Absolutely. Before I put that together, what are the most important things you would like the proposal to solve?”</div><div class="ver"><strong>Workflow v2:</strong> “I can do that. Before I send it over — if the price works, are you ready to move forward today?”</div></td><td data-label="Next step (as written in the source)"><div class="ver">—</div></td><td data-label="Go to"><a class="xref" href="#j-follow">Follow-up</a></td></tr><tr><td data-label="Customer objection">“Now is not a good time.” / “Call me later.”</td><td data-label="Existing rebuttal response"><div class="ver"><strong>Sales Book Ch.9:</strong> “I completely understand. When would be a better time to revisit this?” Then: “Before we reconnect, is there anything about your current transportation process you would like to improve?”</div><div class="ver"><strong>Master Booking Book:</strong> What are you waiting on? If that resolves, are you ready to book today?</div><div class="ver"><strong>Live Rebuttal Card 8:</strong> What are you waiting on? / What time should I call you? / If that resolves and we're at $___, are you ready to book?</div><div class="ver"><strong>Workflow v2 — “Call me back later”:</strong> “I can do that. Just so you know, availability is limited today. What time works best to reach you?”</div></td><td data-label="Next step (as written in the source)"><div class="ver"><strong>Ch.11:</strong> Instead: “When would be a good time for us to reconnect?”</div></td><td data-label="Go to"><a class="xref" href="#j-follow">Follow-up</a></td></tr><tr><td data-label="Customer objection">“I need to check with my customer.”</td><td data-label="Existing rebuttal response"><div class="ver"><strong>Live Rebuttal Card 7:</strong> What specifically are you checking? / What number do you need me at to take to them? / If they approve, are you awarding it to me?</div></td><td data-label="Next step (as written in the source)"><div class="ver">—</div></td><td data-label="Go to"><a class="xref" href="#j-close">Closing</a></td></tr></tbody></table></div></section><section class="sec" id="j-t-carrier"><h3 class="sectitle">“We Already Have A Carrier” · “Send Me Information”</h3><div class="tablewrap treewrap"><table class="tree"><thead><tr><th>Customer objection</th><th>Existing rebuttal response</th><th>Next step (as written in the source)</th><th>Go to</th></tr></thead><tbody><tr><td data-label="Customer objection">“We already have a carrier.”</td><td data-label="Existing rebuttal response"><div class="ver"><strong>Sales Book Ch.9:</strong> “That makes sense. Most companies we work with already have transportation providers. I'm not looking to replace what is working. I'm curious, what happens when your current carriers are unavailable or something urgent comes up?”</div><div class="ver"><strong>Sales Book Ch.7:</strong> “Absolutely. If they're taking care of you, I wouldn't expect you to replace them just because I called.” Then: “Out of curiosity, what happens when they're booked or something needs to move immediately?”</div><div class="ver"><strong>Freight intro script:</strong> “That makes sense. Most companies we speak with already have transportation providers. I'm not looking to replace anyone. I'm curious, what happens when those carriers are at capacity or cannot cover an urgent request?”</div><div class="ver"><strong>Sales Book Ch.16:</strong> “That makes sense. Most companies we speak with already have transportation partners. I'm actually curious — when those carriers are unavailable or something urgent comes up, what is your current backup plan?”</div><div class="ver"><strong>Booking Agent Playbook:</strong> "That makes sense — I'm not trying to replace that. I'm just a direct option when you want to skip the marketplace fee, or when Curri doesn't have a truck available for something you need moved."</div></td><td data-label="Next step (as written in the source)"><div class="ver">If they have a backup: “How confident are you in that backup on a scale of 1–10?” Then: “Why isn't it a 10?”</div><div class="ver">The goal: become the backup solution. Not the replacement.</div></td><td data-label="Go to"><a class="xref" href="#j-3a">3A</a> · <a class="xref" href="#j-cold">Cold-call scripts</a></td></tr><tr><td data-label="Customer objection">“Send me information.”</td><td data-label="Existing rebuttal response"><div class="ver"><strong>Sales Book Ch.9:</strong> “Absolutely, I can send that over. So I make sure I send something useful, can I ask what type of transportation situations you normally need support with?”</div><div class="ver"><strong>Sales Book Ch.7:</strong> “Absolutely. I'd be happy to. I don't want to send you a bunch of generic stuff you don't need. What would actually be useful for you?”</div><div class="ver"><strong>Freight intro script:</strong> “Absolutely, I can send that over. So I make sure I send something relevant, can I ask what transportation challenges your team deals with most often?”</div><div class="ver"><strong>Sales Book Ch.16:</strong> “Absolutely. I can send something over. Before I do, can I ask you one quick question so I send something relevant? What type of transportation challenges does your company usually run into?”</div></td><td data-label="Next step (as written in the source)"><div class="ver"><strong>Ch.7:</strong> Then: “And when would be a good time for me to follow back up?” Respect their time. But don't disappear.</div><div class="ver"><strong>Ch.9:</strong> You are respecting their request while continuing discovery.</div></td><td data-label="Go to"><a class="xref" href="#j-follow">Step 5 — Follow-up</a></td></tr><tr><td data-label="Customer objection">“We don’t need anything right now.”</td><td data-label="Existing rebuttal response"><div class="ver"><strong>Sales Book Ch.9:</strong> “I understand. Most companies don't need emergency transportation every day. The reason I reached out is because these situations usually happen unexpectedly. Do you currently have a backup option in place if something urgent happens?”</div><div class="ver"><strong>Freight intro script:</strong> “I understand. Most companies don't need emergency support every day. The reason I reached out is because these situations usually happen when nobody expects them. Do you currently have a backup option in place if something urgent comes up?”</div><div class="ver"><strong>Sales Book Ch.16:</strong> “I understand. Most companies don't need emergency transportation every day. The reason I'm reaching out is because problems usually happen unexpectedly. Would it make sense to have a reliable backup option available if something comes up?”</div><div class="ver"><strong>Master Calling Playbook:</strong> "No problem -- can I get your info in our system so if a truck falls through or you get overflow, you've got my number? What's the best email to send our info to?"</div></td><td data-label="Next step (as written in the source)"><div class="ver"><strong>Master Calling Playbook:</strong> The goal of THIS call You are not trying to book a load on the first call to most of these 97 companies. You are trying to get remembered as "the box truck guy" for the day their regular carrier falls through. That is a real, valuable outcome -- log it as Follow-Up in the app, not a dead end.</div></td><td data-label="Go to"><a class="xref" href="#j-crm">Step 5 — Log it</a></td></tr><tr><td data-label="Customer objection">“We only use contracted carriers.”</td><td data-label="Existing rebuttal response"><div class="ver"><strong>Sales Book Ch.9:</strong> “That makes sense. Many companies have established carrier relationships. We are not trying to disrupt that. We provide another option when capacity is tight, deadlines change, or something unexpected happens.”</div></td><td data-label="Next step (as written in the source)"><div class="ver">—  (no further line written in the source; use the 3A “Ask”)</div></td><td data-label="Go to"><a class="xref" href="#j-3a">3A</a></td></tr><tr><td data-label="Customer objection">“We’ll call you if we need you.”</td><td data-label="Existing rebuttal response"><div class="ver"><strong>Sales Book Ch.16:</strong> “I understand. The only reason I ask is because urgent situations usually happen when companies don't have time to search. Would it make sense to have us as a backup contact before that happens?”</div><div class="ver"><strong>Booking Agent Playbook:</strong> "I understand. The only reason I ask is because urgent situations usually happen when companies don't have time to search. Would it make sense to have us as a backup contact before that happens?"</div></td><td data-label="Next step (as written in the source)"><div class="ver">—  (no further line written in the source)</div></td><td data-label="Go to"><a class="xref" href="#j-follow">Step 5 — Follow-up</a></td></tr></tbody></table></div></section><section class="sec" id="j-t-who"><h3 class="sectitle">“I Have Someone Else” · “Why Should I Use You?”</h3><div class="tablewrap treewrap"><table class="tree"><thead><tr><th>Customer objection</th><th>Existing rebuttal response</th><th>Next step (as written in the source)</th><th>Go to</th></tr></thead><tbody><tr><td data-label="Customer objection">“I have someone else.” / “I have another truck.” / “We use someone else.”</td><td data-label="Existing rebuttal response"><div class="ver"><strong>Master Booking Book:</strong> Are they insured and can they confirm a time? If they fall through, what’s your number for me?</div><div class="ver"><strong>Live Rebuttal Card 5:</strong> Are they meeting the same requirements? / If they fall through, what's your number for me? / If they don't work out, will you call me?</div><div class="ver"><strong>Workflow v2:</strong> “That makes sense. What happens when they are unavailable or something urgent comes up?” Position as their backup.</div></td><td data-label="Next step (as written in the source)"><div class="ver">—</div></td><td data-label="Go to"><a class="xref" href="#j-3a">3A</a></td></tr><tr><td data-label="Customer objection">“Why should I use you?”</td><td data-label="Existing rebuttal response"><div class="ver"><strong>Master Booking Book:</strong> You’re talking to the owner. I only commit to freight my truck can actually do.</div><div class="ver"><strong>Live Rebuttal Card 10:</strong> You're talking to the owner. I only commit to freight my truck can actually do. I don't promise equipment I don't have. If that's what you want, let's make the numbers work.</div></td><td data-label="Next step (as written in the source)"><div class="ver">—</div></td><td data-label="Go to"><a class="xref" href="#j-close">Closing</a></td></tr><tr><td data-label="Customer objection">A flat “no.”</td><td data-label="Existing rebuttal response"><div class="ver"><strong>Sales Book Ch.9 — Turning A No Into Learning:</strong> “I appreciate your honesty. Before I let you go, can I ask what would need to be different for a company like ours to become useful to you?”</div></td><td data-label="Next step (as written in the source)"><div class="ver">Their answer teaches you.</div></td><td data-label="Go to"><a class="xref" href="#j-crm">Log the outcome</a></td></tr></tbody></table></div></section></section>
+<section class="step" id="j-s4"><h2 class="stephead">Step 4 — Industry Scripts</h2><p class="stepsub">Warehouses · Manufacturing · Tire distributors · Contractors · Property businesses</p><div class="box note"><div class="boxlab">Note</div><p>For junk removal and cleanout work, these are the customer types the books describe. Manufacturing and tire distributors are freight customers — see Tab 2: <a class="xref" href="#r-s4">Industry Scripts</a>.</p></div><section class="sec" id="j-ind-prop"><h3 class="sectitle">Property Businesses</h3><p class="src">Source — Master Sales Book Ch.3 (Role Playbooks, Category 5), Ch.8, Ch.12, Ch.15, Ch.18. Original wording.</p>
+<h3>Category 5 — Property Management &amp; Commercial Cleanouts</h3>
+<p>They need dependable vendors who show up.</p>
+<p>Potential problems:</p>
+<ul><li>Tenant turnover</li><li>Property preparation</li><li>Large removals</li><li>Commercial debris</li></ul>
+<p>Decision makers:</p>
+<ul><li>Property Manager</li><li>Regional Manager</li><li>Maintenance Director</li><li>Real Estate Investor</li></ul>
+<h3>Decision makers — Commercial Removal (Chapter 8)</h3>
+<ul><li>Property Manager</li><li>Facilities Manager</li><li>Regional Manager</li><li>Maintenance Director</li><li>Owner</li><li>General Manager</li></ul>
+<h3>Ideal customer profile (Chapter 15)</h3>
+<h3>5. Commercial Cleanout Customers</h3>
+<p>Examples:</p>
+<ul><li>Property managers</li><li>Commercial buildings</li><li>Retail locations</li><li>Warehouses</li><li>Businesses relocating</li></ul>
+<p>Services: commercial cleanouts, store fixture removal, furniture/appliance removal, debris removal. Curbside only, non-hazardous materials only, $500+ jobs preferred.</p>
+<h3>Mindset (Chapter 12)</h3>
+<p>POTENT is not built around random jobs. Every opportunity has a purpose.</p>
+<p>A $500 cleanout today can become a property management relationship, a recurring removal account, or a commercial customer.</p>
+<p>A single freight delivery can become a weekly lane, a long-term partnership, or a major account.</p>
+<p>Think beyond one transaction. Think relationships.</p>
+<div class="box note"><div class="boxlab">Note</div><p>Script to use: no property-manager-only call script is written in the books. Use <a class="xref" href="#j-open">the Opening</a>, <a class="xref" href="#j-cold">the cold-call scripts</a> and <a class="xref" href="#j-tree">the Rebuttal Decision Tree</a>. Sales Position line from Chapter 2: “Never say: “We haul junk.” Say: “We provide commercial curbside removal solutions for larger cleanout projects.””</p></div>
+<p>Pricing: see <a class="xref" href="#j-quick">Junk Removal Quick Reference</a> (property cleanout estimates).</p></section><section class="sec" id="j-ind-con"><h3 class="sectitle">Contractors</h3><p class="src">Source — Master Role Playbooks, Chapter 4 (Commercial Removal Database; Finding The Decision Maker); Master Sales Book Ch.18. Original wording.</p>
+<div class="box stop"><div class="boxlab">No contractor script exists</div><p>The books contain no script, profile or objection answers written for contractors. The only place contractors appear is the list below. See <a class="xref" href="#oi">Open Items OI-11</a>.</p></div>
+<h3>Commercial Removal Database (Chapter 4)</h3>
+<h3>Commercial Removal Database</h3>
+<ul><li>Property managers</li><li>Apartment communities</li><li>Contractors</li><li>Real estate companies</li><li>Retail businesses</li><li>Hotels</li><li>Restaurants</li><li>Storage facilities</li></ul>
+<h3>Decision makers — Commercial Services (Chapter 4)</h3>
+<ul><li>Property Manager</li><li>Facilities Manager</li><li>Operations Manager</li><li>Owner</li><li>General Manager</li></ul>
+<h3>Commercial cleanout information to collect (Chapter 18)</h3>
+<h3>Commercial Cleanout Information</h3>
+<p>For cleanout requests, provide:</p>
+<ul><li>Business/property address</li><li>Photos when available</li><li>Description of materials</li><li>Estimated volume</li><li>Access information</li><li>Preferred completion date</li></ul>
+<div class="box note"><div class="boxlab">Note</div><p>Nearest written material: <a class="xref" href="#j-ind-prop">Property Businesses</a>, <a class="xref" href="#j-cold">the cold-call scripts</a> and the <a class="xref" href="#j-tree">Rebuttal Decision Tree</a>.</p></div></section><section class="sec" id="j-ind-wh"><h3 class="sectitle">Warehouses &amp; Distribution Centers</h3><p class="src">Source — Master Sales Book Ch.3 (as printed in the Role Playbooks, Category 3), Ch.8, Ch.15, Ch.4. Original wording.</p>
+<h3>Category 3 — Warehouses &amp; Distribution Centers</h3>
+<p>Warehouses constantly deal with overflow, missed pickups, customer deadlines, and inventory movement.</p>
+<p>Decision makers:</p>
+<ul><li>Warehouse Manager</li><li>Operations Director</li><li>Distribution Manager</li></ul>
+<h3>Decision makers (Chapter 8)</h3>
+<ul><li>Distribution Manager</li><li>Warehouse Manager</li><li>Operations Director</li><li>Logistics Coordinator</li></ul>
+<h3>Ideal customer profile (Chapter 15)</h3>
+<h3>2. Distribution &amp; Warehouse Companies</h3>
+<p>Examples:</p>
+<ul><li>Distribution centers</li><li>Fulfillment centers</li><li>Wholesale suppliers</li><li>Inventory companies</li></ul>
+<p>Overflow freight, last-minute transportation needs, customer deadlines, extra capacity.</p>
+<h3>Where to find them (Chapter 4)</h3>
+<ul><li>“Warehouse Manager Atlanta” (LinkedIn search)</li><li>Google Maps: warehouses, distribution centers</li><li>Freight database target: Warehouses 250</li></ul>
+<div class="box note"><div class="boxlab">Note</div><p>Script to use: no warehouse-only script is written in the books. Use <a class="xref" href="#j-open">the Opening</a>, <a class="xref" href="#j-cold">the cold-call scripts</a> and <a class="xref" href="#j-tree">the Rebuttal Decision Tree</a>. See <a class="xref" href="#oi">Open Items OI-11</a>.</p></div></section></section>
+<section class="step" id="j-s5"><h2 class="stephead">Step 5 — Booking, Follow-Up &amp; Tracking</h2><p class="stepsub">Closing · rate negotiation · booking checklist · recurring routes · follow-up · CRM · daily reporting</p><section class="sec" id="j-close"><h3 class="sectitle">Existing Closing Scripts</h3><p class="src">Source — Master Sales Book Ch.7 (The Close), Ch.10 (Closing &amp; Getting Commitment), Ch.16 (The Closing Frame); Booking Agent Playbook §6; Live Rebuttal Cards C1–C3; Master Calling &amp; Booking Playbook. Original wording.</p>
+<h3>The Close</h3>
+<p>After you've listened and confirmed the problem:</p>
+<p class="say">“Based on what you've told me, it sounds like [PROBLEM] is really the biggest issue. Did I get that right?”</p>
+<p>If yes: “And what you're really looking for is [DESIRED RESULT], correct?” If yes: “Then I think we can help you with that. Let's get you set up.”</p>
+<p>Stop talking. Let them respond.</p>
+<h3>The POTENT Closing Belief</h3>
+<p>The customer should never feel sold. They should feel understood.</p>
+<p>The goal is not: “How do I get them to say yes?”</p>
+<p>The goal is: “Have we discovered enough value that moving forward makes sense?”</p>
+<h3>Before You Close</h3>
+<p>Never rush to a quote. Before presenting a solution, confirm:</p>
+<p>Problem — “From what you've shared, the biggest challenge is ___, correct?”</p>
+<p>Impact — “And when that happens, it creates ___ for your team, correct?”</p>
+<p>Goal — “So ideally, you would want a transportation partner that can ___, correct?”</p>
+<p>This is called agreement stacking. The customer confirms their own situation.</p>
+<h3>The POTENT Solution Presentation</h3>
+<p>Do not dump information. Do not explain every feature. Connect the solution to their problem.</p>
+<p class="say">“Based on what you told me, the biggest issue is having coverage when your normal carriers cannot respond quickly. What we do is provide an additional transportation option for those situations so your team is not scrambling when something urgent happens.”</p>
+<h3>Never Sell The Truck</h3>
+<p>The truck is not the value. The value is:</p>
+<ul><li>Preventing delays</li><li>Protecting deadlines</li><li>Reducing stress</li><li>Giving options</li><li>Saving time</li></ul>
+<h3>Closing Techniques</h3>
+<h3>The Assumptive Close</h3>
+<p>Use when the customer is clearly interested.</p>
+<p class="say">“Based on what we discussed, the next step would be getting your company set up as a customer so we can be available when you need support. Does that make sense?”</p>
+<h3>The Choice Close</h3>
+<p>Give two options.</p>
+<p class="say">“Would it make more sense to start with emergency support only, or would you like to discuss becoming a regular backup transportation partner?”</p>
+<h3>The Next Step Close</h3>
+<p>Not every close is a contract. Sometimes the close is sending paperwork, scheduling a meeting, getting approved as a vendor, or completing a trial shipment.</p>
+<p class="say">“What would be the best next step from your side to get us approved as a transportation option?”</p>
+<h3>The Direct Close</h3>
+<p>Sometimes you simply ask.</p>
+<p class="say">“Based on everything we've discussed, is there any reason we shouldn't move forward?”</p>
+<p>Then be quiet.</p>
+<h3>Silence Is A Skill</h3>
+<p>Many salespeople lose deals because they talk after asking for the business. They ask, “Does that work for you?” then immediately continue explaining.</p>
+<p>Don't. Let the customer answer. Silence creates space for decisions.</p>
+<h3>Handling Last-Minute Hesitation</h3>
+<p>Customer: “I just need to think about it.”</p>
+<p class="say"><strong>Response:</strong> “Of course. Before you do, is there anything specific you're unsure about?”</p>
+<p>Customer: “I need to talk to my partner/boss.”</p>
+<p class="say"><strong>Response:</strong> “That makes sense. What do you think they will want to know before making a decision?”</p>
+<p>Customer: “Send me a proposal.”</p>
+<p class="say"><strong>Response:</strong> “Absolutely. Before I put that together, what are the most important things you would like the proposal to solve?”</p>
+<h3>Creating Urgency The Right Way</h3>
+<p>Never create fake urgency.</p>
+<p>Do not say: “Sign today or the offer disappears.”</p>
+<p>That is not our style. Real urgency comes from consequences.</p>
+<p class="say">“What happens if this situation occurs again and you don't have another option?”</p>
+<p class="say">“How important is it to have a backup plan before the next emergency?”</p>
+<h3>The POTENT Customer Onboarding Close</h3>
+<p>When a customer agrees, do not celebrate too early. The relationship is just beginning. Confirm:</p>
+<ul><li>Company information</li><li>Billing contact</li><li>Service expectations</li><li>Communication preferences</li><li>Emergency contact</li><li>Payment terms</li></ul>
+<p>Professional onboarding creates repeat business.</p>
+<h3>The Customer Commitment Question</h3>
+<p>A powerful final question:</p>
+<p class="say">“What would make you confident choosing POTENT as your transportation partner?”</p>
+<p>The answer tells you exactly what matters most.</p>
+<h3>Closing Checklist</h3>
+<ul><li>Did we identify a real problem?</li><li>Did we understand the impact?</li><li>Did we explain the right solution?</li><li>Did we ask for the next step?</li><li>Did we confirm expectations?</li></ul>
+<h3>The Closing Frame</h3>
+<p>Do not ask: “Are you interested?”</p>
+<p>Ask: “Based on what we discussed, does it make sense for POTENT to be a transportation resource for your team?”</p>
+<h3>Booking Agent Playbook — The Close</h3>
+<p class="say">"Based on everything we've covered — is there any reason we shouldn't get your next load scheduled with me?" Then be quiet. Let them answer first.</p>
+<h3>Live Rebuttal Cards — Close</h3>
+<p class="say">“If I can meet that, are you ready to book it right now?”</p>
+<p class="say">“What number gets this covered today?”</p>
+<p class="say">“Perfect. Send the rate confirmation.”</p></section><section class="sec" id="j-rate"><h3 class="sectitle">Rate Negotiation</h3><p class="src">Source — Master Sales Book Ch.7 and Ch.9; Live Rebuttal Cards; Logistics &amp; Sales Workflow v2; Booking Agent Playbook §2 and §5B; Master Booking Book. Original wording.</p>
+<h3>Price is a symptom (Chapter 9)</h3>
+<p>Objection 4 — “Your Price Is Too High”</p>
+<p>Never immediately discount. Price is a symptom. Find the real concern.</p>
+<p class="say"><strong>POTENT response:</strong> “I understand. When you say the price is high, is the concern the budget itself, or are you comparing it to another option?”</p>
+<p>Then: “Besides price, what is most important when choosing a transportation partner?”</p>
+<h3>Price pushback — round 2 (Booking Agent Playbook §5B)</h3>
+<p class="say">"Is it higher than what you're currently paying, or higher than what you expected this particular shipment to cost?" Then: "How important is the delivery timeline?" Then: "What happens to your operation if it doesn't arrive when you need it?" You're not defending yourself — you're establishing the value.</p>
+<h3>Hesitation — round 2</h3>
+<p class="say">"What would make this a no?" Then: "What would it take for you to feel comfortable saying yes?" No arguing. No pressure. Just questions — let them talk themselves into the real answer.</p>
+<h3>Pricing tiers (Workflow v2)</h3>
+<div class="tablewrap"><table class=""><thead><tr><th>Tier</th><th>When to use</th><th>Adjustment</th></tr></thead><tbody><tr><td data-label="Tier">Standard</td><td data-label="When to use">New customers, one-time jobs, unknown</td><td data-label="Adjustment">Full rate</td></tr><tr><td data-label="Tier">Family / Loyalty</td><td data-label="When to use">Repeat customers, referrals</td><td data-label="Adjustment">-15% auto-applied</td></tr><tr><td data-label="Tier">Lowest Floor</td><td data-label="When to use">Last resort only to close</td><td data-label="Adjustment">-20% auto-applied</td></tr></tbody></table></div>
+<p>DO — Set pricing tier BEFORE entering anything · Read the live quote exactly as shown · Escalate to Owner: pricing disputes, accidents, legal</p>
+<p>DONT — Never start at Lowest Floor to be nice · Never apologize for the price</p>
+<h3>Live price pushback cards</h3>
+<p><strong>“Too high.”</strong> Compared to what? / What gap do we need to close to get this covered? / If I close that gap, are you awarding it now?</p>
+<p><strong>“Can you come down?”</strong> Possibly. If I move, are you awarding it? / How much do I need to move to book it right now? / If I move to $___, can you send the rate confirmation now?</p>
+<p><strong>“What's your lowest?”</strong> What number gets this covered today? / If I meet it, are you awarding it? / If I meet that number, are you booking it now?</p>
+<p><strong>“We only pay $___.”</strong> Is that your maximum, or your target? / What's the gap between what you can pay and what you need? / If we close that gap, can we commit the truck?</p>
+<h3>Junk removal prices</h3>
+<p>See <a class="xref" href="#j-quick">Junk Removal Quick Reference</a>. Extra worker: $40/hour flat. Heavy/special items: confirm exact fee before quoting final price.</p></section><section class="sec" id="j-check"><h3 class="sectitle">Booking Checklist</h3><p class="src">Source — Master Sales Book Ch.18, Ch.21, Ch.25; Junk Removal Dispatcher Cheat Sheet; Master Calling &amp; Booking Playbook Part 4. Original wording, arranged as a checklist.</p>
+<h3>Before you say yes — junk removal</h3>
+<ul class="check"><li><label><input type="checkbox"> <span>What are you getting rid of? (real item list)</span></label></li><li><label><input type="checkbox"> <span>Single item, or a room's worth? (sizes the load)</span></label></li><li><label><input type="checkbox"> <span>Curbside, garage, or inside the home? (access check)</span></label></li><li><label><input type="checkbox"> <span>Any mattresses, tires, appliances, or electronics? (disposal surcharges)</span></label></li><li><label><input type="checkbox"> <span>When works for you? (same-day available, confirm real timing)</span></label></li><li><label><input type="checkbox"> <span>Stairs beyond one flight or unusual access? (confirm before booking)</span></label></li><li><label><input type="checkbox"> <span>Payment: collected before we leave the job site — cards or cash only. No checks.</span></label></li></ul>
+<h3>Commercial cleanout information (Chapter 18)</h3>
+<ul class="check"><li><label><input type="checkbox"> <span>Business/property address</span></label></li><li><label><input type="checkbox"> <span>Photos when available</span></label></li><li><label><input type="checkbox"> <span>Description of materials</span></label></li><li><label><input type="checkbox"> <span>Estimated volume</span></label></li><li><label><input type="checkbox"> <span>Access information</span></label></li><li><label><input type="checkbox"> <span>Preferred completion date</span></label></li></ul>
+<h3>The POTENT Job Lifecycle (Chapter 21)</h3>
+<h3>Step 1 — Customer Qualification</h3>
+<p>Before accepting a job, confirm customer information, pickup location, delivery location, job requirements, timeline, pricing agreement, payment expectations.</p>
+<h3>Step 2 — Job Approval</h3>
+<p>Before work begins, confirm scope of work, price, date and time, contact information, and any special requirements. No confusion. No assumptions.</p>
+<h3>Step 3 — Job Assignment</h3>
+<p>The POTENT system tracks customer, job details, assigned driver/team member, schedule, and status.</p>
+<h3>Step 4 — Customer Communication</h3>
+<p>Professional communication creates trust. Customer receives updates before, during, and after service.</p>
+<h3>Step 5 — Completion Documentation</h3>
+<p>Every completed job should have completion confirmation, customer approval, photos when applicable, invoice information, and payment status.</p>
+<p>Documentation protects everyone.</p>
+<h3>Every booked job needs (Chapter 25)</h3>
+<ul class="check"><li><label><input type="checkbox"> <span>Customer</span></label></li><li><label><input type="checkbox"> <span>Pickup</span></label></li><li><label><input type="checkbox"> <span>Destination</span></label></li><li><label><input type="checkbox"> <span>Date/time</span></label></li><li><label><input type="checkbox"> <span>Service</span></label></li><li><label><input type="checkbox"> <span>Freight/item details</span></label></li><li><label><input type="checkbox"> <span>Weight when applicable</span></label></li><li><label><input type="checkbox"> <span>Stops</span></label></li><li><label><input type="checkbox"> <span>Helper requirement</span></label></li><li><label><input type="checkbox"> <span>Special instructions</span></label></li><li><label><input type="checkbox"> <span>Price</span></label></li><li><label><input type="checkbox"> <span>Payment terms</span></label></li><li><label><input type="checkbox"> <span>Status</span></label></li></ul>
+<h3>Customer call — start to finish (Workflow v2)</h3>
+<p class="num"><b>1.</b> <span>PICK UP — Answer within 3 rings. "Thank you for calling POTENT Operations, this is [Name]. How can I help you today?"</span></p>
+<p class="num"><b>2.</b> <span>LISTEN FIRST — Let them explain completely. Do not interrupt. Take mental notes on: what they need, timeline, location, size.</span></p>
+<p class="num"><b>3.</b> <span>OPEN THE APP — Pull up POTENT OS while they talk. Quote tab ready before they finish.</span></p>
+<p class="num"><b>4.</b> <span>ASK THE KEY QUESTIONS — "What are you moving?" / "From where to where?" / "When do you need this done?" / "How soon can you be ready?"</span></p>
+<p class="num"><b>5.</b> <span>SET TIER FIRST — Standard (new customer) · Family/Loyalty -15% (repeat/referral) · Lowest Floor -20% (last resort to close only)</span></p>
+<p class="num"><b>6.</b> <span>ENTER ADDRESSES — Street + City + State both locations. Let geocoding calculate miles. Manual override only if needed.</span></p>
+<p class="num"><b>7.</b> <span>SELECT SERVICE — Standard Delivery · Freight · Junk Removal · Cleanout · Emergency · Specialty</span></p>
+<p class="num"><b>8.</b> <span>SELECT SPEED — Standard x1.0 / Urgent x1.3 / After-Hours x1.6 / Overnight x1.8 / Emergency x2.0</span></p>
+<p class="num"><b>9.</b> <span>READ THE PRICE — "Based on what you need, your price today is $[X]." Say the number. Be confident. Do not apologize for it.</span></p>
+<p class="num"><b>10.</b> <span>HANDLE OBJECTION — See objection table below. Never drop price without asking what they expected first.</span></p>
+<p class="num"><b>11.</b> <span>CONFIRM PAYMENT — Cash (10% discount auto) or Card (Stripe charge at booking). Confirm before booking.</span></p>
+<p class="num"><b>12.</b> <span>BOOK IT — Click Book It. System creates job, sends confirmation email, generates Job ID (PL-XXXX).</span></p>
+<p class="num"><b>13.</b> <span>ASSIGN DRIVER — Jobs tab → find job → assign driver. Do this before hanging up if possible.</span></p>
+<p class="num"><b>14.</b> <span>CLOSE THE CALL — "You are confirmed. Your driver will be in touch. Your Job ID is [PL-XXXX]. Is there anything else I can do for you?"</span></p></section><section class="sec" id="j-recur"><h3 class="sectitle">Turning A Cleanout Into A Repeat Account</h3><p class="src">Source — Master Sales Book Ch.12 and Ch.21. Original wording.</p>
+<p>POTENT is not built around random jobs. Every opportunity has a purpose.</p>
+<p>A $500 cleanout today can become a property management relationship, a recurring removal account, or a commercial customer.</p>
+<p>A single freight delivery can become a weekly lane, a long-term partnership, or a major account.</p>
+<p>Think beyond one transaction. Think relationships.</p>
+<div class="box note"><div class="boxlab">Note</div><p>Recurring routes and contract accounts are in Tab 2: <a class="xref" href="#r-recur">Recurring-Route Closing Process</a>.</p></div></section><section class="sec" id="j-follow"><h3 class="sectitle">Follow-Up Messages &amp; Timeline</h3><p class="src">Source — Master Sales Book Ch.7 (Follow-Up Rule), Ch.11 (Follow-Up Systems &amp; Account Growth), Ch.16 (Follow-Up System). Original wording — nothing added or removed.</p>
+<h3>The POTENT Follow-Up Belief</h3>
+<p>Follow-up is not chasing. Follow-up is service before the sale.</p>
+<p class="say">“We are available when you need us.”</p>
+<h3>Why Follow-Up Matters</h3>
+<p>Businesses are busy. A customer may like your service, see the value, and need help eventually. But timing may not be right.</p>
+<p>The goal is to stay connected without becoming annoying.</p>
+<h3>The POTENT Follow-Up Rule</h3>
+<p>Every conversation needs a next step.</p>
+<p>Never end with: “Let me know.”</p>
+<p>That puts the responsibility completely on the customer.</p>
+<p>Instead: “When would be a good time for us to reconnect?”</p>
+<h3>The Follow-Up Timeline</h3>
+<h3>Day 1 — Initial Contact</h3>
+<p>Create awareness.</p>
+<p>Call, email, LinkedIn connection.</p>
+<h3>Day 3 — Value Follow-Up</h3>
+<p>Provide value, not just “Did you decide?”</p>
+<p class="say">“Just wanted to share a quick thought. Many companies have backup transportation plans for emergencies because the biggest issues usually happen unexpectedly. Wanted to stay connected as a resource.”</p>
+<h3>Day 7 — Check-In</h3>
+<p class="say">“Hi [Name], I wanted to follow up and see if transportation support is something your team ever needs help with during urgent situations.”</p>
+<h3>Day 14 — Stay Connected</h3>
+<p class="say">“Hi [Name], just checking in. Even if there is nothing needed today, I wanted to make sure you had a transportation contact available if something unexpected comes up.”</p>
+<h3>Monthly Nurture</h3>
+<p>For warm prospects.</p>
+<p>Send industry tips, company updates, availability, helpful information.</p>
+<h3>Chapter 7 — The Follow-Up Rule</h3>
+<h3>The Follow-Up Rule</h3>
+<p>Most salespeople quit too early. Professional follow-up is not bothering someone. It is staying available.</p>
+<p class="say">“Hi [Name], just checking back in. I know timing may not be right today, but I wanted to stay connected as a transportation resource if something urgent comes up.”</p>
+<h3>Chapter 16 — Follow-Up Messages</h3>
+<h3>The POTENT Follow-Up System</h3>
+<p>Most sales are lost because people stop following up.</p>
+<h3>Follow-Up Message #1</h3>
+<p class="say">“Hi [NAME], just following up. I know transportation needs change quickly. I wanted to see if having an emergency transportation option would be valuable for your team.”</p>
+<h3>Follow-Up Message #2</h3>
+<p class="say">“Hi [NAME], I wanted to share a quick thought. Most companies already have normal transportation covered. The challenge is usually when something unexpected happens. That is where POTENT helps.”</p>
+<h3>Follow-Up Message #3</h3>
+<p class="say">“I don't want to keep bothering you. Should I close the loop for now, or would it make sense to stay connected as a backup transportation option?”</p>
+<h3>The 24-Hour Customer Follow-Up (Chapter 11)</h3>
+<h3>The 24-Hour Customer Follow-Up</h3>
+<p>After every completed job, contact the customer and ask:</p>
+<p class="say">“How did everything go?”</p>
+<p class="say">“Was there anything we could improve?”</p>
+<p class="say">“Is there anything coming up where we could help again?”</p>
+<h3>Customer Referrals (Chapter 11)</h3>
+<h3>Customer Referrals</h3>
+<p>Happy customers are powerful. But most companies never ask. After success:</p>
+<p class="say">“We appreciate your business. We are always looking to help more companies that value reliability. Is there anyone you know who could benefit from having a transportation resource like us?”</p>
+<h3>Follow-Up Mistakes To Avoid (Chapter 11)</h3>
+<h3>Follow-Up Mistakes To Avoid</h3>
+<ul><li>Only contacting people when you need something.</li><li>Sending generic messages.</li><li>Talking only about yourself.</li><li>Giving up after one or two attempts.</li></ul>
+<div class="box note"><div class="boxlab">Decision needed</div><p>Some follow-up lines above (Chapter 7 “just checking back in”; Chapter 11 Day 7 and Day 14) use “checking in” wording. They are printed as the original book has them. See <a class="xref" href="#oi">Open Items OI-7</a>.</p></div></section><section class="sec" id="j-crm"><h3 class="sectitle">CRM Statuses &amp; Call Outcomes</h3><p class="src">Source — POTENT OS app (Live Call Screen outcomes and Leads statuses, as built in app.js); Master Sales Book Ch.4, Ch.8, Ch.11, Ch.12, Ch.15, Ch.25. Original wording.</p>
+<h3>Call outcomes in the app (tap one after every call)</h3>
+<div class="tablewrap"><table class=""><thead><tr><th>Call outcome</th><th>Lead status it sets</th><th>Pipeline stage it sets</th></tr></thead><tbody><tr><td data-label="Call outcome">No Answer</td><td data-label="Lead status it sets">Not Contacted</td><td data-label="Pipeline stage it sets">contacted</td></tr><tr><td data-label="Call outcome">Voicemail</td><td data-label="Lead status it sets">Contacted</td><td data-label="Pipeline stage it sets">contacted</td></tr><tr><td data-label="Call outcome">Not Interested</td><td data-label="Lead status it sets">Closed</td><td data-label="Pipeline stage it sets">lost</td></tr><tr><td data-label="Call outcome">Follow Up</td><td data-label="Lead status it sets">Follow-Up</td><td data-label="Pipeline stage it sets">follow_up</td></tr><tr><td data-label="Call outcome">Interested</td><td data-label="Lead status it sets">Interested</td><td data-label="Pipeline stage it sets">qualified</td></tr><tr><td data-label="Call outcome">Booked!</td><td data-label="Lead status it sets">Booked</td><td data-label="Pipeline stage it sets">won</td></tr></tbody></table></div>
+<p>Log a Follow Up as Follow-Up in the app, not a dead end. (Master Calling &amp; Booking Playbook, Part 2)</p>
+<h3>Pipeline wording in the books (they are not identical)</h3>
+<div class="tablewrap"><table class=""><thead><tr><th>Where</th><th>Stages</th></tr></thead><tbody><tr><td data-label="Where">The App (Chapter 25)</td><td data-label="Stages">New → Contacted → Qualified → Quote → Follow-Up → Won → Lost</td></tr><tr><td data-label="Where">App Transparency System (Chapter 12)</td><td data-label="Stages">Lead → Contacted → Conversation → Qualified → Quote → Won Customer.</td></tr><tr><td data-label="Where">Prospecting Machine (Chapter 15)</td><td data-label="Stages">New Lead → Contact Attempted → Conversation Started → Qualified Opportunity → Quote Requested → Customer → Recurring Account</td></tr><tr><td data-label="Where">Customer Lifecycle (Chapter 11)</td><td data-label="Stages">Prospect → Conversation → Opportunity → Customer → Partner</td></tr></tbody></table></div>
+<p>See <a class="xref" href="#oi">Open Items OI-8</a>.</p>
+<p>Never leave a lead sitting without a next action.</p>
+<h3>The POTENT CRM Standard (Chapter 11)</h3>
+<p>Every lead must have:</p>
+<ul><li>Company name</li><li>Contact name</li><li>Phone</li><li>Email</li><li>Industry</li><li>Location</li><li>Decision maker</li><li>Current transportation situation</li><li>Pain points</li><li>Last contact</li><li>Next follow-up</li><li>Status</li><li>Notes</li></ul>
+<h3>The CRM Rule</h3>
+<p>If it is not written down, it does not exist.</p>
+<p>Memory is not a sales system. The CRM is the company's brain.</p>
+<h3>Lead Temperature (Chapter 8)</h3>
+<h3>The POTENT Lead Temperature System</h3>
+<h3>Hot — Ready</h3>
+<p>Signs: has a current problem, needs a solution soon, asked about pricing, wants next steps, introduced decision makers.</p>
+<p>Action: move quickly. Schedule. Quote. Close.</p>
+<h3>Warm — Potential</h3>
+<p>Signs: interested, has occasional problems, not urgent today, wants information.</p>
+<p>Action: nurture. Follow up. Provide value. Stay visible.</p>
+<h3>Cold — Not Ready</h3>
+<p>Signs: no need, no interest, no problem, poor fit.</p>
+<p>Action: do not waste energy. Stay professional. Move on.</p>
+<h3>Opportunity Score (Chapter 8)</h3>
+<h3>The POTENT Opportunity Score</h3>
+<p>Rate every opportunity, 1–5, across:</p>
+<p>Problem — How serious is the issue?</p>
+<p>Urgency — How soon do they need help?</p>
+<p>Fit — Can POTENT solve this?</p>
+<p>Relationship — Do we have access to the right people?</p>
+<p>Higher scores receive more attention.</p></section><section class="sec" id="j-daily"><h3 class="sectitle">Daily Reporting</h3><p class=
