@@ -8209,6 +8209,8 @@ function PublicApp(props) {
                             else if (v === "playbook") window.location.href = "/playbook/";
                             else if (v === "beatman") window.location.href = "/beatman/";
                             else if (v === "beats") window.location.href = "/beats/";
+                            else if (v === "legit") window.location.href = "/legit/";
+                            else if (v === "lifeos") window.location.href = "/life/";
                             e.target.value = ""; // reset back to placeholder after navigating
                         },
                         style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }
@@ -8232,7 +8234,9 @@ function PublicApp(props) {
                             React.createElement("option", { value: "aceheals" }, "\uD83E\uDDF8 AceHeals Kids App"),
                             React.createElement("option", { value: "playbook" }, "\uD83D\uDC57 Potent Playbook \u2014 Fashion"),
                             React.createElement("option", { value: "beats" }, "\uD83C\uDFA7 POTENT Beats \u2014 Lease or Buy"),
-                            React.createElement("option", { value: "beatman" }, "\uD83C\uDFB5 Beat Man \u2014 Producer Login"))),
+                            React.createElement("option", { value: "beatman" }, "\uD83C\uDFB5 Beat Man \u2014 Producer Login"),
+                            React.createElement("option", { value: "legit" }, "\uD83D\uDD25 LEGIT \u2014 Verified Dating"),
+                            React.createElement("option", { value: "lifeos" }, "\uD83E\uDDE0 LIFE OS \u2014 Your AI Operator"))),
                     React.createElement(LangSwitcher, { lang: lang, changeLang: changeLang }),
                     React.createElement(EasyModeToggle, null),
                     React.createElement("a", { href: "tel:" + DISPATCH_PHONE_DISPLAY.replace(/\D/g,""), title: "Dispatch & Sales: " + DISPATCH_EMAIL, style: { textDecoration: "none", background: C.orange, color: "#000", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" } }, "📞 " + DISPATCH_PHONE_DISPLAY),

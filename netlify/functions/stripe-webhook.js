@@ -236,6 +236,13 @@ exports.handler = async function (event) {
       return { statusCode: 200, headers, body: JSON.stringify({ received: true }) };
     }
 
+    // ── LEGIT: identity check result ──
+    if (type === "identity.verification_session.verified") {
+      const lr = await require("./lib/legit").applyIdentity(obj);
+      return { statusCode: lr && lr.ok === false ? 500 : 200, headers, body: JSON.stringify({ received: true, legitIdentity: true }) };
+    }
+    if (type.indexOf("identity.verification_session.") === 0) return { statusCode: 200, headers, body: JSON.stringify({ received: true, ignored: type }) };
+
     // ── Beat Man: a refund takes back the producer's share automatically ──
     if (type === "charge.refunded") {
       const rr = await refundBeat(obj);
@@ -324,6 +331,9 @@ exports.handler = async function (event) {
       // Credit Changed My Life (separate purchase): unlock the plan / add letter credits. Idempotent per Stripe session.
       const res = await fulfillCcml(obj);
       if (res && res.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "CCML fulfillment failed, retry" }) };
+    } else if (product === "LEGIT" && isCheckoutSession) {
+      const lp = await require("./lib/legit").applyPayment(obj);
+      if (lp && lp.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "LEGIT fulfillment failed, retry" }) };
     } else if (product === "BEAT" && isCheckoutSession) {
       // Beat Man: record the sale and credit the producer's wallet right now. Idempotent per Stripe session.
       const res = await fulfillBeat(obj);
