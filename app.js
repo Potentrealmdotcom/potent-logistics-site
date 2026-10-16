@@ -8203,6 +8203,9 @@ function PublicApp(props) {
                             else if (v === "osguide") window.location.href = "/os-guide.html";
                             else if (v === "training") window.location.href = "/training.html";
                             else if (v === "team") window.location.href = "/team.html";
+                            else if (v === "ccml") window.location.href = "/ccml/";
+                            else if (v === "aceheals") window.location.href = "https://aceheals.netlify.app";
+                            else if (v === "playbook") window.location.href = "/playbook/";
                             e.target.value = ""; // reset back to placeholder after navigating
                         },
                         style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }
@@ -8219,7 +8222,10 @@ function PublicApp(props) {
                         React.createElement("option", { value: "guide" }, "\uD83D\uDCDA Guide — Prices & How It Works"),
                         React.createElement("option", { value: "osguide" }, "\uD83D\uDCBB POTENT OS Guide"),
                         React.createElement("option", { value: "training" }, "\uD83C\uDF93 Training"),
-                        React.createElement("option", { value: "team" }, "\uD83D\uDC65 Team Guide")),
+                        React.createElement("option", { value: "team" }, "\uD83D\uDC65 Team Guide"),
+                        React.createElement("option", { value: "ccml" }, "\uD83D\uDCB3 Credit Changed My Life"),
+                        React.createElement("option", { value: "aceheals" }, "\uD83E\uDDF8 AceHeals Kids App"),
+                        React.createElement("option", { value: "playbook" }, "\uD83D\uDC57 Potent Playbook")),
                     React.createElement(LangSwitcher, { lang: lang, changeLang: changeLang }),
                     React.createElement(EasyModeToggle, null),
                     React.createElement("a", { href: "tel:" + DISPATCH_PHONE_DISPLAY.replace(/\D/g,""), title: "Dispatch & Sales: " + DISPATCH_EMAIL, style: { textDecoration: "none", background: C.orange, color: "#000", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" } }, "📞 " + DISPATCH_PHONE_DISPLAY),
