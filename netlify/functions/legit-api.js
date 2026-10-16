@@ -367,6 +367,14 @@ exports.handler = async function (event) {
       }
       return J(200, { ok: true, altered: sc.blocked, shown: sc.text, strike: strike });
     }
+    if (a === "wingman") {
+      const q = clip(b.text, 600); if (!q) return J(400, { ok: false, error: "Tell me what's going on." });
+      if (limited("wm" + me.id, 20, 3600000)) return J(429, { ok: false, error: "Wingman needs a break. Try again later." });
+      let ctx = "";
+      if (b.match_id) { const m = await myMatch(me.id, b.match_id); if (m) { const o = await userById(m.user_a === me.id ? m.user_b : m.user_a); if (o) ctx = "About the other person: " + o.name + ". Bio: " + (o.bio || "") + ". Prompts: " + JSON.stringify((o.prompts || []).map(p => p.question + " " + p.answer)) + ". Tonight: " + (o.tonight_intentions || []).join(", ") + ". "; } }
+      const t = await gem("You are the WINGMAN inside a dating app. The user has no game and needs help. " + ctx + "Situation or what they said: \"" + q + "\". Give 3 different message options they can send, each under 25 words: one confident, one playful, one sincere. Be specific, respectful, never pushy, no pickup-line cliches, no phone numbers or social handles (the app blocks them). Then one line of coaching starting with 'Tip:'. Plain text, numbered 1-3.", false);
+      return J(200, { ok: true, text: t || "1. I read your profile and now I have questions. What's the story behind your favorite photo?\n2. Be honest, are you a morning person or a night-owl pretending to be one?\n3. I'd rather skip small talk. What's something you're really into right now?\nTip: be specific about something in their profile and ask one real question." });
+    }
     if (a === "suggest") { const m = await myMatch(me.id, b.match_id); if (!m) return J(404, { ok: false }); const o = await userById(m.user_a === me.id ? m.user_b : m.user_a); return J(200, { ok: true, suggestions: await suggestOpeners(o) }); }
     if (a === "flag_intention") {
       const m = await myMatch(me.id, b.match_id); if (!m || m.status === "expired") return J(404, { ok: false, error: "Not found" });
