@@ -8085,6 +8085,54 @@ function AdminLogin(props) {
 // ── PUBLIC APP ────────────────────────────────────────────────────
 
 // ── DEMO MODE — account-gated demo, no email verification ──────────
+// ── DEMO STUDIO — try POTENT OS with YOUR logo, name and colors, like previewing a store theme ──
+var DEMO_THEMES = [
+    { n: "Midnight Gold", p: "#F0E000", a: "#C8962A" }, { n: "Ocean", p: "#2DA8FF", a: "#0B5FA5" }, { n: "Forest", p: "#2ECC71", a: "#1B7A44" },
+    { n: "Crimson", p: "#FF4D5E", a: "#B3202F" }, { n: "Violet", p: "#A678FF", a: "#5B35B8" }, { n: "Sunset", p: "#FF8A3D", a: "#C2481B" }
+];
+function DemoStudio(props) {
+    var saved = {}; try { saved = JSON.parse(localStorage.getItem("pl_demo_brand") || "{}"); } catch (e) { }
+    var [b, setB] = React.useState(Object.assign({ name: props.bizName || "Your Company", tagline: "Fast, reliable freight", welcome: "Book a load in under a minute.", primary: "#F0E000", accent: "#C8962A", logo: "" }, saved));
+    var [msg, setMsg] = React.useState("");
+    function upd(k, v) { var n = Object.assign({}, b); n[k] = v; setB(n); try { localStorage.setItem("pl_demo_brand", JSON.stringify(n)); } catch (e) { } }
+    function pick(e) { var f = e.target.files && e.target.files[0]; if (!f) return; if (!/^image\/(png|jpeg|webp)$/.test(f.type)) { setMsg("Use a PNG, JPG or WebP image."); return; } plLogoToDataUrl(f, function (u) { if (!u) setMsg("That image is too big. Try a smaller one."); else { setMsg(""); upd("logo", u); } }); }
+    var ink = plLum(b.primary) > 0.4 ? "#000" : "#fff";
+    var inp = { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, color: C.white, padding: "10px 12px", fontSize: 13, fontFamily: "inherit", marginBottom: 8, boxSizing: "border-box" };
+    var lab = { fontSize: 11, color: C.dim, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 };
+    var jobs = [["Atlanta → Macon", "In transit", "$420"], ["Conyers → Savannah", "Delivered", "$880"], ["Marietta → Athens", "Scheduled", "$310"]];
+    return React.createElement("div", { style: { minHeight: "100vh", background: C.black, color: C.white, padding: "20px 14px 60px", fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
+        React.createElement("div", { style: { maxWidth: 520, margin: "0 auto" } },
+            React.createElement("div", { style: { fontSize: 22, fontWeight: 900, textAlign: "center" } }, "🎨 Brand your POTENT OS"),
+            React.createElement("div", { style: { fontSize: 12, color: C.dim, textAlign: "center", marginBottom: 14, lineHeight: 1.6 } }, "Change anything below and watch your app update live. Nothing here is real."),
+            // live preview
+            React.createElement("div", { style: { border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden", marginBottom: 16, background: "#0b0b0b" } },
+                React.createElement("div", { style: { background: b.primary, color: ink, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10 } },
+                    b.logo ? React.createElement("img", { src: b.logo, alt: "", style: { height: 34, maxWidth: 110, objectFit: "contain", borderRadius: 6 } }) : React.createElement("div", { style: { width: 34, height: 34, borderRadius: 8, background: ink, opacity: .15 } }),
+                    React.createElement("div", { style: { flex: 1 } }, React.createElement("div", { style: { fontWeight: 900, fontSize: 16 } }, b.name), React.createElement("div", { style: { fontSize: 11, opacity: .8 } }, b.tagline)),
+                    React.createElement("div", { style: { fontSize: 11, fontWeight: 800 } }, "Sign in")),
+                React.createElement("div", { style: { padding: 16 } },
+                    React.createElement("div", { style: { fontSize: 20, fontWeight: 900, marginBottom: 4 } }, b.welcome),
+                    React.createElement("div", { style: { display: "inline-block", background: b.primary, color: ink, borderRadius: 8, padding: "9px 16px", fontWeight: 900, fontSize: 13, margin: "8px 0 14px" } }, "Book a load"),
+                    React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 12 } },
+                        [["Active", "3"], ["This month", "$12.4k"], ["On time", "98%"]].map(function (k) { return React.createElement("div", { key: k[0], style: { background: "#141414", border: "1px solid " + b.accent + "66", borderRadius: 10, padding: "8px 10px" } }, React.createElement("div", { style: { fontSize: 10, color: C.dim } }, k[0]), React.createElement("div", { style: { fontSize: 17, fontWeight: 900, color: b.primary } }, k[1])); })),
+                    jobs.map(function (j) { return React.createElement("div", { key: j[0], style: { display: "flex", justifyContent: "space-between", padding: "8px 0", borderTop: "1px solid #222", fontSize: 12 } }, React.createElement("span", null, j[0]), React.createElement("span", { style: { color: b.accent } }, j[1]), React.createElement("b", null, j[2])); }))),
+            // controls
+            React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 14, padding: 14, marginBottom: 14 } },
+                React.createElement("div", { style: lab }, "Theme presets"),
+                React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 } }, DEMO_THEMES.map(function (t) { return React.createElement("button", { key: t.n, onClick: function () { upd("primary", t.p); upd("accent", t.a); }, style: { background: "transparent", border: "1px solid " + t.p, color: t.p, borderRadius: 99, padding: "5px 11px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, t.n); })),
+                React.createElement("div", { style: lab }, "Logo (PNG, JPG)"), React.createElement("input", { type: "file", accept: "image/png,image/jpeg,image/webp", onChange: pick, style: { color: C.white, fontSize: 12, marginBottom: 8 } }),
+                msg && React.createElement("div", { style: { color: C.red, fontSize: 12, marginBottom: 6 } }, msg),
+                React.createElement("div", { style: lab }, "Company name"), React.createElement("input", { value: b.name, onChange: function (e) { upd("name", e.target.value.slice(0, 40)); }, style: inp }),
+                React.createElement("div", { style: lab }, "Tagline"), React.createElement("input", { value: b.tagline, onChange: function (e) { upd("tagline", e.target.value.slice(0, 60)); }, style: inp }),
+                React.createElement("div", { style: lab }, "Welcome message"), React.createElement("input", { value: b.welcome, onChange: function (e) { upd("welcome", e.target.value.slice(0, 80)); }, style: inp }),
+                React.createElement("div", { style: { display: "flex", gap: 12 } },
+                    React.createElement("div", { style: { flex: 1 } }, React.createElement("div", { style: lab }, "Main color"), React.createElement("input", { type: "color", value: b.primary, onChange: function (e) { upd("primary", e.target.value); }, style: { width: "100%", height: 40, border: "none", background: "none" } })),
+                    React.createElement("div", { style: { flex: 1 } }, React.createElement("div", { style: lab }, "Accent color"), React.createElement("input", { type: "color", value: b.accent, onChange: function (e) { upd("accent", e.target.value); }, style: { width: "100%", height: 40, border: "none", background: "none" } })))),
+            React.createElement("a", { href: "?apply", style: { display: "block", textAlign: "center", background: b.primary, color: ink, borderRadius: 10, padding: "13px", fontWeight: 900, fontSize: 14, textDecoration: "none", marginBottom: 10 } }, "Like it? Get POTENT OS with this look →"),
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, textAlign: "center", lineHeight: 1.6 } }, "When you get POTENT OS, the same logo, name and colors go in under My Company and your whole app (portal, quotes, invoices) wears your brand."),
+            React.createElement("div", { style: { textAlign: "center", marginTop: 12 } }, React.createElement("button", { onClick: function () { window.location.href = "/"; }, style: { background: "transparent", border: "1px solid " + C.border, color: C.dim, borderRadius: 8, padding: "8px 14px", fontSize: 12, cursor: "pointer", fontFamily: "inherit" } }, "Back to POTENT"))));
+}
+
 function DemoModeView(props) {
     var [email, setEmail] = React.useState("");
     var [phone, setPhone] = React.useState("");
@@ -8098,15 +8146,7 @@ function DemoModeView(props) {
         } catch (e) {}
         setDone(true);
     }
-    if (done) {
-        return React.createElement("div", { style: { minHeight: "100vh", background: C.black, color: C.white, padding: "40px 24px", textAlign: "center", fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
-            React.createElement("div", { style: { fontSize: 48, marginBottom: 16 } }, "\uD83C\uDF89"),
-            React.createElement("div", { style: { fontSize: 24, fontWeight: 900, marginBottom: 8 } }, "Welcome to the Demo, " + (bizName || "there") + "!"),
-            React.createElement("div", { style: { fontSize: 14, color: C.dim, marginBottom: 24, lineHeight: 1.7 } }, "Your demo account is ready. Explore POTENT OS with sample data \u2014 nothing here is real, and you can reset anytime."),
-            React.createElement("button", { onClick: function () { window.location.href = "/"; }, style: { background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: "13px 32px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit", marginBottom: 12 } }, "Explore the Demo \u2192"),
-            React.createElement("div", null,
-                React.createElement("a", { href: "?apply", style: { fontSize: 13, color: C.orange } }, "Ready for the real thing? Apply for POTENT OS \u2192")));
-    }
+    if (done) return React.createElement(DemoStudio, { bizName: bizName });
     return React.createElement("div", { style: { minHeight: "100vh", background: C.black, color: C.white, padding: "40px 24px", fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
         React.createElement("div", { style: { maxWidth: 480, margin: "0 auto" } },
             React.createElement("div", { style: { fontSize: 28, fontWeight: 900, marginBottom: 8, textAlign: "center" } }, "\uD83C\uDFAE Try POTENT OS Demo"),
@@ -8114,7 +8154,7 @@ function DemoModeView(props) {
             React.createElement(TxtIn, { label: "Email", value: email, onChange: setEmail, type: "email", placeholder: "you@company.com" }),
             React.createElement(TxtIn, { label: "Or Phone", value: phone, onChange: setPhone, type: "tel", placeholder: "404-000-0000" }),
             React.createElement(TxtIn, { label: "Business Name", value: bizName, onChange: setBizName, placeholder: "Your company name" }),
-            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 16, lineHeight: 1.6 } }, "Add your logo and brand colors after signup, from inside the demo."),
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 16, lineHeight: 1.6 } }, "Next screen: upload your logo, pick colors and see your own branded app live."),
             React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.white, marginBottom: 8 } }, "Add-ons"),
             React.createElement("div", {
                 onClick: function () { setWantAemni(!wantAemni); },
@@ -8140,12 +8180,24 @@ function HeroSoundButton() {
     };
     return React.createElement("button", { onClick: toggle, "aria-label": muted ? "Turn video sound on" : "Turn video sound off", style: { position: "absolute", bottom: 12, right: 12, zIndex: 20, background: "rgba(0,0,0,0.75)", color: "#fff", border: "1px solid #666", borderRadius: 20, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, muted ? "\uD83D\uDD07 Tap for Sound" : "\uD83D\uDD0A Sound On");
 }
+function LandingMenuSheet(props) {
+    var sets = {
+        guides: ["\uD83D\uDCDA Guides & Training", [["\uD83D\uDCDA Prices & How It Works", "/guide.html"], ["\uD83D\uDCBB POTENT OS Guide", "/os-guide.html"], ["\uD83C\uDF93 Training", "/training.html"], ["\uD83D\uDC65 Team Guide", "/team.html"]]],
+        partners: ["\uD83C\uDF10 Partner Apps", [["\uD83D\uDCB3 Credit Changed My Life \u2014 Credit Book", "/ccml/"], ["\uD83E\uDDF8 AceHeals Kids App", "https://aceheals.netlify.app"], ["\uD83D\uDC57 Potent Playbook \u2014 Fashion", "/playbook/"], ["\uD83C\uDFA7 POTENT Beats \u2014 Lease or Buy", "/beats/"], ["\uD83C\uDFB5 Beat Man \u2014 Producer Login", "/beatman/"], ["\uD83E\uDDE0 LIFE OS \u2014 Your AI Operator", "/life/"]]]
+    };
+    var set = sets[props.kind]; if (!set) return null;
+    return React.createElement("div", { onClick: props.onClose, style: { position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", zIndex: 9500, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 } },
+        React.createElement("div", { onClick: function (e) { e.stopPropagation(); }, style: { background: C.card, border: "1px solid " + C.orange, borderRadius: 16, padding: 16, width: "100%", maxWidth: 380 } },
+            React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 } }, React.createElement("b", { style: { color: C.white, fontSize: 16 } }, set[0]), React.createElement("button", { onClick: props.onClose, "aria-label": "Close", style: { background: "none", border: "none", color: C.dim, fontSize: 18, cursor: "pointer" } }, "\u2715")),
+            set[1].map(function (it) { return React.createElement("a", { key: it[1], href: it[1], style: { display: "block", background: C.surface, border: "1px solid " + C.border, borderRadius: 10, padding: "12px 14px", marginBottom: 8, color: C.white, textDecoration: "none", fontSize: 14, fontWeight: 700 } }, it[0]); })));
+}
 function PublicApp(props) {
     if (typeof window !== "undefined" && window.location.search.indexOf("demo") > -1 && window.location.search.indexOf("demo=") < 0) { try { if (/[?&]demo([&#]|$)/.test(window.location.search)) return React.createElement(DemoModeView, null); } catch (e) {} }
     var _bt_publicTab = useBackableTab("home", "publicTab"); var tab = _bt_publicTab[0], setTab = _bt_publicTab[1];
     var [bookCity, setBookCity] = useState(null);
     var [showCustomQuote, setShowCustomQuote] = useState(false);
     var [showPartnerApp, setShowPartnerApp] = useState(false);
+    var [menuSheet, setMenuSheet] = useState(null);
     var [showSplash, setShowSplash] = useState(function () {
         try {
             if (window.location.search.indexOf("leavereview=1") > -1) return false; // real deep link from a review-request email — skip straight there
@@ -8200,6 +8252,8 @@ function PublicApp(props) {
                             else if (v === "partnersignup") window.location.href = "?partner-signup";
                             else if (v === "partnerlogin") window.location.href = "?partner-login";
                             else if (v === "stafflogin") window.location.href = "?staff-login";
+                            else if (v === "guides") setMenuSheet("guides");
+                            else if (v === "partners") setMenuSheet("partners");
                             else if (v === "guide") window.location.href = "/guide.html";
                             else if (v === "osguide") window.location.href = "/os-guide.html";
                             else if (v === "training") window.location.href = "/training.html";
@@ -8216,27 +8270,18 @@ function PublicApp(props) {
                         style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }
                     },
                         React.createElement("option", { value: "", disabled: true }, "\uD83D\uDD11 Sign In / Get Started"),
-                        React.createElement("optgroup", { label: "\uD83D\uDE9A POTENT Operations \u2014 Logistics & Dispatch" },
+                        React.createElement("optgroup", { label: "\uD83D\uDE9A POTENT Logistics" },
                         React.createElement("option", { value: "getstarted" }, "\u2B50 New Here? Start Here"),
-                        React.createElement("option", { value: "demo" }, "\uD83C\uDFAE Try Demo Mode"),
+                        React.createElement("option", { value: "demo" }, "\uD83C\uDFAE Try the Demo \u2014 Brand It Yourself"),
                         React.createElement("option", { value: "myjobs" }, "\uD83D\uDCE6 Track My Jobs"),
                         React.createElement("option", { value: "driveronboard" }, "\uD83D\uDE9B Driver Onboarding"),
-                        React.createElement("option", { value: "os" }, "\uD83D\uDCBB Apply — POTENT OS"),
-                        React.createElement("option", { value: "partnersignup" }, "\uD83E\uDD1D Company/Dispatch Partner Signup"),
+                        React.createElement("option", { value: "os" }, "\uD83D\uDCBB Apply \u2014 POTENT OS"),
+                        React.createElement("option", { value: "partnersignup" }, "\uD83E\uDD1D Partner Signup"),
                         React.createElement("option", { value: "partnerlogin" }, "\uD83D\uDD11 Partner Login"),
                         React.createElement("option", { value: "stafflogin" }, "\uD83D\uDC64 Staff / Dispatch Login"),
-                        React.createElement("option", { value: "guide" }, "\uD83D\uDCDA Guide — Prices & How It Works"),
-                        React.createElement("option", { value: "osguide" }, "\uD83D\uDCBB POTENT OS Guide"),
-                        React.createElement("option", { value: "training" }, "\uD83C\uDF93 Training"),
-                        React.createElement("option", { value: "team" }, "\uD83D\uDC65 Team Guide")),
-                        React.createElement("optgroup", { label: "\uD83C\uDF10 POTENT Affiliate & Partner Apps" },
-                            React.createElement("option", { value: "ccml" }, "\uD83D\uDCB3 Credit Changed My Life \u2014 Credit Book"),
-                            React.createElement("option", { value: "aceheals" }, "\uD83E\uDDF8 AceHeals Kids App"),
-                            React.createElement("option", { value: "playbook" }, "\uD83D\uDC57 Potent Playbook \u2014 Fashion"),
-                            React.createElement("option", { value: "beats" }, "\uD83C\uDFA7 POTENT Beats \u2014 Lease or Buy"),
-                            React.createElement("option", { value: "beatman" }, "\uD83C\uDFB5 Beat Man \u2014 Producer Login"),
-                            React.createElement("option", { value: "legit" }, "\uD83D\uDD25 LEGIT \u2014 Verified Dating"),
-                            React.createElement("option", { value: "lifeos" }, "\uD83E\uDDE0 LIFE OS \u2014 Your AI Operator"))),
+                        React.createElement("option", { value: "guides" }, "\uD83D\uDCDA Guides & Training \u203A")),
+                        React.createElement("option", { value: "partners" }, "\uD83C\uDF10 Partner Apps \u203A")),
+                    menuSheet && React.createElement(LandingMenuSheet, { kind: menuSheet, onClose: function () { setMenuSheet(null); } }),
                     React.createElement(LangSwitcher, { lang: lang, changeLang: changeLang }),
                     React.createElement(EasyModeToggle, null),
                     React.createElement("a", { href: "tel:" + DISPATCH_PHONE_DISPLAY.replace(/\D/g,""), title: "Dispatch & Sales: " + DISPATCH_EMAIL, style: { textDecoration: "none", background: C.orange, color: "#000", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" } }, "📞 " + DISPATCH_PHONE_DISPLAY),
@@ -23041,7 +23086,7 @@ function griffinAnswer(transcript, userEmail, userRole, token) {
         });
     }
     if (t.indexOf("potent coin") > -1 || (t.indexOf("how") > -1 && t.indexOf("wallet") > -1 && t.indexOf("work") > -1)) {
-        return Promise.resolve("One POTENT Coin equals one real dollar. You fund your wallet, and real bookings draw from that balance. POTENT doesn't offer credit or Net terms \u2014 it's prepaid only.");
+        return Promise.resolve("One POTENT Coin equals one real dollar. You fund your wallet, and real bookings draw from that balance. Business accounts can also be set up on net terms \u2014 just ask dispatch.");
     }
     if (t.indexOf("fit check") > -1 || (t.indexOf("fit") > -1 && t.indexOf("truck") > -1)) {
         return Promise.resolve("Fit Check verifies your real shipment against the actual truck's limits \u2014 4,999 pounds maximum, and it has to physically pass through an 86 and a half inch by 71 inch door.");
@@ -23061,8 +23106,11 @@ function griffinAnswer(transcript, userEmail, userRole, token) {
     // Real deterministic patterns didn't match — fall back to the real
     // real, free, zero-server LLM running directly in the browser via
     // WebGPU — no VPS, no monthly cost, matching "no server yet."
-    var realKnownContext = "POTENT Logistics is a direct B2B box truck carrier based in Conyers, GA. Prepaid only, no credit or Net terms. 1 POTENT Coin = $1. Real truck: 2022 Ford E-350, 16ft box, 4,999 lb max payload, no liftgate, no pallet jack.";
-    return askGriffinLocalLLM(transcript, realKnownContext);
+    var realKnownContext = "POTENT Logistics is a direct B2B box truck carrier based in Conyers, GA. We offer net accounts through a factoring partner. 1 POTENT Coin = $1. Real truck: 2022 Ford E-350, 16ft box, 4,999 lb max payload, no liftgate, no pallet jack.";
+    return fetch("/.netlify/functions/life-ai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "griffin", text: transcript, context: realKnownContext }) })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { if (d && d.ok) return d.text; return askGriffinLocalLLM(transcript, realKnownContext); })
+        .catch(function () { return askGriffinLocalLLM(transcript, realKnownContext); });
 }
 
 // Real, free, zero-server LLM — runs entirely in the browser via
@@ -23184,9 +23232,79 @@ function GriffinVoiceButton(props) {
 // [render relocated to end of file]
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
+// ── GRIFFIN CHAT BUBBLE — floating chat on every screen, with saved past chats ──
+var GRIFFIN_CHATS_KEY = "griffin_chats_v1";
+function griffinLoadChats() { try { return JSON.parse(localStorage.getItem(GRIFFIN_CHATS_KEY) || "[]"); } catch (e) { return []; } }
+function griffinSaveChats(list) { try { localStorage.setItem(GRIFFIN_CHATS_KEY, JSON.stringify(list.slice(0, 30))); } catch (e) { } }
+function GriffinBubble() {
+    var [open, setOpen] = React.useState(false);
+    var [view, setView] = React.useState("chat"); // chat | history
+    var [chats, setChats] = React.useState(griffinLoadChats);
+    var [cur, setCur] = React.useState(null);
+    var [text, setText] = React.useState("");
+    var [busy, setBusy] = React.useState(false);
+    var [listening, setListening] = React.useState(false);
+    var endRef = React.useRef(null);
+    var me = null; try { me = loadCurrentUser(); } catch (e) { }
+    var role = (me && me.role) || "visitor", email = me && (me.email || me.id);
+    var chat = chats.filter(function (c) { return c.id === cur; })[0] || null;
+    React.useEffect(function () { if (endRef.current) endRef.current.scrollIntoView({ block: "end" }); }, [chat && chat.msgs.length, open, view, busy]);
+    function persist(next) { setChats(next); griffinSaveChats(next); }
+    function send(q) {
+        q = (q || text).trim(); if (!q || busy) return;
+        var id = cur, list = chats.slice();
+        if (!chat) { id = "c" + Date.now(); list.unshift({ id: id, title: q.slice(0, 40), ts: Date.now(), msgs: [] }); setCur(id); }
+        list = list.map(function (c) { return c.id === id ? Object.assign({}, c, { ts: Date.now(), msgs: c.msgs.concat([{ r: "u", t: q }]) }) : c; });
+        persist(list); setText(""); setBusy(true);
+        Promise.resolve().then(function () { return griffinAnswer(q, email, role, null); }).catch(function () { return "I could not answer that. Try again or call dispatch."; }).then(function (ans) {
+            var l2 = griffinLoadChats().map(function (c) { return c.id === id ? Object.assign({}, c, { msgs: c.msgs.concat([{ r: "g", t: String(ans || "") }]) }) : c; });
+            persist(l2); setBusy(false);
+        });
+    }
+    function mic() {
+        var SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) { alert("Voice needs Chrome or Safari."); return; }
+        var r = new SR(); r.lang = "en-US"; r.interimResults = false; setListening(true);
+        r.onresult = function (e) { setListening(false); send(e.results[0][0].transcript); };
+        r.onerror = function () { setListening(false); }; r.onend = function () { setListening(false); }; r.start();
+    }
+    var b = { background: "transparent", border: "1px solid " + C.border, color: C.white, borderRadius: 8, padding: "6px 10px", fontSize: 12, cursor: "pointer", fontFamily: "inherit" };
+    if (!open) return React.createElement("button", { onClick: function () { setOpen(true); }, "aria-label": "Chat with Griffin", style: { position: "fixed", right: 14, bottom: 84, zIndex: 9000, width: 58, height: 58, borderRadius: "50%", background: C.orange, border: "2px solid #000", boxShadow: "0 4px 18px rgba(0,0,0,.5)", cursor: "pointer", padding: 0, overflow: "hidden" } },
+        React.createElement("img", { src: "/potent-griffin-icon.png", alt: "", style: { width: 38, height: 38, objectFit: "contain" } }));
+    return React.createElement("div", { style: { position: "fixed", right: 10, bottom: 10, zIndex: 9000, width: "min(380px, calc(100vw - 20px))", height: "min(560px, calc(100vh - 20px))", background: C.card, border: "1px solid " + C.orange, borderRadius: 16, display: "flex", flexDirection: "column", boxShadow: "0 10px 40px rgba(0,0,0,.7)", fontFamily: "inherit" } },
+        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderBottom: "1px solid " + C.border } },
+            React.createElement("img", { src: "/potent-griffin-icon.png", alt: "", style: { width: 28, height: 28 } }),
+            React.createElement("b", { style: { color: C.white, flex: 1 } }, view === "history" ? "Past chats" : "Griffin"),
+            view === "chat" ? React.createElement("button", { onClick: function () { setView("history"); }, style: b }, "History") : React.createElement("button", { onClick: function () { setView("chat"); }, style: b }, "Back"),
+            React.createElement("button", { onClick: function () { setCur(null); setView("chat"); }, style: b }, "+ New"),
+            React.createElement("button", { onClick: function () { setOpen(false); }, "aria-label": "Close", style: b }, "✕")),
+        view === "history"
+            ? React.createElement("div", { style: { flex: 1, overflowY: "auto", padding: 10 } },
+                chats.length === 0 && React.createElement("div", { style: { color: C.dim, fontSize: 13 } }, "No past chats yet."),
+                chats.map(function (c) {
+                    return React.createElement("div", { key: c.id, style: { display: "flex", gap: 6, alignItems: "center", background: C.surface, border: "1px solid " + C.border, borderRadius: 10, padding: "9px 10px", marginBottom: 6 } },
+                        React.createElement("div", { onClick: function () { setCur(c.id); setView("chat"); }, style: { flex: 1, cursor: "pointer", minWidth: 0 } },
+                            React.createElement("div", { style: { color: C.white, fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, c.title),
+                            React.createElement("div", { style: { color: C.dim, fontSize: 11 } }, new Date(c.ts).toLocaleString() + " · " + c.msgs.length + " messages")),
+                        React.createElement("button", { onClick: function () { persist(chats.filter(function (x) { return x.id !== c.id; })); if (cur === c.id) setCur(null); }, "aria-label": "Delete chat", style: b }, "✕"));
+                }))
+            : React.createElement("div", { style: { flex: 1, overflowY: "auto", padding: 12 } },
+                (!chat || !chat.msgs.length) && React.createElement("div", { style: { color: C.dim, fontSize: 13, lineHeight: 1.6 } }, "Hi, I'm Griffin. Ask me about prices, how booking works, trucks, or " + (role === "owner" || role === "dispatch" ? "your loads." : "your wallet and next delivery.")),
+                (chat ? chat.msgs : []).map(function (m, i) {
+                    var mine = m.r === "u";
+                    return React.createElement("div", { key: i, style: { display: "flex", justifyContent: mine ? "flex-end" : "flex-start", marginBottom: 8 } },
+                        React.createElement("div", { style: { maxWidth: "82%", background: mine ? C.orange : C.surface, color: mine ? "#000" : C.white, borderRadius: 12, padding: "8px 11px", fontSize: 13, lineHeight: 1.5, whiteSpace: "pre-wrap" } }, m.t));
+                }),
+                busy && React.createElement("div", { style: { color: C.dim, fontSize: 12 } }, "Griffin is thinking…"),
+                React.createElement("div", { ref: endRef })),
+        view === "chat" && React.createElement("div", { style: { display: "flex", gap: 6, padding: 10, borderTop: "1px solid " + C.border } },
+            React.createElement("input", { value: text, placeholder: "Ask Griffin…", onChange: function (e) { setText(e.target.value); }, onKeyDown: function (e) { if (e.key === "Enter") send(); }, style: { flex: 1, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, color: C.white, padding: "9px 10px", fontSize: 13, fontFamily: "inherit", outline: "none" } }),
+            React.createElement("button", { onClick: mic, "aria-label": "Speak", style: Object.assign({}, b, { background: listening ? C.red : "transparent" }) }, "🎤"),
+            React.createElement("button", { onClick: function () { send(); }, disabled: busy, style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "0 14px", fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "Send")));
+}
+
 var rootEl = document.getElementById("root");
 var reactRoot = ReactDOM.createRoot(rootEl);
 plTenantReady.then(function () {
     if (PL_TENANT_FAIL) { rootEl.innerHTML = "<div style=\"font-family:sans-serif;text-align:center;padding:60px 20px;color:#ccc;background:#000;min-height:100vh\"><h2>This company page is not available</h2><p>Check the link, or contact the company that sent it to you.</p></div>"; return; }
-    reactRoot.render(React.createElement(React.Fragment, null, React.createElement(Root), React.createElement(RealBackButton, null)));
+    reactRoot.render(React.createElement(React.Fragment, null, React.createElement(Root), React.createElement(RealBackButton, null), React.createElement(GriffinBubble, null)));
 });

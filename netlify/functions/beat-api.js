@@ -52,7 +52,13 @@ exports.handler = async function (event) {
       if (!s || s.payment_status !== "paid" || !s.metadata || s.metadata.product !== "BEAT") return B.J(402, { error: "Payment not found" });
       const r = await B.sb("beat_items?id=eq." + encodeURIComponent(s.metadata.beat_id) + "&select=title,deliver_url");
       const it = r.ok && Array.isArray(r.data) && r.data[0];
-      return B.J(200, { ok: true, title: it && it.title, url: it && it.deliver_url || null, license: s.metadata.sale_type });
+      let dl = it && it.deliver_url || null;
+      if (dl && dl.indexOf("storage:") === 0) {
+        const sg = await fetch(B.SB + "/storage/v1/object/sign/" + dl.slice(8), { method: "POST", headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: "Bearer " + process.env.SUPABASE_SERVICE_ROLE_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ expiresIn: 604800 }) });
+        const sj = await sg.json().catch(function () { return {}; });
+        dl = sj.signedURL ? B.SB + "/storage/v1" + sj.signedURL : null;
+      }
+      return B.J(200, { ok: true, title: it && it.title, url: dl, license: s.metadata.sale_type });
     } catch (e) { return B.J(500, { error: "Could not verify payment" }); }
   }
 
@@ -100,6 +106,17 @@ exports.handler = async function (event) {
       return B.J(200, await dash(p));
     }
 
+    if (a === "upload_url") {
+      const kind = b.kind === "deliver" ? "deliver" : "preview";
+      const name = clip(b.name, 120).replace(/[^A-Za-z0-9._-]/g, "_");
+      const ok = kind === "preview" ? /\.(mp3|wav|m4a|ogg)$/i : /\.(mp3|wav|m4a|flac|zip)$/i;
+      if (!ok.test(name)) return B.J(400, { error: kind === "preview" ? "Preview must be MP3, WAV, M4A or OGG" : "Files must be MP3, WAV, M4A, FLAC or ZIP" });
+      const bucket = kind === "preview" ? "beat-previews" : "beat-files", path = p.id + "/" + Date.now() + "-" + name;
+      const sg = await fetch(B.SB + "/storage/v1/object/upload/sign/" + bucket + "/" + path, { method: "POST", headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: "Bearer " + process.env.SUPABASE_SERVICE_ROLE_KEY, "Content-Type": "application/json" }, body: "{}" });
+      const sj = await sg.json().catch(function () { return {}; });
+      if (!sg.ok || !sj.url) return B.J(500, { error: "Uploads are not set up yet. Run the beat-uploads SQL in Supabase." });
+      return B.J(200, { ok: true, uploadUrl: B.SB + "/storage/v1" + sj.url, ref: kind === "preview" ? B.SB + "/storage/v1/object/public/" + bucket + "/" + path : "storage:" + bucket + "/" + path });
+    }
     if (a === "addbeat" || a === "setbeat") {
       const title = clip(b.title, 120);
       const lease = b.lease_cents === "" || b.lease_cents == null ? null : money(b.lease_cents);
@@ -107,7 +124,7 @@ exports.handler = async function (event) {
       if (!title) return B.J(400, { error: "Enter a title" });
       [lease, excl].forEach(function (v) { if (v !== null && !(v >= 100 && v <= 5000000)) title && (b.__bad = true); });
       if (b.__bad || (lease === null && excl === null)) return B.J(400, { error: "Set at least one price ($1 or more)" });
-      const url = function (v) { v = clip(v, 500); return /^https:\/\//i.test(v) ? v : null; };
+      const url = function (v) { v = clip(v, 500); return /^https:\/\//i.test(v) || (/^storage:beat-files\/[0-9a-f-]{36}\//i.test(v) && v.indexOf(p.id) > 0) ? v : null; };
       const row = { title: title, lease_cents: lease, exclusive_cents: excl, preview_url: url(b.preview_url), deliver_url: url(b.deliver_url), active: b.active !== false };
       if (a === "addbeat") { row.producer_id = p.id; const r = await B.sb("beat_items", { method: "POST", prefer: "return=minimal", body: row }); if (!r.ok) return B.J(500, { error: "Could not save" }); }
       else { if (!UUID.test(String(b.id || ""))) return B.J(400, { error: "Bad id" }); await B.sb("beat_items?id=eq." + b.id + "&producer_id=eq." + p.id, { method: "PATCH", prefer: "return=minimal", body: row }); }
@@ -141,7 +158,7 @@ exports.handler = async function (event) {
   if (a === "o_create") {
     const email = clip(b.email, 200).toLowerCase(), name = clip(b.name, 80);
     if (!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return B.J(400, { error: "Name and a valid email are required" });
-    const temp = require("crypto").randomBytes(9).toString("base64").replace(/[^a-zA-Z0-9]/g, "x").slice(0, 12);
+    const temp = String(b.password || "").length >= 10 ? String(b.password) : require("crypto").randomBytes(9).toString("base64").replace(/[^a-zA-Z0-9]/g, "x").slice(0, 12);
     const lease = Math.max(0, Math.min(100, Number(b.lease_pct == null ? 50 : b.lease_pct))), excl = Math.max(0, Math.min(100, Number(b.exclusive_pct == null ? 50 : b.exclusive_pct)));
     const r = await B.sb("beat_producers", { method: "POST", prefer: "return=representation", body: { name: name, email: email, password_hash: B.hashPw(temp), country: clip(b.country, 60) || null, splits: { lease: lease, exclusive: excl } } });
     if (!r.ok) return B.J(r.status === 409 ? 409 : 500, { error: r.status === 409 ? "That email already has an account" : "Could not create the account" });
@@ -160,7 +177,7 @@ exports.handler = async function (event) {
   }
   if (a === "o_resetpw") {
     if (!UUID.test(String(b.id || ""))) return B.J(400, { error: "Bad id" });
-    const temp = require("crypto").randomBytes(9).toString("base64").replace(/[^a-zA-Z0-9]/g, "x").slice(0, 12);
+    const temp = String(b.password || "").length >= 10 ? String(b.password) : require("crypto").randomBytes(9).toString("base64").replace(/[^a-zA-Z0-9]/g, "x").slice(0, 12);
     await B.sb("beat_producers?id=eq." + b.id, { method: "PATCH", prefer: "return=minimal", body: { password_hash: B.hashPw(temp) } });
     return B.J(200, { ok: true, tempPassword: temp });
   }
