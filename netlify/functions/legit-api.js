@@ -104,9 +104,11 @@ exports.handler = async function (event) {
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return J(400, { ok: false, error: "Enter a valid email." });
       if (String(b.password || "").length < 8) return J(400, { ok: false, error: "Password needs 8+ characters." });
       if (!name) return J(400, { ok: false, error: "Enter your first name." });
+      if (b.agree !== true) return J(400, { ok: false, error: "Please agree to the Terms and Privacy Policy." });
       if (!(age >= 18 && age <= 99)) return J(400, { ok: false, error: "LEGIT is for adults 18 and over." });
       const r = await sb("legit_users", { method: "POST", prefer: "return=representation", body: { email: email, password_hash: L.hashPw(b.password), name: name, age: age } });
       if (!r.ok) return J(r.status === 409 ? 409 : 500, { ok: false, error: r.status === 409 ? "That email already has an account." : "Could not create the account. Has the LEGIT SQL been run?" });
+      await logAdmin(r.data[0].id, "terms_accepted", r.data[0].id, "v1 " + new Date().toISOString());
       return J(200, { ok: true, token: L.sign(r.data[0].id) });
     }
     if (a === "login") {
@@ -214,6 +216,19 @@ exports.handler = async function (event) {
         await logAdmin(me.id, "user_" + act, u.id, note);
         return J(200, { ok: true });
       }
+      if (a === "a_threads") {
+        const r = await sb("legit_matches?select=id,status,matched_at,first_message_sent,chat_intention,ua:legit_users!legit_matches_user_a_fkey(name,email),ub:legit_users!legit_matches_user_b_fkey(name,email)&order=matched_at.desc&limit=300");
+        return J(200, { ok: true, threads: r.data || [] });
+      }
+      if (a === "a_thread") {
+        if (!UUID.test(String(b.id || ""))) return J(400, { ok: false });
+        const m = (await sb("legit_matches?id=eq." + b.id + "&select=id,user_a,user_b,ua:legit_users!legit_matches_user_a_fkey(name),ub:legit_users!legit_matches_user_b_fkey(name)")).data;
+        if (!m || !m[0]) return J(404, { ok: false, error: "Not found" });
+        const r = await sb("legit_messages?match_id=eq." + b.id + "&select=sender_id,original_text,displayed_text,was_blocked,block_reason,sent_at&order=sent_at.asc&limit=1000");
+        await logAdmin(me.id, "chat_viewed", b.id, "");   // every look at a private chat is recorded
+        return J(200, { ok: true, a: m[0].ua && m[0].ua.name, b: m[0].ub && m[0].ub.name, user_a: m[0].user_a, messages: r.data || [] });
+      }
+      if (a === "a_log") { const r = await sb("legit_admin_log?select=*&order=created_at.desc&limit=200"); return J(200, { ok: true, log: r.data || [] }); }
       if (a === "a_stats") {
         await expireFuses();
         const day = new Date(); day.setUTCHours(0, 0, 0, 0); const mon = new Date(day); mon.setUTCDate(1);
