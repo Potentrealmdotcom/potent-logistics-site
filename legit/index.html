@@ -86,7 +86,7 @@ function route(){clearTimers();
   var tabs=[["discover","Discover"],["matches","Matches"],["love","Love Board"],["activity","Activity"],["profile","Profile"]];if(S.user.is_admin)tabs.push(["admin","Admin"]);
   $("#nav").hidden=false;$("#navin").innerHTML=tabs.map(function(t){return '<button class="'+(S.tab==t[0]?"on":"")+'" data-t="'+t[0]+'">'+t[1]+(t[0]=="activity"&&S.unread?'<span class="dot">'+S.unread+'</span>':'')+'</button>'}).join("");
   document.querySelectorAll("#navin button").forEach(function(b){b.onclick=function(){S.tab=b.dataset.t;route()}});
-  if(!S.complete&&S.tab!="profile"){S.tab="profile";return route()}
+  if(!S.complete&&!S.user.is_admin&&S.tab!="profile"){S.tab="profile";return route()}
   ({discover:discover,matches:matches,love:love,activity:activity,profile:profile,admin:admin})[S.tab]()}
 
 /* ---------- discover ---------- */
@@ -167,7 +167,7 @@ function wireChips(id){document.querySelectorAll("#"+id+" .tag").forEach(functio
 function picked(id){return [].map.call(document.querySelectorAll("#"+id+" .tag.on"),function(t){return t.dataset.v})}
 var PQ=["My ideal first date is...","I'm weirdly good at...","You'll win me over if...","Two truths and a lie...","The way to my heart is..."];
 function profile(){var u=S.user,ph=u.photos||[];var pr=u.prompts||[];
-  app.innerHTML='<div class="bar"><h2>'+esc(u.name)+' <span class="badge">ID verified</span></h2><button class="btn ghost small" id="lo">Log out</button></div>'+(S.complete?'':'<div class="card" style="border-color:var(--red)">Finish your profile to start swiping: add a photo, who you\'re into, and what you\'re looking for.</div>')+
+  app.innerHTML=(u.is_admin?'<div class="card"><a href="/legit/admin/" style="color:var(--red);font-weight:800">Open the Admin console →</a></div>':'')+'<div class="bar"><h2>'+esc(u.name)+' <span class="badge">ID verified</span></h2><button class="btn ghost small" id="lo">Log out</button></div>'+(S.complete?'':'<div class="card" style="border-color:var(--red)">Finish your profile to start swiping: add a photo, who you\'re into, and what you\'re looking for.</div>')+
   (u.paid?'<div class="ok">Lifetime access unlocked ✓</div>':u.trial_ends_at?'<div class="card">Free trial ends '+new Date(u.trial_ends_at).toLocaleString()+'. <button class="btn small sp" id="unl">Unlock for $39.99</button></div>':'')+
   '<div class="card"><label>Photos (up to 4)</label><div class="thumbs" id="th">'+ph.map(function(x,i){return '<img alt="Photo '+(i+1)+'" src="'+x.url+'" data-i="'+i+'" title="Tap to remove">'}).join("")+'</div><input id="pf" type="file" accept="image/*" multiple '+(ph.length>=4?"disabled":"")+'><div class="dim" style="font-size:12px">Tap a photo to remove it.</div></div>'+
   '<div class="card"><label for="gd">I am</label><select id="gd"><option value="">Choose</option>'+["man","woman","nonbinary"].map(function(g){return '<option'+(u.gender==g?" selected":"")+'>'+g+'</option>'}).join("")+'</select><label>Interested in</label>'+chips("ii",["man","woman","nonbinary"],u.interested_in||[])+

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LEGIT Admin</title><meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Oswald:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060607;--card:#101013;--line:#25252b;--red:#e8112d;--chrome:#c8ccd4;--green:#16d96f;--amber:#f5b301;--txt:#f2f2f4;--dim:#8d8d97}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.5 Inter,system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
+h1,h2,h3,.h{font-family:Oswald,Impact,sans-serif;text-transform:uppercase;letter-spacing:.04em;margin:0}
+#app{max-width:900px;margin:0 auto;min-height:100vh;padding:16px 16px 90px}
+button,input,select,textarea{font:inherit;color:inherit}
+.btn{background:var(--red);color:#fff;border:0;border-radius:10px;padding:13px 18px;font-weight:800;cursor:pointer;width:100%}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--chrome)}.btn.small{width:auto;padding:8px 12px;font-size:13px}
+.btn.green{background:var(--green);color:#000}.btn:disabled{opacity:.5}
+input,select,textarea{width:100%;background:#0b0b0d;border:1px solid var(--line);border-radius:10px;padding:12px;margin:5px 0 10px;outline:none}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--chrome);outline-offset:2px}
+label{font-size:12px;color:var(--dim);font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.dim{color:var(--dim)}.red{color:var(--red)}.green{color:var(--green)}.err{color:#ff6b7d;margin:8px 0}.ok{color:var(--green);margin:8px 0}
+.tag{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:3px 10px;margin:2px 4px 2px 0;font-size:12px;color:var(--chrome)}
+.tag.on{background:var(--red);border-color:var(--red);color:#fff}
+.badge{background:#0d2e1c;color:var(--green);border:1px solid #14522f;border-radius:99px;padding:2px 9px;font-size:12px;font-weight:800}
+nav{position:fixed;bottom:0;left:0;right:0;background:#0a0a0cee;border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom);backdrop-filter:blur(8px)}
+nav div{display:flex;max-width:520px;width:100%}nav button{flex:1;background:none;border:0;padding:12px 2px 10px;color:var(--dim);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;position:relative}
+nav button.on{color:var(--red)}nav .dot{position:absolute;top:6px;right:22%;background:var(--red);color:#fff;border-radius:99px;font-size:10px;padding:0 5px}
+.hero{text-align:center;padding:40px 0 10px}.hero h1{font-size:54px;color:var(--red);line-height:1}.hero p{color:var(--chrome)}
+.swipe{position:relative;border-radius:20px;overflow:hidden;background:#000;aspect-ratio:3/4;border:1px solid var(--line)}
+.swipe img{width:100%;height:100%;object-fit:cover}.swipe .info{position:absolute;left:0;right:0;bottom:0;padding:60px 16px 14px;background:linear-gradient(transparent,#000d)}
+.row{display:flex;gap:10px}.row>*{flex:1}.sp{margin-top:12px}
+.bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.msg{max-width:80%;padding:9px 12px;border-radius:14px;margin:6px 0;word-wrap:break-word}.msg.me{background:var(--red);margin-left:auto;border-bottom-right-radius:4px}.msg.them{background:#1b1b20;border-bottom-left-radius:4px}
+.fuse{font-weight:800;font-variant-numeric:tabular-nums}.fuse.g{color:var(--green)}.fuse.n{color:var(--amber)}.fuse.r{color:var(--red);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.35}}@media (prefers-reduced-motion:reduce){.fuse.r{animation:none;text-decoration:underline}}
+.av{width:52px;height:52px;border-radius:50%;object-fit:cover;background:#222;flex:none}.list{display:flex;gap:12px;align-items:center;cursor:pointer}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap}.thumbs img{width:78px;height:78px;border-radius:10px;object-fit:cover}
+.sheet{position:fixed;inset:0;background:#000c;display:flex;align-items:flex-end;justify-content:center;z-index:20}.sheet>div{background:var(--card);border-radius:20px 20px 0 0;padding:18px;width:100%;max-width:520px;max-height:88vh;overflow:auto}
+pre.snap{white-space:pre-wrap;background:#0b0b0d;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px;max-height:160px;overflow:auto}
+</style>
+</head><body><div id="app"></div><nav id="nav" hidden><div id="navin"></div></nav>
+<script>
+
+var API="/.netlify/functions/legit-api", TK="legit_token", S={user:null,access:null,tab:"discover",intentions:[],complete:false,pendingLB:0,unread:0};
+var $=function(s){return document.querySelector(s)}, app=$("#app");
+function esc(t){return String(t==null?"":t).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function tok(){try{return localStorage.getItem(TK)||""}catch(e){return ""}}
+function setTok(t){try{t?localStorage.setItem(TK,t):localStorage.removeItem(TK)}catch(e){}}
+async function api(action,body){
+  try{var r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+tok()},body:JSON.stringify(Object.assign({action:action},body||{}))});
+    var d=await r.json().catch(function(){return {ok:false,error:"Server error"}});
+    if(d.login){setTok("");S.user=null;auth();return d}
+    if(d.access&&d.access!==S.access&&r.status===403){S.access=d.access;route()}
+    return d}catch(e){return {ok:false,error:"No connection."}}}
+var timers=[];function clearTimers(){timers.forEach(clearInterval);timers=[]}
+function fuseHTML(exp){var ms=new Date(exp)-Date.now();if(ms<=0)return '<span class="fuse r">expired</span>';var h=Math.floor(ms/36e5),m=Math.floor(ms%36e5/6e4),s=Math.floor(ms%6e4/1e3);var c=ms>12*36e5?"g":ms<6*36e5?"r":"n";return '<span class="fuse '+c+'" data-exp="'+exp+'">'+("0"+h).slice(-2)+":"+("0"+m).slice(-2)+":"+("0"+s).slice(-2)+'</span>'}
+function tickFuses(){clearTimers();timers.push(setInterval(function(){document.querySelectorAll(".fuse[data-exp]").forEach(function(el){el.outerHTML=fuseHTML(el.dataset.exp)})},1000))}
+
+
+function auth(){app.innerHTML='<div class="hero"><h1>LEGIT</h1><p>Admin console</p></div><div class="card"><label for="e">Admin email</label><input id="e" type="email" autocomplete="email"><label for="p">Password</label><input id="p" type="password" autocomplete="current-password"><div id="er" class="err" role="alert"></div><button class="btn" id="go">Sign in</button></div>';
+  $("#go").onclick=async function(){$("#go").disabled=true;var d=await api("login",{email:$("#e").value,password:$("#p").value});if(d.ok){setTok(d.token);start()}else{$("#er").textContent=d.error||"Try again.";$("#go").disabled=false}}}
+function bar(){var b=document.createElement("div");b.className="bar";b.innerHTML='<h1 class="h" style="color:var(--red)">LEGIT Admin</h1><button class="btn ghost small" id="lo">Log out</button>';return b}
+var AT="main";
+async function admin(){app.innerHTML='<h2>Admin</h2><div class="row sp" id="at">'+[["main","Overview"],["users","Accounts"],["pay","Payments"]].map(function(t){return '<button class="btn '+(AT==t[0]?"":"ghost")+' small" data-at="'+t[0]+'">'+t[1]+'</button>'}).join("")+'</div><div id="ad" class="dim sp">Loading...</div>';
+  document.querySelectorAll("[data-at]").forEach(function(b){b.onclick=function(){AT=b.dataset.at;admin()}});
+  if(AT=="users")return adminUsers();if(AT=="pay")return adminPay();
+  var [s,st,rp]=await Promise.all([api("a_stats"),api("a_strikes"),api("a_reports")]);if(!s.ok)return;var x=s.stats;
+  var h='<div class="card"><b>Platform stats</b><div class="dim" style="font-size:13px;line-height:1.8">Users '+x.users+' · Active today '+x.dau+' · Verified '+x.verifiedPct+'%<br>Match rate '+x.matchRate+'% · Message rate '+x.messageRate+'% · Ghost rate '+x.ghostRate+'%<br>Strikes today: 1st '+x.strikesToday[0]+' / 2nd '+x.strikesToday[1]+' / 3rd '+x.strikesToday[2]+' · Auto bans '+x.autoBansToday+'<br>Revenue today $'+x.revenueToday.toFixed(2)+' · this month $'+x.revenueMonth.toFixed(2)+' · Trial→paid '+x.conversion+'% · Love Board posts '+x.loveBoardPosts+'</div></div>';
+  h+='<h3 class="sp">Strikes</h3>'+(st.strikes.length?st.strikes.map(function(k){var u=k.legit_users||{};return '<div class="card"><b>'+esc(u.name)+'</b> <span class="dim">'+esc(u.email)+'</span><div>Strike '+k.strike_no+' · '+esc(k.reason)+' · '+new Date(k.created_at).toLocaleString()+(u.banned?' · <span class="red">BANNED ('+esc(u.ban_source)+')</span>':'')+(k.reviewed?' · reviewed: '+esc(k.review_action):'')+'</div><pre class="snap">'+esc((k.conversation_snapshot||[]).map(function(m){return (m.original_text)}).join("\n"))+'</pre><div class="row">'+['dismiss','warn','ban','reverse_ban'].map(function(a){return '<button class="btn ghost small" data-k="'+k.id+'" data-a="'+a+'">'+a.replace("_"," ")+'</button>'}).join("")+'</div></div>'}).join(""):'<div class="card dim">No strikes.</div>');
+  h+='<h3 class="sp">Reports</h3>'+(rp.reports.length?rp.reports.map(function(r){return '<div class="card"><b>'+esc((r.reporter||{}).name)+'</b> reported <b>'+esc((r.reported||{}).name)+'</b><div>'+esc(r.reason)+'</div><div class="dim">'+esc(r.status)+'</div>'+(r.status=="pending"?'<div class="row sp"><button class="btn small" data-rp="'+r.id+'" data-o="action">Action taken</button><button class="btn ghost small" data-rp="'+r.id+'" data-o="none">No violation</button></div>':'')+'</div>'}).join(""):'<div class="card dim">No reports.</div>');
+  $("#ad").className="";$("#ad").innerHTML=h;
+  document.querySelectorAll("[data-k]").forEach(function(b){b.onclick=async function(){var n=prompt("Note (optional)")||"";await api("a_strike_act",{id:b.dataset.k,act:b.dataset.a,note:n});admin()}});
+  document.querySelectorAll("[data-rp]").forEach(function(b){b.onclick=async function(){await api("a_report_resolve",{id:b.dataset.rp,outcome:b.dataset.o});admin()}})}
+async function adminUsers(){var d=await api("a_users");if(!d.ok)return;var f=function(t){return t?new Date(t).toLocaleString():"never"};
+  $("#ad").className="";$("#ad").innerHTML='<div class="dim">'+d.users.length+' accounts</div>'+d.users.map(function(u){var st=u.banned?'<span class="red">BANNED ('+esc(u.ban_source)+')</span>':u.paid_lifetime_access?'<span class="green">PAID</span>':u.identity_verified?'<span class="green">verified, trial</span>':'<span class="dim">not verified</span>';
+    return '<div class="card"><b>'+esc(u.name)+', '+u.age+'</b>'+(u.is_admin?' <span class="badge">ADMIN</span>':'')+' · '+st+'<div class="dim" style="font-size:12px">'+esc(u.email)+'<br>Joined '+f(u.created_at)+' · Last seen '+f(u.last_seen)+'<br>Verified '+f(u.verified_at)+' · Paid '+f(u.paid_at)+' · Strikes '+u.strike_count+'/3</div>'+
+    (u.is_admin?'':'<div class="row sp">'+(u.banned?'<button class="btn ghost small" data-u="'+u.id+'" data-a="unban">Unban</button>':'<button class="btn ghost small" data-u="'+u.id+'" data-a="ban">Ban</button>')+(u.paid_lifetime_access?'':'<button class="btn ghost small" data-u="'+u.id+'" data-a="grant_paid">Grant lifetime</button>')+'</div>')+'</div>'}).join("");
+  document.querySelectorAll("[data-u]").forEach(function(b){b.onclick=async function(){if(!confirm(b.dataset.a+" this account?"))return;var r=await api("a_user_act",{id:b.dataset.u,act:b.dataset.a});if(!r.ok)alert(r.error);adminUsers()}})}
+async function adminPay(){var d=await api("a_payments");if(!d.ok)return;$("#ad").className="";
+  $("#ad").innerHTML='<div class="card"><div class="dim">Total collected</div><div class="h" style="font-size:32px">$'+(d.totalCents/100).toFixed(2)+'</div></div>'+(d.payments.length?d.payments.map(function(p){var u=p.legit_users||{};return '<div class="card"><b>$'+((p.amount_cents||0)/100).toFixed(2)+'</b> · '+esc(u.name||"deleted user")+' <span class="dim">'+esc(u.email||"")+'</span><div class="dim" style="font-size:12px">'+new Date(p.created_at).toLocaleString()+'<br>Stripe ref '+esc(p.stripe_session_id)+'</div></div>'}).join(""):'<div class="card dim">No payments yet.</div>')}
+
+async function start(){if(!tok())return auth();var t=await api("a_stats");if(t.login)return;if(!t.ok){setTok("");auth();$("#er").textContent="This login is not an admin account.";return}
+  await admin();var top=bar();app.insertBefore(top,app.firstChild);$("#lo").onclick=function(){setTok("");auth()}}
+start();
+</script></body></html>
