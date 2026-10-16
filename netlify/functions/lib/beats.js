@@ -18,6 +18,25 @@ async function sb(path, opts) {
   return { ok: r.ok, status: r.status, data: d };
 }
 
+const AGREEMENT_VERSION = "1.0";
+async function rpc(fn, args) {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const r = await fetch(SB + "/rest/v1/rpc/" + fn, { method: "POST", headers: { apikey: key, Authorization: "Bearer " + key, "Content-Type": "application/json" }, body: JSON.stringify(args || {}) });
+  const t = await r.text(); let d = null; try { d = t ? JSON.parse(t) : null; } catch (e) { d = t; }
+  return { ok: r.ok, status: r.status, data: d };
+}
+// Every important admin / money action is written here. Never throws.
+async function audit(actor, action, target, detail) {
+  try { await sb("beat_audit", { method: "POST", prefer: "return=minimal", body: { actor: String(actor || "system").slice(0, 120), action: action, target: target ? String(target).slice(0, 200) : null, detail: detail || null } }); } catch (e) { /* logging must not break the action */ }
+}
+async function getSetting(k) {
+  const r = await sb("beat_settings?key=eq." + encodeURIComponent(k) + "&select=value");
+  return r.ok && Array.isArray(r.data) && r.data[0] ? r.data[0].value : null;
+}
+async function setSetting(k, v) {
+  return sb("beat_settings", { method: "POST", prefer: "resolution=merge-duplicates,return=minimal", body: { key: k, value: v, updated_at: new Date().toISOString() } });
+}
+
 // ── passwords (scrypt) ──
 function hashPw(pw) {
   const salt = crypto.randomBytes(16).toString("hex");
@@ -92,17 +111,37 @@ async function fulfillSession(session) {
 
   const saleType = md.sale_type === "exclusive" ? "exclusive" : "lease";
   const gross = Number(session.amount_total) || 0;
+  const td = session.total_details || {};
+  const tax = Number(td.amount_tax) || 0, discount = Number(td.amount_discount) || 0;
   const fee = prod.deduct_fees ? estimateFee(gross) : 0;
-  const net = Math.max(0, gross - fee);
+  const net = Math.max(0, gross - tax - fee);
   const pct = Number(prod.splits && prod.splits[saleType]);
   const split = isFinite(pct) ? Math.max(0, Math.min(100, pct)) : 50;
-  const producerCents = Math.floor(net * split / 100);
+  let producerCents = Math.floor(net * split / 100);
   const email = (session.customer_details && session.customer_details.email) || session.customer_email || null;
+  const pi = typeof session.payment_intent === "string" ? session.payment_intent : null;
 
+  // Exclusive: the database lets exactly one paid session claim the beat.
+  let conflict = false;
+  if (saleType === "exclusive") {
+    const fin = await rpc("beat_finalize", { p_beat: beat.id, p_session: session.id });
+    if (!fin.ok) return { error: "Could not lock the exclusive" };
+    conflict = fin.data === "conflict";
+    if (conflict) {
+      let refunded = false;
+      try {
+        if (pi && process.env.STRIPE_SECRET_KEY) { await require("stripe")(process.env.STRIPE_SECRET_KEY).refunds.create({ payment_intent: pi, reason: "duplicate" }, { idempotencyKey: "beatconflict:" + session.id }); refunded = true; }
+      } catch (e) { console.error("auto-refund failed for conflicting exclusive", session.id, e.message); }
+      producerCents = 0;
+      await audit("system", "exclusive_conflict", beat.id, { session: session.id, auto_refunded: refunded });
+    }
+  }
+  const alloc = { seller_type: beat.seller_type || "platform", revenue_model_confirmed: false, producer_pct_of_net: conflict ? 0 : split, net_basis: "gross - tax - estimated card fee", fee_is_estimate: true };
   const ins = await sb("beat_sales", { method: "POST", prefer: "resolution=ignore-duplicates,return=representation", body: {
     producer_id: prod.id, beat_id: beat.id, title: beat.title, sale_type: saleType, stripe_session_id: session.id,
-    payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : null,
-    buyer_email: email, gross_cents: gross, fee_cents: fee, net_cents: net, split_pct: split, producer_cents: producerCents } });
+    payment_intent_id: pi, buyer_email: email, gross_cents: gross, fee_cents: fee, net_cents: net, split_pct: conflict ? 0 : split, producer_cents: producerCents,
+    tax_cents: tax, discount_cents: discount, status: conflict ? "refunded" : "complete", seller_type: beat.seller_type || "platform",
+    agreement_version: md.agreement_version || null, agreement_accepted_at: md.agreed_at || null, allocation: alloc } });
   if (!ins.ok) return { error: "Could not record the sale" };
   let sale = Array.isArray(ins.data) && ins.data[0];
   if (!sale) { // retry of an already-recorded sale: make sure the wallet credit exists
@@ -110,12 +149,13 @@ async function fulfillSession(session) {
     sale = ex.ok && Array.isArray(ex.data) && ex.data[0];
     if (!sale) return { error: "Sale lookup failed" };
   }
+  if (conflict || sale.status === "refunded") return { ok: true, conflict: true };
   const availableAt = new Date(Date.now() + (Number(prod.hold_days) || 0) * 864e5).toISOString();
   const tx = await sb("beat_wallet_txns", { method: "POST", prefer: "resolution=ignore-duplicates,return=minimal", body: {
     producer_id: prod.id, type: "sale", amount_cents: sale.producer_cents, ref: "sale:" + sale.id,
     note: beat.title + " (" + saleType + ")", available_at: availableAt } });
   if (!tx.ok) return { error: "Could not credit wallet" };
-  if (saleType === "exclusive") await sb("beat_items?id=eq." + beat.id, { method: "PATCH", prefer: "return=minimal", body: { exclusive_sold: true } });
+  await audit("system", "sale_recorded", beat.id, { sale: sale.id, type: saleType, gross: gross });
   return { ok: true, saleId: sale.id, producerCents: sale.producer_cents };
 }
 
@@ -137,8 +177,11 @@ async function handleRefund(charge) {
       note: "Refund: " + (sale.title || "beat") } });
     if (!tx.ok) return { error: "Could not record refund" };
   }
-  if (ratio >= 1) await sb("beat_sales?id=eq." + sale.id, { method: "PATCH", prefer: "return=minimal", body: { status: "refunded" } });
+  await sb("beat_sales?id=eq." + sale.id, { method: "PATCH", prefer: "return=minimal", body: ratio >= 1 ? { status: "refunded", refunded_cents: Number(charge.amount_refunded) || 0 } : { refunded_cents: Number(charge.amount_refunded) || 0 } });
+  // A fully refunded exclusive is NOT re-listed automatically: it becomes unavailable until an admin resolves it.
+  if (ratio >= 1 && sale.sale_type === "exclusive" && sale.beat_id) await sb("beat_items?id=eq." + sale.beat_id, { method: "PATCH", prefer: "return=minimal", body: { status: "unavailable" } });
+  await audit("system", "refund", sale.beat_id, { sale: sale.id, refunded: charge.amount_refunded });
   return { ok: true, reversed: delta > 0 ? delta : 0 };
 }
 
-module.exports = { SB, SITE, J, sb, hashPw, checkPw, signProducer, verifyProducer, verifyOwner, bearer, balances, fulfillSession, handleRefund, estimateFee };
+module.exports = { AGREEMENT_VERSION, rpc, audit, getSetting, setSetting, SB, SITE, J, sb, hashPw, checkPw, signProducer, verifyProducer, verifyOwner, bearer, balances, fulfillSession, handleRefund, estimateFee };

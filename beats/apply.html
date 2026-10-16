@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark light"><link rel="icon" href="data:,">
+<title>Sell Your Beats — POTENT Beats</title>
+<style>:root{color-scheme:dark light;--bg:#0a0a0a;--panel:#141412;--ink:#f7f4ec;--muted:#b8b3a8;--gold:#d4af37;--line:rgba(255,255,255,.16)}
+@media (prefers-color-scheme:light){:root{--bg:#f6f3ea;--panel:#fff;--ink:#16140f;--muted:#6d675a;--line:rgba(0,0,0,.14)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:16px;max-width:620px;margin-inline:auto}
+h1{color:var(--gold)}input,textarea{width:100%;font:inherit;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);margin:4px 0 10px}
+button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:12px 18px;background:var(--gold);color:#120d00;cursor:pointer}a{color:var(--gold)}.muted{color:var(--muted)}
+.ck{display:flex;gap:8px;align-items:flex-start;margin:10px 0}.ck input{width:auto;margin-top:5px}.err{color:#e74c3c;min-height:22px}</style></head><body>
+<p><a href="/beats/">&larr; Back to the store</a></p>
+<h1>Sell your beats on POTENT</h1>
+<p class="muted">We sell exclusives only: one buyer per beat, with the rights written out. Apply below. POTENT reviews every producer and every beat before anything goes on sale. You can't publish until you're approved.</p>
+<div id="f">
+<label>Legal name<input id="ln" autocomplete="name"></label>
+<label>Producer / artist name<input id="pn"></label>
+<label>Email<input id="em" type="email" autocomplete="email"></label>
+<label>Phone (optional)<input id="ph" type="tel"></label>
+<label>Country<input id="co"></label>
+<label>Portfolio links (SoundCloud, YouTube, BeatStars, Instagram...)<textarea id="pf" rows="2"></textarea></label>
+<label>Samples &amp; third-party material: do your beats use any? Tell us what and whether it's cleared.<textarea id="sm" rows="3"></textarea></label>
+<label>How you'd like to be paid (PayPal, Wise, Zelle...). Payout details are collected after approval.<input id="pp"></label>
+<label class="ck"><input type="checkbox" id="rd"><span>I own, or am legally authorized to grant, every right I will offer on every beat I submit, and I will disclose all samples and third-party material.</span></label>
+<label class="ck"><input type="checkbox" id="ag"><span>I accept the <a href="/beats/terms.html#seller" target="_blank">Seller Agreement</a> (v1.0).</span></label>
+<button id="go">Submit application</button><div class="err" id="er"></div>
+</div>
+<div id="ok" style="display:none"><h2>Application received</h2><p>Thanks. POTENT will review it and contact you at the email you gave. Your account is created only after approval.</p></div>
+<script>
+function $(i){return document.getElementById(i)}
+$("go").onclick=function(){$("er").textContent="";$("go").disabled=true;
+fetch("/.netlify/functions/beat-api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"apply",legal_name:$("ln").value,producer_name:$("pn").value,email:$("em").value,phone:$("ph").value,country:$("co").value,portfolio:$("pf").value,sample_info:$("sm").value,payout_preference:$("pp").value,rights_declaration:$("rd").checked,agree:$("ag").checked})})
+.then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||"Could not submit");return j})}).then(function(){$("f").style.display="none";$("ok").style.display="block"}).catch(function(e){$("er").textContent=e.message;$("go").disabled=false})};
+</script></body></html>
