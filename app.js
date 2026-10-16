@@ -423,7 +423,7 @@ function plJobFromRow(r) {
         zone: r.zone || "", speed: r.speed || "standard", basePrice: Number(r.base_price) || 0, finalPrice: Number(r.final_price) || 0, status: r.status || "New", payment: r.payment || "cash", discreet: !!r.discreet,
         isBusiness: !!r.is_business, customerType: r.customer_type || "residential", companyName: r.company_name || "", paymentTerms: r.payment_terms || "completion", date: r.date, timeSlot: r.time_slot || "", notes: r.notes || "",
         miles: r.miles || null, helperHours: Number(r.helper_hours) || 0, weightTier: r.weight_tier || "light", paymentIntentId: r.payment_intent_id || null, paidOnline: !!r.paid_online,
-        heavyFee: Number(r.heavy_fee) || 0, heavyLbs: Number(r.heavy_lbs) || 0, heavyItems: r.heavy_items || [], estTotalLbs: r.est_total_lbs || null, trips: r.trips || null, source: "web" };
+        heavyFee: Number(r.heavy_fee) || 0, heavyLbs: Number(r.heavy_lbs) || 0, heavyItems: r.heavy_items || [], estTotalLbs: r.est_total_lbs || null, trips: r.trips || null, referralCode: r.referral_code || null, referralSource: r.referral_source || null, source: "web" };
 }
 // Rows that a customer created (no staff author), that this device has not already imported or removed.
 function plNewWebBookings(rows, localJobs, seen) {
@@ -473,6 +473,7 @@ function plJobToRow(job, orgId) {
             est_total_lbs: job.estTotalLbs || null,
             trips: job.trips || null
         };
+    if (job.referralCode) { payload.referral_code = job.referralCode; payload.referral_source = job.referralSource || null; }
     if (job.paymentStatus) payload.payment_status = job.paymentStatus;
     if (job.amountPaid != null) payload.amount_paid = Number(job.amountPaid) || 0;
     return payload;
@@ -9519,20 +9520,58 @@ function plDownload(name, text, type) {
     } catch (e) { alert("Your browser blocked the download."); }
 }
 var PL_IMPORT_FIELDS = {
-    trucks: { make: ["make", "manufacturer"], model: ["model"], year: ["year", "modelyear"], plate: ["plate", "licenseplate", "licenseplatenumber", "tag", "platenumber"], vin: ["vin", "vehicleidentificationnumber"], color: ["color", "colour"] },
-    drivers: { name: ["name", "drivername", "driver", "fullname"], first: ["firstname", "first"], last: ["lastname", "last"], email: ["email", "emailaddress"], phone: ["phone", "mobile", "cell", "phonenumber"] }
+    trucks: {
+        make: ["make", "manufacturer", "vehiclemake"], model: ["model", "vehiclemodel"], year: ["year", "modelyear", "vehicleyear"],
+        plate: ["plate", "licenseplate", "licenseplatenumber", "tag", "platenumber", "licensenumber", "plateno"], vin: ["vin", "vehicleidentificationnumber", "vinnumber"], color: ["color", "colour"],
+        policy: ["policy", "policynumber", "insurancepolicy", "inspolicy"], regexpiry: ["registrationexpiry", "regexpiry", "registrationexpiration", "regexp", "registrationdue"], insexpiry: ["insuranceexpiry", "insexpiry", "insuranceexpiration", "policyexpiry", "insuranceexp"]
+    },
+    drivers: {
+        name: ["name", "drivername", "driver", "fullname"], first: ["firstname", "first"], last: ["lastname", "last"], email: ["email", "emailaddress"], phone: ["phone", "mobile", "cell", "phonenumber", "cellphone"],
+        cdl: ["cdl", "cdlnumber", "licensenumber", "driverlicense", "driverlicensenumber", "license"], cdlexpiry: ["cdlexpiry", "cdlexpiration", "licenseexpiry", "licenseexpiration", "cdlexp", "licenseexp"], medexpiry: ["medcardexpiry", "medicalcardexpiry", "medexpiry", "dotmedicalexpiry", "medicalexpiration", "medcardexp", "medicalexp"]
+    },
+    jobs: {
+        customer: ["customer", "customername", "client", "clientname", "billto", "name", "shipper", "consignee"], company: ["company", "companyname", "business"], phone: ["phone", "phonenumber", "mobile", "contactphone"], email: ["email", "emailaddress"],
+        origin: ["origin", "pickup", "pickupaddress", "pickuplocation", "from", "shipfrom", "pickupcity"], destination: ["destination", "delivery", "deliveryaddress", "dropoff", "to", "shipto", "deliverycity", "deliverylocation"],
+        service: ["service", "servicetype", "loadtype", "type", "description", "commodity"], date: ["date", "pickupdate", "deliverydate", "jobdate", "invoicedate", "shipdate", "loaddate"],
+        price: ["price", "amount", "total", "rate", "linehaul", "invoiceamount", "charge", "revenue", "grosspay"], status: ["status", "loadstatus"], paid: ["paid", "ispaid", "paymentstatus"], notes: ["notes", "memo", "comments"], ref: ["ref", "reference", "loadnumber", "load", "loadno", "invoice", "invoicenumber", "pronumber", "bol"]
+    }
 };
-function plMapCsv(kind, text) {
-    var rows = plCsvParse(text); if (rows.length < 2) return [];
+var PL_FIELD_LABELS = { make: "Make", model: "Model", year: "Year", plate: "License plate", vin: "VIN", color: "Color", policy: "Insurance policy #", regexpiry: "Registration expires", insexpiry: "Insurance expires",
+    name: "Full name", first: "First name", last: "Last name", email: "Email", phone: "Phone", cdl: "CDL number", cdlexpiry: "CDL expires", medexpiry: "Medical card expires",
+    customer: "Customer name", company: "Company", origin: "Pickup", destination: "Delivery", service: "Service / load type", date: "Date", price: "Amount ($)", status: "Status", paid: "Paid?", notes: "Notes", ref: "Load / invoice #" };
+// guess which spreadsheet column is which field. Returns { field: columnIndex }
+function plGuessMap(kind, headers) {
     var norm = function (h) { return String(h || "").toLowerCase().replace(/[^a-z0-9]/g, ""); };
-    var heads = rows[0].map(norm), spec = PL_IMPORT_FIELDS[kind], idx = {};
-    Object.keys(spec).forEach(function (f) { for (var i = 0; i < heads.length; i++) { if (spec[f].indexOf(heads[i]) >= 0) { idx[f] = i; break; } } });
-    return rows.slice(1).map(function (r) {
-        var o = {}; Object.keys(idx).forEach(function (f) { o[f] = String(r[idx[f]] || "").trim(); });
+    var heads = headers.map(norm), spec = PL_IMPORT_FIELDS[kind], idx = {}, used = {};
+    Object.keys(spec).forEach(function (f) { for (var i = 0; i < heads.length; i++) { if (!used[i] && spec[f].indexOf(heads[i]) >= 0) { idx[f] = i; used[i] = 1; break; } } });
+    return idx;
+}
+function plRowsFromMap(kind, raw, map) {
+    return raw.map(function (r) {
+        var o = {}; Object.keys(map).forEach(function (f) { if (map[f] !== "" && map[f] != null && map[f] >= 0) o[f] = String(r[map[f]] == null ? "" : r[map[f]]).trim(); });
         if (kind === "drivers" && !o.name) o.name = ((o.first || "") + " " + (o.last || "")).trim();
         return o;
     }).filter(function (o) { return Object.keys(o).some(function (k) { return o[k]; }); });
 }
+var _plXlsxP = null;
+function plLoadXlsx() {
+    if (window.XLSX) return Promise.resolve(window.XLSX);
+    if (_plXlsxP) return _plXlsxP;
+    _plXlsxP = new Promise(function (res, rej) {
+        var s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+        s.onload = function () { res(window.XLSX); }; s.onerror = function () { _plXlsxP = null; rej(new Error("load")); }; document.head.appendChild(s);
+    });
+    return _plXlsxP;
+}
+var PL_MOVE_HELP = [
+    { id: "samsara", name: "Samsara", how: "Use the Samsara tab above for trucks and drivers: paste a read-only API token and we copy the lists. Load history is not in Samsara; use a spreadsheet from your dispatch or accounting system." },
+    { id: "motive", name: "Motive (KeepTruckin)", how: "Use the Motive tab above for trucks and drivers: paste a read-only API key. For past loads, export from your dispatch or accounting software." },
+    { id: "trucklogics", name: "TruckLogics / Truckbase / Axon", how: "In your current system open the Vehicles, Drivers and Loads (or Invoices) lists and use Export or Download to CSV or Excel. Drop each file here. The column matcher handles the different headings." },
+    { id: "tms", name: "McLeod / Revenova / other TMS", how: "Ask your TMS rep or look under Reports for an export of Equipment, Drivers and Order history to Excel or CSV. Drop the file here. If a report will not export, press \"Do it for me\" and send us whatever you can get." },
+    { id: "quickbooks", name: "QuickBooks / invoices", how: "In QuickBooks: Reports, run Sales by Customer Detail (or Invoice List) for the dates you want, then Export to Excel. Drop it here as Load history. We read customer, date and amount." },
+    { id: "sheet", name: "Excel / Google Sheets", how: "Google Sheets: File, Download, CSV or Excel. Drop it here. Any column names work; you can fix a column in the matcher before importing." },
+    { id: "other", name: "Something else / paper", how: "Press \"Do it for me\" and tell us what you use. Photos or PDFs of lists are fine. We load it for you." }
+];
 function plDataApi(body) {
     return fetch("/.netlify/functions/company-data", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + plTokenGet() }, body: JSON.stringify(body) })
         .then(function (r) { return r.json().catch(function () { return { ok: false, error: "Server error" }; }); }).catch(function () { return { ok: false, error: "No connection." }; });
@@ -9562,6 +9601,12 @@ function DataTools(props) {
     var [key, setKey] = useState("");
     var [rows, setRows] = useState([]);
     var [result, setResult] = useState(null);
+    var [heads, setHeads] = useState([]);
+    var [raw, setRaw] = useState([]);
+    var [map, setMap] = useState({});
+    var [aiNote, setAiNote] = useState("");
+    var [help, setHelp] = useState(null);
+    var [ask, setAsk] = useState({ open: false, platform: "", contact: "", notes: "", sent: "" });
     var box = { background: C.surface, border: "1px solid " + C.border, borderRadius: 10, padding: 14, marginBottom: 14 };
     function doExport() {
         setBusy("export"); setMsg(""); setExp(null);
@@ -9572,14 +9617,42 @@ function DataTools(props) {
             plDownload("my-company-data-" + new Date().toISOString().slice(0, 10) + ".json", JSON.stringify(r.export, null, 2), "application/json");
         });
     }
+    // read the spreadsheet text, guess the columns, then ask the free AI to fill any it missed
+    function loadText(text, k) {
+        var all = plCsvParse(text); if (all.length < 2) { setHeads([]); setRaw([]); setRows([]); setMsg("I could not find any rows. The first row should be column names."); return; }
+        var hd = all[0].map(function (h) { return String(h || "").trim(); }), body = all.slice(1);
+        var m = plGuessMap(k, hd);
+        setHeads(hd); setRaw(body); setMap(m); setResult(null); setMsg(""); setAiNote(""); setRows(plRowsFromMap(k, body, m));
+        var want = Object.keys(PL_IMPORT_FIELDS[k]).filter(function (f) { return m[f] === undefined && f !== "first" && f !== "last"; });
+        if (want.length) {
+            plDataApi({ action: "ai_map", kind: k === "jobs" ? "jobs" : k, headers: hd, sample: body.slice(0, 3) }).then(function (r) {
+                if (!r || !r.ok || !r.ai) return;
+                var m2 = Object.assign({}, m), n = 0;
+                want.forEach(function (f) { var h = r.mapping[f]; var i = hd.indexOf(h); if (h && i >= 0 && Object.keys(m2).every(function (x) { return m2[x] !== i; })) { m2[f] = i; n++; } });
+                if (n) { setMap(m2); setRows(plRowsFromMap(k, body, m2)); setAiNote("The AI matched " + n + " more column" + (n === 1 ? "" : "s") + ". Check them below."); }
+            });
+        }
+    }
     function readFile(e) {
         var f = e.target.files && e.target.files[0]; if (!f) return;
-        if (f.size > 2000000) { setMsg("That file is over 2 MB. Split it into smaller files."); return; }
-        var fr = new FileReader(); fr.onload = function () { setCsv(String(fr.result || "")); setRows(plMapCsv(kind, fr.result)); setResult(null); setMsg(""); }; fr.readAsText(f);
+        if (f.size > 8000000) { setMsg("That file is over 8 MB. Split it into smaller files."); return; }
+        if (/\.xlsx?$/i.test(f.name)) {
+            setMsg("Reading the Excel file...");
+            var fr2 = new FileReader();
+            fr2.onload = function () {
+                plLoadXlsx().then(function (X) {
+                    var wb = X.read(fr2.result, { type: "array" }), ws = wb.Sheets[wb.SheetNames[0]];
+                    var t = X.utils.sheet_to_csv(ws); setCsv(t); loadText(t, kind);
+                }).catch(function () { setMsg("Could not read that Excel file here. In Excel use Save As, CSV, and drop that instead."); });
+            };
+            fr2.readAsArrayBuffer(f); return;
+        }
+        var fr = new FileReader(); fr.onload = function () { var t = String(fr.result || ""); setCsv(t); loadText(t, kind); }; fr.readAsText(f);
     }
-    function preview() { setRows(plMapCsv(kind, csv)); setResult(null); setMsg(""); }
+    function preview() { loadText(csv, kind); }
+    function setCol(f, v) { var m2 = Object.assign({}, map); if (v === "") delete m2[f]; else m2[f] = Number(v); setMap(m2); setRows(plRowsFromMap(kind, raw, m2)); }
     function pull() {
-        setBusy("pull"); setMsg(""); setResult(null);
+        setBusy("pull"); setMsg(""); setResult(null); setHeads([]);
         plDataApi(src === "samsara" ? { action: "pull_samsara", apiToken: key } : { action: "pull_motive", apiKey: key }).then(function (r) {
             setBusy("");
             if (!r.ok) { setMsg(r.error || "Could not connect."); return; }
@@ -9588,19 +9661,33 @@ function DataTools(props) {
             setMsg((list || []).length ? "Found " + list.length + ". Review, then import." : "Connected, but nothing found for " + kind + ".");
         });
     }
-    function doImport() {
+    // send in batches of 200 so a 300-truck fleet or 5,000 old loads never times out
+    async function doImport() {
         if (!rows.length) return;
         setBusy("import"); setMsg("");
-        plDataApi({ action: kind === "trucks" ? "import_trucks" : "import_drivers", rows: rows }).then(function (r) {
-            setBusy(""); setResult(r);
-            if (r.ok) { setRows([]); setCsv(""); if (kind === "trucks") { try { loadFleetFromCloud(); } catch (e) { } } }
-            else setMsg(r.error || "Import failed.");
+        var action = kind === "trucks" ? "import_trucks" : kind === "drivers" ? "import_drivers" : "import_jobs";
+        var tot = { ok: true, added: 0, skipped: [], created: [] };
+        for (var i = 0; i < rows.length; i += 200) {
+            var r = await plDataApi({ action: action, rows: rows.slice(i, i + 200) });
+            if (!r.ok) { tot.ok = false; tot.error = (r.error || "Import failed.") + (tot.added ? " " + tot.added + " were added before it stopped." : ""); break; }
+            tot.added += r.added || 0;
+            (r.skipped || []).forEach(function (s) { tot.skipped.push({ row: s.row + i, why: s.why }); });
+            (r.created || []).forEach(function (c) { tot.created.push(c); });
+            setMsg("Imported " + Math.min(i + 200, rows.length) + " of " + rows.length + "...");
+        }
+        setBusy(""); setResult(tot); setMsg("");
+        if (tot.ok) { setRows([]); setCsv(""); setHeads([]); setRaw([]); if (kind === "trucks") { try { loadFleetFromCloud(); } catch (e) { } } }
+    }
+    function sendHelp() {
+        setAsk(Object.assign({}, ask, { sent: "sending" }));
+        plDataApi({ action: "help_request", platform: ask.platform, contact: ask.contact, notes: ask.notes }).then(function (r) {
+            setAsk(Object.assign({}, ask, { sent: r.ok ? "done" : "fail" }));
         });
     }
     var tabBtn = function (id, label, cur, set) {
-        return React.createElement("button", { key: id, onClick: function () { set(id); setRows([]); setResult(null); setMsg(""); }, style: { background: cur === id ? C.orange : "transparent", color: cur === id ? "#000" : C.dim, border: "1px solid " + (cur === id ? C.orange : C.border), borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", marginRight: 6, marginBottom: 6 } }, label);
+        return React.createElement("button", { key: id, onClick: function () { set(id); setRows([]); setHeads([]); setRaw([]); setResult(null); setMsg(""); if (id === "jobs") setSrc("csv"); }, style: { background: cur === id ? C.orange : "transparent", color: cur === id ? "#000" : C.dim, border: "1px solid " + (cur === id ? C.orange : C.border), borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", marginRight: 6, marginBottom: 6 } }, label);
     };
-    var tmpl = kind === "trucks" ? "make,model,year,plate,vin,color\nIsuzu,NPR,2021,GA1234,1HGCM82633A004352,White" : "name,email,phone\nJoe Driver,joe@example.com,404-555-0100";
+    var tmpl = kind === "trucks" ? "make,model,year,plate,vin,color,registration expires,insurance expires\nIsuzu,NPR,2021,GA1234,1HGCM82633A004352,White,2027-03-01,2027-01-15" : kind === "drivers" ? "name,email,phone,cdl number,cdl expires,medical card expires\nJoe Driver,joe@example.com,404-555-0100,GA123456,2028-05-01,2027-02-10" : "customer,date,pickup,delivery,service,amount,paid,load number\nAcme Corp,2025-11-04,Atlanta GA,Macon GA,Freight,850,yes,L-1001";
     return React.createElement("div", { style: { maxWidth: 640, margin: "0 auto" } },
         React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: C.white, marginBottom: 4 } }, "📦 Data & Imports"),
         React.createElement("div", { style: box },
@@ -9624,11 +9711,16 @@ function DataTools(props) {
             msg && !rows.length && !result && React.createElement("div", { style: { fontSize: 12, color: "#E53E3E", marginTop: 10 } }, msg)),
         React.createElement(Card, null,
             React.createElement(Lbl, null, "Bring your data in"),
-            React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 12, lineHeight: 1.5 } }, "Skip retyping. Import trucks or driver logins from a spreadsheet, or connect Samsara or Motive for a one-time read. Highway and most other systems let you export a CSV; drop that file here."),
-            React.createElement("div", null, tabBtn("trucks", "Trucks", kind, setKind), tabBtn("drivers", "Drivers", kind, setKind)),
-            React.createElement("div", null, tabBtn("csv", "Spreadsheet / CSV", src, setSrc), tabBtn("samsara", "Samsara", src, setSrc), tabBtn("motive", "Motive", src, setSrc)),
+            React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 12, lineHeight: 1.5 } }, "Moving from another system? Pick what you are moving, then drop the file from your old system. Spreadsheets (CSV or Excel) from any program work; we match the columns for you and you can fix any we miss."),
+            React.createElement("div", null, tabBtn("trucks", "Trucks", kind, setKind), tabBtn("drivers", "Drivers", kind, setKind), tabBtn("jobs", "Load history", kind, setKind)),
+            React.createElement("div", null, tabBtn("csv", "Spreadsheet / Excel", src, setSrc), kind !== "jobs" && tabBtn("samsara", "Samsara", src, setSrc), kind !== "jobs" && tabBtn("motive", "Motive", src, setSrc)),
+            React.createElement("div", { style: { marginBottom: 10 } },
+                React.createElement("select", { value: help ? help.id : "", onChange: function (e) { setHelp(PL_MOVE_HELP.filter(function (h) { return h.id === e.target.value; })[0] || null); }, style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 8, color: C.white, padding: "9px 10px", fontSize: 12, width: "100%", fontFamily: "inherit" } },
+                    React.createElement("option", { value: "" }, "How do I move over from...?"),
+                    PL_MOVE_HELP.map(function (h) { return React.createElement("option", { key: h.id, value: h.id }, h.name); })),
+                help && React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.6, background: C.card, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", marginTop: 6 } }, React.createElement("b", { style: { color: C.orange } }, help.name + ": "), help.how)),
             src === "csv" ? React.createElement("div", { style: box },
-                React.createElement("input", { type: "file", accept: ".csv,text/csv,text/plain", onChange: readFile, style: { color: C.white, fontSize: 12, marginBottom: 10 } }),
+                React.createElement("input", { type: "file", accept: ".csv,.xlsx,.xls,text/csv,text/plain", onChange: readFile, style: { color: C.white, fontSize: 12, marginBottom: 10 } }),
                 React.createElement(TxtIn, { rows: 4, value: csv, onChange: setCsv, placeholder: "...or paste rows here. First row = column names." }),
                 React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
                     React.createElement(Btn, { onClick: preview, disabled: !csv.trim() }, "Preview"),
@@ -9640,23 +9732,46 @@ function DataTools(props) {
                 React.createElement(TxtIn, { value: key, onChange: setKey, placeholder: src === "samsara" ? "Samsara API token" : "Motive API key", type: "password" }),
                 React.createElement(Btn, { onClick: pull, disabled: !key.trim() || busy === "pull" }, busy === "pull" ? "Connecting..." : "Read my " + kind),
                 React.createElement("div", { style: { fontSize: 10, color: C.faint, marginTop: 8 } }, "Read-only. We use the key once to copy your list and do not store it.")),
-            msg && (rows.length > 0 || src !== "csv") && React.createElement("div", { style: { fontSize: 12, color: rows.length ? C.green : "#E53E3E", marginBottom: 10 } }, msg),
+            msg && (rows.length > 0 || src !== "csv" || heads.length === 0) && React.createElement("div", { style: { fontSize: 12, color: rows.length ? C.green : "#E53E3E", marginBottom: 10 } }, msg),
+            heads.length > 0 && React.createElement("div", { style: box },
+                React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.white, marginBottom: 4 } }, "Match your columns"),
+                React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 8 } }, aiNote || "Wrong or missing? Pick the right column for each line."),
+                Object.keys(PL_IMPORT_FIELDS[kind]).filter(function (f) { return !(kind === "drivers" && (f === "first" || f === "last") && map.name !== undefined); }).map(function (f) {
+                    return React.createElement("div", { key: f, style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, alignItems: "center", marginBottom: 5 } },
+                        React.createElement("span", { style: { fontSize: 12, color: C.white } }, PL_FIELD_LABELS[f] || f),
+                        React.createElement("select", { value: map[f] === undefined ? "" : String(map[f]), onChange: function (e) { setCol(f, e.target.value); }, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 6, color: C.white, padding: "6px 8px", fontSize: 12, fontFamily: "inherit" } },
+                            React.createElement("option", { value: "" }, "(skip)"),
+                            heads.map(function (h, i) { return React.createElement("option", { key: i, value: String(i) }, h || "Column " + (i + 1)); })));
+                })),
             rows.length > 0 && React.createElement("div", { style: box },
-                React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.white, marginBottom: 8 } }, rows.length + " " + kind + " ready"),
+                React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.white, marginBottom: 8 } }, rows.length + " " + (kind === "jobs" ? "past loads" : kind) + " ready"),
                 rows.slice(0, 5).map(function (r, i) {
                     return React.createElement("div", { key: i, style: { fontSize: 11, color: C.dim, padding: "3px 0", borderBottom: "1px solid " + C.border } },
-                        kind === "trucks" ? [r.year, r.make, r.model, r.plate, r.vin].filter(Boolean).join(" · ") : [r.name, r.email, r.phone].filter(Boolean).join(" · "));
+                        kind === "trucks" ? [r.year, r.make, r.model, r.plate, r.vin].filter(Boolean).join(" · ") : kind === "drivers" ? [r.name, r.email, r.phone, r.cdl].filter(Boolean).join(" · ") : [r.date, r.customer || r.company, r.origin && r.destination ? r.origin + " > " + r.destination : "", r.price ? "$" + r.price : ""].filter(Boolean).join(" · "));
                 }),
                 rows.length > 5 && React.createElement("div", { style: { fontSize: 11, color: C.faint, marginTop: 4 } }, "+ " + (rows.length - 5) + " more"),
-                kind === "drivers" && React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 8 } }, "Each driver gets a login with a one-time password. Drivers need an email address."),
-                React.createElement("div", { style: { marginTop: 10 } }, React.createElement(Btn, { onClick: doImport, disabled: busy === "import" }, busy === "import" ? "Importing..." : "Import " + rows.length + " " + kind))),
+                kind === "drivers" && React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 8 } }, "Each driver gets a login with a one-time password. Drivers need an email address. CDL and medical card dates go into their compliance record."),
+                kind === "jobs" && React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 8 } }, "Past loads are saved as completed jobs marked Imported, so your customer history and reports start full."),
+                kind === "trucks" && React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 8 } }, "Trucks already in your fleet (same VIN or plate) are skipped, never doubled."),
+                React.createElement("div", { style: { marginTop: 10 } }, React.createElement(Btn, { onClick: doImport, disabled: busy === "import" }, busy === "import" ? "Importing..." : "Import " + rows.length + " " + (kind === "jobs" ? "loads" : kind)))),
             result && result.ok && React.createElement("div", { style: Object.assign({}, box, { borderColor: C.green + "88" }) },
                 React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.green } }, "Added " + result.added + (result.skipped && result.skipped.length ? " · skipped " + result.skipped.length : "")),
                 (result.skipped || []).slice(0, 8).map(function (s, i) { return React.createElement("div", { key: i, style: { fontSize: 11, color: C.dim } }, "Row " + s.row + ": " + s.why); }),
                 result.created && result.created.length > 0 && React.createElement("div", { style: { marginTop: 10 } },
                     React.createElement("div", { style: { fontSize: 11, color: "#F0E000", marginBottom: 8 } }, "Save these logins now. The passwords are shown only once."),
                     React.createElement(Btn, { onClick: function () { plDownload("new-driver-logins.csv", plCsvBuild(result.created.map(function (c) { return { name: c.name, email: c.email, temporary_password: c.tempPassword }; }))); } }, "Download driver logins"))),
-            result && !result.ok && React.createElement("div", { style: { fontSize: 12, color: "#E53E3E" } }, result.error || "Import failed.")));
+            result && !result.ok && React.createElement("div", { style: { fontSize: 12, color: "#E53E3E" } }, result.error || "Import failed."),
+            React.createElement("div", { style: Object.assign({}, box, { marginTop: 14, marginBottom: 0 }) },
+                React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.white, marginBottom: 4 } }, "Rather not do it yourself?"),
+                React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 8, lineHeight: 1.5 } }, "We will move your data over for you. Tell us what you are coming from and send us your files."),
+                !ask.open ? React.createElement(Btn, { variant: "ghost", onClick: function () { setAsk(Object.assign({}, ask, { open: true })); } }, "Do it for me")
+                : ask.sent === "done" ? React.createElement("div", { style: { fontSize: 12, color: C.green } }, "Sent. We will reach out shortly. You can also call (470) 453-1616.")
+                : React.createElement("div", null,
+                    React.createElement(TxtIn, { value: ask.platform, onChange: function (v) { setAsk(Object.assign({}, ask, { platform: v })); }, placeholder: "What are you moving from? (e.g. TruckLogics, Excel)" }),
+                    React.createElement(TxtIn, { value: ask.contact, onChange: function (v) { setAsk(Object.assign({}, ask, { contact: v })); }, placeholder: "Best phone or email" }),
+                    React.createElement(TxtIn, { rows: 3, value: ask.notes, onChange: function (v) { setAsk(Object.assign({}, ask, { notes: v })); }, placeholder: "How many trucks, drivers and years of loads?" }),
+                    ask.sent === "fail" && React.createElement("div", { style: { fontSize: 11, color: "#E53E3E", marginBottom: 6 } }, "Could not send. Call (470) 453-1616."),
+                    React.createElement(Btn, { onClick: sendHelp, disabled: !ask.contact.trim() || ask.sent === "sending" }, ask.sent === "sending" ? "Sending..." : "Send request")))));
 }
 function MyCompany(props) {
     var u = props.currentUser || {};
@@ -15809,21 +15924,35 @@ function ReferralCodeManager(){
     var [codes, setCodes] = useState([]);
     var [loading, setLoading] = useState(true);
     var [showAdd, setShowAdd] = useState(false);
-    var [form, setForm] = useState({code:"", discountPct:"10", source:""});
+    var [form, setForm] = useState({code:"", discountPct:"10", source:"", payTo:""});
+    var [bonusMsg, setBonusMsg] = useState("");
+    var [bonusBusy, setBonusBusy] = useState(false);
 
+    function settleBonuses(quiet){
+        setBonusBusy(true);
+        return fetch("/.netlify/functions/referral-bonus",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+plTokenGet()},body:JSON.stringify({action:"run"})})
+            .then(function(r){return r.json();}).catch(function(){return {ok:false,error:"No connection."};})
+            .then(function(d){
+                setBonusBusy(false);
+                if(!d.ok){ if(!quiet) setBonusMsg(d.error||"Could not check bonuses."); return; }
+                var n=d.paid.length;
+                setBonusMsg((n? "Paid "+n+" bonus"+(n===1?"":"es")+" ($"+d.totalDollars.toFixed(2)+") into wallets: "+d.paid.map(function(p){return p.code+" $"+p.dollars.toFixed(2);}).join(", ")+". " : "No new bonuses due. ")+(d.unassignedCodes.length? "Add a payout email to: "+d.unassignedCodes.join(", ")+".":""));
+            });
+    }
     useEffect(function(){
         loadReferralCodesFromCloud().then(function(list){ setCodes(list); setLoading(false); });
+        settleBonuses(true);
     }, []);
 
     function addCode(){
         if(!form.code.trim()){ alert("Enter a code."); return; }
         var clean = form.code.trim().toUpperCase();
         if(codes.some(function(c){ return c.code.toUpperCase()===clean; })){ alert("That code already exists."); return; }
-        var newCode = { code: clean, discountPct: Number(form.discountPct)||0, source: form.source.trim()||"Unknown", active: true, uses: 0, createdAt: new Date().toISOString() };
+        var newCode = { code: clean, discountPct: Number(form.discountPct)||0, source: form.source.trim()||"Unknown", payTo: form.payTo.trim().toLowerCase(), active: true, uses: 0, createdAt: new Date().toISOString() };
         var updated = [...codes, newCode];
         setCodes(updated);
         saveReferralCodesToCloud(updated);
-        setForm({code:"", discountPct:"10", source:""});
+        setForm({code:"", discountPct:"10", source:"", payTo:""});
         setShowAdd(false);
     }
 
@@ -15848,13 +15977,18 @@ function ReferralCodeManager(){
             React.createElement("button",{onClick:function(){setShowAdd(!showAdd);},style:{background:C.orange,color:"#000",border:"none",borderRadius:7,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},"+ New Code")
         ),
         React.createElement("div",{style:{fontSize:11,color:C.dim,marginBottom:20}},"Discount codes for customers, and a way to track which employee or source brought in the business."),
+        React.createElement("div",{style:{background:C.card,border:"1px solid "+C.border,borderRadius:10,padding:"10px 14px",marginBottom:14,fontSize:12,color:C.dim,lineHeight:1.6}},
+            React.createElement("b",{style:{color:C.green}},"Automatic bonuses: "),"$25 when a new customer using a code finishes their first job. $250 total when they sign a contract (the $25 counts toward it). Money goes straight into the code owner's wallet using the payout email you set on the code. Nobody is paid twice.",
+            React.createElement("div",{style:{marginTop:8}},React.createElement("button",{onClick:function(){settleBonuses(false);},disabled:bonusBusy,style:{background:C.green,color:"#000",border:"none",borderRadius:7,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},bonusBusy?"Checking...":"Check & pay bonuses now")),
+            bonusMsg && React.createElement("div",{style:{marginTop:8,color:C.white}},bonusMsg)),
 
         showAdd && React.createElement("div",{style:{background:C.card,border:"1px solid "+C.orange+"44",borderRadius:12,padding:"16px",marginBottom:16}},
             React.createElement("div",{style:{fontSize:12,fontWeight:700,color:C.white,marginBottom:10}},"New Referral Code"),
             React.createElement("div",{style:{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10}},
                 React.createElement("input",{value:form.code,onChange:function(e){setForm(function(p){return Object.assign({},p,{code:e.target.value.toUpperCase()});});},placeholder:"CODE (e.g. MARCUS10)",style:{flex:1,minWidth:140,background:C.surface,border:"1px solid "+C.border,borderRadius:7,color:C.white,padding:"9px 12px",fontSize:13,outline:"none",fontFamily:"monospace"}}),
                 React.createElement("input",{type:"number",value:form.discountPct,onChange:function(e){setForm(function(p){return Object.assign({},p,{discountPct:e.target.value});});},placeholder:"Discount %",style:{width:100,background:C.surface,border:"1px solid "+C.border,borderRadius:7,color:C.white,padding:"9px 12px",fontSize:13,outline:"none",fontFamily:"inherit"}}),
-                React.createElement("input",{value:form.source,onChange:function(e){setForm(function(p){return Object.assign({},p,{source:e.target.value});});},placeholder:"Employee / Source (e.g. Marcus, Facebook Ad)",style:{flex:1,minWidth:160,background:C.surface,border:"1px solid "+C.border,borderRadius:7,color:C.white,padding:"9px 12px",fontSize:13,outline:"none",fontFamily:"inherit"}})
+                React.createElement("input",{value:form.source,onChange:function(e){setForm(function(p){return Object.assign({},p,{source:e.target.value});});},placeholder:"Employee / Source (e.g. Marcus, Facebook Ad)",style:{flex:1,minWidth:160,background:C.surface,border:"1px solid "+C.border,borderRadius:7,color:C.white,padding:"9px 12px",fontSize:13,outline:"none",fontFamily:"inherit"}}),
+                React.createElement("input",{value:form.payTo,onChange:function(e){setForm(function(p){return Object.assign({},p,{payTo:e.target.value});});},placeholder:"Bonus goes to (their email)",style:{flex:1,minWidth:200,background:C.surface,border:"1px solid "+C.border,borderRadius:7,color:C.white,padding:"9px 12px",fontSize:13,outline:"none",fontFamily:"inherit"}})
             ),
             React.createElement("button",{onClick:addCode,style:{background:C.green,color:"#000",border:"none",borderRadius:7,padding:"9px 18px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},"✅ Create Code")
         ),
@@ -15865,7 +15999,7 @@ function ReferralCodeManager(){
             return React.createElement("div",{key:c.code,style:{background:C.card,border:"1px solid "+(c.active?C.border:C.red+"44"),borderRadius:10,padding:"12px 16px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}},
                 React.createElement("div",null,
                     React.createElement("div",{style:{fontSize:14,fontWeight:800,color:c.active?C.white:C.dim,fontFamily:"monospace"}},c.code+(c.active?"":" (inactive)")),
-                    React.createElement("div",{style:{fontSize:11,color:C.dim,marginTop:2}},c.discountPct+"% off · Source: "+c.source+" · "+(c.uses||0)+" use"+(c.uses!==1?"s":""))
+                    React.createElement("div",{style:{fontSize:11,color:C.dim,marginTop:2}},c.discountPct+"% off · Source: "+c.source+(c.payTo?" · bonus to "+c.payTo:" · NO payout email")+" · "+(c.uses||0)+" use"+(c.uses!==1?"s":""))
                 ),
                 React.createElement("div",{style:{display:"flex",gap:6}},
                     React.createElement("button",{onClick:function(){toggleActive(c.code);},style:{background:"transparent",border:"1px solid "+C.border,color:c.active?C.orange:C.green,borderRadius:6,padding:"5px 10px",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}},c.active?"Deactivate":"Activate"),
@@ -22411,6 +22545,16 @@ function TeamWalletPanel(props) {
     var cs = React.useState({ email: "", amount: "", note: "" }); var cf = cs[0], setCf = cs[1];
     var cos = React.useState(false); var showCashout = cos[0], setShowCashout = cos[1];
     var mos = React.useState({ method: "bank", speed: "standard", handle: "" }); var coForm = mos[0], setCoForm = mos[1];
+    var aqs = React.useState(""); var aiQ = aqs[0], setAiQ = aqs[1];
+    var aas = React.useState(""); var aiA = aas[0], setAiA = aas[1];
+    var abs = React.useState(false); var aiBusy = abs[0], setAiBusy = abs[1];
+    function askPayroll(question) {
+        var qq = question || aiQ; if (!qq.trim()) return;
+        setAiBusy(true); setAiA(""); setAiQ(qq);
+        fetch("/.netlify/functions/payroll-assistant", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + plTokenGet() }, body: JSON.stringify({ action: "ask", question: qq }) })
+            .then(function (r) { return r.json(); }).catch(function () { return { ok: false, error: "No connection." }; })
+            .then(function (d) { setAiBusy(false); setAiA(d.ok ? d.answer : (d.error || "The assistant is unavailable.")); });
+    }
 
     function load() {
         plOps("team_wallets", "GET", "select=*&order=updated_at.desc&limit=300").then(function (r) {
@@ -22580,6 +22724,17 @@ function TeamWalletPanel(props) {
                             React.createElement("div", { style: { color: C.dim, fontSize: 10 } }, String(p.created_at).slice(0, 16).replace("T", " "))),
                         isOwner && React.createElement("button", { onClick: function () { markPaid(p); }, style: { background: C.green, color: "#000", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" } }, "✓ Mark Paid")));
             })),
+        isOwner && React.createElement("div", { style: { background: C.card, border: "1px solid " + C.orange + "66", borderRadius: 12, padding: 12, marginBottom: 12 } },
+            React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.white, marginBottom: 2 } }, "🤖 Payroll assistant"),
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 8 } }, "Ask who is owed, what is waiting, or have it prepare the pay run. It reads your wallets and never moves money by itself."),
+            React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 } },
+                ["Who's owed money?", "Any pending cashouts?", "Prepare the pay run"].map(function (t) {
+                    return React.createElement("button", { key: t, onClick: function () { askPayroll(t); }, style: { background: "transparent", color: C.orange, border: "1px solid " + C.orange, borderRadius: 14, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, t);
+                })),
+            React.createElement("div", { style: { display: "flex", gap: 6 } },
+                React.createElement("input", { value: aiQ, placeholder: "Ask about payroll...", onChange: function (e) { setAiQ(e.target.value); }, onKeyDown: function (e) { if (e.key === "Enter") askPayroll(); }, style: Object.assign({}, inp, { flex: 1 }) }),
+                React.createElement("button", { onClick: function () { askPayroll(); }, disabled: aiBusy, style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "0 14px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, aiBusy ? "..." : "Ask")),
+            aiA && React.createElement("div", { style: { marginTop: 8, fontSize: 12, color: C.white, whiteSpace: "pre-wrap", lineHeight: 1.6, background: C.surface, borderRadius: 8, padding: "8px 10px" } }, aiA)),
         React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: 12, marginBottom: 12 } },
             React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.white, marginBottom: 8 } }, "Credit Commission"),
             React.createElement("div", { style: { display: "grid", gridTemplateColumns: "2fr 1fr", gap: 8, marginBottom: 8 } },

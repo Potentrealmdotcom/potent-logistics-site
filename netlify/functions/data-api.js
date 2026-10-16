@@ -230,7 +230,7 @@ exports.handler = async function (event) {
     // ── public: a customer books a job (no login). Only whitelisted fields; the company comes from the site, never from the browser's claim of a row id ──
     var JOB_COLS = ["id", "customer", "phone", "email", "service", "service_name", "origin", "destination", "zone", "speed", "base_price", "final_price", "status", "payment", "discreet",
         "is_business", "customer_type", "company_name", "payment_terms", "date", "time_slot", "notes", "miles", "fuel_cost", "helper_hours", "weight_tier", "payment_intent_id", "paid_online",
-        "heavy_fee", "heavy_lbs", "heavy_items", "est_total_lbs", "trips"];
+        "heavy_fee", "heavy_lbs", "heavy_items", "est_total_lbs", "trips", "referral_code", "referral_source"];
     if (qs.book) {
         if (event.httpMethod !== "POST") return J(405, { error: "POST only" });
         var hb = event.headers || {};
