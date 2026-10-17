@@ -9,7 +9,7 @@ create table if not exists beat_producers (
   country text,
   payout_method text,            -- paypal | airtm | zinli | usdt | binance | westernunion | wise | other
   payout_handle text,            -- handle / email / wallet label ONLY. Never full card or bank numbers.
-  splits jsonb not null default '{"lease":50,"exclusive":50}'::jsonb,   -- producer % of net, per sale type
+  splits jsonb not null default '{"exclusive":91}'::jsonb,   -- seller % of the eligible sale (exclusive masters only; server enforces 91-99)
   deduct_fees boolean not null default true,   -- take estimated Stripe fee (2.9% + 30c) off before splitting
   hold_days int not null default 3,            -- days before a sale is withdrawable (covers refunds/disputes)
   active boolean not null default true,
