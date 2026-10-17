@@ -95,7 +95,20 @@ async function dash(p) {
     txns: txns.data || [], sales: sales.data || [], payouts: pays.data || [], beats: (beats.data || []).map(pubBeat) };
 }
 
+const PUBLIC_GET = ["catalog"];
+// Public read-only actions can be fetched with GET so Netlify's CDN caches them for a minute: far fewer function runs and database reads.
 exports.handler = async function (event) {
+  if (event.httpMethod === "GET") {
+    const q = event.queryStringParameters || {};
+    if (PUBLIC_GET.indexOf(q.action) < 0) return B.J(405, { error: "POST only" });
+    const body = {}; Object.keys(q).forEach(function (k) { body[k] = q[k] === "true" ? true : q[k] === "false" ? false : q[k]; });
+    const r = await core({ httpMethod: "POST", headers: event.headers || {}, body: JSON.stringify(body) });
+    if (r.statusCode === 200) r.headers = Object.assign({}, r.headers, { "Cache-Control": "public, max-age=0, must-revalidate", "Netlify-CDN-Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" });
+    return r;
+  }
+  return core(event);
+};
+async function core(event) {
   if (event.httpMethod !== "POST") return B.J(405, { error: "POST only" });
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY || !process.env.AUTH_SECRET) return B.J(500, { error: "Server not configured" });
   let b; try { b = JSON.parse(event.body || "{}"); } catch (e) { return B.J(400, { error: "Bad request" }); }
@@ -227,6 +240,15 @@ exports.handler = async function (event) {
       const row = ins.ok && Array.isArray(ins.data) && ins.data[0];
       if (!row) return B.J(500, { error: "Could not request payout" });
       await B.sb("beat_wallet_txns", { method: "POST", prefer: "resolution=ignore-duplicates,return=minimal", body: { producer_id: p.id, type: "payout", amount_cents: -amt, ref: "payout:" + row.id, note: "Payout requested" } });
+      // Two requests at the same moment could both pass the balance check above. Re-check after writing; if the wallet went below zero, undo this one.
+      const after = await B.balances(p.id);
+      if (after.available < 0) {
+        await B.sb("beat_payouts?id=eq." + row.id, { method: "PATCH", prefer: "return=minimal", body: { status: "cancelled" } });
+        await B.sb("beat_wallet_txns", { method: "POST", prefer: "resolution=ignore-duplicates,return=minimal", body: { producer_id: p.id, type: "payout_cancel", amount_cents: amt, ref: "payoutcancel:" + row.id, note: "Payout cancelled (balance changed)" } });
+        await B.audit("system", "payout_race_blocked", p.id, { amount: amt });
+        return B.J(409, { error: "Your balance changed while this was processing. Try again." });
+      }
+      await B.audit("producer:" + p.email, "payout_requested", row.id, { amount: amt });
       return B.J(200, await dash(p));
     }
 
@@ -404,4 +426,4 @@ exports.handler = async function (event) {
     return B.J(200, { ok: true });
   }
   return B.J(400, { error: "Unknown action" });
-};
+}

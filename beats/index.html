@@ -37,10 +37,11 @@ input,select{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid 
 </style>
 </head>
 <body>
+<script src="/music/nav.js"></script>
 <div class="hero"><h1>🎵 POTENT Beats</h1>
 <div class="muted">Exclusive beats for artists. Each beat is sold to one buyer, with the rights written out before you pay. Download link appears the moment you pay.</div>
 <div class="t" id="pterms"></div>
-<div class="row"><a class="btn alt" href="/music/">Stream &amp; discover</a><a class="btn alt" href="/beats/apply.html">Sell your beats</a><a class="btn alt" href="/beats/terms.html" target="_blank">Read the purchase agreement</a><button class="alt" id="favs">♥ My favorites</button></div></div>
+<div class="row"><a class="btn alt" href="/beats/apply.html">Sell your beats</a><a class="btn alt" href="/beats/terms.html" target="_blank">Read the purchase agreement</a><button class="alt" id="favs">♥ My favorites</button></div></div>
 <div id="thanks"></div>
 <div id="gbtn" class="chips" style="display:flex;gap:6px;overflow-x:auto;padding:6px 0"></div>
 <div id="trend"></div>
@@ -57,7 +58,7 @@ input,select{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid 
 var API="/.netlify/functions/";
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 function usd(c){return"$"+(c/100).toFixed(2).replace(/\.00$/,"")}
-function post(fn,b){return fetch(API+fn,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||"Something went wrong");return j})})}
+function post(fn,b){if(fn==="beat-api"&&b.action==="catalog"){var qs=Object.keys(b).filter(function(k){return b[k]!==""&&b[k]!=null}).map(function(k){return encodeURIComponent(k)+"="+encodeURIComponent(b[k])}).join("&");return fetch(API+fn+"?"+qs).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||"Something went wrong");return j})})}return fetch(API+fn,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||"Something went wrong");return j})})}
 var q=new URLSearchParams(location.search);
 if(q.get("paid")&&q.get("session_id")){post("beat-api",{action:"delivery",session_id:q.get("session_id")}).then(function(j){document.getElementById("thanks").innerHTML='<div class="card"><b>Payment received. Thank you!</b><br>'+esc(j.title||"Your beat")+' ('+esc(j.license||"")+')<div class="row">'+(j.url?'<a class="btn" href="'+esc(j.url)+'" target="_blank" rel="noopener">Download your beat</a>':'<span class="muted">The producer will email your files shortly.</span>')+'</div></div>'}).catch(function(){document.getElementById("thanks").innerHTML='<div class="card">We are confirming your payment. Refresh in a minute, or contact POTENT with your receipt.</div>'})}
 var ALL=[],cur=-1,au=document.getElementById("au"),offset=0,AGV="1.0",FAV=[],onlyFav=false;

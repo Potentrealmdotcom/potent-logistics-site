@@ -23,7 +23,7 @@
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { fulfillSession: fulfillCcml } = require("./lib/ccml");
 const { fulfillSession: fulfillPlaybook } = require("./lib/playbook");
-const { fulfillSession: fulfillBeat, handleRefund: refundBeat } = require("./lib/beats");
+const { fulfillSession: fulfillBeat, handleRefund: refundBeat, handleDispute } = require("./lib/beats");
 const { fulfillProduct: fulfillMusic, refundProduct: refundMusic } = require("./lib/music");
 const { deriveStatus } = require("./lib/billing");
 const { provisionCompany } = require("./lib/provision");
@@ -244,6 +244,12 @@ exports.handler = async function (event) {
     }
     if (type.indexOf("identity.verification_session.") === 0) return { statusCode: 200, headers, body: JSON.stringify({ received: true, ignored: type }) };
 
+    // ── chargebacks on beat / music sales ──
+    if (type === "charge.dispute.created" || type === "charge.dispute.closed") {
+      const dr = await handleDispute(obj, type === "charge.dispute.created" ? "created" : "closed");
+      if (dr && dr.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Dispute handling failed, retry" }) };
+      return { statusCode: 200, headers, body: JSON.stringify({ received: true, dispute: !!(dr && dr.ok) }) };
+    }
     // ── Beat Man: a refund takes back the producer's share automatically ──
     if (type === "charge.refunded") {
       const rr = await refundBeat(obj);

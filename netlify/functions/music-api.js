@@ -87,7 +87,20 @@ function itemRow(type, b, cur, role) {
 }
 let _pid = ""; function ctxPid(b) { return _pid; }
 
+const PUBLIC_GET = ["home","browse","artist"];
+// Public read-only actions can be fetched with GET so Netlify's CDN caches them for a minute: far fewer function runs and database reads.
 exports.handler = async function (event) {
+  if (event.httpMethod === "GET") {
+    const q = event.queryStringParameters || {};
+    if (PUBLIC_GET.indexOf(q.action) < 0) return B.J(405, { error: "POST only" });
+    const body = {}; Object.keys(q).forEach(function (k) { body[k] = q[k] === "true" ? true : q[k] === "false" ? false : q[k]; });
+    const r = await core({ httpMethod: "POST", headers: event.headers || {}, body: JSON.stringify(body) });
+    if (r.statusCode === 200) r.headers = Object.assign({}, r.headers, { "Cache-Control": "public, max-age=0, must-revalidate", "Netlify-CDN-Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" });
+    return r;
+  }
+  return core(event);
+};
+async function core(event) {
   if (event.httpMethod !== "POST") return B.J(405, { error: "POST only" });
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY || !process.env.AUTH_SECRET) return B.J(500, { error: "Server not configured" });
   let b; try { b = JSON.parse(event.body || "{}"); } catch (e) { return B.J(400, { error: "Bad request" }); }
@@ -377,4 +390,4 @@ exports.handler = async function (event) {
     return B.J(200, { ok: true, productSales: n, grossCents: gross, eligibleCents: elig, platformCents: plat, sellerCents: sell, refundsCents: ref, tracksLive: live.length, plays: live.reduce(function (s, x) { return s + (x.plays || 0); }, 0), buyers: (us.data || []).length });
   }
   return B.J(400, { error: "Unknown action" });
-};
+}

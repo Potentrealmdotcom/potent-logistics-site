@@ -8,7 +8,12 @@
   function gt() { try { return localStorage.getItem("pmu") || ""; } catch (e) { return ""; } }
   function st(t) { try { if (t) localStorage.setItem("pmu", t); else localStorage.removeItem("pmu"); } catch (e) { } }
   PM.token = gt; PM.setToken = st;
+  var GETS = { home: 1, browse: 1, artist: 1 };
   PM.api = function (fn, b, token) {
+    if (token === "" && fn === "music-api" && GETS[b.action]) { // public reads use GET so the CDN can cache them
+      var qs = Object.keys(b).filter(function (k) { return b[k] !== "" && b[k] != null; }).map(function (k) { return encodeURIComponent(k) + "=" + encodeURIComponent(b[k]); }).join("&");
+      return fetch(API + fn + "?" + qs).then(function (r) { return r.json().then(function (j) { if (!r.ok) { var e = new Error(j.error || "Something went wrong"); e.status = r.status; throw e; } return j; }); });
+    }
     var h = { "Content-Type": "application/json" }, t = token === undefined ? gt() : token; if (t) h.Authorization = "Bearer " + t;
     return fetch(API + fn, { method: "POST", headers: h, body: JSON.stringify(b) }).then(function (r) { return r.json().then(function (j) { if (!r.ok) { var e = new Error(j.error || "Something went wrong"); e.status = r.status; throw e; } return j; }); });
   };

@@ -196,4 +196,48 @@ async function handleRefund(charge) {
   return { ok: true, reversed: delta > 0 ? delta : 0 };
 }
 
-module.exports = { PLATFORM_FEE_PCT, MIN_SELLER_PCT, MAX_SELLER_PCT, sellerPct, computeSplit, AGREEMENT_VERSION, rpc, audit, getSetting, setSetting, SB, SITE, J, sb, hashPw, checkPw, signProducer, verifyProducer, verifyOwner, bearer, balances, fulfillSession, handleRefund, estimateFee };
+// Chargebacks. created: take back the seller's whole remaining share and lock the item. closed+won: give it back. closed+lost: it stays reversed.
+// Idempotent through unique wallet refs. Works for beat sales and music product sales.
+async function handleDispute(dispute, phase) {
+  const pi = dispute && (typeof dispute.payment_intent === "string" ? dispute.payment_intent : null);
+  if (!pi) return { skipped: true };
+  let kind = "beat", tbl = "beat_sales", col = "producer_cents", pref = "refund:";
+  let r = await sb("beat_sales?payment_intent_id=eq." + encodeURIComponent(pi) + "&select=*");
+  let sale = r.ok && Array.isArray(r.data) && r.data[0];
+  if (!sale) { r = await sb("music_sales?payment_intent_id=eq." + encodeURIComponent(pi) + "&select=*"); sale = r.ok && Array.isArray(r.data) && r.data[0]; kind = "music"; tbl = "music_sales"; col = "seller_cents"; pref = "mrefund:"; }
+  if (!sale) return { skipped: true };
+  const share = sale[col] || 0;
+  if (phase === "created") {
+    const prev = await sb("beat_wallet_txns?ref=like." + encodeURIComponent(pref + sale.id + ":") + "*&select=amount_cents");
+    const already = (Array.isArray(prev.data) ? prev.data : []).reduce(function (a, t) { return a + Math.abs(t.amount_cents); }, 0);
+    const take = Math.max(0, share - already);
+    if (take > 0) {
+      const tx = await sb("beat_wallet_txns", { method: "POST", prefer: "resolution=ignore-duplicates,return=minimal", body: { producer_id: sale.producer_id, type: "refund", amount_cents: -take, ref: "dispute:" + dispute.id, note: "Chargeback: " + (sale.title || "sale") } });
+      if (!tx.ok) return { error: "Could not record chargeback" };
+    }
+    await sb(tbl + "?id=eq." + sale.id, { method: "PATCH", prefer: "return=minimal", body: { status: "disputed" } });
+    if (kind === "beat" && sale.beat_id) await sb("beat_items?id=eq." + sale.beat_id, { method: "PATCH", prefer: "return=minimal", body: { status: "unavailable" } });
+    await audit("system", "chargeback_opened", sale.id, { dispute: dispute.id, reversed: take });
+    return { ok: true, reversed: take };
+  }
+  if (phase === "closed") {
+    if (dispute.status === "won") {
+      const back = await sb("beat_wallet_txns?ref=eq." + encodeURIComponent("dispute:" + dispute.id) + "&select=amount_cents");
+      const took = back.ok && Array.isArray(back.data) && back.data[0] ? Math.abs(back.data[0].amount_cents) : 0;
+      if (took > 0) {
+        const tx = await sb("beat_wallet_txns", { method: "POST", prefer: "resolution=ignore-duplicates,return=minimal", body: { producer_id: sale.producer_id, type: "adjustment", amount_cents: took, ref: "disputewon:" + dispute.id, note: "Chargeback won" } });
+        if (!tx.ok) return { error: "Could not restore" };
+      }
+      await sb(tbl + "?id=eq." + sale.id, { method: "PATCH", prefer: "return=minimal", body: { status: "complete" } });
+      if (kind === "beat" && sale.beat_id) await sb("beat_items?id=eq." + sale.beat_id, { method: "PATCH", prefer: "return=minimal", body: { status: "sold" } });
+      await audit("system", "chargeback_won", sale.id, { dispute: dispute.id, restored: took });
+      return { ok: true, restored: took };
+    }
+    await sb(tbl + "?id=eq." + sale.id, { method: "PATCH", prefer: "return=minimal", body: { status: "refunded" } });
+    await audit("system", "chargeback_lost", sale.id, { dispute: dispute.id });
+    return { ok: true, lost: true };
+  }
+  return { skipped: true };
+}
+
+module.exports = { handleDispute, PLATFORM_FEE_PCT, MIN_SELLER_PCT, MAX_SELLER_PCT, sellerPct, computeSplit, AGREEMENT_VERSION, rpc, audit, getSetting, setSetting, SB, SITE, J, sb, hashPw, checkPw, signProducer, verifyProducer, verifyOwner, bearer, balances, fulfillSession, handleRefund, estimateFee };
