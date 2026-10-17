@@ -4,8 +4,9 @@
 <meta name="description" content="Stream new music, find artists, watch videos and buy downloads direct from creators. Exclusive beats at POTENT Beats.">
 <link rel="stylesheet" href="/music/base.css"></head><body>
 <script src="/music/nav.js"></script>
-<h1>POTENT <span>MUSIC</span></h1>
-<div class="muted">Stream free. Buy direct from artists. Own the exclusive master.</div>
+<div id="banner"></div>
+<h1 id="hl">POTENT <span>MUSIC</span></h1>
+<div class="muted" id="sub">Stream free. Buy direct from artists. Own the exclusive master.</div>
 <div class="row"><a class="btn" href="/beats/">Find Beats</a><a class="btn alt" href="/studio/">Sell Your Music</a><a class="btn alt" href="#artists">Explore Artists</a></div>
 <div id="thanks"></div>
 <div class="row" style="margin-top:14px"><input id="q" placeholder="Search songs, downloads, videos, artists..." aria-label="Search" style="flex:1 1 260px"><select id="genre" style="flex:0 1 150px" aria-label="Genre"><option value="">Any genre</option></select><select id="mood" style="flex:0 1 150px" aria-label="Mood"><option value="">Any mood</option></select></div>
@@ -14,6 +15,7 @@
 <p class="muted" style="margin-top:28px"><small>Songs labeled "Free stream" are for listening only. Plays are counted anonymously and are not royalty payments. Downloads are paid products with the rights shown on each listing. Report anything that looks wrong with the ⚑ button. <a href="/beats/terms.html">Terms</a></small></p>
 <script src="/music/common.js"></script>
 <script>
+function applySite(x){if(!x)return;if(x.headline)$("hl").textContent=x.headline;if(x.sub)$("sub").textContent=x.sub;if(x.banner)$("banner").innerHTML='<div class="card" style="text-align:center;font-weight:600">'+PM.esc(x.banner)+'</div>'}
 var T="home",items=[],H=null;
 function sec(title,html){return html?'<h2>'+title+'</h2>'+html:''}
 function rows(a){return a.length?'<div class="card" style="padding:4px 8px">'+a.map(PM.trackRow).join("")+'</div>':''}
@@ -27,7 +29,7 @@ function drawHome(){var h=H;if(!h)return;var any=h.newTracks.length||h.products.
  '<h2 id="artists">Artists</h2>'+(h.artists.length?grid(h.artists,PM.artistCard):'<div class="muted">Artist pages appear here once creators set up their storefronts.</div>')}
 function $(i){return document.getElementById(i)}
 function load(){var q=$("q").value.trim();
- if(T==="home"&&!q&&!$("genre").value&&!$("mood").value){return PM.api("music-api",{action:"home"},"").then(function(j){H=j;var g={},m={};j.newTracks.concat(j.trending,j.featured).forEach(function(t){if(t.genre)g[t.genre]=1;if(t.mood)m[t.mood]=1});fill("genre",Object.keys(g),"Any genre");fill("mood",Object.keys(m),"Any mood");drawHome()}).catch(function(){$("main").innerHTML='<div class="card">Could not load. Please refresh.</div>'})}
+ if(T==="home"&&!q&&!$("genre").value&&!$("mood").value){return PM.api("music-api",{action:"home"},"").then(function(j){H=j;applySite(j.site);var g={},m={};j.newTracks.concat(j.trending,j.featured).forEach(function(t){if(t.genre)g[t.genre]=1;if(t.mood)m[t.mood]=1});fill("genre",Object.keys(g),"Any genre");fill("mood",Object.keys(m),"Any mood");drawHome()}).catch(function(){$("main").innerHTML='<div class="card">Could not load. Please refresh.</div>'})}
  var ty=T==="home"?"track":T;
  return PM.api("music-api",{action:"browse",type:ty,q:q,genre:$("genre").value,mood:$("mood").value,limit:36},"").then(function(j){items=j.items;
   $("main").innerHTML=!items.length?'<div class="card muted">Nothing matches yet.</div>':ty==="track"?'<div class="card" style="padding:4px 8px" data-list>'+items.map(PM.trackRow).join("")+'</div>':ty==="product"?grid(items,PM.productCard):ty==="video"?grid(items,PM.videoCard):grid(items,PM.artistCard)})}
@@ -39,5 +41,5 @@ document.addEventListener("click",function(e){var b=e.target.closest("[data-pl]"
 PM.wire();
 PM.loadMe().then(function(m){if(m)$("acc").textContent="My library";return load()});
 var u=new URLSearchParams(location.search);
-if(u.get("paid")&&u.get("session_id")){PM.api("music-api",{action:"delivery",session_id:u.get("session_id")},"").then(function(j){$("thanks").innerHTML='<div class="card"><b>Payment received. Thank you!</b><br>'+PM.esc(j.title||"Your download")+'<div class="row">'+(j.url?'<a class="btn" href="'+PM.esc(j.url)+'" target="_blank" rel="noopener">Download</a>':'<span class="muted">Your file will be in your library shortly.</span>')+'</div><small class="muted">Signed-in buyers can always re-download from their library.</small></div>'}).catch(function(){$("thanks").innerHTML='<div class="card">We are confirming your payment. Refresh in a minute.</div>'})}
+if(u.get("paid")&&u.get("session_id")){try{localStorage.removeItem("pm_cart")}catch(e){}var tries=0;(function go(){PM.api("music-api",{action:"delivery",session_id:u.get("session_id")},"").then(function(j){var d=j.downloads||[];$("thanks").innerHTML='<div class="card"><b>Payment received. Thank you!</b>'+d.map(function(x){return '<div class="row" style="margin-top:8px"><span>'+PM.esc(x.title)+'</span>'+(x.url?'<a class="btn" href="'+PM.esc(x.url)+'" target="_blank" rel="noopener">Download</a>':'<span class="muted">Unlocks '+PM.esc(new Date(x.releases).toDateString())+' (find it in your library then)</span>')+'</div>'}).join("")+'<br><small class="muted">Signed-in buyers can always re-download from their library.</small></div>'}).catch(function(e){if(tries++<6&&/prepared|moment/i.test(e.message||"")){setTimeout(go,2500);return}$("thanks").innerHTML='<div class="card">'+PM.esc(e.message||"We are confirming your payment. Refresh in a minute.")+'</div>'})})()}
 </script></body></html>

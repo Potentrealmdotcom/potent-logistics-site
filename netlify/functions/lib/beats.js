@@ -203,41 +203,45 @@ async function handleDispute(dispute, phase) {
   if (!pi) return { skipped: true };
   let kind = "beat", tbl = "beat_sales", col = "producer_cents", pref = "refund:";
   let r = await sb("beat_sales?payment_intent_id=eq." + encodeURIComponent(pi) + "&select=*");
-  let sale = r.ok && Array.isArray(r.data) && r.data[0];
-  if (!sale) { r = await sb("music_sales?payment_intent_id=eq." + encodeURIComponent(pi) + "&select=*"); sale = r.ok && Array.isArray(r.data) && r.data[0]; kind = "music"; tbl = "music_sales"; col = "seller_cents"; pref = "mrefund:"; }
-  if (!sale) return { skipped: true };
-  const share = sale[col] || 0;
-  if (phase === "created") {
-    const prev = await sb("beat_wallet_txns?ref=like." + encodeURIComponent(pref + sale.id + ":") + "*&select=amount_cents");
-    const already = (Array.isArray(prev.data) ? prev.data : []).reduce(function (a, t) { return a + Math.abs(t.amount_cents); }, 0);
-    const take = Math.max(0, share - already);
-    if (take > 0) {
-      const tx = await sb("beat_wallet_txns", { method: "POST", prefer: "resolution=ignore-duplicates,return=minimal", body: { producer_id: sale.producer_id, type: "refund", amount_cents: -take, ref: "dispute:" + dispute.id, note: "Chargeback: " + (sale.title || "sale") } });
-      if (!tx.ok) return { error: "Could not record chargeback" };
-    }
-    await sb(tbl + "?id=eq." + sale.id, { method: "PATCH", prefer: "return=minimal", body: { status: "disputed" } });
-    if (kind === "beat" && sale.beat_id) await sb("beat_items?id=eq." + sale.beat_id, { method: "PATCH", prefer: "return=minimal", body: { status: "unavailable" } });
-    await audit("system", "chargeback_opened", sale.id, { dispute: dispute.id, reversed: take });
-    return { ok: true, reversed: take };
-  }
-  if (phase === "closed") {
-    if (dispute.status === "won") {
-      const back = await sb("beat_wallet_txns?ref=eq." + encodeURIComponent("dispute:" + dispute.id) + "&select=amount_cents");
-      const took = back.ok && Array.isArray(back.data) && back.data[0] ? Math.abs(back.data[0].amount_cents) : 0;
-      if (took > 0) {
-        const tx = await sb("beat_wallet_txns", { method: "POST", prefer: "resolution=ignore-duplicates,return=minimal", body: { producer_id: sale.producer_id, type: "adjustment", amount_cents: took, ref: "disputewon:" + dispute.id, note: "Chargeback won" } });
-        if (!tx.ok) return { error: "Could not restore" };
+  let sales = r.ok && Array.isArray(r.data) ? r.data : [];
+  if (!sales.length) { r = await sb("music_sales?payment_intent_id=eq." + encodeURIComponent(pi) + "&select=*"); sales = r.ok && Array.isArray(r.data) ? r.data : []; kind = "music"; tbl = "music_sales"; col = "seller_cents"; pref = "mrefund:"; }
+  if (!sales.length) return { skipped: true };
+  let total = 0;
+  for (const sale of sales) {
+    if (sale.status === "refunded" && !sale[col]) continue; // already fully refunded / auto-refunded: nothing left to take back
+    const ref = "dispute:" + dispute.id + (kind === "music" ? ":" + sale.id : "");
+    const share = sale[col] || 0;
+    if (phase === "created") {
+      const prev = await sb("beat_wallet_txns?ref=like." + encodeURIComponent(pref + sale.id + ":") + "*&select=amount_cents");
+      const already = (Array.isArray(prev.data) ? prev.data : []).reduce(function (a, t) { return a + Math.abs(t.amount_cents); }, 0);
+      const take = Math.max(0, share - already);
+      if (take > 0) {
+        const tx = await sb("beat_wallet_txns", { method: "POST", prefer: "resolution=ignore-duplicates,return=minimal", body: { producer_id: sale.producer_id, type: "refund", amount_cents: -take, ref: ref, note: "Chargeback: " + (sale.title || "sale") } });
+        if (!tx.ok) return { error: "Could not record chargeback" };
       }
-      await sb(tbl + "?id=eq." + sale.id, { method: "PATCH", prefer: "return=minimal", body: { status: "complete" } });
-      if (kind === "beat" && sale.beat_id) await sb("beat_items?id=eq." + sale.beat_id, { method: "PATCH", prefer: "return=minimal", body: { status: "sold" } });
-      await audit("system", "chargeback_won", sale.id, { dispute: dispute.id, restored: took });
-      return { ok: true, restored: took };
+      total += take;
+      await sb(tbl + "?id=eq." + sale.id, { method: "PATCH", prefer: "return=minimal", body: { status: "disputed" } });
+      if (kind === "beat" && sale.beat_id) await sb("beat_items?id=eq." + sale.beat_id, { method: "PATCH", prefer: "return=minimal", body: { status: "unavailable" } });
+      await audit("system", "chargeback_opened", sale.id, { dispute: dispute.id, reversed: take });
+    } else if (phase === "closed") {
+      if (dispute.status === "won") {
+        const back = await sb("beat_wallet_txns?ref=eq." + encodeURIComponent(ref) + "&select=amount_cents");
+        const took = back.ok && Array.isArray(back.data) && back.data[0] ? Math.abs(back.data[0].amount_cents) : 0;
+        if (took > 0) {
+          const tx = await sb("beat_wallet_txns", { method: "POST", prefer: "resolution=ignore-duplicates,return=minimal", body: { producer_id: sale.producer_id, type: "adjustment", amount_cents: took, ref: "disputewon:" + dispute.id + (kind === "music" ? ":" + sale.id : ""), note: "Chargeback won" } });
+          if (!tx.ok) return { error: "Could not restore" };
+        }
+        total += took;
+        await sb(tbl + "?id=eq." + sale.id, { method: "PATCH", prefer: "return=minimal", body: { status: "complete" } });
+        if (kind === "beat" && sale.beat_id) await sb("beat_items?id=eq." + sale.beat_id, { method: "PATCH", prefer: "return=minimal", body: { status: "sold" } });
+        await audit("system", "chargeback_won", sale.id, { dispute: dispute.id, restored: took });
+      } else {
+        await sb(tbl + "?id=eq." + sale.id, { method: "PATCH", prefer: "return=minimal", body: { status: "refunded" } });
+        await audit("system", "chargeback_lost", sale.id, { dispute: dispute.id });
+      }
     }
-    await sb(tbl + "?id=eq." + sale.id, { method: "PATCH", prefer: "return=minimal", body: { status: "refunded" } });
-    await audit("system", "chargeback_lost", sale.id, { dispute: dispute.id });
-    return { ok: true, lost: true };
   }
-  return { skipped: true };
+  return phase === "created" ? { ok: true, reversed: total } : { ok: true, restored: total };
 }
 
 module.exports = { handleDispute, PLATFORM_FEE_PCT, MIN_SELLER_PCT, MAX_SELLER_PCT, sellerPct, computeSplit, AGREEMENT_VERSION, rpc, audit, getSetting, setSetting, SB, SITE, J, sb, hashPw, checkPw, signProducer, verifyProducer, verifyOwner, bearer, balances, fulfillSession, handleRefund, estimateFee };

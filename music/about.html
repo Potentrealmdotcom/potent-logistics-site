@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="color-scheme" content="dark light"><link rel="icon" href="data:,">
+<title>Help, FAQ and Contact — POTENT Music</title>
+<meta name="description" content="How POTENT Music works: exclusive beats, downloads, refunds, fees, and how to reach us.">
+<link rel="stylesheet" href="/music/base.css"></head><body>
+<script src="/music/nav.js"></script>
+<h1>Help &amp; <span>FAQ</span></h1>
+<div class="card"><h2 style="margin-top:0">How it works</h2>
+<details open><summary><b>What is an exclusive master beat?</b></summary><p>You buy the beat outright. Once it sells, it is removed from the store and no one else can buy it. POTENT only sells masters, there are no leases.</p></details>
+<details><summary><b>What do I get after paying?</b></summary><p>Your files appear on the confirmation page right away and stay in your library if you have an account. Sign in with the same email to keep everything in one place.</p></details>
+<details><summary><b>What are digital downloads and preorders?</b></summary><p>Sample packs, presets, stems, albums and more, sold directly by creators. Preorders are charged now and the download unlocks on the release date shown.</p></details>
+<details><summary><b>Can I get a refund?</b></summary><p>Digital goods are delivered instantly, so refunds are handled case by case. Use the form below and include your order email. Approved refunds go back to your card.</p></details>
+<details><summary><b>What does POTENT charge?</b></summary><p>Buyers never pay a platform fee. POTENT keeps 1% of the eligible sale amount (the sale minus tax). Exclusive beat sellers receive at least 91% of that amount and the remainder is documented as unassigned, never paid to anyone silently. Card-processing fees are Stripe's and are shown separately.</p></details>
+<details><summary><b>How do I sell?</b></summary><p><a href="/beats/apply.html">Apply as a seller</a> for exclusive beats, or sign in to the <a href="/studio/">Studio</a> to upload songs, videos and downloads. POTENT reviews listings before they go live.</p></details>
+<details><summary><b>Something I bought is not mine to sell / copyright issue</b></summary><p>Use the ⚑ report button on any listing. POTENT reviews every report and can take items down.</p></details>
+</div>
+<h2>Contact us</h2>
+<div class="card"><input id="nm" placeholder="Your name (optional)"><input id="em" type="email" placeholder="Your email" autocomplete="email"><select id="tp"><option value="order">Order or payment</option><option value="download">Download problem</option><option value="refund">Refund request</option><option value="seller">Selling on POTENT</option><option value="report">Report a problem</option><option value="other">Something else</option></select><textarea id="ms" rows="5" placeholder="How can we help?"></textarea><button id="go" style="width:100%">Send message</button><div id="res" class="muted" style="margin-top:8px"></div></div>
+<script src="/music/common.js"></script>
+<script>
+function $(i){return document.getElementById(i)}
+$("go").onclick=function(){$("go").disabled=true;PM.api("music-api",{action:"support_new",name:$("nm").value,email:$("em").value,topic:$("tp").value,message:$("ms").value},"").then(function(){$("res").textContent="Sent. We will reply to your email.";$("ms").value=""}).catch(function(e){$("res").textContent=e.message}).then(function(){$("go").disabled=false})};
+</script></body></html>

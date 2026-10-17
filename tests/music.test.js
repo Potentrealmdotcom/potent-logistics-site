@@ -12,7 +12,7 @@ global.fetch = async (u, o) => { o = o || {}; u = String(u); const m = o.method 
   if (m !== "GET") log.writes.push({ u, body: o.body ? JSON.parse(o.body) : null });
   if (u.includes("/rpc/music_product_claim")) { log.rpc.push("claim"); d = state.claim; }
   else if (u.includes("music_sales?stripe_session_id=eq.") && m === "GET") d = state.existingSale ? [{ id: "s0", status: "complete" }] : [];
-  else if (u.includes("music_products?id=eq.") && m === "GET") d = [{ id: "p1", producer_id: "pr1", title: "Pack", kind: "sample_pack", limited_qty: state.limited || null, sold_count: 0 }];
+  else if (u.includes("music_products?id=eq.") && m === "GET") d = [{ id: "11111111-1111-1111-1111-111111111111", producer_id: "pr1", title: "Pack", kind: "sample_pack", limited_qty: state.limited || null, sold_count: 0 }];
   else if (u.includes("beat_producers?id=eq.") && m === "GET") d = [{ id: "pr1", active: true, kind: state.sellerKind, store_admin: state.store_admin, email: "s@x.co", hold_days: 0 }];
   else if (u.includes("music_sales") && m === "POST") d = [Object.assign({ id: "sale1" }, JSON.parse(o.body))];
   else if (u.includes("music_sales?id=eq.") && u.includes("buyer_user_id")) d = state.saleOwner ? [{ product_id: "p1" }] : [];
@@ -20,7 +20,7 @@ global.fetch = async (u, o) => { o = o || {}; u = String(u); const m = o.method 
   else if (u.includes("music_users?id=eq.")) d = [{ id: "u1", email: "b@x.co", active: true }];
   return { ok: true, status: 200, text: async () => JSON.stringify(d), json: async () => d }; };
 const call = async (tok, body) => { const r = await api.handler({ httpMethod: "POST", headers: tok ? { authorization: "Bearer " + tok } : {}, body: JSON.stringify(body) }); return [r.statusCode, JSON.parse(r.body)]; };
-const sess = (amt) => ({ id: "cs_m1", payment_status: "paid", amount_total: amt, payment_intent: "pi_1", total_details: { amount_tax: 0, amount_discount: 0 }, metadata: { product: "MUSIC", item_id: "p1", user_id: "u1", agreement_version: "1.0" } });
+const sess = (amt) => ({ id: "cs_m1", payment_status: "paid", amount_total: amt, payment_intent: "pi_1", total_details: { amount_tax: 0, amount_discount: 0 }, metadata: { product: "MUSIC", item_id: "11111111-1111-1111-1111-111111111111", user_id: "u1", agreement_version: "1.0" } });
 
 (async () => {
   // 1. Product sale: POTENT 1%, seller the rest, nothing unassigned, Stripe fee separate

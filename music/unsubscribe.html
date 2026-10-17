@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark light"><link rel="icon" href="data:,">
+<title>Unsubscribe — POTENT Music</title><meta name="robots" content="noindex"><link rel="stylesheet" href="/music/base.css"></head><body>
+<script src="/music/nav.js"></script>
+<h1>Email <span>preferences</span></h1>
+<div class="card"><p id="m">Confirm that you want to stop receiving music emails.</p><button id="go">Unsubscribe me</button></div>
+<script src="/music/common.js"></script>
+<script>
+var t=new URLSearchParams(location.search).get("t")||"";
+document.getElementById("go").onclick=function(){PM.api("music-api",{action:"unsubscribe",t:t},"").then(function(){document.getElementById("m").textContent="Done. You will not get music emails from us.";document.getElementById("go").remove()}).catch(function(e){document.getElementById("m").textContent=e.message})};
+</script></body></html>
