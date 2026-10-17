@@ -6,7 +6,7 @@ const B = require("./lib/beats");
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return B.J(405, { error: "POST only" });
   let body; try { body = JSON.parse(event.body || "{}"); } catch (e) { return B.J(400, { error: "Bad request" }); }
-  const license = body.license === "exclusive" ? "exclusive" : "lease";
+  const license = "exclusive"; // POTENT Beats sells the master exclusively; leases are not offered
   if (!/^[0-9a-f-]{36}$/i.test(String(body.beat_id || ""))) return B.J(400, { error: "Bad request" });
   if (body.agree !== true) return B.J(400, { error: "Please accept the purchase agreement first" });
   const r = await B.sb("beat_items?id=eq." + body.beat_id + "&active=eq.true&select=*,beat_producers(active)");

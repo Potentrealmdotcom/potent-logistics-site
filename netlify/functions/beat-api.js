@@ -16,7 +16,7 @@ function pubProducer(p) { return { id: p.id, name: p.name, email: p.email, count
 function pubBeat(b) { return { id: b.id, title: b.title, lease_cents: b.lease_cents, exclusive_cents: b.exclusive_cents, preview_url: b.preview_url, deliver_url: b.deliver_url, exclusive_sold: b.exclusive_sold, active: b.active, status: b.status, genre: b.genre, mood: b.mood, tags: b.tags, bpm: b.bpm, musical_key: b.musical_key, explicit: b.explicit, has_vocal_samples: b.has_vocal_samples, description: b.description, sample_disclosure: b.sample_disclosure, rights_confirmed: b.rights_confirmed, rights_package: b.rights_package, cover_url: b.cover_url, play_count: b.play_count }; }
 
 const STATUSES = ["draft", "processing", "pending_review", "approved", "published", "unavailable", "rejected"];
-const DEFAULT_RIGHTS = "Exclusive license to use the instrumental in new recordings and release them commercially, as set out in the Exclusive Purchase Agreement. Includes the files listed under 'What you get'. Ownership of the underlying composition and master of the instrumental is not transferred unless the agreement says so.";
+const DEFAULT_RIGHTS = "Exclusive rights to the master recording of this instrumental: the finished instrumental recording and the audio files listed under 'What you get'. You may use it in new recordings and release them commercially. Only one buyer ever gets this beat. Ownership of the underlying composition (melody and arrangement) and any publishing share stays with the producer unless the listing says otherwise.";
 const pickKey = function (o, ks) { const r = {}; ks.forEach(function (k) { if (o[k] !== undefined) r[k] = o[k]; }); return r; };
 
 async function uploadSign(pid, b) {
@@ -136,7 +136,7 @@ exports.handler = async function (event) {
       publicTerms: model && model.confirmed && model.public_text ? model.public_text : null,
       agreementVersion: B.AGREEMENT_VERSION,
       beats: rows.map(function (x) { return { id: x.id, title: x.title, producer: x.beat_producers && x.beat_producers.name, verified: !!(x.beat_producers && x.beat_producers.verified), preview_url: x.preview_url, cover_url: x.cover_url,
-        lease_cents: x.exclusive_sold ? null : x.lease_cents, exclusive_cents: x.exclusive_sold ? null : x.exclusive_cents, price_cents: x.exclusive_cents,
+        lease_cents: null, exclusive_cents: x.exclusive_sold ? null : x.exclusive_cents, price_cents: x.exclusive_cents,
         state: x.exclusive_sold || x.status === "sold" ? "sold" : (x.reserved_until && new Date(x.reserved_until).getTime() > now ? "reserved" : "available"),
         tags: x.tags || [], bpm: x.bpm || null, key: x.musical_key || null, genre: x.genre, mood: x.mood, explicit: !!x.explicit, vocals: !!x.has_vocal_samples,
         description: x.description, sample_disclosure: x.sample_disclosure, rights_package: x.rights_package || DEFAULT_RIGHTS, deliverables: x.deliverables || [], plays: x.play_count || 0 }; }) });
