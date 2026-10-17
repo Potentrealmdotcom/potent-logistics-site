@@ -2,6 +2,7 @@
 // Price comes from the database, never from the browser. The shared stripe-webhook credits the producer automatically.
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const B = require("./lib/beats");
+const M = require("./lib/music");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return B.J(405, { error: "POST only" });
@@ -32,7 +33,7 @@ exports.handler = async function (event) {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: cents, product_data: { name: beat.title + " — " + (license === "exclusive" ? "Exclusive rights" : "Lease"), description: "Digital beat. All sales final." } } }],
-      metadata: { product: "BEAT", beat_id: beat.id, sale_type: license, agreement_version: B.AGREEMENT_VERSION, agreed_at: new Date().toISOString() },
+      metadata: { product: "BEAT", beat_id: beat.id, sale_type: license, user_id: (M.verifyUser(B.bearer(event)) || {}).uid || "", agreement_version: B.AGREEMENT_VERSION, agreed_at: new Date().toISOString() },
       expires_at: Math.floor(Date.now() / 1000) + 31 * 60,
       custom_text: { submit: { message: "By paying you accept the Exclusive Purchase Agreement. Digital product, all sales final. Your download link appears right after payment." } },
       success_url: origin + "/beats/?paid=1&session_id={CHECKOUT_SESSION_ID}",

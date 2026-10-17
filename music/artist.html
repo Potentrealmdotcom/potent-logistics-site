@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="color-scheme" content="dark light"><link rel="icon" href="data:,">
+<title>Artist — POTENT Music</title><link rel="stylesheet" href="/music/base.css">
+<style>#ban{height:150px;border-radius:14px;background:var(--panel) center/cover;border:1px solid var(--line)}#av{width:96px;height:96px;border-radius:50%;background:var(--line) center/cover;border:3px solid var(--bg);margin:-48px 0 0 14px}</style></head><body>
+<nav aria-label="Main"><a href="/music/">Discover</a><a href="/beats/">Exclusive Beats</a><a href="/music/account.html" id="acc">Sign in</a></nav>
+<div id="top"><div class="muted">Loading…</div></div>
+<div class="tabs" id="tabs"><button data-t="tracks" class="on">Songs</button><button data-t="products">Downloads</button><button data-t="videos">Videos</button><button data-t="beats">Exclusive beats</button></div>
+<div id="main"></div>
+<script src="/music/common.js"></script>
+<script>
+var D=null,T="tracks";function $(i){return document.getElementById(i)}
+function draw(){if(!D)return;var a=D.artist,l=a.links||{};
+ $("top").innerHTML='<div id="ban" style="'+(a.banner_url?'background-image:url('+PM.esc(a.banner_url)+')':'')+'"></div><div id="av" style="'+(a.avatar_url?'background-image:url('+PM.esc(a.avatar_url)+')':'')+'"></div><h1 style="margin-top:8px">'+PM.esc(a.name)+(a.verified?' <span>✔</span>':'')+'</h1><div class="muted">'+PM.esc(a.city||"")+' · '+D.followers+' followers</div>'+(a.bio?'<p>'+PM.esc(a.bio)+'</p>':'')+'<div class="row"><button class="'+(PM.isFollow(a.id)?'alt':'')+'" data-follow="'+a.id+'">'+(PM.isFollow(a.id)?'Following':'Follow')+'</button>'+Object.keys(l).map(function(k){return'<a class="btn alt" href="'+PM.esc(l[k])+'" target="_blank" rel="noopener">'+k+'</a>'}).join("")+'</div>';
+ var h;if(T==="tracks")h=D.tracks.length?'<div class="card" style="padding:4px 8px" data-list>'+D.tracks.map(PM.trackRow).join("")+'</div>':'<div class="card muted">No songs yet.</div>';
+ else if(T==="products")h=D.products.length?'<div class="grid">'+D.products.map(PM.productCard).join("")+'</div>':'<div class="card muted">No downloads yet.</div>';
+ else if(T==="videos")h=D.videos.length?'<div class="grid">'+D.videos.map(PM.videoCard).join("")+'</div>':'<div class="card muted">No videos yet.</div>';
+ else h=D.beats.length?'<div class="card">'+D.beats.map(function(b){return'<div class="beat"><div class="bi"><b>'+PM.esc(b.title)+'</b><small class="muted">'+PM.esc([b.genre,b.bpm?b.bpm+" BPM":"",b.musical_key].filter(Boolean).join(" · "))+'</small></div><a class="btn" href="/beats/">Exclusive '+PM.usd(b.exclusive_cents)+'</a></div>'}).join("")+'</div>':'<div class="card muted">No exclusive beats available right now.</div>';
+ $("main").innerHTML=h;document.title=a.name+" — POTENT Music"}
+PM.listFor=function(t){var box=t.closest("[data-list]");return box?[].map.call(box.querySelectorAll("[data-play]"),function(x){return x.dataset.play}):null};
+PM.redraw=draw;PM.wire();
+[].forEach.call(document.querySelectorAll("#tabs button"),function(b){b.onclick=function(){T=b.dataset.t;[].forEach.call(document.querySelectorAll("#tabs button"),function(x){x.classList.toggle("on",x===b)});draw()}});
+var slug=new URLSearchParams(location.search).get("s")||"";
+PM.loadMe().then(function(m){if(m)$("acc").textContent="My library";return PM.api("music-api",{action:"artist",slug:slug},"")}).then(function(j){D=j;draw()}).catch(function(e){$("top").innerHTML='<div class="card">'+PM.esc(e.message||"Artist not found")+'</div>'});
+</script></body></html>

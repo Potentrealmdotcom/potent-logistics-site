@@ -153,7 +153,7 @@ async function fulfillSession(session) {
     producer_id: prod.id, beat_id: beat.id, title: beat.title, sale_type: saleType, stripe_session_id: session.id,
     payment_intent_id: pi, buyer_email: email, gross_cents: gross, fee_cents: procFee, net_cents: sp.eligible, split_pct: conflict ? 0 : sp.sellerPct, producer_cents: conflict ? 0 : producerCents, eligible_cents: sp.eligible, platform_fee_cents: conflict ? 0 : sp.platform, unallocated_cents: conflict ? 0 : sp.unallocated,
     tax_cents: tax, discount_cents: discount, status: conflict ? "refunded" : "complete", seller_type: beat.seller_type || "platform",
-    agreement_version: md.agreement_version || null, agreement_accepted_at: md.agreed_at || null, allocation: alloc } });
+    agreement_version: md.agreement_version || null, agreement_accepted_at: md.agreed_at || null, allocation: alloc, buyer_user_id: /^[0-9a-f-]{36}$/i.test(md.user_id || "") ? md.user_id : null } });
   if (!ins.ok) return { error: "Could not record the sale" };
   let sale = Array.isArray(ins.data) && ins.data[0];
   if (!sale) { // retry of an already-recorded sale: make sure the wallet credit exists

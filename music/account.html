@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="color-scheme" content="dark light"><link rel="icon" href="data:,">
+<title>My Library — POTENT Music</title><link rel="stylesheet" href="/music/base.css"></head><body>
+<nav aria-label="Main"><a href="/music/">Discover</a><a href="/beats/">Exclusive Beats</a><a class="on" href="/music/account.html">My library</a></nav>
+<h1>My <span>Library</span></h1>
+<div id="main"><div class="muted">Loading…</div></div>
+<script src="/music/common.js"></script>
+<script>
+function $(i){return document.getElementById(i)}var F=null,PLT=null;
+function dt(s){return s?new Date(s).toLocaleDateString():""}
+function draw(){var m=PM.me;if(!m){$("main").innerHTML='<div class="card"><p>Sign in to see your purchases, downloads, favorites and playlists.</p><button id="si">Sign in / Create account</button></div>';$("si").onclick=function(){PM.login()};return}
+ var h='<div class="row" style="justify-content:space-between"><div><b>'+PM.esc(m.user.name||m.user.email)+'</b><br><small class="muted">'+PM.esc(m.user.email)+'</small></div><button class="alt" id="so">Sign out</button></div>';
+ h+='<h2>Purchases & downloads</h2>'+(m.library.length?'<div class="card">'+m.library.map(function(x){return'<div class="beat"><div class="bi"><b>'+PM.esc(x.title||"Item")+'</b><small class="muted">'+PM.esc(x.type||"")+' · '+dt(x.date)+' · paid '+PM.usd(x.gross_cents)+(x.agreement_version?' · agreement v'+PM.esc(x.agreement_version)+' accepted '+dt(x.agreement_at):'')+(x.status!=="complete"?' · '+PM.esc(x.status):'')+'</small></div>'+(x.status==="complete"?'<button data-dl="'+x.kind+':'+x.id+'">Download</button>':'<span class="muted">Refunded</span>')+'</div>'}).join("")+'</div><small class="muted">Download links last 5 minutes. Press Download again for a fresh one. Purchases made while signed in appear here automatically.</small>':'<div class="card muted">No purchases yet. Sign in <b>before</b> you buy and your purchase lands here.</div>');
+ h+='<h2>Favorites</h2><div id="favs" class="muted">Loading…</div>';
+ h+='<h2>Playlists</h2>'+(m.playlists.length?'<div class="card">'+m.playlists.map(function(p){return'<div class="beat"><div class="bi"><b>'+PM.esc(p.title)+'</b></div><button class="alt" data-pl="'+p.id+'">Open</button><button class="alt" data-pd="'+p.id+'">Delete</button></div>'}).join("")+'</div>':'<div class="card muted">Create one from any song with the ＋ button.</div>')+'<div id="plbox"></div>';
+ h+='<h2>Following</h2>'+(m.follows.length?'<div class="grid">'+m.follows.map(function(f){return PM.artistCard({name:f.beat_producers.name,slug:f.beat_producers.slug,avatar_url:f.beat_producers.avatar_url})}).join("")+'</div>':'<div class="card muted">Follow artists from their pages.</div>');
+ h+='<h2>Settings</h2><div class="card"><label class="ck"><input type="checkbox" id="opt"'+(m.user.marketing_opt_in?' checked':'')+'> <span>Email me about new music</span></label><input id="op" type="password" placeholder="Current password"><input id="np" type="password" placeholder="New password (10+ characters)"><button id="cp">Change password</button></div>';
+ $("main").innerHTML=h;
+ $("so").onclick=function(){PM.setToken("");PM.me=null;draw()};
+ $("opt").onchange=function(){PM.api("music-api",{action:"set_optin",value:this.checked}).then(function(){PM.toast("Saved")})};
+ $("cp").onclick=function(){PM.api("music-api",{action:"changepw",oldPassword:$("op").value,newPassword:$("np").value}).then(function(){PM.toast("Password changed");$("op").value=$("np").value=""}).catch(function(e){PM.toast(e.message)})};
+ PM.api("music-api",{action:"favs"}).then(function(f){F=f;PM.listFor=function(t){var b=t.closest("[data-list]");return b?[].map.call(b.querySelectorAll("[data-play]"),function(x){return x.dataset.play}):null};$("favs").innerHTML=(f.tracks.length?'<div class="card" style="padding:4px 8px" data-list>'+f.tracks.map(PM.trackRow).join("")+'</div>':'')+(f.products.length?'<div class="grid">'+f.products.map(PM.productCard).join("")+'</div>':'')+(!f.tracks.length&&!f.products.length?'<div class="card muted">Tap ♥ on songs and downloads to save them here.</div>':'')}).catch(function(){})}
+document.addEventListener("click",function(e){var d=e.target.closest("[data-dl]"),o=e.target.closest("[data-pl]"),x=e.target.closest("[data-pd]");
+ if(d){var p=d.dataset.dl.split(":");PM.api("music-api",{action:"download",kind:p[0],id:p[1]}).then(function(j){location.href=j.url}).catch(function(er){PM.toast(er.message)})}
+ if(o)PM.api("music-api",{action:"playlist_get",id:o.dataset.pl}).then(function(j){$("plbox").innerHTML='<h2>'+PM.esc(j.playlist.title)+'</h2>'+(j.tracks.length?'<div class="card" style="padding:4px 8px" data-list>'+j.tracks.map(PM.trackRow).join("")+'</div>':'<div class="muted">Empty.</div>')});
+ if(x&&confirm("Delete this playlist?"))PM.api("music-api",{action:"playlist_delete",id:x.dataset.pd}).then(function(){return PM.loadMe()}).then(draw)});
+PM.redraw=function(){};PM.onPlayState=function(){};PM.onAuth=draw;PM.wire();PM.loadMe().then(draw);
+</script></body></html>

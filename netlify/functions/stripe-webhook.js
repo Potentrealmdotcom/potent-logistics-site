@@ -24,6 +24,7 @@ const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { fulfillSession: fulfillCcml } = require("./lib/ccml");
 const { fulfillSession: fulfillPlaybook } = require("./lib/playbook");
 const { fulfillSession: fulfillBeat, handleRefund: refundBeat } = require("./lib/beats");
+const { fulfillProduct: fulfillMusic, refundProduct: refundMusic } = require("./lib/music");
 const { deriveStatus } = require("./lib/billing");
 const { provisionCompany } = require("./lib/provision");
 
@@ -247,6 +248,8 @@ exports.handler = async function (event) {
     if (type === "charge.refunded") {
       const rr = await refundBeat(obj);
       if (rr && rr.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Beat refund failed, retry" }) };
+      const mr = await refundMusic(obj);
+      if (mr && mr.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Music refund failed, retry" }) };
       return { statusCode: 200, headers, body: JSON.stringify({ received: true, beatRefund: !!(rr && rr.ok) }) };
     }
 
@@ -334,6 +337,10 @@ exports.handler = async function (event) {
     } else if (product === "LEGIT" && isCheckoutSession) {
       const lp = await require("./lib/legit").applyPayment(obj);
       if (lp && lp.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "LEGIT fulfillment failed, retry" }) };
+    } else if (product === "MUSIC" && isCheckoutSession) {
+      // POTENT Music digital product: record the sale (1% POTENT fee), credit the seller. Idempotent per Stripe session.
+      const res = await fulfillMusic(obj);
+      if (res && res.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Music fulfillment failed, retry" }) };
     } else if (product === "BEAT" && isCheckoutSession) {
       // Beat Man: record the sale and credit the producer's wallet right now. Idempotent per Stripe session.
       const res = await fulfillBeat(obj);
