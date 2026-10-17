@@ -86,6 +86,20 @@ function bearer(event) {
 }
 
 // ── money ──
+// POTENT fee rules (enforced here, on the server):
+//  - POTENT's platform fee is exactly 1% of the eligible sale amount.
+//  - An exclusive seller always receives at least 91% of the eligible amount (never less, whatever is stored on the producer).
+//  - Whatever is left after seller + platform is recorded as "unallocated". It is NOT given to anyone.
+//  - Card-processing fees are Stripe's and are recorded separately; they never change the platform fee or the seller's share.
+const PLATFORM_FEE_PCT = 1, MIN_SELLER_PCT = 91, MAX_SELLER_PCT = 99;
+function sellerPct(v) { const n = Number(v); return Math.min(MAX_SELLER_PCT, Math.max(MIN_SELLER_PCT, isFinite(n) ? n : MIN_SELLER_PCT)); }
+function computeSplit(grossCents, taxCents, pct) {
+  const gross = Math.max(0, Math.round(Number(grossCents) || 0)), tax = Math.max(0, Math.round(Number(taxCents) || 0));
+  const eligible = Math.max(0, gross - tax), sp = sellerPct(pct);
+  const seller = Math.min(eligible, Math.ceil(eligible * sp / 100));
+  const platform = Math.min(Math.round(eligible * PLATFORM_FEE_PCT / 100), eligible - seller);
+  return { eligible: eligible, seller: seller, platform: platform, unallocated: eligible - seller - platform, sellerPct: sp, platformPct: PLATFORM_FEE_PCT };
+}
 function estimateFee(gross) { return gross > 0 ? Math.round(gross * 0.029 + 30) : 0; }
 
 async function balances(producerId) {
@@ -109,21 +123,19 @@ async function fulfillSession(session) {
   const prod = prodR.ok && Array.isArray(prodR.data) && prodR.data[0];
   if (!prod) return { error: "Unknown producer" };
 
-  const saleType = md.sale_type === "exclusive" ? "exclusive" : "lease";
+  const saleType = "exclusive"; // POTENT Beats sells exclusive masters only
   const gross = Number(session.amount_total) || 0;
   const td = session.total_details || {};
   const tax = Number(td.amount_tax) || 0, discount = Number(td.amount_discount) || 0;
-  const fee = prod.deduct_fees ? estimateFee(gross) : 0;
-  const net = Math.max(0, gross - tax - fee);
-  const pct = Number(prod.splits && prod.splits[saleType]);
-  const split = isFinite(pct) ? Math.max(0, Math.min(100, pct)) : 50;
-  let producerCents = Math.floor(net * split / 100);
+  const procFee = estimateFee(gross); // Stripe's fee, recorded separately
+  const sp = computeSplit(gross, tax, prod.splits && prod.splits.exclusive);
+  let producerCents = sp.seller;
   const email = (session.customer_details && session.customer_details.email) || session.customer_email || null;
   const pi = typeof session.payment_intent === "string" ? session.payment_intent : null;
 
   // Exclusive: the database lets exactly one paid session claim the beat.
   let conflict = false;
-  if (saleType === "exclusive") {
+  {
     const fin = await rpc("beat_finalize", { p_beat: beat.id, p_session: session.id });
     if (!fin.ok) return { error: "Could not lock the exclusive" };
     conflict = fin.data === "conflict";
@@ -136,10 +148,10 @@ async function fulfillSession(session) {
       await audit("system", "exclusive_conflict", beat.id, { session: session.id, auto_refunded: refunded });
     }
   }
-  const alloc = { seller_type: beat.seller_type || "platform", revenue_model_confirmed: false, producer_pct_of_net: conflict ? 0 : split, net_basis: "gross - tax - estimated card fee", fee_is_estimate: true };
+  const alloc = { seller_type: beat.seller_type || "platform", rule: "platform fee 1%; exclusive seller at least 91% of eligible amount; remainder unallocated (no recipient assigned)", seller_pct: sp.sellerPct, platform_pct: sp.platformPct, processing_fee_cents_estimated: procFee };
   const ins = await sb("beat_sales", { method: "POST", prefer: "resolution=ignore-duplicates,return=representation", body: {
     producer_id: prod.id, beat_id: beat.id, title: beat.title, sale_type: saleType, stripe_session_id: session.id,
-    payment_intent_id: pi, buyer_email: email, gross_cents: gross, fee_cents: fee, net_cents: net, split_pct: conflict ? 0 : split, producer_cents: producerCents,
+    payment_intent_id: pi, buyer_email: email, gross_cents: gross, fee_cents: procFee, net_cents: sp.eligible, split_pct: conflict ? 0 : sp.sellerPct, producer_cents: conflict ? 0 : producerCents, eligible_cents: sp.eligible, platform_fee_cents: conflict ? 0 : sp.platform, unallocated_cents: conflict ? 0 : sp.unallocated,
     tax_cents: tax, discount_cents: discount, status: conflict ? "refunded" : "complete", seller_type: beat.seller_type || "platform",
     agreement_version: md.agreement_version || null, agreement_accepted_at: md.agreed_at || null, allocation: alloc } });
   if (!ins.ok) return { error: "Could not record the sale" };
@@ -184,4 +196,4 @@ async function handleRefund(charge) {
   return { ok: true, reversed: delta > 0 ? delta : 0 };
 }
 
-module.exports = { AGREEMENT_VERSION, rpc, audit, getSetting, setSetting, SB, SITE, J, sb, hashPw, checkPw, signProducer, verifyProducer, verifyOwner, bearer, balances, fulfillSession, handleRefund, estimateFee };
+module.exports = { PLATFORM_FEE_PCT, MIN_SELLER_PCT, MAX_SELLER_PCT, sellerPct, computeSplit, AGREEMENT_VERSION, rpc, audit, getSetting, setSetting, SB, SITE, J, sb, hashPw, checkPw, signProducer, verifyProducer, verifyOwner, bearer, balances, fulfillSession, handleRefund, estimateFee };

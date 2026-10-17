@@ -12,7 +12,7 @@ const played = {};
 function tooMany(k) { const f = fails[k]; return !!(f && f.n >= 8 && Date.now() - f.t < 15 * 60 * 1000); }
 function noteFail(k) { const f = fails[k]; if (!f || Date.now() - f.t > 15 * 60 * 1000) fails[k] = { n: 1, t: Date.now() }; else { f.n++; f.t = Date.now(); } }
 function money(v) { const n = Math.round(Number(v)); return isFinite(n) ? n : NaN; }
-function pubProducer(p) { return { id: p.id, name: p.name, email: p.email, country: p.country, payout_method: p.payout_method, payout_handle: p.payout_handle, splits: p.splits, hold_days: p.hold_days, deduct_fees: p.deduct_fees, active: p.active, store_admin: p.store_admin, kind: p.kind, verified: p.verified }; }
+function pubProducer(p) { return { id: p.id, name: p.name, email: p.email, country: p.country, payout_method: p.payout_method, payout_handle: p.payout_handle, splits: { lease: 0, exclusive: B.sellerPct(p.splits && p.splits.exclusive) }, hold_days: p.hold_days, deduct_fees: p.deduct_fees, active: p.active, store_admin: p.store_admin, kind: p.kind, verified: p.verified }; }
 function pubBeat(b) { return { id: b.id, title: b.title, lease_cents: b.lease_cents, exclusive_cents: b.exclusive_cents, preview_url: b.preview_url, deliver_url: b.deliver_url, exclusive_sold: b.exclusive_sold, active: b.active, status: b.status, genre: b.genre, mood: b.mood, tags: b.tags, bpm: b.bpm, musical_key: b.musical_key, explicit: b.explicit, has_vocal_samples: b.has_vocal_samples, description: b.description, sample_disclosure: b.sample_disclosure, rights_confirmed: b.rights_confirmed, rights_package: b.rights_package, cover_url: b.cover_url, play_count: b.play_count }; }
 
 const STATUSES = ["draft", "processing", "pending_review", "approved", "published", "unavailable", "rejected"];
@@ -41,7 +41,7 @@ function beatRow(b, pid, ctx) {
   const title = clip(b.title !== undefined ? b.title : cur && cur.title, 120);
   if (!title) return { error: "Enter a title" };
   const num = function (v, curV) { if (v === undefined) return curV === undefined ? null : curV; return v === "" || v == null ? null : money(v); };
-  const lease = num(b.lease_cents, cur && cur.lease_cents), excl = num(b.exclusive_cents, cur && cur.exclusive_cents);
+  const lease = null /* non-exclusive licenses are not offered */, excl = num(b.exclusive_cents, cur && cur.exclusive_cents);
   if ([lease, excl].some(function (v) { return v !== null && !(v >= 100 && v <= 5000000); })) return { error: "Prices must be $1 or more" };
   let status = b.status !== undefined ? String(b.status) : (cur ? cur.status : "draft");
   if (STATUSES.indexOf(status) < 0 && !(cur && status === cur.status)) return { error: "Unknown status" };
@@ -130,10 +130,8 @@ exports.handler = async function (event) {
     const rows = Array.isArray(r.data) ? r.data : [];
     const uniq = function (arr) { return Array.from(new Set(arr.filter(Boolean))).sort(); };
     const fxr = Array.isArray(fx.data) ? fx.data : [];
-    const model = await B.getSetting("revenue_model");
-    return B.J(200, { ok: true, more: rows.length === limit,
+    return B.J(200, { ok: true, more: rows.length === limit, platformFeePct: B.PLATFORM_FEE_PCT, minSellerPct: B.MIN_SELLER_PCT,
       facets: offset === 0 ? { genres: uniq(fxr.map(function (x) { return x.genre; })), moods: uniq(fxr.map(function (x) { return x.mood; })), keys: uniq(fxr.map(function (x) { return x.musical_key; })), producers: Object.values(fxr.reduce(function (m, x) { if (x.producer_id && x.beat_producers) m[x.producer_id] = { id: x.producer_id, name: x.beat_producers.name }; return m; }, {})) } : undefined,
-      publicTerms: model && model.confirmed && model.public_text ? model.public_text : null,
       agreementVersion: B.AGREEMENT_VERSION,
       beats: rows.map(function (x) { return { id: x.id, title: x.title, producer: x.beat_producers && x.beat_producers.name, verified: !!(x.beat_producers && x.beat_producers.verified), preview_url: x.preview_url, cover_url: x.cover_url,
         lease_cents: null, exclusive_cents: x.exclusive_sold ? null : x.exclusive_cents, price_cents: x.exclusive_cents,
@@ -316,13 +314,13 @@ exports.handler = async function (event) {
     return B.J(200, { ok: true });
   }
   if (a === "o_stats") {
-    const [items, sales, pays] = await Promise.all([B.sb("beat_items?select=status,play_count&limit=5000"), B.sb("beat_sales?select=sale_type,status,gross_cents,tax_cents,fee_cents,net_cents,producer_cents,refunded_cents&limit=10000"), B.sb("beat_payouts?select=amount_cents,status&limit=5000")]);
+    const [items, sales, pays] = await Promise.all([B.sb("beat_items?select=status,play_count&limit=5000"), B.sb("beat_sales?select=status,gross_cents,tax_cents,fee_cents,eligible_cents,platform_fee_cents,unallocated_cents,producer_cents,refunded_cents&limit=10000"), B.sb("beat_payouts?select=amount_cents,status&limit=5000")]);
     const by = {}; (items.data || []).forEach(function (x) { by[x.status] = (by[x.status] || 0) + 1; });
-    let gross = 0, net = 0, fees = 0, prod = 0, refunds = 0, ex = 0;
-    (sales.data || []).forEach(function (x) { gross += x.gross_cents; refunds += x.refunded_cents || 0; if (x.status === "complete") { net += x.net_cents; fees += x.fee_cents; prod += x.producer_cents; if (x.sale_type === "exclusive") ex++; } });
-    const model = await B.getSetting("revenue_model");
-    return B.J(200, { ok: true, byStatus: by, plays: (items.data || []).reduce(function (a2, x) { return a2 + (x.play_count || 0); }, 0), soldExclusives: ex, grossCents: gross, netEligibleCents: net, estFeesCents: fees, producerCents: prod, platformCents: net - prod, artistCents: null, refundsCents: refunds,
-      pendingPayoutsCents: (pays.data || []).filter(function (x) { return x.status === "pending"; }).reduce(function (a2, x) { return a2 + x.amount_cents; }, 0), revenueModel: model, payoutCodeSet: !!((await B.getSetting("payout_code")) || {}).hash });
+    let gross = 0, elig = 0, plat = 0, unal = 0, prod = 0, refunds = 0, proc = 0, ex = 0;
+    (sales.data || []).forEach(function (x) { gross += x.gross_cents; refunds += x.refunded_cents || 0; if (x.status === "complete") { const keep = x.gross_cents > 0 ? 1 - Math.min(1, (x.refunded_cents || 0) / x.gross_cents) : 1; elig += x.eligible_cents; plat += Math.round(x.platform_fee_cents * keep); unal += Math.round(x.unallocated_cents * keep); prod += Math.round(x.producer_cents * keep); proc += x.fee_cents; ex++; } });
+    return B.J(200, { ok: true, byStatus: by, plays: (items.data || []).reduce(function (a2, x) { return a2 + (x.play_count || 0); }, 0), soldExclusives: ex, grossCents: gross, eligibleCents: elig, platformCents: plat, sellerCents: prod, unallocatedCents: unal, processingEstCents: proc, refundsCents: refunds,
+      rules: { platformFeePct: B.PLATFORM_FEE_PCT, minSellerPct: B.MIN_SELLER_PCT, maxSellerPct: B.MAX_SELLER_PCT },
+      pendingPayoutsCents: (pays.data || []).filter(function (x) { return x.status === "pending"; }).reduce(function (a2, x) { return a2 + x.amount_cents; }, 0), payoutCodeSet: !!((await B.getSetting("payout_code")) || {}).hash });
   }
   if (a === "o_audit") { const r = await B.sb("beat_audit?select=*&order=created_at.desc&limit=100"); return B.J(200, { ok: true, rows: r.data || [] }); }
   if (a === "o_setcode") {
@@ -334,23 +332,15 @@ exports.handler = async function (event) {
     await B.audit("owner", "payout_code_set", null, null);
     return B.J(200, { ok: true });
   }
-  if (a === "o_setmodel") { // revenue model: nothing is paid out by these percentages until confirmed:true is set deliberately
-    const n = function (v) { v = Number(v); return isFinite(v) ? Math.max(0, Math.min(100, v)) : 0; };
-    const m = { confirmed: b.confirmed === true, stream: clip(b.stream, 600) || null, artist_pct: n(b.artist_pct), producer_pct: n(b.producer_pct), platform_pct: n(b.platform_pct), public_text: clip(b.public_text, 600) || null };
-    if (m.confirmed && (!m.stream || Math.round((m.artist_pct + m.producer_pct + m.platform_pct) * 100) !== 10000)) return B.J(400, { error: "To confirm, describe the revenue stream and make the three percentages add to 100" });
-    await B.setSetting("revenue_model", m);
-    await B.audit("owner", "revenue_model_set", null, m);
-    return B.J(200, { ok: true });
-  }
   if (a === "o_apps") { const r = await B.sb("beat_applications?select=*&order=created_at.desc&limit=100"); return B.J(200, { ok: true, apps: r.data || [] }); }
   if (a === "o_appdecide") {
     if (!UUID.test(String(b.id || ""))) return B.J(400, { error: "Bad id" });
     const g = await B.sb("beat_applications?id=eq." + b.id + "&select=*"); const ap = g.ok && g.data && g.data[0];
     if (!ap || ap.status !== "pending") return B.J(400, { error: "That application is not pending" });
     if (b.decision !== "approve") { await B.sb("beat_applications?id=eq." + ap.id, { method: "PATCH", prefer: "return=minimal", body: { status: "rejected", review_note: clip(b.note, 500) || null, decided_at: new Date().toISOString() } }); await B.audit("owner", "application_rejected", ap.id, null); return B.J(200, { ok: true }); }
-    const ex = Math.round(Number(b.exclusive_pct)); if (!(ex >= 0 && ex <= 100)) return B.J(400, { error: "Enter the seller's % of each exclusive sale (0-100)" });
+    const ex = Math.round(Number(b.exclusive_pct)); if (!(ex >= B.MIN_SELLER_PCT && ex <= B.MAX_SELLER_PCT)) return B.J(400, { error: "Seller share must be " + B.MIN_SELLER_PCT + "% to " + B.MAX_SELLER_PCT + "% (POTENT's fee is 1%)" });
     const temp = require("crypto").randomBytes(9).toString("base64").replace(/[^a-zA-Z0-9]/g, "x").slice(0, 12);
-    const r = await B.sb("beat_producers", { method: "POST", prefer: "return=representation", body: { name: ap.producer_name, legal_name: ap.legal_name, email: ap.email, password_hash: B.hashPw(temp), country: ap.country, kind: "seller", splits: { lease: ex, exclusive: ex } } });
+    const r = await B.sb("beat_producers", { method: "POST", prefer: "return=representation", body: { name: ap.producer_name, legal_name: ap.legal_name, email: ap.email, password_hash: B.hashPw(temp), country: ap.country, kind: "seller", splits: { lease: 0, exclusive: ex } } });
     if (!r.ok) return B.J(r.status === 409 ? 409 : 500, { error: r.status === 409 ? "That email already has an account" : "Could not create the seller account" });
     await B.sb("beat_applications?id=eq." + ap.id, { method: "PATCH", prefer: "return=minimal", body: { status: "approved", producer_id: r.data[0].id, decided_at: new Date().toISOString(), review_note: clip(b.note, 500) || null } });
     await B.audit("owner", "application_approved", ap.id, { producer: r.data[0].id, exclusive_pct: ex });
@@ -360,7 +350,9 @@ exports.handler = async function (event) {
     const email = clip(b.email, 200).toLowerCase(), name = clip(b.name, 80);
     if (!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return B.J(400, { error: "Name and a valid email are required" });
     const temp = String(b.password || "").length >= 10 ? String(b.password) : require("crypto").randomBytes(9).toString("base64").replace(/[^a-zA-Z0-9]/g, "x").slice(0, 12);
-    const lease = Math.max(0, Math.min(100, Number(b.lease_pct == null ? 50 : b.lease_pct))), excl = Math.max(0, Math.min(100, Number(b.exclusive_pct == null ? 50 : b.exclusive_pct)));
+    const ex0 = Number(b.exclusive_pct == null ? B.MIN_SELLER_PCT : b.exclusive_pct);
+    if (!(ex0 >= B.MIN_SELLER_PCT && ex0 <= B.MAX_SELLER_PCT)) return B.J(400, { error: "Seller share on exclusive sales must be between " + B.MIN_SELLER_PCT + "% and " + B.MAX_SELLER_PCT + "%" });
+    const lease = 0, excl = ex0;
     const r = await B.sb("beat_producers", { method: "POST", prefer: "return=representation", body: { name: name, email: email, password_hash: B.hashPw(temp), country: clip(b.country, 60) || null, splits: { lease: lease, exclusive: excl } } });
     if (!r.ok) return B.J(r.status === 409 ? 409 : 500, { error: r.status === 409 ? "That email already has an account" : "Could not create the account" });
     return B.J(200, { ok: true, producer: pubProducer(r.data[0]), tempPassword: temp });
@@ -368,11 +360,13 @@ exports.handler = async function (event) {
   if (a === "o_setproducer") {
     if (!UUID.test(String(b.id || ""))) return B.J(400, { error: "Bad id" });
     const patch = {};
-    if (b.lease_pct != null || b.exclusive_pct != null) { const p = await loadProducer(b.id); if (!p) return B.J(404, { error: "Not found" });
-      patch.splits = { lease: b.lease_pct != null ? Math.max(0, Math.min(100, Number(b.lease_pct))) : p.splits.lease, exclusive: b.exclusive_pct != null ? Math.max(0, Math.min(100, Number(b.exclusive_pct))) : p.splits.exclusive }; }
+    if (b.exclusive_pct != null) {
+      const ex1 = Number(b.exclusive_pct);
+      if (!(ex1 >= B.MIN_SELLER_PCT && ex1 <= B.MAX_SELLER_PCT)) return B.J(400, { error: "Seller share on exclusive sales must be between " + B.MIN_SELLER_PCT + "% and " + B.MAX_SELLER_PCT + "%. POTENT's fee is 1%." });
+      patch.splits = { lease: 0, exclusive: ex1 };
+    }
     if (b.hold_days != null) patch.hold_days = Math.max(0, Math.min(60, Math.round(Number(b.hold_days))));
-    if (b.deduct_fees != null) patch.deduct_fees = !!b.deduct_fees;
-    if (b.active != null) patch.active = !!b.active;
+        if (b.active != null) patch.active = !!b.active;
     if (b.store_admin != null) patch.store_admin = !!b.store_admin;
     if (b.verified != null) patch.verified = !!b.verified;
     await B.audit("owner", "producer_edit", b.id, patch);

@@ -8,7 +8,7 @@
 <title>POTENT Beats — Exclusive Masters</title>
 <meta name="description" content="Exclusive beats for artists. Clear rights, one buyer per beat, instant download after payment.">
 <style>
-:root{color-scheme:dark light;--bg:#0a0a0a;--panel:#141412;--ink:#f7f4ec;--muted:#b8b3a8;--gold:#d4af37;--line:rgba(255,255,255,.16)}
+:root{color-scheme:dark light;--bg:#0a0a0a;--panel:#141412;--ink:#f7f4ec;--muted:#b8b3a8;--gold:#e8ff1a;--line:rgba(255,255,255,.16)}
 @media (prefers-color-scheme:light){:root{--bg:#f6f3ea;--panel:#fff;--ink:#16140f;--muted:#6d675a;--line:rgba(0,0,0,.14)}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:16px 16px 110px;max-width:900px;margin-inline:auto}
 h1{color:var(--gold);margin:8px 0 2px}.muted{color:var(--muted)}
@@ -110,7 +110,7 @@ function openLic(b){var m=$("mb"),can=b.state==="available";
  '<div class="opt"><b>What you get</b><ul>'+dl+'</ul><b>Rights package</b><p style="margin:4px 0;font-size:14px">'+esc(b.rights_package)+'</p>'+(b.sample_disclosure?'<b>Sample / third-party disclosure</b><p style="margin:4px 0;font-size:14px">'+esc(b.sample_disclosure)+'</p>':'<small class="muted">No samples or third-party material disclosed by the seller.</small>')+'</div>'+
  (b.state==="sold"?'<p><b>This exclusive has been sold.</b></p>':b.state==="reserved"?'<p><b>Another buyer is checking out with this beat right now.</b> Check back in a few minutes.</p>':'')+
  (can?'<label class="ag"><input type="checkbox" id="agr"><span>I have read and accept the <a href="/beats/terms.html" target="_blank">Exclusive Purchase Agreement (v'+esc(AGV)+')</a> and the rights package above.</span></label>':'')+
- (can&&b.exclusive_cents?'<button data-l="exclusive" style="width:100%">Buy the master — '+usd(b.exclusive_cents)+'</button><small class="muted">Exclusive master. Sold once, then removed. Includes 2 revisions.</small>':'')+
+ (can&&b.exclusive_cents?'<button data-l="exclusive" style="width:100%">Buy the master — '+usd(b.exclusive_cents)+'</button><small class="muted">Exclusive master. Sold once, then removed. Includes 2 revisions. You pay the listed price. POTENT\'s platform fee is 1% and is taken from the sale, not added to your price. The seller receives at least 91% of the eligible amount.</small>':'')+
   '<button class="alt" id="cl" style="width:100%;margin-top:12px">Close</button>';$("modal").style.display="flex";
  [].forEach.call(m.querySelectorAll("[data-l]"),function(x){x.onclick=function(){if(!$("agr").checked){alert("Please accept the purchase agreement first.");return}x.disabled=true;post("beat-checkout",{beat_id:b.id,license:x.dataset.l,agree:true}).then(function(j){location.href=j.url}).catch(function(e){alert(e.message);x.disabled=false})}});$("cl").onclick=function(){$("modal").style.display="none"}}
 $("modal").onclick=function(e){if(e.target===this)this.style.display="none"};
