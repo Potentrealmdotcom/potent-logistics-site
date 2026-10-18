@@ -7,6 +7,7 @@
 const B = require("./lib/beats");
 const M = require("./lib/music");
 const RR = require("./music-rights");
+const SH = require("./lib/selfhost");
 const L = RR.lib;
 
 const UUID = /^[0-9a-f-]{36}$/i;
@@ -53,6 +54,13 @@ exports.handler = async function (event) {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY || !process.env.AUTH_SECRET) return B.J(500, { error: "Server not configured" });
   let b; try { b = JSON.parse(event.body || "{}"); } catch (e) { return B.J(400, { error: "Bad request" }); }
   const a = String(b.action || "");
+
+  // ───────── our own media server asks "may this connection publish/read?" (MediaMTX http auth; only with the shared key) ─────────
+  if (b.protocol !== undefined && b.path !== undefined) {
+    const k = String((event.queryStringParameters || {}).k || ""), want = String(process.env.MTX_KEY || "");
+    if (!want || k.length !== want.length || !require("crypto").timingSafeEqual(Buffer.from(k), Buffer.from(want))) return B.J(401, { error: "no" });
+    return SH.mtxDecision(b) ? B.J(200, { ok: true }) : B.J(401, { error: "no" });
+  }
 
   // ───────── owner ─────────
   if (a.indexOf("o_") === 0) {
@@ -123,6 +131,22 @@ exports.handler = async function (event) {
   // session pages are for members only (a public room is joined with s_join first)
   if (!me) return B.J(403, { error: "Join the session first" });
 
+  // Live video/voice room on POTENT's own Jitsi server. Only members of this live session get a login; hosts moderate.
+  if (a === "s_av_token") {
+    if (!SH.jitsiOn()) return B.J(200, { ok: true, available: false });
+    if (s.status !== "live") return B.J(409, { error: "The room opens when the host starts the session" });
+    if (me.banned) return B.J(403, { error: "You can't join this session" });
+    return B.J(200, { ok: true, available: true, domain: process.env.JITSI_DOMAIN, room: "smoke-" + s.id, jwt: SH.jitsiToken("smoke-" + s.id, { id: u.id, name: me.display_name || "Guest" }, isStaff(me)), moderator: isStaff(me), can_speak: !!me.can_speak || isStaff(me) });
+  }
+  // Host only: where to point OBS for a broadcast (public sessions only, since viewers watch without signing in to the media server).
+  if (a === "s_broadcast_info") {
+    if (!host) return B.J(403, { error: "Only the host can do this" });
+    if (!SH.liveOn()) return B.J(200, { ok: true, available: false });
+    if (s.visibility !== "public") return B.J(409, { error: "Broadcasts are for public sessions" });
+    const path = SH.bcPath(s.id), watch = "https://" + process.env.LIVE_HOST + "/" + path + "/";
+    await B.sb("smoke_sessions?id=eq." + s.id, { method: "PATCH", prefer: "return=minimal", body: { stream_url: watch } });
+    return B.J(200, { ok: true, available: true, server: "rtmp://" + process.env.LIVE_HOST + ":1935/" + path, username: "host", password: SH.bcKey(path), watch_url: watch });
+  }
   if (a === "s_poll") {
     const nowIso = new Date().toISOString();
     await B.sb("smoke_members?session_id=eq." + s.id + "&user_id=eq." + u.id, { method: "PATCH", prefer: "return=minimal", body: { last_seen: nowIso } });

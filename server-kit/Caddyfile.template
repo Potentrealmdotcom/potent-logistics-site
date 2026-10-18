@@ -1,0 +1,17 @@
+{
+	email ${EMAIL}
+}
+meet.${DOMAIN} {
+	reverse_proxy 127.0.0.1:8000
+}
+live.${DOMAIN} {
+	reverse_proxy 127.0.0.1:8888
+}
+files.${DOMAIN} {
+	request_body {
+		max_size 2100MB
+	}
+	reverse_proxy 127.0.0.1:9000 {
+		flush_interval -1
+	}
+}

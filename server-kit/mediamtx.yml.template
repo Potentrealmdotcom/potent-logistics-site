@@ -1,0 +1,21 @@
+# OBS publishes over RTMP; viewers watch HLS in the browser. Only the session host's key can publish (checked by the site).
+logLevel: info
+rtsp: no
+webrtc: no
+srt: no
+api: no
+metrics: no
+rtmp: yes
+rtmpAddress: :1935
+hls: yes
+hlsAddress: 127.0.0.1:8888
+hlsAlwaysRemux: no
+hlsAllowOrigins: ['*']
+authMethod: http
+authHTTPAddress: ${SITE}/.netlify/functions/music-smoke?k=${MTX_KEY}
+authHTTPExclude:
+  - action: api
+  - action: metrics
+  - action: pprof
+paths:
+  all_others:

@@ -1,0 +1,27 @@
+services:
+  caddy:
+    image: caddy:2
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+  mediamtx:
+    image: bluenviron/mediamtx:1
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml:ro
+  minio:
+    image: minio/minio
+    network_mode: host
+    restart: unless-stopped
+    command: server /data --address 127.0.0.1:9000 --console-address 127.0.0.1:9001
+    environment:
+      MINIO_ROOT_USER: "${MINIO_USER}"
+      MINIO_ROOT_PASSWORD: "${MINIO_PASS}"
+      MINIO_API_CORS_ALLOW_ORIGIN: "https://potentoperations.netlify.app,https://${DOMAIN}"
+    volumes:
+      - /srv/minio:/data
+volumes:
+  caddy_data:

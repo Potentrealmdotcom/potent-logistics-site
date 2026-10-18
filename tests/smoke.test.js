@@ -80,6 +80,22 @@ const host = as(H), p1 = as(P1), p2 = as(P2), fan = as(FAN), out = as(OUT), anon
   // connections + helpers
   r = await fan("s_connections", { id: S }); ok(r.j.people.length >= 2, "follow-up list"); r = await fan("s_follow", { id: S, user_id: P1 }); r = await fan("s_connections", { id: S }); ok(r.j.people.find(x => x.user_id === P1).following, "followed");
   r = await host("s_title", { id: S }); ok(r.j.ideas.length === 4, "title ideas without AI"); r = await host("s_recap", { id: S }); ok(/turn/.test(r.j.text) && /Dark Trap/.test(r.j.text), "recap from facts, no AI needed"); r = await fan("s_recap", { id: S }); ok(r.s === 403, "recap is host-only");
+  // self-hosted media (Jitsi room, OBS broadcast, MediaMTX auth): off without env, member-only, host-only
+  r = await fan("s_av_token", { id: S }); ok(r.s === 200 && r.j.available === false, "video room reports 'not switched on' without the server");
+  process.env.JITSI_DOMAIN = "meet.example.test"; process.env.JITSI_APP_SECRET = "jsecret"; process.env.LIVE_HOST = "live.example.test"; process.env.MTX_KEY = "mtxkey";
+  r = await fan("s_av_token", { id: S }); const jc = r.j.jwt && JSON.parse(Buffer.from(r.j.jwt.split(".")[1], "base64").toString()); ok(r.s === 200 && r.j.available && jc.room === "smoke-" + S && jc.context.user.moderator === "false" && jc.context.features.recording === "false", "member gets a non-moderator, no-recording login");
+  r = await host("s_av_token", { id: S }); ok(JSON.parse(Buffer.from(r.j.jwt.split(".")[1], "base64").toString()).context.user.moderator === "true", "host is moderator");
+  r = await out("s_av_token", { id: S }); ok(r.s === 403, "non-members get no video login");
+  r = await fan("s_broadcast_info", { id: S }); ok(r.s === 403, "only the host sees OBS details");
+  r = await host("s_broadcast_info", { id: S }); ok(r.s === 200 && r.j.available && /^rtmp:\/\/live\.example\.test:1935\/s-/.test(r.j.server) && r.j.password.length === 32, "host gets OBS server + key: " + JSON.stringify(r.j));
+  const mtx = async (body, k) => { const x = await A.handler({ httpMethod: "POST", headers: {}, queryStringParameters: { k: k }, body: JSON.stringify(body) }); return x.statusCode; };
+  const bp = "s-" + S, key = r.j.password;
+  ok(await mtx({ action: "publish", path: bp, protocol: "rtmp", password: key }, "mtxkey") === 200, "media server accepts the host's key");
+  ok(await mtx({ action: "publish", path: bp, protocol: "rtmp", password: "x".repeat(32) }, "mtxkey") === 401, "wrong key cannot publish");
+  ok(await mtx({ action: "publish", path: "s-" + FAN, protocol: "rtmp", password: key }, "mtxkey") === 401, "a key only works for its own session");
+  ok(await mtx({ action: "read", path: bp, protocol: "hls" }, "mtxkey") === 200 && await mtx({ action: "api", path: "", protocol: "hls" }, "mtxkey") === 401, "viewers can watch, admin api is closed");
+  ok(await mtx({ action: "read", path: bp, protocol: "hls" }, "wrong") === 401, "only our media server may ask");
+  delete process.env.JITSI_DOMAIN; delete process.env.JITSI_APP_SECRET; delete process.env.LIVE_HOST; delete process.env.MTX_KEY;
   // end
   r = await host("s_end", { id: S }); ok(r.s === 200 && T.smoke_sessions[0].status === "ended" && T.smoke_queue.filter(x => ["waiting", "active"].includes(x.status) && x.session_id === S).length === 0, "ending clears the line"); r = await out("s_join", { id: S }); ok(r.s === 410, "can't join an ended room");
   r = await owner("o_end", { id: PRV }); ok(r.s === 200 && T.smoke_sessions[1].status === "ended", "owner can end any room");

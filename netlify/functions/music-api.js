@@ -395,6 +395,12 @@ async function core(event) {
       const name = clip(b.name, 120).replace(/[^A-Za-z0-9._-]/g, "_");
       const rx = { audio: /\.(mp3|wav|m4a|ogg)$/i, cover: /\.(jpe?g|png|webp)$/i, file: /\.(mp3|wav|m4a|flac|zip|pdf|mp4|mov)$/i, video: /\.(mp4|webm|mov)$/i }[kind];
       if (!rx.test(name)) return B.J(400, { error: "That file type is not allowed for " + kind });
+      if (kind === "video" && require("./lib/selfhost").minioOn()) { // POTENT's own video storage: any size up to 2 GB, streamed from our server
+        const SHm = require("./lib/selfhost"), bytes = Math.round(Number(b.bytes));
+        if (!(bytes > 0) || bytes > SHm.MAX_VIDEO) return B.J(400, { error: "Videos can be up to 2 GB" });
+        const up = SHm.videoUpload(seller.id + "/" + Date.now() + "-" + name, bytes);
+        return B.J(200, { ok: true, uploadUrl: up.uploadUrl, ref: up.publicUrl, raw: true });
+      }
       const bucket = kind === "file" ? "beat-files" : "beat-previews", path = seller.id + "/" + kind + "-" + Date.now() + "-" + name;
       const sg = await fetch(B.SB + "/storage/v1/object/upload/sign/" + bucket + "/" + path, { method: "POST", headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: "Bearer " + process.env.SUPABASE_SERVICE_ROLE_KEY, "Content-Type": "application/json" }, body: "{}" });
       const sj = await sg.json().catch(function () { return {}; });

@@ -30,7 +30,7 @@ body{max-width:1200px}
       <div id="pn-chat" class="panel on"><div class="chat" id="chat" aria-live="polite"></div><div class="row"><input id="msg" maxlength="280" placeholder="Say something…"><button id="send">Send</button></div><div class="row" id="emo"></div></div>
       <div id="pn-line" class="panel"></div><div id="pn-beats" class="panel"></div><div id="pn-people" class="panel"></div><div id="pn-more" class="panel"></div><div id="pn-set" class="panel"></div>
     </div>
-    <div class="card"><b>House rules</b><div class="muted" style="font-size:13px">Be respectful. Nobody has to use anything to take part. The host can mute or remove anyone. You can block people for yourself, or report them to POTENT. Recording status is always shown at the top, and music only plays when the host has recorded why they're allowed to play it.</div><div id="stream"></div></div>
+    <div class="card"><b>House rules</b><div class="muted" style="font-size:13px">Be respectful. Nobody has to use anything to take part. The host can mute or remove anyone. You can block people for yourself, or report them to POTENT. Recording status is always shown at the top, and music only plays when the host has recorded why they're allowed to play it.</div><div id="stream"></div><div id="av"></div></div>
   </div>
 </div>
 <script src="/music/common.js"></script>
@@ -86,6 +86,20 @@ function buttons(j){var s=j.session,me=j.me,host=j.host,a=$("actions"),h="";
  $("tSet").style.display=host&&me.role==="host"?"inline-block":"none";
  var stm=$("stream");stm.innerHTML=s.stream_url?'<div style="margin-top:8px"><a class="btn alt" target="_blank" rel="noopener noreferrer" href="'+esc(s.stream_url)+'">Open the stream / video</a>'+(s.stream_is_360?' <button class="alt" id="v360">View in 360°</button>':"")+"</div>":"";
  if($("v360"))$("v360").onclick=function(){view360(s.stream_url)};
+ avPanel(s,host);
+}
+/* POTENT's own video room (Jitsi) and OBS broadcast. Both stay hidden until the media server is set up. */
+var avDone=false;
+function avPanel(s,host){var el=$("av");if(!el||el.dataset.s===s.status)return;el.dataset.s=s.status;
+ if(s.status!=="live"){el.innerHTML="";return}
+ el.innerHTML='<div class="row" style="margin-top:8px"><button class="alt" id="avJoin">Join the video &amp; voice room</button>'+(host?'<button class="alt" id="avObs">Broadcast with OBS</button>':"")+'</div><div id="avBox"></div><small class="muted">The video room runs on POTENT\'s own server. POTENT does not record it. Cameras and mics start off.</small>';
+ $("avJoin").onclick=function(){api({action:"s_av_token",id:SID}).then(function(r){if(!r.available){PM.toast("The video room isn't switched on yet");return}
+  var sc=document.createElement("script");sc.src="https://"+r.domain+"/external_api.js";sc.onerror=function(){PM.toast("Couldn't reach the video server")};
+  sc.onload=function(){$("avBox").innerHTML='<div id="avFrame" style="height:420px;margin-top:8px;border-radius:12px;overflow:hidden"></div>';
+   new JitsiMeetExternalAPI(r.domain,{roomName:r.room,jwt:r.jwt,parentNode:$("avFrame"),width:"100%",height:"100%",configOverwrite:{startWithAudioMuted:true,startWithVideoMuted:true,prejoinPageEnabled:false,disableDeepLinking:true},interfaceConfigOverwrite:{MOBILE_APP_PROMO:false}});avDone=true};
+  document.head.appendChild(sc)}).catch(function(e){PM.toast(e.message)})};
+ if($("avObs"))$("avObs").onclick=function(){api({action:"s_broadcast_info",id:SID}).then(function(r){if(!r.available){PM.toast("Broadcasting isn't switched on yet");return}
+  $("avBox").innerHTML='<div class="card"><b>Broadcast from OBS</b><div class="muted" style="font-size:13px">In OBS: Settings → Stream → Service: Custom. Server: <b>'+esc(r.server)+'</b>. Tick "Use authentication", username <b>'+esc(r.username)+'</b>, password: <b>'+esc(r.password)+'</b>. Keep that password private. Viewers watch at <a target="_blank" rel="noopener noreferrer" href="'+esc(r.watch_url)+'">'+esc(r.watch_url)+'</a> and the link is now on the session page.</div></div>'}).catch(function(e){PM.toast(e.message)})};
 }
 function view360(url){if(window.AFRAME)return show();var sc=document.createElement("script");sc.src="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe.min.js";sc.onload=show;sc.onerror=function(){PM.toast("360° view isn't available on this device. Use the link above.")};document.head.appendChild(sc);
  function show(){var d=document.createElement("div");d.style.cssText="position:fixed;inset:0;z-index:100;background:#000";d.innerHTML='<a-scene embedded style="height:100%;width:100%" vr-mode-ui="enabled:true"><a-assets><video id="v360v" src="'+esc(url)+'" crossorigin="anonymous" loop playsinline autoplay></video></a-assets><a-videosphere src="#v360v"></a-videosphere></a-scene><button style="position:absolute;top:12px;right:12px;z-index:101" id="x360">Close</button>';document.body.appendChild(d);$("x360").onclick=function(){d.remove()};var v=$("v360v");v&&v.play&&v.play().catch(function(){})}}
