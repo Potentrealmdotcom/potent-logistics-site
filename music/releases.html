@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="color-scheme" content="dark light"><link rel="icon" href="data:,">
+<title>Releases — POTENT Music</title><meta name="description" content="Upcoming and new releases on POTENT Music."><link rel="stylesheet" href="/music/base.css"></head><body>
+<script src="/music/nav.js"></script>
+<h1>New <span>Releases</span></h1>
+<div id="main"><div class="muted">Loading…</div></div>
+<script src="/music/common.js"></script>
+<script>
+var esc=PM.esc,$=function(i){return document.getElementById(i)},usd=function(c){return"$"+(c/100).toFixed(2)};
+var link=function(slug){return slug?"/music/artist.html?s="+encodeURIComponent(slug):"/music/"};
+fetch("/.netlify/functions/music-admin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"releases"})}).then(function(r){return r.json()}).then(function(j){
+ var h="";
+ if(j.calendar.length)h+='<h2>Calendar</h2><div class="card">'+j.calendar.map(function(c){return'<div class="beat"><div class="bi"><b>'+esc(new Date(c.date+"T12:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}))+'</b><small>'+(c.url?'<a href="'+esc(c.url)+'">'+esc(c.title)+'</a>':esc(c.title))+'</small></div></div>'}).join("")+'</div>';
+ h+='<h2>Coming soon</h2><div class="card">'+(j.upcoming.length?j.upcoming.map(function(p){return'<div class="beat"><div class="bi"><a href="'+link(p.beat_producers&&p.beat_producers.slug)+'"><b>'+esc(p.title)+'</b></a><small class="muted">'+esc(p.beat_producers&&p.beat_producers.name||"")+' · '+new Date(p.publish_at).toLocaleDateString()+(p.preorder?' · preorder '+usd(p.price_cents):'')+'</small></div></div>'}).join(""):'<span class="muted">Nothing scheduled yet.</span>')+'</div>';
+ h+='<h2>Just released</h2><div class="card">'+j.newest.map(function(p){return'<div class="beat"><div class="bi"><a href="'+link(p.beat_producers&&p.beat_producers.slug)+'"><b>'+esc(p.title)+'</b></a><small class="muted">'+esc(p.beat_producers&&p.beat_producers.name||"")+'</small></div></div>'}).join("")+'</div>';
+ $("main").innerHTML=h}).catch(function(){$("main").innerHTML='<div class="card err">Could not load releases.</div>'});
+</script></body></html>

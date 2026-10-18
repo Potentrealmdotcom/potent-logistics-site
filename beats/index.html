@@ -31,27 +31,30 @@ input,select{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid 
 .st{font-size:11px;border-radius:99px;padding:2px 9px;border:1px solid var(--line);margin-left:6px}.st.sold{color:#e74c3c;border-color:#e74c3c}.st.res{color:var(--gold);border-color:var(--gold)}
 .fav{background:transparent;border:1px solid var(--line);color:var(--ink);padding:8px 10px}.fav.on{color:#e74c3c;border-color:#e74c3c}
 .adv{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}.adv select,.adv input{flex:1 1 120px}
-.hero{padding:14px 0 6px}.hero .t{font-size:13px;color:var(--muted)}
+#feat h2,#prods h2{margin:10px 0 4px;font-size:18px}.fcards{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px}.fc{flex:0 0 160px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px;cursor:pointer}.fc .cv{width:100%;height:120px;flex:none}.fc b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:6px}.fc small{color:var(--muted)}.hero{padding:14px 0 6px}.hero .t{font-size:13px;color:var(--muted)}
 #modal .m{max-height:92vh;overflow:auto;max-width:520px}
 .ag{display:flex;gap:8px;align-items:flex-start;font-size:14px;margin:10px 0}.ag input{margin-top:4px}
-</style>
+/* accessibility */:focus-visible{outline:3px solid var(--gold,#e8ff1a);outline-offset:2px}@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}.skip{position:absolute;left:-999px;top:0;background:var(--gold,#e8ff1a);color:#111;padding:8px 12px;border-radius:0 0 8px 0;z-index:99}.skip:focus{left:0}</style>
 </head>
 <body>
 <script src="/music/nav.js"></script>
-<div class="hero"><h1>🎵 POTENT Beats</h1>
+<div class="hero" id="main"><h1>YOUR MUSIC. YOUR MOVE. YOUR 91%.</h1>
 <div class="muted">Exclusive beats for artists. Each beat is sold to one buyer, with the rights written out before you pay. Download link appears the moment you pay.</div>
+<div class="row"><a class="btn" href="#list" id="cta1">EXPLORE EXCLUSIVES</a><a class="btn alt" href="/beats/apply.html">SELL YOUR BEATS</a><button class="alt" id="favs">♥ My favorites</button></div>
+<details class="card" style="margin-top:10px"><summary><b>How the money works</b> <small class="muted">(short version)</small></summary>
+<p style="margin:8px 0">Buyers pay the listed price. The seller keeps <b>91% or more</b> of each sale. POTENT's marketplace fee is <b>1%</b>. Any remaining share is a payment split recorded for the sale, not a copyright share. It never changes who owns the music.</p>
 <div class="t" id="pterms"></div>
-<div class="row"><a class="btn alt" href="/beats/apply.html">Sell your beats</a><a class="btn alt" href="/beats/terms.html" target="_blank">Read the purchase agreement</a><button class="alt" id="favs">♥ My favorites</button></div></div>
+<div class="row"><a href="/beats/terms.html" target="_blank">Read the purchase agreement</a></div></details></div>
 <div id="thanks"></div>
 <div id="gbtn" class="chips" style="display:flex;gap:6px;overflow-x:auto;padding:6px 0"></div>
-<div id="trend"></div>
+<div id="feat"></div><div id="prods"></div><div id="trend"></div>
 <div id="filters"><input id="srch" placeholder="Search beats, genres, moods, BPM, keys..." aria-label="Search"><select id="sort" aria-label="Sort"><option value="new">Newest</option><option value="plays">Most played</option><option value="price_asc">Price: low to high</option><option value="price_desc">Price: high to low</option><option value="bpm">BPM</option></select></div>
 <div class="adv"><select id="genre"><option value="">Any genre</option></select><select id="mood"><option value="">Any mood</option></select><select id="key"><option value="">Any key</option></select><select id="prod"><option value="">Any producer</option></select><input id="bmin" inputmode="numeric" placeholder="Min BPM"><input id="bmax" inputmode="numeric" placeholder="Max BPM"><input id="pmin" inputmode="numeric" placeholder="Min $"><input id="pmax" inputmode="numeric" placeholder="Max $"><select id="expl"><option value="">Clean or explicit</option><option value="clean">Clean only</option><option value="explicit">Explicit only</option></select><select id="voc"><option value="">Vocal samples: any</option><option value="no">No vocal samples</option><option value="yes">Has vocal samples</option></select><label class="muted" style="align-self:center"><input type="checkbox" id="avail" checked style="width:auto"> Available only</label></div>
 <div id="tags"></div>
 <div class="card" id="list" style="padding:4px 8px"><div class="muted" style="padding:12px">Loading…</div></div>
 <p class="muted"><small>Digital products. All sales final. Exclusive beats are sold once; when one sells it is removed from the store and your agreement is saved with your receipt. The rights you receive are exactly what the listing and the purchase agreement say. Previews are for listening only. Favorites are saved on this device.</small></p>
 <p class="muted"><button class="alt" id="more" style="display:none">Load more</button></p>
-<div id="bar"><div class="in"><button class="alt" id="prev" aria-label="Previous">⏮</button><button id="pp" aria-label="Play or pause">▶</button><button class="alt" id="next" aria-label="Next">⏭</button><div style="min-width:0;flex:0 1 200px"><b id="pt" style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></b></div><div id="pbar"><div id="pfill"></div></div><small id="tm" class="muted" style="white-space:nowrap">0:00 / 0:00</small><input id="vol" type="range" min="0" max="100" value="100" aria-label="Volume" style="width:70px;padding:0"></div></div>
+<div id="bar"><div class="in"><button class="alt" id="prev" aria-label="Previous">⏮</button><button id="pp" aria-label="Play or pause">▶</button><button class="alt" id="next" aria-label="Next">⏭</button><div style="min-width:0;flex:0 1 200px"><b id="pt" style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></b></div><div id="pbar"><div id="pfill"></div></div><canvas id="wv" width="480" height="40" style="display:none;flex:1;min-width:0;height:40px;cursor:pointer" aria-label="Waveform: tap to seek"></canvas><small id="tm" class="muted" style="white-space:nowrap">0:00 / 0:00</small><input id="vol" type="range" min="0" max="100" value="100" aria-label="Volume" style="width:70px;padding:0"></div></div>
 <div id="modal"><div class="m" id="mb"></div></div>
 <audio id="au" preload="none"></audio>
 <script>
@@ -76,7 +79,7 @@ function draw(){var V=view(),L=$("list");if(!V.length){L.innerHTML='<div class="
   '<button class="fav'+(FAV.indexOf(b.id)>=0?' on':'')+'" data-f="'+i+'" aria-label="Favorite">♥</button><button class="alt buy" data-d="'+i+'">Details</button>'+(can?'<button class="buy" data-b="'+i+'">'+'Buy master '+usd(b.exclusive_cents||b.price_cents)+'</button>':'')+'</div>'}).join("");
  [].forEach.call(L.querySelectorAll("[data-p]"),function(x){x.onclick=function(){play(+x.dataset.p)}});
  [].forEach.call(L.querySelectorAll("[data-d],[data-b]"),function(x){x.onclick=function(){openLic(V[+(x.dataset.d||x.dataset.b)])}});
- [].forEach.call(L.querySelectorAll("[data-f]"),function(x){x.onclick=function(){var id=V[+x.dataset.f].id,k=FAV.indexOf(id);if(k>=0)FAV.splice(k,1);else FAV.push(id);saveFav();draw()}})}
+ [].forEach.call(L.querySelectorAll("[data-f]"),function(x){x.onclick=function(){var id=V[+x.dataset.f].id,k=FAV.indexOf(id);if(k>=0)FAV.splice(k,1);else FAV.push(id);saveFav();if(TOK)mpost({action:"fav_toggle",kind:"beat",item_id:id});draw()}})}
 function facets(f){function fill(id,arr,first,val){$(id).innerHTML='<option value="">'+first+'</option>'+arr.map(function(x){return'<option value="'+esc(val?x.id:x)+'">'+esc(val?x.name:x)+'</option>'}).join("")}
  fill("genre",f.genres||[],"Any genre");fill("mood",f.moods||[],"Any mood");fill("key",f.keys||[],"Any key");fill("prod",f.producers||[],"Any producer",true)}
 function gbar(g){var cur=$("genre").value;$("gbtn").innerHTML=['All'].concat(g||[]).map(function(x){var on=(x==='All'&&!cur)||x===cur;return'<span class="chip'+(on?' on':'')+'" data-g="'+esc(x==='All'?'':x)+'">'+esc(x==='All'?'All genres':x)+'</span>'}).join("");
@@ -87,15 +90,33 @@ function trending(){var filt=$("srch").value||$("genre").value||$("mood").value|
  post("beat-api",{action:"catalog",sort:"plays",available:true,limit:6}).then(function(j){var t=j.beats.filter(function(b){return b.plays>0});
   $("trend").innerHTML=t.length?'<h2 style="margin:10px 0 0">🔥 Trending</h2><div class="card" style="padding:4px 8px">'+t.map(function(b,i){return'<div class="beat"><b style="flex:0 0 22px">'+(i+1)+'</b><div class="bi"><b>'+esc(b.title)+'</b><small class="muted">'+esc(b.producer||"POTENT")+' · '+esc([b.bpm?b.bpm+" BPM":"",b.key].filter(Boolean).join(" "))+' · '+b.plays+' plays</small></div><button class="buy" data-t="'+i+'">'+usd(b.exclusive_cents||b.price_cents)+'</button></div>'}).join("")+'</div>':"";
   window.TR=t;[].forEach.call($("trend").querySelectorAll("[data-t]"),function(x){x.onclick=function(){openLic(window.TR[+x.dataset.t])}})}).catch(function(){})}
+
+var TOK="";try{TOK=localStorage.getItem("pmu")||""}catch(e){}
+function mpost2(b){return fetch(API+"music-coins",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOK},body:JSON.stringify(b)}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||"Something went wrong");return j})})}
+function mpost(b){return fetch(API+"music-api",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOK},body:JSON.stringify(b)}).then(function(r){return r.json()})}
+if(TOK)mpost({action:"fav_ids"}).then(function(j){if(j&&j.ids){var m=j.ids.beat||[];m.forEach(function(id){if(FAV.indexOf(id)<0)FAV.push(id)});FAV.forEach(function(id){if(m.indexOf(id)<0)mpost({action:"fav_toggle",kind:"beat",item_id:id})});saveFav();draw()}}).catch(function(){});
+var COIN=null;if(TOK)mpost2({action:"wallet"}).then(function(w){if(w&&w.pay_enabled)COIN=w}).catch(function(){});
+function featured(){var filt=$("srch").value||$("genre").value||$("mood").value||$("key").value||$("prod").value||onlyFav;if(filt){$("feat").innerHTML="";return}
+ post("beat-api",{action:"catalog",featured:true,available:true,limit:8}).then(function(j){var t=j.beats||[];window.FT=t;$("feat").innerHTML=t.length?'<h2>Featured exclusives</h2><div class="fcards">'+t.map(function(b,i){return'<div class="fc" data-ft="'+i+'"><div class="cv" style="'+(b.cover_url?'background-image:url('+esc(b.cover_url)+')':'')+'"></div><b>'+esc(b.title)+'</b><small>'+esc(b.producer||"")+' · '+usd(b.exclusive_cents||0)+'</small></div>'}).join("")+'</div>':"";
+  [].forEach.call($("feat").querySelectorAll("[data-ft]"),function(x){x.onclick=function(){openLic(window.FT[+x.dataset.ft])}})}).catch(function(){})}
+function prodRow(f){var P=(f&&f.producers||[]).filter(function(x){return x.verified}).slice(0,10);$("prods").innerHTML=P.length?'<h2>Featured producers</h2><div class="fcards">'+P.map(function(x){return'<div class="fc" data-fp="'+esc(x.id)+'" style="flex-basis:140px"><b>'+esc(x.name)+' ✔</b><small>'+x.beats+' beat'+(x.beats==1?'':'s')+'</small></div>'}).join("")+'</div>':"";
+ [].forEach.call($("prods").querySelectorAll("[data-fp]"),function(x){x.onclick=function(){$("prod").value=x.dataset.fp;reload();location.hash="list"}})}
+var WV=null,WVurl="";
+function wave(url){WV=null;WVurl=url;$("wv").style.display="none";$("pbar").style.display="";
+ try{var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;fetch(url).then(function(r){return r.arrayBuffer()}).then(function(buf){if(WVurl!==url)return;var c=new AC();return c.decodeAudioData(buf).then(function(d){c.close&&c.close();if(WVurl!==url)return;var ch=d.getChannelData(0),n=120,step=Math.floor(ch.length/n)||1,pk=[],mx=0;for(var i=0;i<n;i++){var m=0;for(var k=i*step;k<(i+1)*step&&k<ch.length;k+=Math.max(1,step>>6)){var v=Math.abs(ch[k]);if(v>m)m=v}pk.push(m);if(m>mx)mx=m}WV=pk.map(function(v){return mx?v/mx:0});$("wv").style.display="block";$("pbar").style.display="none";dw()})}).catch(function(){})}catch(e){}}
+function dw(){if(!WV)return;var c=$("wv"),x=c.getContext("2d"),w=c.width,h=c.height,p=au.duration?au.currentTime/au.duration:0,bw=w/WV.length;x.clearRect(0,0,w,h);var gold=getComputedStyle(document.documentElement).getPropertyValue("--gold")||"#e8ff1a",mu="#888";WV.forEach(function(v,i){var bh=Math.max(2,v*h);x.fillStyle=i/WV.length<p?gold:mu;x.fillRect(i*bw+1,(h-bh)/2,Math.max(1,bw-2),bh)})}
+$("wv").onclick=function(e){if(au.duration){var r=this.getBoundingClientRect();au.currentTime=(e.clientX-r.left)/r.width*au.duration}};
+function share(b){var u=location.origin+"/beats/?b="+b.id;if(navigator.share){navigator.share({title:b.title+" — POTENT Beats",url:u}).catch(function(){})}else if(navigator.clipboard){navigator.clipboard.writeText(u).then(function(){alert("Link copied")},function(){prompt("Copy this link",u)})}else prompt("Copy this link",u)}
+if(q.get("b")&&/^[0-9a-f-]{36}$/i.test(q.get("b")))post("beat-api",{action:"catalog",id:q.get("b"),limit:1}).then(function(j){if(j.beats&&j.beats[0])openLic(j.beats[0])}).catch(function(){});
 var tmr=0,first=true;
 function load(more){if(!more)offset=0;var p=params();post("beat-api",p).then(function(j){AGV=j.agreementVersion||AGV;if(j.publicTerms)$("pterms").textContent=j.publicTerms;
-  if(first&&j.facets){facets(j.facets);GEN=j.facets.genres||[];first=false;trending()}gbar(GEN);if(!first&&offset===0){trending()}
+  if(first&&j.facets){facets(j.facets);GEN=j.facets.genres||[];first=false;prodRow(j.facets);featured();trending()}gbar(GEN);if(!first&&offset===0){trending()}
   ALL=more?ALL.concat(j.beats):j.beats;offset=ALL.length;$("more").style.display=j.more?"inline-block":"none";
   if(!ALL.length&&!p.q&&first===false&&!p.genre){}draw()}).catch(function(){$("list").innerHTML='<div class="muted" style="padding:14px">Could not load beats. Please refresh.</div>'})}
 function reload(){clearTimeout(tmr);tmr=setTimeout(function(){load(false)},250)}
-function play(i){var b=view()[i];if(!b||!b.preview_url)return;if(cur===b.id&&!au.paused){au.pause();return}document.querySelectorAll("audio").forEach(function(x){if(x!==au)x.pause()});if(cur!==b.id){au.src=b.preview_url;cur=b.id;$("pt").textContent=b.title;post("beat-api",{action:"play",id:b.id}).catch(function(){})}au.play();$("bar").style.display="block"}
+function play(i){var b=view()[i];if(!b||!b.preview_url)return;if(cur===b.id&&!au.paused){au.pause();return}document.querySelectorAll("audio").forEach(function(x){if(x!==au)x.pause()});if(cur!==b.id){au.src=b.preview_url;wave(b.preview_url);cur=b.id;$("pt").textContent=b.title;post("beat-api",{action:"play",id:b.id}).catch(function(){})}au.play();$("bar").style.display="block"}
 au.onplay=au.onpause=function(){$("pp").textContent=au.paused?"▶":"⏸";draw()};au.onended=function(){nxt(1)};
-au.ontimeupdate=function(){$("pfill").style.width=(au.duration?au.currentTime/au.duration*100:0)+"%";$("tm").textContent=fmt(au.currentTime)+" / "+fmt(au.duration)};
+au.ontimeupdate=function(){dw();$("pfill").style.width=(au.duration?au.currentTime/au.duration*100:0)+"%";$("tm").textContent=fmt(au.currentTime)+" / "+fmt(au.duration)};
 function fmt(t){if(!isFinite(t))return"0:00";return Math.floor(t/60)+":"+("0"+Math.floor(t%60)).slice(-2)}
 $("pbar").onclick=function(e){if(au.duration){var r=this.getBoundingClientRect();au.currentTime=(e.clientX-r.left)/r.width*au.duration}};
 $("vol").oninput=function(){au.volume=this.value/100};
@@ -112,9 +133,9 @@ function openLic(b){var m=$("mb"),can=b.state==="available";
  (b.state==="sold"?'<p><b>This exclusive has been sold.</b></p>':b.state==="reserved"?'<p><b>Another buyer is checking out with this beat right now.</b> Check back in a few minutes.</p>':'')+
  (can?'<label class="ag"><input type="checkbox" id="agr"><span>I have read and accept the <a href="/beats/terms.html" target="_blank">Exclusive Purchase Agreement (v'+esc(AGV)+')</a> and the rights package above.</span></label>':'')+
  (can&&b.exclusive_cents?'<button data-l="exclusive" style="width:100%">Buy the master — '+usd(b.exclusive_cents)+'</button><small class="muted">Exclusive master. Sold once, then removed. Includes 2 revisions. You pay the listed price. POTENT\'s platform fee is 1% and is taken from the sale, not added to your price. The seller receives at least 91% of the eligible amount.</small>':'')+
-  '<button class="alt" id="cl" style="width:100%;margin-top:12px">Close</button>';$("modal").style.display="flex";
- [].forEach.call(m.querySelectorAll("[data-l]"),function(x){x.onclick=function(){if(!$("agr").checked){alert("Please accept the purchase agreement first.");return}x.disabled=true;post("beat-checkout",{beat_id:b.id,license:x.dataset.l,agree:true}).then(function(j){location.href=j.url}).catch(function(e){alert(e.message);x.disabled=false})}});$("cl").onclick=function(){$("modal").style.display="none"}}
-$("modal").onclick=function(e){if(e.target===this)this.style.display="none"};
+  (can&&b.exclusive_cents&&COIN?'<button class="alt" id="coinb" style="width:100%;margin-top:8px">Pay with coins ('+(COIN.balance_cents/100).toFixed(2)+' available)</button>':'')+'<div class="row" style="margin-top:12px"><button class="alt" id="sh" style="flex:1">Share</button><button class="alt" id="cl" style="flex:1">Close</button></div>';$("modal").style.display="flex";document.title=b.title+" — POTENT Beats";try{history.replaceState(null,"","?b="+b.id)}catch(e){}$("sh").onclick=function(){share(b)};if($("coinb"))$("coinb").onclick=function(){if(!$("agr").checked){alert("Please accept the purchase agreement first.");return}this.disabled=true;var x=this;mpost2({action:"pay_beat",beat_id:b.id,agree:true}).then(function(){location.href="/music/account.html"}).catch(function(e){alert(e.message);x.disabled=false})};
+ [].forEach.call(m.querySelectorAll("[data-l]"),function(x){x.onclick=function(){if(!$("agr").checked){alert("Please accept the purchase agreement first.");return}x.disabled=true;post("beat-checkout",{beat_id:b.id,license:x.dataset.l,agree:true}).then(function(j){location.href=j.url}).catch(function(e){alert(e.message);x.disabled=false})}});$("cl").onclick=closeM}
+function closeM(){$("modal").style.display="none";document.title="POTENT Beats — Exclusive Masters";try{history.replaceState(null,"",location.pathname)}catch(e){}}$("modal").onclick=function(e){if(e.target===this)closeM()};
 ["srch","bmin","bmax","pmin","pmax"].forEach(function(i){$(i).oninput=reload});["sort","genre","mood","key","prod","expl","voc","avail"].forEach(function(i){$(i).onchange=reload});
 $("more").onclick=function(){load(true)};$("favs").onclick=function(){onlyFav=!onlyFav;this.classList.toggle("on",onlyFav);this.textContent=onlyFav?"♥ Showing favorites (tap for all)":"♥ My favorites";draw()};
 load(false);

@@ -4,6 +4,18 @@ const B = require("./lib/beats");
 const M = require("./lib/music");
 
 const UUID = /^[0-9a-f-]{36}$/i;
+const arr = function (v, n, f) { return (Array.isArray(v) ? v : []).slice(0, n).map(f).filter(Boolean); };
+function siteOut(x) {
+  x = x || {};
+  return { headline: clip(x.headline, 120), sub: clip(x.sub, 240), banner: clip(x.banner, 200), seo_title: clip(x.seo_title, 70), seo_desc: clip(x.seo_desc, 170),
+    spotlights: arr(x.spotlights, 8, function (o) { return o && clip(o.title, 80) ? { title: clip(o.title, 80), text: clip(o.text, 240), url: /^(\/|https:\/\/)/.test(String(o.url || "")) ? clip(o.url, 300) : "" } : null; }),
+    calendar: arr(x.calendar, 20, function (o) { return o && /^\d{4}-\d{2}-\d{2}$/.test(String(o.date || "")) && clip(o.title, 100) ? { date: o.date, title: clip(o.title, 100), url: /^(\/|https:\/\/)/.test(String(o.url || "")) ? clip(o.url, 300) : "" } : null; }),
+    divisions: arr(x.divisions, 8, function (o) { return o && clip(o.name, 60) ? { name: clip(o.name, 60), text: clip(o.text, 200), url: /^(\/|https:\/\/)/.test(String(o.url || "")) ? clip(o.url, 300) : "" } : null; }),
+    featured_ids: arr(x.featured_ids, 12, function (i) { return UUID.test(String(i)) ? String(i) : null; }) };
+}
+async function publicFlags() { const f = (await B.getSetting("music_flags")) || {}; return { cart: f.cart !== false, signups: f.signups !== false, ai: f.ai !== false }; }
+async function dlLimit() { const f = await B.getSetting("music_flags"); const n = f && Number(f.download_limit); return n > 0 ? n : 25; }
+async function flag(k, d) { const f = await B.getSetting("music_flags"); return f && f[k] !== undefined ? !!f[k] : d; }
 const clip = function (v, n) { return String(v == null ? "" : v).trim().slice(0, n); };
 const lc = function (v, n) { return clip(v, n).toLowerCase(); };
 const fails = {}, seen = {};
@@ -29,8 +41,8 @@ function collabs(v) {
 }
 
 function pubTrack(x) { return { id: x.id, title: x.title, album: x.album, audio_url: x.audio_url, cover_url: x.cover_url, genre: x.genre, mood: x.mood, explicit: x.explicit, description: x.description, release_date: x.release_date, collaborators: x.collaborators || [], plays: x.plays, featured: x.featured, producer_id: x.producer_id, artist: x.beat_producers && x.beat_producers.name, slug: x.beat_producers && x.beat_producers.slug, label: "Free stream" }; }
-function pubProduct(x) { return { id: x.id, kind: x.kind, title: x.title, description: x.description, cover_url: x.cover_url, price_cents: x.price_cents, preview_url: x.preview_url, tags: x.tags || [], rights_text: x.rights_text, sample_disclosure: x.sample_disclosure, featured: x.featured, limited_qty: x.limited_qty, preorder: !!(x.preorder && x.publish_at && new Date(x.publish_at).getTime() > Date.now()), releases: x.preorder && x.publish_at ? x.publish_at : null, collaborators: x.collaborators || [], left: x.limited_qty == null ? null : Math.max(0, x.limited_qty - (x.sold_count || 0)), producer_id: x.producer_id, artist: x.beat_producers && x.beat_producers.name, slug: x.beat_producers && x.beat_producers.slug, label: "Paid download" }; }
-function pubVideo(x) { return { id: x.id, title: x.title, description: x.description, video_url: x.video_url, thumb_url: x.thumb_url, track_id: x.track_id, views: x.views, featured: x.featured, producer_id: x.producer_id, artist: x.beat_producers && x.beat_producers.name, slug: x.beat_producers && x.beat_producers.slug }; }
+function pubProduct(x) { return { id: x.id, kind: x.kind, title: x.title, description: x.description, cover_url: x.cover_url, price_cents: x.price_cents, preview_url: x.preview_url, tags: x.tags || [], rights_text: x.rights_text, sample_disclosure: x.sample_disclosure, featured: x.featured, limited_qty: x.limited_qty, preorder: !!(x.preorder && x.publish_at && new Date(x.publish_at).getTime() > Date.now()), releases: x.preorder && x.publish_at ? x.publish_at : null, collaborators: x.collaborators || [], bundle: !!(x.bundle_ids && x.bundle_ids.length), left: x.limited_qty == null ? null : Math.max(0, x.limited_qty - (x.sold_count || 0)), producer_id: x.producer_id, artist: x.beat_producers && x.beat_producers.name, slug: x.beat_producers && x.beat_producers.slug, label: "Paid download" }; }
+function pubVideo(x) { return { id: x.id, title: x.title, description: x.description, video_url: x.video_url, thumb_url: x.thumb_url, caption_url: x.caption_url, track_id: x.track_id, views: x.views, featured: x.featured, producer_id: x.producer_id, artist: x.beat_producers && x.beat_producers.name, slug: x.beat_producers && x.beat_producers.slug }; }
 const PRODSEL = "*,beat_producers(name,slug,verified)";
 const liveNow = "status=eq.published";
 
@@ -82,6 +94,7 @@ function itemRow(type, b, cur, role) {
     if (b.publish_at !== undefined) { const d = b.publish_at ? new Date(b.publish_at) : null; row.publish_at = d && isFinite(d.getTime()) ? d.toISOString() : null; }
     if (b.collaborators !== undefined) { const c = collabs(b.collaborators); if (!c.ok) return { error: c.error }; row.collaborators = c.list; }
     if (b.preorder !== undefined) row.preorder = !!b.preorder;
+    if (b.bundle_ids !== undefined) { const ids = Array.from(new Set((Array.isArray(b.bundle_ids) ? b.bundle_ids : []).map(String))).filter(function (x) { return UUID.test(x); }).slice(0, 30); row.bundle_ids = ids.length ? ids : null; }
     const fin = Object.assign({}, cur || {}, row);
     if (fin.preorder && ["published", "pending_review"].indexOf(status) >= 0 && !(fin.publish_at && new Date(fin.publish_at).getTime() > Date.now())) return { error: "A preorder needs a release date in the future" };
     if (["published", "pending_review"].indexOf(status) >= 0) {
@@ -92,6 +105,7 @@ function itemRow(type, b, cur, role) {
   } else if (type === "video") {
     if (b.video_url !== undefined) row.video_url = httpsUrl(b.video_url);
     if (b.thumb_url !== undefined) row.thumb_url = httpsUrl(b.thumb_url);
+    if (b.caption_url !== undefined) row.caption_url = httpsUrl(b.caption_url);
     if (b.track_id !== undefined) row.track_id = UUID.test(String(b.track_id || "")) ? b.track_id : null;
     const fin = Object.assign({}, cur || {}, row);
     if (!fin.video_url) return { error: "Add a video link (YouTube, Vimeo or a direct https video file)" };
@@ -133,7 +147,7 @@ async function core(event) {
     ]);
     const L = function (r) { return Array.isArray(r.data) ? r.data : []; };
     const site = (await B.getSetting("music_home")) || {};
-    return B.J(200, { ok: true, site: { headline: clip(site.headline, 120), sub: clip(site.sub, 240), banner: clip(site.banner, 200) }, newTracks: L(nt).map(pubTrack), trending: L(tt).map(pubTrack), featured: L(ft).map(pubTrack), products: L(pr).map(pubProduct), videos: L(vd).map(pubVideo), artists: L(ar), playlists: L(pl) });
+    return B.J(200, { ok: true, site: siteOut(site), flags: await publicFlags(), newTracks: L(nt).map(pubTrack), trending: L(tt).map(pubTrack), featured: L(ft).map(pubTrack), products: L(pr).map(pubProduct), videos: L(vd).map(pubVideo), artists: L(ar), playlists: L(pl) });
   }
   if (a === "browse") {
     const type = ["track", "product", "video", "artist"].indexOf(b.type) >= 0 ? b.type : "track";
@@ -203,6 +217,7 @@ async function core(event) {
   // ───────── buyer accounts ─────────
   if (a === "register") {
     const k = "reg:" + ip(event); if (tooMany(k, 10)) return B.J(429, { error: "Too many attempts. Try again later." }); noteFail(k);
+    if (!(await flag("signups", true))) return B.J(403, { error: "New sign-ups are paused right now" });
     const email = lc(b.email, 200);
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return B.J(400, { error: "Enter a valid email" });
     if (String(b.password || "").length < 10) return B.J(400, { error: "Password must be at least 10 characters" });
@@ -270,22 +285,44 @@ async function core(event) {
       await B.sb("music_playlist_items", { method: "POST", prefer: "resolution=ignore-duplicates,return=minimal", body: { playlist_id: b.id, track_id: b.track_id, position: (cnt.data || []).length } });
       return B.J(200, { ok: true });
     }
+    if (a === "fav_ids") { const fv = await B.sb("music_favorites?user_id=eq." + user.id + "&select=kind,item_id&limit=2000"); const o = { beat: [], track: [], product: [] }; (fv.data || []).forEach(function (f) { if (o[f.kind]) o[f.kind].push(f.item_id); }); return B.J(200, { ok: true, ids: o }); }
+    if (a === "receipt") { // everything a buyer needs as proof of purchase: amounts, rights, and the exact agreement they accepted
+      if (!UUID.test(String(b.id || ""))) return B.J(400, { error: "Bad id" });
+      if (b.kind === "beat") {
+        const s = await B.sb("beat_sales?id=eq." + b.id + "&buyer_user_id=eq." + user.id + "&select=*,beat_producers(name),beat_items(title,rights_package,sample_disclosure,deliverables,bpm,musical_key)"); const x = s.data && s.data[0]; if (!x) return B.J(404, { error: "Not found" });
+        const it = x.beat_items || {};
+        return B.J(200, { ok: true, receipt: { kind: "beat", number: "B-" + String(x.id).slice(0, 8).toUpperCase(), date: x.created_at, status: x.status, buyer: user.email, item: x.title || it.title, seller: x.beat_producers && x.beat_producers.name, type: "Exclusive master", gross_cents: x.gross_cents, tax_cents: x.tax_cents || 0, discount_cents: x.discount_cents || 0, refunded_cents: x.refunded_cents || 0, payment_ref: x.payment_intent_id || x.stripe_session_id, rights: it.rights_package || null, samples: it.sample_disclosure || null, deliverables: it.deliverables || [], agreement: { version: x.agreement_version, accepted_at: x.agreement_accepted_at, url: "/beats/terms.html" } } });
+      }
+      const s = await B.sb("music_sales?id=eq." + b.id + "&buyer_user_id=eq." + user.id + "&select=*,music_products(title,kind,rights_text,sample_disclosure),beat_producers(name)"); const x = s.data && s.data[0]; if (!x) return B.J(404, { error: "Not found" });
+      const it = x.music_products || {};
+      return B.J(200, { ok: true, receipt: { kind: "product", number: "M-" + String(x.id).slice(0, 8).toUpperCase(), date: x.created_at, status: x.status, buyer: user.email, item: it.title, seller: x.beat_producers && x.beat_producers.name, type: (it.kind || "download").replace("_", " "), gross_cents: x.gross_cents, tax_cents: x.tax_cents || 0, discount_cents: x.discount_cents || 0, refunded_cents: x.refunded_cents || 0, payment_ref: x.payment_intent_id || x.stripe_session_id, rights: it.rights_text || null, samples: it.sample_disclosure || null, deliverables: [], agreement: { version: x.agreement_version, accepted_at: x.agreement_accepted_at, url: "/beats/terms.html" } } });
+    }
     if (a === "download") { // only the buyer of a completed, non-refunded sale gets a (5 minute) link
       if (!UUID.test(String(b.id || ""))) return B.J(400, { error: "Bad id" });
       if (b.kind === "beat") {
-        const s = await B.sb("beat_sales?id=eq." + b.id + "&buyer_user_id=eq." + user.id + "&status=eq.complete&select=beat_id");
+        const s = await B.sb("beat_sales?id=eq." + b.id + "&buyer_user_id=eq." + user.id + "&status=eq.complete&select=id,beat_id,download_count");
         const sale = s.data && s.data[0]; if (!sale) return B.J(404, { error: "Not found" });
+        if ((sale.download_count || 0) >= await dlLimit()) return B.J(429, { error: "This purchase reached its download limit. Contact POTENT and we will reset it." });
+        B.sb("beat_sales?id=eq." + sale.id, { method: "PATCH", prefer: "return=minimal", body: { download_count: (sale.download_count || 0) + 1 } });
         const it = await B.sb("beat_items?id=eq." + sale.beat_id + "&select=title,deliver_url"); const x = it.data && it.data[0];
         const url = x && await M.signedUrl(x.deliver_url, 300); if (!url) return B.J(404, { error: "File not available. Contact POTENT." });
         await B.audit("buyer:" + user.email, "download", sale.beat_id, { kind: "beat" }); return B.J(200, { ok: true, url: url, title: x.title });
       }
-      const s = await B.sb("music_sales?id=eq." + b.id + "&buyer_user_id=eq." + user.id + "&status=eq.complete&select=product_id");
+      const s = await B.sb("music_sales?id=eq." + b.id + "&buyer_user_id=eq." + user.id + "&status=eq.complete&select=id,product_id,download_count");
       const sale = s.data && s.data[0]; if (!sale) return B.J(404, { error: "Not found" });
-      const it = await B.sb("music_products?id=eq." + sale.product_id + "&select=title,file_ref,publish_at,preorder"); const x = it.data && it.data[0];
+      if ((sale.download_count || 0) >= await dlLimit()) return B.J(429, { error: "This purchase reached its download limit. Contact POTENT and we will reset it." });
+      B.sb("music_sales?id=eq." + sale.id, { method: "PATCH", prefer: "return=minimal", body: { download_count: (sale.download_count || 0) + 1 } });
+      const it = await B.sb("music_products?id=eq." + sale.product_id + "&select=title,file_ref,publish_at,preorder,bundle_ids"); const x = it.data && it.data[0];
       if (x && x.publish_at && new Date(x.publish_at).getTime() > Date.now()) return B.J(409, { error: "This is a preorder. Your download unlocks on " + new Date(x.publish_at).toDateString() + "." });
       const url = x && await M.signedUrl(x.file_ref, 300); if (!url) return B.J(404, { error: "File not available. Contact POTENT." });
-      await B.audit("buyer:" + user.email, "download", sale.product_id, { kind: "product" }); return B.J(200, { ok: true, url: url, title: x.title });
+      let extra = [];
+      if (x.bundle_ids && x.bundle_ids.length) { // a true bundle: every included file, each with its own short-lived link
+        const inc = await B.sb("music_products?id=in.(" + x.bundle_ids.filter(function (i) { return UUID.test(i); }).join(",") + ")&select=title,file_ref");
+        for (const q of (inc.data || [])) { const u2 = await M.signedUrl(q.file_ref, 300); if (u2) extra.push({ title: q.title, url: u2 }); }
+      }
+      await B.audit("buyer:" + user.email, "download", sale.product_id, { kind: "product" }); return B.J(200, { ok: true, url: url, title: x.title, bundle: extra });
     }
+    if (a === "support_mine") { const t = await B.sb("music_support?or=(user_id.eq." + user.id + ",email.eq." + encodeURIComponent(user.email) + ")&select=id,topic,message,status,reply,replied_at,created_at&order=created_at.desc&limit=50"); return B.J(200, { ok: true, items: t.data || [] }); }
     if (a === "changepw") {
       const r = await B.sb("music_users?id=eq." + user.id + "&select=password_hash");
       if (!B.checkPw(r.data[0].password_hash, b.oldPassword)) return B.J(401, { error: "Current password is wrong" });
@@ -301,7 +338,7 @@ async function core(event) {
     const email = lc(b.email, 160), msg = clip(b.message, 3000);
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || msg.length < 5) return B.J(400, { error: "Enter your email and a message" });
     const topic = ["order", "download", "refund", "seller", "report", "other"].indexOf(b.topic) >= 0 ? b.topic : "other";
-    const r = await B.sb("music_support", { method: "POST", prefer: "return=minimal", body: { name: clip(b.name, 80) || null, email: email, topic: topic, message: msg } });
+    const r = await B.sb("music_support", { method: "POST", prefer: "return=minimal", body: { name: clip(b.name, 80) || null, email: email, topic: topic, message: msg, user_id: (M.verifyUser(B.bearer(event)) || {}).uid || null } });
     return r.ok ? B.J(200, { ok: true }) : B.J(500, { error: "Could not send. Please try again." });
   }
   if (a === "unsubscribe") {
@@ -371,6 +408,7 @@ async function core(event) {
       // A product that has sales keeps its price, file and rights: buyers' deals are protected.
       if (cur && type === "product" && cur.sold_count > 0) { ["price_cents", "file_ref", "rights_text", "rights_confirmed", "kind"].forEach(function (k) { delete b[k]; }); }
       const v = itemRow(type, b, cur, trusted ? "trusted" : "seller"); if (v.error) return B.J(400, { error: v.error });
+      if (v.row.bundle_ids) { const own = await B.sb("music_products?id=in.(" + v.row.bundle_ids.join(",") + ")&producer_id=eq." + (cur ? cur.producer_id : seller.id) + "&select=id"); if (!(own.data || []).length || own.data.length !== v.row.bundle_ids.length) return B.J(400, { error: "A bundle can only contain your own products" }); if (cur && v.row.bundle_ids.indexOf(cur.id) >= 0) return B.J(400, { error: "A bundle cannot contain itself" }); }
       if (v.row.status === "published" && !trusted && !(cur && cur.status === "published")) return B.J(400, { error: "POTENT approves what goes live." });
       if (!cur) { v.row.producer_id = seller.id; const r = await B.sb(TYPES[type], { method: "POST", prefer: "return=representation", body: v.row }); if (!r.ok) return B.J(500, { error: "Could not save" }); await B.audit("seller:" + seller.email, type + "_add", r.data[0].id, { status: v.row.status }); }
       else { const r = await B.sb(TYPES[type] + "?id=eq." + cur.id + "&producer_id=eq." + seller.id, { method: "PATCH", prefer: "return=minimal", body: v.row }); if (!r.ok) return B.J(500, { error: "Could not save" }); await B.audit("seller:" + seller.email, type + "_edit", cur.id, { status: v.row.status }); }
@@ -386,7 +424,14 @@ async function core(event) {
 
   // ───────── owner ─────────
   if (!a || a.indexOf("o_") !== 0) return B.J(401, { error: "Sign in first" });
-  const owner = B.verifyOwner(B.bearer(event)); if (!owner) return B.J(403, { error: "POTENT owner only" });
+  let owner = B.verifyOwner(B.bearer(event)), staffRole = null;
+  if (!owner) { // moderators and support staff get only their own tools
+    const su = M.verifyUser(B.bearer(event)); const rr = su && await B.sb("music_roles?user_id=eq." + su.uid + "&select=role");
+    staffRole = rr && rr.data && rr.data[0] && rr.data[0].role;
+    const CAN = { moderator: ["o_queue", "o_set_status", "o_takedown", "o_whoami"], support: ["o_support_list", "o_support_resolve", "o_support_reply", "o_whoami"], store_admin: ["o_whoami"] };
+    if (!staffRole || (CAN[staffRole] || []).indexOf(a) < 0) return B.J(403, { error: "POTENT owner only" });
+  }
+  if (a === "o_whoami") return B.J(200, { ok: true, role: owner ? "owner" : staffRole });
   if (a === "o_queue") {
     const [tr, pd, vd, rp] = await Promise.all([
       B.sb("music_tracks?status=eq.pending_review&select=*,beat_producers(name)&order=created_at.asc&limit=100"),
@@ -398,6 +443,7 @@ async function core(event) {
   if (a === "o_set_status") {
     const type = TYPES[b.type] ? b.type : null; if (!type || !UUID.test(String(b.id || "")) || ALL_STATUS.indexOf(b.status) < 0) return B.J(400, { error: "Bad request" });
     await B.sb(TYPES[type] + "?id=eq." + b.id, { method: "PATCH", prefer: "return=minimal", body: Object.assign({ status: b.status }, b.featured !== undefined ? { featured: !!b.featured } : {}) });
+    { const it = await B.sb(TYPES[type] + "?id=eq." + b.id + "&select=title,producer_id"); const x = it.data && it.data[0]; if (x && x.producer_id) await require("./lib/notify")({ producer_id: x.producer_id, kind: "review", title: x.title + ": " + String(b.status).replace("_", " "), link: "/studio/" }); }
     await B.audit("owner", type + "_status", b.id, { status: b.status, note: clip(b.note, 300) }); return B.J(200, { ok: true });
   }
   if (a === "o_takedown") { // report resolved: optionally take the item down
@@ -418,9 +464,17 @@ async function core(event) {
     await B.audit("owner", "playlist_save", id, { tracks: ids.length }); return B.J(200, { ok: true, id: id });
   }
   if (a === "o_support_list") { const r = await B.sb("music_support?status=eq." + (b.status === "resolved" ? "resolved" : "open") + "&select=*&order=created_at.desc&limit=200"); return B.J(200, { ok: true, items: r.data || [] }); }
+  if (a === "o_support_reply") { // the reply is stored on the ticket and shown to the person in their account
+    if (!UUID.test(String(b.id || "")) || clip(b.reply, 3000).length < 2) return B.J(400, { error: "Write a reply" });
+    const t = await B.sb("music_support?id=eq." + b.id + "&select=user_id,email,topic"); const tk = t.data && t.data[0]; if (!tk) return B.J(404, { error: "Not found" });
+    await B.sb("music_support?id=eq." + b.id, { method: "PATCH", prefer: "return=minimal", body: { reply: clip(b.reply, 3000), replied_at: new Date().toISOString(), replied_by: owner ? "POTENT" : "Support", status: "resolved" } });
+    let uid = tk.user_id; if (!uid) { const u = await B.sb("music_users?email=eq." + encodeURIComponent(tk.email) + "&select=id"); uid = u.data && u.data[0] && u.data[0].id; }
+    if (uid) await require("./lib/notify")({ user_id: uid, kind: "support", title: "POTENT replied to your message", body: clip(b.reply, 200), link: "/music/account.html#support" });
+    await B.audit(owner ? "owner" : "support", "support_reply", b.id, null); return B.J(200, { ok: true });
+  }
   if (a === "o_support_resolve") { if (!UUID.test(String(b.id || ""))) return B.J(400, { error: "Bad id" }); await B.sb("music_support?id=eq." + b.id, { method: "PATCH", prefer: "return=minimal", body: { status: b.reopen ? "open" : "resolved" } }); await B.audit("owner", "support_" + (b.reopen ? "reopen" : "resolve"), b.id, null); return B.J(200, { ok: true }); }
   if (a === "o_home_get") return B.J(200, { ok: true, site: (await B.getSetting("music_home")) || {} });
-  if (a === "o_home_set") { await B.setSetting("music_home", { headline: clip(b.headline, 120), sub: clip(b.sub, 240), banner: clip(b.banner, 200) }); await B.audit("owner", "home_edit", "music_home", null); return B.J(200, { ok: true }); }
+  if (a === "o_home_set") { await B.setSetting("music_home", siteOut(b)); await B.audit("owner", "home_edit", "music_home", null); return B.J(200, { ok: true }); }
   if (a === "o_users") {
     const q = lc(b.q, 80).replace(/[^a-z0-9@._+-]/g, "");
     const r = await B.sb("music_users?select=id,email,active,marketing_opt_in,created_at" + (q ? "&email=ilike.*" + q + "*" : "") + "&order=created_at.desc&limit=100");

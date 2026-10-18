@@ -15,7 +15,13 @@
 <p class="muted" style="margin-top:28px"><small>Songs labeled "Free stream" are for listening only. Plays are counted anonymously and are not royalty payments. Downloads are paid products with the rights shown on each listing. Report anything that looks wrong with the ⚑ button. <a href="/beats/terms.html">Terms</a></small></p>
 <script src="/music/common.js"></script>
 <script>
-function applySite(x){if(!x)return;if(x.headline)$("hl").textContent=x.headline;if(x.sub)$("sub").textContent=x.sub;if(x.banner)$("banner").innerHTML='<div class="card" style="text-align:center;font-weight:600">'+PM.esc(x.banner)+'</div>'}
+function applySite(x){if(!x)return;if(x.headline)$("hl").textContent=x.headline;if(x.sub)$("sub").textContent=x.sub;if(x.banner)$("banner").innerHTML='<div class="card" style="text-align:center;font-weight:600">'+PM.esc(x.banner)+'</div>';
+ if(x.seo_title)document.title=x.seo_title;if(x.seo_desc){var md=document.querySelector('meta[name=description]');if(md)md.setAttribute("content",x.seo_desc)}
+ var ex="";var lk=function(u,t){return u?'<a href="'+PM.esc(u)+'">'+PM.esc(t)+'</a>':PM.esc(t)};
+ if((x.spotlights||[]).length)ex+='<h2>Spotlight</h2><div class="card">'+x.spotlights.map(function(s){return'<div class="beat"><div class="bi"><b>'+lk(s.url,s.title)+'</b><small class="muted">'+PM.esc(s.text)+'</small></div></div>'}).join("")+'</div>';
+ if((x.calendar||[]).length){var up=x.calendar.filter(function(c){return c.date>=new Date().toISOString().slice(0,10)}).sort(function(a,b){return a.date<b.date?-1:1}).slice(0,5);if(up.length)ex+='<h2>Coming up</h2><div class="card">'+up.map(function(c){return'<div class="beat"><div class="bi"><b>'+PM.esc(new Date(c.date+"T12:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric"}))+'</b><small>'+lk(c.url,c.title)+'</small></div></div>'}).join("")+'<a href="/music/releases.html">See all releases →</a></div>'}
+ if((x.divisions||[]).length)ex+='<h2>POTENT family</h2><div class="card">'+x.divisions.map(function(d){return'<div class="beat"><div class="bi"><b>'+lk(d.url,d.name)+'</b><small class="muted">'+PM.esc(d.text)+'</small></div></div>'}).join("")+'</div>';
+ var tgt=$("site-extra");if(!tgt){tgt=document.createElement("div");tgt.id="site-extra";$("banner").parentNode.insertBefore(tgt,$("thanks"))}tgt.innerHTML=ex}
 var T="home",items=[],H=null;
 function sec(title,html){return html?'<h2>'+title+'</h2>'+html:''}
 function rows(a){return a.length?'<div class="card" style="padding:4px 8px">'+a.map(PM.trackRow).join("")+'</div>':''}
@@ -29,7 +35,7 @@ function drawHome(){var h=H;if(!h)return;var any=h.newTracks.length||h.products.
  '<h2 id="artists">Artists</h2>'+(h.artists.length?grid(h.artists,PM.artistCard):'<div class="muted">Artist pages appear here once creators set up their storefronts.</div>')}
 function $(i){return document.getElementById(i)}
 function load(){var q=$("q").value.trim();
- if(T==="home"&&!q&&!$("genre").value&&!$("mood").value){return PM.api("music-api",{action:"home"},"").then(function(j){H=j;applySite(j.site);var g={},m={};j.newTracks.concat(j.trending,j.featured).forEach(function(t){if(t.genre)g[t.genre]=1;if(t.mood)m[t.mood]=1});fill("genre",Object.keys(g),"Any genre");fill("mood",Object.keys(m),"Any mood");drawHome()}).catch(function(){$("main").innerHTML='<div class="card">Could not load. Please refresh.</div>'})}
+ if(T==="home"&&!q&&!$("genre").value&&!$("mood").value){return PM.api("music-api",{action:"home"},"").then(function(j){H=j;applySite(j.site);if(j.flags&&j.flags.cart===false){try{localStorage.setItem("pm_nocart","1")}catch(e){}}else{try{localStorage.removeItem("pm_nocart")}catch(e){}}var g={},m={};j.newTracks.concat(j.trending,j.featured).forEach(function(t){if(t.genre)g[t.genre]=1;if(t.mood)m[t.mood]=1});fill("genre",Object.keys(g),"Any genre");fill("mood",Object.keys(m),"Any mood");drawHome()}).catch(function(){$("main").innerHTML='<div class="card">Could not load. Please refresh.</div>'})}
  var ty=T==="home"?"track":T;
  return PM.api("music-api",{action:"browse",type:ty,q:q,genre:$("genre").value,mood:$("mood").value,limit:36},"").then(function(j){items=j.items;
   $("main").innerHTML=!items.length?'<div class="card muted">Nothing matches yet.</div>':ty==="track"?'<div class="card" style="padding:4px 8px" data-list>'+items.map(PM.trackRow).join("")+'</div>':ty==="product"?grid(items,PM.productCard):ty==="video"?grid(items,PM.videoCard):grid(items,PM.artistCard)})}

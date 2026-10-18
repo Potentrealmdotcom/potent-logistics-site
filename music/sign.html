@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="color-scheme" content="dark light"><link rel="icon" href="data:,">
+<title>Sign an agreement — POTENT Music</title><link rel="stylesheet" href="/music/base.css"></head><body>
+<h1>Review &amp; <span>sign</span></h1>
+<div id="main"><div class="muted">Loading…</div></div>
+<script>
+var T=new URLSearchParams(location.search).get("t")||"",$=function(i){return document.getElementById(i)};
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function call(b){b.t=T;return fetch("/.netlify/functions/music-coins",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||"Something went wrong");return j})})}
+function draw(j){var c=j.contract,y=j.you;
+ var h='<div class="card"><b style="font-size:19px">'+esc(c.title)+'</b><div class="muted">Status: '+esc(c.status)+'</div><pre style="white-space:pre-wrap;font:inherit;margin-top:10px">'+esc(c.body)+'</pre></div>'+
+ '<div class="card"><b>Who signs</b>'+c.parties.map(function(p){return'<div class="row" style="justify-content:space-between;margin-top:4px"><span>'+esc(p.name)+(p.role?' <small class="muted">'+esc(p.role)+'</small>':'')+'</span><span>'+(p.signed?'Signed':'Waiting')+'</span></div>'}).join("")+'</div>';
+ if(y.signed)h+='<div class="card">You signed this agreement.'+(c.status==="executed"?' Everyone has signed.':' Waiting for the others.')+'</div>';
+ else if(c.status==="pending")h+='<div class="card" style="border-color:var(--gold)"><b>Sign as '+esc(y.name)+'</b><input id="tn" placeholder="Type your full legal name"><label class="ag" style="display:flex;gap:8px;margin:8px 0"><input type="checkbox" id="as"><span>I have read this agreement and agree to it. Typing my name is my electronic signature.</span></label><button id="sg">Sign</button><small class="muted" style="display:block;margin-top:8px">Document fingerprint: '+esc(c.body_hash)+'. If anything in the text changes, signing is blocked.</small></div>';
+ if(j.final_html)h+='<div class="card"><button id="fd">Download final signed record</button><small class="muted" style="display:block;margin-top:6px">Final record hash: '+esc(c.final_hash)+'</small></div>';
+ $("main").innerHTML=h;
+ if($("sg"))$("sg").onclick=function(){$("sg").disabled=true;call({action:"s_sign",typed_name:$("tn").value,assent:$("as").checked,body_hash:c.body_hash}).then(draw).catch(function(e){alert(e.message);$("sg").disabled=false})};
+ if($("fd"))$("fd").onclick=function(){var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([j.final_html],{type:"text/html"}));a.download="signed-agreement.html";a.click()}}
+call({action:"s_view"}).then(draw).catch(function(e){$("main").innerHTML='<div class="card err">'+esc(e.message)+'</div>'});
+</script></body></html>

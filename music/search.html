@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="color-scheme" content="dark light"><link rel="icon" href="data:,">
+<title>Search — POTENT Music</title><meta name="description" content="Search songs, downloads, beats and artists on POTENT Music."><link rel="stylesheet" href="/music/base.css"></head><body>
+<script src="/music/nav.js"></script>
+<h1>Search <span>POTENT Music</span></h1>
+<div class="row"><input id="q" placeholder="Songs, downloads, beats, artists…" aria-label="Search" autofocus><button id="go">Search</button></div>
+<div id="cat" style="margin-top:10px"></div><div id="out"></div>
+<script src="/music/common.js"></script>
+<script>
+var esc=PM.esc,$=function(i){return document.getElementById(i)},usd=function(c){return"$"+(c/100).toFixed(2)};
+function api(b){return fetch("/.netlify/functions/music-admin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||"Something went wrong");return j})})}
+var link=function(slug){return slug?"/music/artist.html?s="+encodeURIComponent(slug):"/music/"};
+function sec(t,items){return items.length?"<h2>"+t+"</h2><div class=card>"+items.join("")+"</div>":""}
+function run(){var q=$("q").value.trim();if(q.length<2){$("out").innerHTML="";return}history.replaceState(null,"","?q="+encodeURIComponent(q));
+ api({action:"search",q:q}).then(function(j){var n=j.tracks.length+j.products.length+j.artists.length+j.beats.length;
+  $("out").innerHTML=n?sec("Songs",j.tracks.map(function(t){return'<div class="beat"><div class="bi"><a href="'+link(t.beat_producers&&t.beat_producers.slug)+'"><b>'+esc(t.title)+'</b></a><small class="muted">'+esc(t.beat_producers&&t.beat_producers.name||"")+' · '+esc(t.genre||"")+'</small></div></div>'}))+
+   sec("Downloads",j.products.map(function(t){return'<div class="beat"><div class="bi"><a href="'+link(t.beat_producers&&t.beat_producers.slug)+'"><b>'+esc(t.title)+'</b></a><small class="muted">'+esc(t.kind.replace("_"," "))+' · '+esc(t.beat_producers&&t.beat_producers.name||"")+'</small></div><b>'+usd(t.price_cents)+'</b></div>'}))+
+   sec("Exclusive beats",j.beats.map(function(t){return'<div class="beat"><div class="bi"><a href="/beats/?b='+esc(t.id)+'"><b>'+esc(t.title)+'</b></a><small class="muted">'+esc(t.genre||"")+'</small></div><b>'+usd(t.exclusive_cents||0)+'</b></div>'}))+
+   sec("Artists",j.artists.map(function(t){return'<div class="beat"><div class="bi"><a href="'+link(t.slug)+'"><b>'+esc(t.name)+'</b></a></div></div>'})):'<div class="card muted">Nothing found for "'+esc(q)+'". Try a genre, a mood or an artist name.</div>'}).catch(function(e){$("out").innerHTML='<div class="card err">'+esc(e.message)+'</div>'})}
+var t0=0;$("q").oninput=function(){clearTimeout(t0);t0=setTimeout(run,300)};$("go").onclick=run;
+var q0=new URLSearchParams(location.search).get("q");if(q0){$("q").value=q0;run()}
+api({action:"categories"}).then(function(j){$("cat").innerHTML=(j.genres.length?'<small class="muted">Browse by genre</small><div class="row">'+j.genres.slice(0,16).map(function(g){return'<button class="alt" data-g="'+esc(g.name)+'">'+esc(g.name)+' ('+g.count+')</button>'}).join("")+"</div>":"")+(j.kinds.length?'<small class="muted">Browse downloads</small><div class="row">'+j.kinds.map(function(g){return'<button class="alt" data-g="'+esc(g.name.replace("_"," "))+'">'+esc(g.name.replace("_"," "))+' ('+g.count+')</button>'}).join("")+"</div>":"");
+ [].forEach.call(document.querySelectorAll("[data-g]"),function(b){b.onclick=function(){$("q").value=b.dataset.g;run()}})}).catch(function(){});
+</script></body></html>

@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="color-scheme" content="dark light"><link rel="icon" href="data:,">
+<title>Release — POTENT Music</title><meta name="description" content="An album, EP or single on POTENT Music."><link rel="stylesheet" href="/music/base.css"></head><body>
+<script src="/music/nav.js"></script>
+<div id="main"><div class="muted">Loading…</div></div>
+<script src="/music/common.js"></script>
+<script>
+var esc=PM.esc,$=function(i){return document.getElementById(i)};
+fetch("/.netlify/functions/music-admin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"album_get",id:new URLSearchParams(location.search).get("id")})}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error);return j})}).then(function(j){var a=j.album;document.title=a.title+" — POTENT Music";
+ $("main").innerHTML='<h1>'+esc(a.title)+'</h1><div class="muted">'+esc(a.kind.toUpperCase())+' by <a href="/music/artist.html?s='+encodeURIComponent(a.beat_producers&&a.beat_producers.slug||"")+'">'+esc(a.beat_producers&&a.beat_producers.name||"")+'</a>'+(a.release_date?' · '+new Date(a.release_date+"T12:00:00").toLocaleDateString():'')+'</div>'+(a.cover_url?'<img alt="" src="'+esc(a.cover_url)+'" style="max-width:260px;width:100%;border-radius:12px;margin:10px 0">':'')+(a.description?'<p>'+esc(a.description)+'</p>':'')+'<div class="card">'+a.tracks.map(function(t,i){return'<div class="beat"><b style="flex:0 0 24px">'+(i+1)+'</b><div class="bi"><b>'+esc(t.title)+'</b>'+(t.explicit?' <small class="muted">E</small>':'')+'</div><audio controls preload="none" src="'+esc(t.audio_url||"")+'" style="max-width:220px"></audio></div>'}).join("")+'</div>'}).catch(function(){$("main").innerHTML='<div class="card">This release is not available.</div>'});
+</script></body></html>

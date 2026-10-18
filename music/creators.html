@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="color-scheme" content="dark light"><link rel="icon" href="data:,">
+<title>Creators — POTENT Music</title><meta name="description" content="Find artists, producers and sellers on POTENT Music."><link rel="stylesheet" href="/music/base.css"></head><body>
+<script src="/music/nav.js"></script>
+<h1>Creator <span>directory</span></h1>
+<div class="row"><input id="q" placeholder="Search by name" aria-label="Search creators"><input id="c" placeholder="City (e.g. Atlanta)" aria-label="City"><button id="go">Search</button></div>
+<div id="main" style="margin-top:10px"><div class="muted">Loading…</div></div>
+<script src="/music/common.js"></script>
+<script>
+var esc=PM.esc,$=function(i){return document.getElementById(i)};
+function run(){fetch("/.netlify/functions/music-admin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"creators",q:$("q").value,city:$("c").value})}).then(function(r){return r.json()}).then(function(j){
+ $("main").innerHTML=j.creators.length?'<div class="grid">'+j.creators.map(function(c){return'<a class="card" href="/music/artist.html?s='+encodeURIComponent(c.slug)+'" style="text-decoration:none;color:inherit"><div class="row">'+(c.avatar_url?'<img alt="" src="'+esc(c.avatar_url)+'" style="width:56px;height:56px;border-radius:50%;object-fit:cover">':'')+'<div><b>'+esc(c.name)+(c.verified?' ✔':'')+'</b><br><small class="muted">'+esc(c.city||"")+'</small></div></div><div class="muted"><small>'+esc(c.bio)+'</small></div><small>'+c.songs+' songs · '+c.downloads+' downloads</small></a>'}).join("")+'</div>':'<div class="card muted">No creators found.</div>'}).catch(function(){$("main").innerHTML='<div class="card err">Could not load.</div>'})}
+$("go").onclick=run;$("q").onkeydown=function(e){if(e.key==="Enter")run()};run();
+</script></body></html>

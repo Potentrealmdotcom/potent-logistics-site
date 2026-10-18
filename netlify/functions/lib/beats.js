@@ -168,6 +168,7 @@ async function fulfillSession(session) {
     note: beat.title + " (" + saleType + ")", available_at: availableAt } });
   if (!tx.ok) return { error: "Could not credit wallet" };
   await audit("system", "sale_recorded", beat.id, { sale: sale.id, type: saleType, gross: gross });
+  await require("./notify")({ producer_id: prod.id, kind: "sale", title: "Beat sold: " + beat.title, body: "You earned $" + (sale.producer_cents / 100).toFixed(2), link: "/beatman/" });
   return { ok: true, saleId: sale.id, producerCents: sale.producer_cents };
 }
 

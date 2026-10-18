@@ -88,6 +88,7 @@ async function fulfillProduct(session) {
       if (!tx.ok) return { error: "Could not credit wallet" };
     }
     made++; await B.audit("system", "music_sale", prod.id, { sale: sale.id, gross: grossA[i] });
+    if (status === "complete") await require("./notify")({ producer_id: seller.id, kind: "sale", title: "Sale: " + prod.title, body: "You earned $" + (sellerCents / 100).toFixed(2), link: "/studio/" });
   }
   return { ok: true, made: made, duplicate: dup > 0 && made === 0, soldOut: soldOut };
 }

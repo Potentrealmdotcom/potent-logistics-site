@@ -19,6 +19,7 @@ async function ai(task, uid, prompt, stateKey) {
   const log = function (o) { return B.sb("music_ai_usage", { method: "POST", prefer: "return=minimal", body: Object.assign({ user_id: uid || null, task: task, model: process.env.AI_MODEL || "gemini-flash-latest" }, o) }); };
   const hit = rows(await B.sb("music_ai_cache?key=eq." + key + "&select=value&limit=1"))[0];
   if (hit) { await log({ cached: true }); return { text: hit.value, cached: true }; }
+  { const fl = await B.getSetting("music_flags"); if (fl && fl.ai === false) return { text: null, off: true }; }
   if (!process.env.GEMINI_API_KEY) return { text: null, off: true };
   if (inflight[key] && Date.now() - inflight[key] < 4000) return { text: null, busy: true };
   const today = new Date(); today.setUTCHours(0, 0, 0, 0);
@@ -253,3 +254,4 @@ exports.handler = async function (event) {
   }
   return B.J(400, { error: "Unknown action" });
 };
+module.exports.lib = { ai: ai, aiNote: aiNote, GUARD: GUARD, loadProject: loadProject, checklist: checklist, nextMove: nextMove, money: money };

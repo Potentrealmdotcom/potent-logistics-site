@@ -31,7 +31,7 @@ exports.handler = async function (event) {
   const origin = /^https:\/\/([a-z0-9-]+\.)*netlify\.app$/.test(String(h.origin || "")) || String(h.origin || "") === B.SITE ? String(h.origin) : B.SITE;
   try {
     const session = await stripe.checkout.sessions.create({
-      mode: "payment",
+      mode: "payment", allow_promotion_codes: true,
       line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: cents, product_data: { name: beat.title + " — " + (license === "exclusive" ? "Exclusive rights" : "Lease"), description: "Digital beat. All sales final." } } }],
       metadata: { product: "BEAT", beat_id: beat.id, sale_type: license, user_id: (M.verifyUser(B.bearer(event)) || {}).uid || "", agreement_version: B.AGREEMENT_VERSION, agreed_at: new Date().toISOString() },
       expires_at: Math.floor(Date.now() / 1000) + 31 * 60,

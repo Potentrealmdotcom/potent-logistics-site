@@ -61,6 +61,7 @@ function beatRow(b, pid, ctx) {
   if (b.genre !== undefined) row.genre = clip(b.genre, 40).toLowerCase() || null;
   if (b.mood !== undefined) row.mood = clip(b.mood, 40).toLowerCase() || null;
   if (b.explicit !== undefined) row.explicit = !!b.explicit;
+  if (b.featured !== undefined && role !== "seller") row.featured = !!b.featured;
   if (b.has_vocal_samples !== undefined) row.has_vocal_samples = !!b.has_vocal_samples;
   if (b.description !== undefined) row.description = clip(b.description, 3000) || null;
   if (b.sample_disclosure !== undefined) row.sample_disclosure = clip(b.sample_disclosure, 2000) || null;
@@ -133,24 +134,26 @@ async function core(event) {
     if (b.explicit === "clean") qs += "&explicit=eq.false"; else if (b.explicit === "explicit") qs += "&explicit=eq.true";
     if (b.vocals === "yes") qs += "&has_vocal_samples=eq.true"; else if (b.vocals === "no") qs += "&has_vocal_samples=eq.false";
     if (b.available === true) qs += "&exclusive_sold=eq.false";
+    if (UUID.test(String(b.id || ""))) qs += "&id=eq." + b.id;
+    if (b.featured === true) qs += "&featured=eq.true";
     const order = { new: "created_at.desc", plays: "play_count.desc", price_asc: "exclusive_cents.asc.nullslast", price_desc: "exclusive_cents.desc.nullslast", bpm: "bpm.asc.nullslast" }[b.sort] || "created_at.desc";
     const limit = Math.max(1, Math.min(60, parseInt(b.limit, 10) || 30)), offset = Math.max(0, parseInt(b.offset, 10) || 0);
     const now = Date.now();
     const [r, fx] = await Promise.all([
-      B.sb(qs + "&select=id,title,lease_cents,exclusive_cents,preview_url,cover_url,exclusive_sold,status,reserved_until,producer_id,tags,bpm,musical_key,genre,mood,explicit,has_vocal_samples,description,sample_disclosure,rights_package,deliverables,play_count,seller_type,beat_producers(name,verified)&order=" + order + "&limit=" + limit + "&offset=" + offset),
-      offset === 0 ? B.sb("beat_items?active=eq.true&or=(status.eq.published,status.eq.sold)&select=genre,mood,musical_key,producer_id,beat_producers(name)&limit=1000") : Promise.resolve({ data: [] })
+      B.sb(qs + "&select=id,title,lease_cents,exclusive_cents,preview_url,cover_url,exclusive_sold,status,reserved_until,producer_id,tags,bpm,musical_key,genre,mood,explicit,has_vocal_samples,description,sample_disclosure,rights_package,deliverables,play_count,seller_type,featured,beat_producers(name,verified,slug)&order=" + order + "&limit=" + limit + "&offset=" + offset),
+      offset === 0 ? B.sb("beat_items?active=eq.true&or=(status.eq.published,status.eq.sold)&select=genre,mood,musical_key,producer_id,beat_producers(name,slug,verified)&limit=1000") : Promise.resolve({ data: [] })
     ]);
     const rows = Array.isArray(r.data) ? r.data : [];
     const uniq = function (arr) { return Array.from(new Set(arr.filter(Boolean))).sort(); };
     const fxr = Array.isArray(fx.data) ? fx.data : [];
     return B.J(200, { ok: true, more: rows.length === limit, platformFeePct: B.PLATFORM_FEE_PCT, minSellerPct: B.MIN_SELLER_PCT,
-      facets: offset === 0 ? { genres: uniq(fxr.map(function (x) { return x.genre; })), moods: uniq(fxr.map(function (x) { return x.mood; })), keys: uniq(fxr.map(function (x) { return x.musical_key; })), producers: Object.values(fxr.reduce(function (m, x) { if (x.producer_id && x.beat_producers) m[x.producer_id] = { id: x.producer_id, name: x.beat_producers.name }; return m; }, {})) } : undefined,
+      facets: offset === 0 ? { genres: uniq(fxr.map(function (x) { return x.genre; })), moods: uniq(fxr.map(function (x) { return x.mood; })), keys: uniq(fxr.map(function (x) { return x.musical_key; })), producers: Object.values(fxr.reduce(function (m, x) { if (x.producer_id && x.beat_producers) { const o = m[x.producer_id] = m[x.producer_id] || { id: x.producer_id, name: x.beat_producers.name, slug: x.beat_producers.slug, verified: !!x.beat_producers.verified, beats: 0 }; o.beats++; } return m; }, {})) } : undefined,
       agreementVersion: B.AGREEMENT_VERSION,
       beats: rows.map(function (x) { return { id: x.id, title: x.title, producer: x.beat_producers && x.beat_producers.name, verified: !!(x.beat_producers && x.beat_producers.verified), preview_url: x.preview_url, cover_url: x.cover_url,
         lease_cents: null, exclusive_cents: x.exclusive_sold ? null : x.exclusive_cents, price_cents: x.exclusive_cents,
         state: x.exclusive_sold || x.status === "sold" ? "sold" : (x.reserved_until && new Date(x.reserved_until).getTime() > now ? "reserved" : "available"),
         tags: x.tags || [], bpm: x.bpm || null, key: x.musical_key || null, genre: x.genre, mood: x.mood, explicit: !!x.explicit, vocals: !!x.has_vocal_samples,
-        description: x.description, sample_disclosure: x.sample_disclosure, rights_package: x.rights_package || DEFAULT_RIGHTS, deliverables: x.deliverables || [], plays: x.play_count || 0 }; }) });
+        description: x.description, sample_disclosure: x.sample_disclosure, rights_package: x.rights_package || DEFAULT_RIGHTS, deliverables: x.deliverables || [], plays: x.play_count || 0, featured: !!x.featured, slug: x.beat_producers && x.beat_producers.slug }; }) });
   }
   if (a === "play") { // counts a real preview play (one per IP per beat per 30 min)
     if (!UUID.test(String(b.id || ""))) return B.J(400, { error: "Bad request" });
@@ -343,6 +346,20 @@ async function core(event) {
     return B.J(200, { ok: true, byStatus: by, plays: (items.data || []).reduce(function (a2, x) { return a2 + (x.play_count || 0); }, 0), soldExclusives: ex, grossCents: gross, eligibleCents: elig, platformCents: plat, sellerCents: prod, unallocatedCents: unal, processingEstCents: proc, refundsCents: refunds,
       rules: { platformFeePct: B.PLATFORM_FEE_PCT, minSellerPct: B.MIN_SELLER_PCT, maxSellerPct: B.MAX_SELLER_PCT },
       pendingPayoutsCents: (pays.data || []).filter(function (x) { return x.status === "pending"; }).reduce(function (a2, x) { return a2 + x.amount_cents; }, 0), payoutCodeSet: !!((await B.getSetting("payout_code")) || {}).hash });
+  }
+  if (a === "o_sales") { // every sale with buyer, amounts and the saved agreement record
+    const r = await B.sb("beat_sales?select=id,title,beat_id,buyer_email,buyer_user_id,gross_cents,tax_cents,discount_cents,eligible_cents,platform_fee_cents,producer_cents,unallocated_cents,refunded_cents,status,stripe_session_id,payment_intent_id,agreement_version,agreement_accepted_at,created_at,beat_producers(name)&order=created_at.desc&limit=" + Math.max(1, Math.min(500, parseInt(b.limit, 10) || 200)));
+    return B.J(200, { ok: true, sales: r.data || [] });
+  }
+  if (a === "o_beat_stats") { // plays, favorites and sale for one beat
+    if (!b.id) { // all beats at a glance
+      const [bi, fa, sa] = await Promise.all([B.sb("beat_items?select=id,title,play_count&order=play_count.desc.nullslast&limit=500"), B.sb("music_favorites?kind=eq.beat&select=item_id&limit=100000"), B.sb("beat_sales?status=eq.complete&select=beat_id&limit=100000")]);
+      const fc = {}, sc = {}; (fa.data || []).forEach(function (x) { fc[x.item_id] = (fc[x.item_id] || 0) + 1; }); (sa.data || []).forEach(function (x) { sc[x.beat_id] = (sc[x.beat_id] || 0) + 1; });
+      return B.J(200, { ok: true, rows: (bi.data || []).map(function (x) { return { id: x.id, title: x.title, play_count: x.play_count || 0, favorites: fc[x.id] || 0, sales: sc[x.id] || 0 }; }) });
+    }
+    if (!UUID.test(String(b.id || ""))) return B.J(400, { error: "Bad id" });
+    const [it, fv, sl] = await Promise.all([B.sb("beat_items?id=eq." + b.id + "&select=title,play_count,status,sold_at,created_at"), B.sb("music_favorites?kind=eq.beat&item_id=eq." + b.id + "&select=user_id&limit=100000"), B.sb("beat_sales?beat_id=eq." + b.id + "&select=id,buyer_email,gross_cents,status,created_at")]);
+    return B.J(200, { ok: true, beat: (it.data || [])[0] || null, favorites: (fv.data || []).length, sales: sl.data || [] });
   }
   if (a === "o_audit") { const r = await B.sb("beat_audit?select=*&order=created_at.desc&limit=100"); return B.J(200, { ok: true, rows: r.data || [] }); }
   if (a === "o_setcode") {

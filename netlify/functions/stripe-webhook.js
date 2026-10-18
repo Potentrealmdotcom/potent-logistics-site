@@ -250,7 +250,7 @@ exports.handler = async function (event) {
     if (type.indexOf("identity.verification_session.") === 0) return { statusCode: 200, headers, body: JSON.stringify({ received: true, ignored: type }) };
 
     // ── AceHeals: Breeze earns $2 per monthly payment and $12 per lifetime sale (same Stripe account) ──
-    if (type === "checkout.session.completed" && ["MUSIC", "BEAT"].indexOf((obj.metadata || {}).product) < 0) {
+    if (type === "checkout.session.completed" && ["MUSIC", "BEAT", "MUSICSVC", "MUSICCOLL"].indexOf((obj.metadata || {}).product) < 0) {
       try {
         const li = await stripe.checkout.sessions.listLineItems(obj.id, { limit: 20 });
         const ar = await require("./lib/aceheals").onCheckout(obj, (li.data || []).map(function (x) { return x.price && x.price.id; }));
@@ -271,6 +271,7 @@ exports.handler = async function (event) {
       const ar2 = await require("./lib/aceheals").onRefund(obj); if (ar2 && ar2.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "AceHeals refund failed, retry" }) };
       const rr = await refundBeat(obj);
       if (rr && rr.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Beat refund failed, retry" }) };
+      const sr = await require("./lib/svc").onRefund(obj); if (sr && sr.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Services refund failed, retry" }) };
       const mr = await refundMusic(obj);
       if (mr && mr.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Music refund failed, retry" }) };
       return { statusCode: 200, headers, body: JSON.stringify({ received: true, beatRefund: !!(rr && rr.ok) }) };
@@ -364,6 +365,9 @@ exports.handler = async function (event) {
       // POTENT Music digital product: record the sale (1% POTENT fee), credit the seller. Idempotent per Stripe session.
       const res = await fulfillMusic(obj);
       if (res && res.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Music fulfillment failed, retry" }) };
+    } else if ((product === "MUSICSVC" || product === "MUSICCOLL") && isCheckoutSession) {
+      const res = await require("./lib/svc").onCheckout(obj);
+      if (res && res.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Services fulfillment failed, retry" }) };
     } else if (product === "BEAT" && isCheckoutSession) {
       // Beat Man: record the sale and credit the producer's wallet right now. Idempotent per Stripe session.
       const res = await fulfillBeat(obj);

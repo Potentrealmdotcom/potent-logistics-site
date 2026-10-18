@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="color-scheme" content="dark light"><link rel="icon" href="data:,">
+<title>Receipt — POTENT Music</title><link rel="stylesheet" href="/music/base.css">
+<style>@media print{nav,#pbtn,.noprint{display:none!important}body{background:#fff;color:#000}.card{border:1px solid #999}}.kv{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--line)}</style></head><body>
+<script src="/music/nav.js"></script>
+<h1>Your <span>Receipt</span></h1>
+<div id="main"><div class="muted">Loading…</div></div>
+<script src="/music/common.js"></script>
+<script>
+var q=new URLSearchParams(location.search),esc=PM.esc,usd=function(c){return"$"+((c||0)/100).toFixed(2)};
+function kv(k,v){return v==null||v===""?"":'<div class="kv"><span class="muted">'+esc(k)+'</span><span style="text-align:right">'+v+'</span></div>'}
+function dt(d){return d?new Date(d).toLocaleString():""}
+function go(){PM.api("music-api",{action:"receipt",kind:q.get("k")==="beat"?"beat":"product",id:q.get("id")}).then(function(j){var r=j.receipt,net=(r.gross_cents||0)-(r.refunded_cents||0);
+ document.getElementById("main").innerHTML='<div class="card"><b style="font-size:18px">Receipt '+esc(r.number)+'</b><div class="muted">'+dt(r.date)+' · '+esc(r.status)+'</div>'+
+ kv("Item",esc(r.item))+kv("Type",esc(r.type))+kv("Seller",esc(r.seller))+kv("Buyer",esc(r.buyer))+
+ kv("Discount",r.discount_cents?"-"+usd(r.discount_cents):"")+kv("Tax",r.tax_cents?usd(r.tax_cents):"")+kv("Total paid",'<b>'+usd(r.gross_cents)+'</b>')+kv("Refunded",r.refunded_cents?usd(r.refunded_cents):"")+(r.refunded_cents?kv("Net",usd(net)):"")+kv("Payment reference",esc(r.payment_ref))+'</div>'+
+ '<div class="card"><b>Rights you received</b><p>'+esc(r.rights||"As described on the listing and in the purchase agreement.")+'</p>'+(r.samples?'<b>Sample / third-party disclosure</b><p>'+esc(r.samples)+'</p>':'')+(r.deliverables&&r.deliverables.length?'<b>Delivered</b><ul>'+r.deliverables.map(function(d){return'<li>'+esc(d)+'</li>'}).join("")+'</ul>':'')+'</div>'+
+ '<div class="card"><b>Agreement you accepted</b><p>'+(r.agreement&&r.agreement.version?'Exclusive Purchase Agreement, version '+esc(r.agreement.version)+', accepted '+dt(r.agreement.accepted_at)+'.':'No agreement version was recorded for this purchase.')+' <a href="'+esc(r.agreement.url)+'" target="_blank">Read the agreement</a></p></div>'+
+ '<div class="row noprint"><button id="pbtn">Print or save as PDF</button><a class="btn alt" href="/music/account.html">Back to account</a></div>';
+ document.getElementById("pbtn").onclick=function(){window.print()}}).catch(function(e){if(e.status===401){document.getElementById("main").innerHTML='<div class="card"><p>Sign in to see this receipt.</p><button id="si">Sign in</button></div>';document.getElementById("si").onclick=function(){PM.login(go)}}else document.getElementById("main").innerHTML='<div class="card err">'+esc(e.message)+'</div>'})}
+go();
+</script></body></html>

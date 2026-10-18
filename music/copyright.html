@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="color-scheme" content="dark light"><link rel="icon" href="data:,">
+<title>Copyright & takedowns — POTENT Music</title><meta name="description" content="Report content that infringes your rights."><link rel="stylesheet" href="/music/base.css"></head><body>
+<script src="/music/nav.js"></script>
+<h1>Copyright &amp; <span>takedowns</span></h1>
+<div class="card"><p>Sellers must own or be authorized to sell everything they list. If you believe something on POTENT Music uses your work without permission, tell us. Reports go straight to a person for review. Content under review may be taken down while we look.</p>
+<p>Include: what is yours, where to find the item here (paste its link), and how to reach you.</p>
+<select id="k"><option value="track">A song</option><option value="product">A download</option><option value="video">A video</option><option value="beat">A beat</option></select>
+<input id="i" placeholder="Item id (the long code at the end of its link or shown on its page)">
+<textarea id="r" rows="5" placeholder="What is the problem? Which work is yours?"></textarea>
+<input id="c" type="email" placeholder="Your email so we can reach you">
+<button id="s">Send report</button><div id="m" class="muted"></div></div>
+<script src="/music/common.js"></script>
+<script>document.getElementById("s").onclick=function(){var m=document.getElementById("m");PM.api("music-api",{action:"report",kind:document.getElementById("k").value,item_id:document.getElementById("i").value.trim(),reason:document.getElementById("r").value,contact:document.getElementById("c").value}).then(function(){m.textContent="Received. A person will review it."}).catch(function(e){m.textContent=e.message})};</script></body></html>

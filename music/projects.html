@@ -6,6 +6,7 @@
 <div class="muted">Turn a beat into a release: add your team, agree on splits for each type of income, and keep the records in one place. <a href="/music/guide.html">New here? Start with the guide.</a></div>
 <div id="main" style="margin-top:12px"><div class="muted">Loading…</div></div>
 <script src="/music/common.js"></script>
+<script src="/music/release.js"></script>
 <script>
 function $(i){return document.getElementById(i)}var esc=PM.esc,usd=function(c){return"$"+(c/100).toFixed(2)};
 var CATS={master:"Master recording",publishing:"Songwriting / publishing",beat_sale:"Beat sale proceeds",promo:"DJ / promotion",other:"Other agreed income"};
@@ -16,7 +17,8 @@ function home(){api({action:"p_list"}).then(function(j){LIST=j;P=null;drawList()
 function gate(){$("main").innerHTML='<div class="card"><p>Sign in to manage your projects.</p><button id="si">Sign in / Create account</button></div>';$("si").onclick=function(){PM.login(home)}}
 function drawList(){var h='<div class="card"><b>New project</b><input id="pt" placeholder="Song or project name"><select id="ps"><option value="">Not linked to a beat purchase</option>'+LIST.purchases.map(function(s){return'<option value="'+s.id+'">From purchase: '+esc(s.title||"Beat")+'</option>'}).join("")+'</select><button id="pc">Create</button></div>';
  h+='<h2>Your projects</h2>'+(LIST.projects.length?LIST.projects.map(function(p){return'<div class="card row" style="justify-content:space-between"><b>'+esc(p.title)+'</b><button data-open="'+p.id+'">Open</button></div>'}).join(""):'<div class="muted">No projects yet.</div>');
- $("main").innerHTML=h;$("pc").onclick=function(){api({action:"p_create",title:$("pt").value,beat_sale_id:$("ps").value||undefined}).then(function(j){open(j.id)}).catch(function(e){PM.toast(e.message)})};
+ h='<div id="voice"></div>'+h;
+ $("main").innerHTML=h;if(window.REL)REL.voiceCard($("voice"),function(title,people){api({action:"p_create",title:title}).then(function(j){if(people.length)PM.toast("Project created. Next, add emails for: "+people.map(function(x){return x.name}).join(", "));open(j.id)}).catch(function(e){PM.toast(e.message)})});$("pc").onclick=function(){api({action:"p_create",title:$("pt").value,beat_sale_id:$("ps").value||undefined}).then(function(j){open(j.id)}).catch(function(e){PM.toast(e.message)})};
  [].forEach.call(document.querySelectorAll("[data-open]"),function(b){b.onclick=function(){open(b.dataset.open)}})}
 function open(id){Promise.all([api({action:"p_get",project_id:id}),api({action:"p_ai_next",project_id:id}),api({action:"u_mode"})]).then(function(r){P=r[0];NEXT=r[1].next;MODE=r[2].mode;draw()}).catch(function(e){PM.toast(e.message)})}
 function topCard(){var n=NEXT,c=P.checklist,done=c.filter(function(x){return x.s==="COMPLETED"}).length;
@@ -24,7 +26,7 @@ function topCard(){var n=NEXT,c=P.checklist,done=c.filter(function(x){return x.s
   '<div class="row" style="margin-top:10px"><input id="askq" placeholder="Ask: who still needs to approve? what have I been paid?" style="flex:1 1 220px"><button class="alt" id="mic" title="Speak">🎤</button><button class="alt" id="askb">Ask</button></div><div id="askr" class="muted" style="margin-top:6px"></div>'+
   '<div class="row" style="margin-top:8px"><label><small class="muted">Help level </small><select id="mode" style="width:auto"><option value="quick">Quick: one step at a time</option><option value="guided">Guided: step by step</option><option value="advanced">Advanced: everything</option></select></label></div></div>'}
 function badge(s){var c={COMPLETED:"#2ecc71","IN PROGRESS":"#f1c40f","ACTION REQUIRED":"#e74c3c","NOT STARTED":"#888"}[s]||"#888";return'<span class="st" style="border-color:'+c+';color:'+c+'">'+s+'</span>'}
-function draw(){var p=P.project,h='<div class="row"><button class="alt" id="back">← All projects</button><b style="font-size:20px">'+esc(p.title)+'</b></div>'+topCard();
+function draw(){var p=P.project,h='<div class="row"><button class="alt" id="back">← All projects</button><b style="font-size:20px">'+esc(p.title)+'</b></div>'+topCard()+'<div id="rel"></div>';
  if(MODE==='quick'&&!ALL){$("main").innerHTML=h+'<div class="row" style="margin-top:10px"><button class="alt" id="all">Show everything</button></div>';wire();return}
  h+='<div class="card"><b>Where you are</b>'+P.checklist.map(function(c){return'<div class="row" style="justify-content:space-between;margin-top:6px"><span>'+esc(c.t)+'</span>'+badge(c.s)+'</div>'}).join("")+'</div>';
  h+='<div class="card"><b>1. Your team</b><small class="muted"> One person can have several roles. They are never counted twice.</small>'+(p.contributors.length?'<table>'+p.contributors.map(function(c){return'<tr><td>'+esc(c.name)+'<br><small class="muted">'+esc(c.email)+' · '+esc(c.roles.join(", ")||"no role yet")+'</small></td><td><button class="alt" data-rm="'+c.id+'">Remove</button></td></tr>'}).join("")+'</table>':'<div class="muted">Add the first person (you can add yourself).</div>')+
@@ -39,7 +41,7 @@ function draw(){var p=P.project,h='<div class="row"><button class="alt" id="back
  h+='<div class="row"><button class="alt" id="csv">Download split sheet (CSV)</button></div>';
  $("main").innerHTML=h;wire()}
 function pn(v){var x=parseFloat(String(v).replace(/[$,\s]/g,""));return isFinite(x)?x:0}
-function wire(){var p=P.project;$("back").onclick=home;
+function wire(){var p=P.project;$("back").onclick=home;if($("rel")&&window.REL)REL.mount($("rel"),p);
  if($("all"))$("all").onclick=function(){ALL=true;draw()};
  $("mode").value=MODE;$("mode").onchange=function(){MODE=$("mode").value;ALL=false;api({action:"u_mode",mode:MODE}).catch(function(){});draw()};
  [].forEach.call(document.querySelectorAll("[data-go]"),function(b){b.onclick=function(){ALL=true;draw();var t={team:"Your team",splits:"Splits",money:"Money in"}[b.dataset.go];var h=[].filter.call(document.querySelectorAll(".card b"),function(x){return x.textContent.indexOf(t)>=0})[0];if(h)h.scrollIntoView()}});
