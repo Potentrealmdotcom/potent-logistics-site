@@ -202,6 +202,11 @@ exports.handler = async function (event) {
   try {
     // ── monthly payments (support, Flex installments) ──────────────
     if (type === "invoice.paid" || type === "invoice.payment_failed") {
+      if (type === "invoice.paid") { // AceHeals: Breeze earns $2 per monthly payment (same Stripe account)
+        const ar = await require("./lib/aceheals").onInvoice(obj);
+        if (ar && ar.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "AceHeals credit failed, retry" }) };
+        if (ar && (ar.ok || ar.duplicate)) return { statusCode: 200, headers, body: JSON.stringify({ received: true, ace: true }) };
+      }
       const subId = obj.subscription || (obj.parent && obj.parent.subscription_details && obj.parent.subscription_details.subscription);
       if (!subId) return { statusCode: 200, headers, body: JSON.stringify({ received: true, ignored: "not a subscription invoice" }) };
       const sub = await stripe.subscriptions.retrieve(subId);
@@ -244,14 +249,26 @@ exports.handler = async function (event) {
     }
     if (type.indexOf("identity.verification_session.") === 0) return { statusCode: 200, headers, body: JSON.stringify({ received: true, ignored: type }) };
 
+    // ── AceHeals: Breeze earns $2 per monthly payment and $12 per lifetime sale (same Stripe account) ──
+    if (type === "checkout.session.completed" && ["MUSIC", "BEAT"].indexOf((obj.metadata || {}).product) < 0) {
+      try {
+        const li = await stripe.checkout.sessions.listLineItems(obj.id, { limit: 20 });
+        const ar = await require("./lib/aceheals").onCheckout(obj, (li.data || []).map(function (x) { return x.price && x.price.id; }));
+        if (ar && ar.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "AceHeals credit failed, retry" }) };
+        if (ar && (ar.ok || ar.duplicate)) return { statusCode: 200, headers, body: JSON.stringify({ received: true, ace: true }) };
+      } catch (e) { console.error("aceheals lookup failed", e.message); }
+    }
+
     // ── chargebacks on beat / music sales ──
     if (type === "charge.dispute.created" || type === "charge.dispute.closed") {
+      if (type === "charge.dispute.created") { const ad = await require("./lib/aceheals").onDispute(obj); if (ad && ad.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "AceHeals chargeback failed, retry" }) }; }
       const dr = await handleDispute(obj, type === "charge.dispute.created" ? "created" : "closed");
       if (dr && dr.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Dispute handling failed, retry" }) };
       return { statusCode: 200, headers, body: JSON.stringify({ received: true, dispute: !!(dr && dr.ok) }) };
     }
     // ── Beat Man: a refund takes back the producer's share automatically ──
     if (type === "charge.refunded") {
+      const ar2 = await require("./lib/aceheals").onRefund(obj); if (ar2 && ar2.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "AceHeals refund failed, retry" }) };
       const rr = await refundBeat(obj);
       if (rr && rr.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Beat refund failed, retry" }) };
       const mr = await refundMusic(obj);
