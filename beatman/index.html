@@ -69,7 +69,21 @@ $("goP").onclick=function(){$("lerr").textContent="";call("login",{email:$("pe")
 $("goO").onclick=function(){$("lerr").textContent="";fetch("/.netlify/functions/auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"staff",userId:$("oid").value,password:$("op").value})}).then(function(r){return r.json()}).then(function(j){if(!j.ok||j.role!=="owner")throw new Error(j.error||"Owner only");tok=j.token;mode="o";try{sessionStorage.setItem("bm",JSON.stringify({t:tok,m:"o"}))}catch(e){}return loadAll()}).catch(function(e){$("lerr").textContent=e.message})};
 function out(){tok="";mode="";D=S=ST=AP=AU=null;try{sessionStorage.removeItem("bm")}catch(e){}$("app").classList.add("hide");$("login").classList.remove("hide");$("pp").value="";$("op").value=""}
 function refresh(){return loadAll().catch(function(e){alert(e.message);if(/Session|Sign in|owner only/i.test(e.message))out()})}
-function show(){$("login").classList.add("hide");$("app").classList.remove("hide");$("app").innerHTML=(mode==="p"?producerHTML():"")+(mode==="o"?ownerTop():"")+(isStore()?storeHTML():"")+(isSeller()?sellerHTML():"")+(mode==="o"?ownerBottom():"");wire()}
+function show(){$("login").classList.add("hide");$("app").classList.remove("hide");$("app").innerHTML=isSA()?saHTML():(mode==="p"?producerHTML():"")+(mode==="o"?ownerTop():"")+(isStore()?storeHTML():"")+(isSeller()?sellerHTML():"")+(mode==="o"?ownerBottom():"");wire()}
+/* Store admin (Breeze): one login, three tabs. Earnings and AceHeals show his money in one wallet. No payout controls are shown to him. */
+var tab="earn";
+function isSA(){return mode==="p"&&D&&D.producer&&D.producer.store_admin&&D.producer.kind!=="seller"}
+function pane(n,h){return'<div data-pane="'+n+'"'+(tab===n?'':' class="hide"')+'>'+h+'</div>'}
+function saHTML(){
+  var p=D.producer,b=D.balance,ace=D.ace||[],aceTotal=ace.reduce(function(a,x){return a+(x.status==="reversed"?0:Number(x.payout_cents)-Number(x.reversed_cents||0))},0);
+  var h='<div class="row" style="align-items:center;justify-content:space-between"><div><b>'+esc(p.name)+'</b> <span class="pill">store admin</span><br><small>'+esc(p.email)+'</small></div><button class="alt sm" id="out">Sign out</button></div>';
+  h+='<div class="tabs">'+[["earn","Earnings"],["store","Store"],["ace","AceHeals"]].map(function(t){return'<button data-tab="'+t[0]+'"'+(tab===t[0]?'':' class="alt"')+'>'+t[1]+'</button>'}).join("")+'</div>';
+  var e='<div class="card"><div class="muted">Your balance (beats + AceHeals, one wallet)</div><div class="big pos">'+usd(b.available)+'</div><small>Pending (clears after '+p.hold_days+' days): '+usd(b.pending)+'. POTENT sends your payouts; there is nothing to request here.</small></div>';
+  e+='<div class="card"><h2>Sales</h2>'+(D.sales.length?'<table><tr><th>Date</th><th>Beat</th><th>Sold</th><th>You earn</th></tr>'+D.sales.map(function(s){return'<tr><td>'+dt(s.created_at)+'</td><td>'+esc(s.title)+'<br><small>'+esc(s.sale_type)+(s.status==="refunded"?" · refunded":"")+'</small></td><td>'+usd(s.gross_cents)+'</td><td class="pos">'+usd(s.producer_cents)+'</td></tr>'}).join("")+'</table>':'<small>No beat sales yet.</small>')+'</div>';
+  e+='<div class="card"><h2>Wallet history</h2>'+(D.txns.length?'<table>'+D.txns.map(function(t){return'<tr><td>'+dt(t.created_at)+'</td><td>'+esc(t.note||t.type)+'</td><td class="'+(t.amount_cents<0?'neg':'pos')+'">'+usd(t.amount_cents)+'</td></tr>'}).join("")+'</table>':'<small>Nothing yet.</small>')+'</div>';
+  var a='<div class="card"><h2>AceHeals sales</h2><small>Each AceHeals payment credits your wallet: $2 per monthly payment, $12 per lifetime sale. It is the same wallet as your beats.</small><div class="big pos">'+usd(aceTotal)+'</div><small>earned from AceHeals so far</small>'+(ace.length?'<table><tr><th>Date</th><th>Plan</th><th>Paid</th><th>You earn</th></tr>'+ace.map(function(x){return'<tr><td>'+dt(x.created_at)+'</td><td>'+esc(x.kind)+(x.status!=="credited"&&x.status?' <span class="pill">'+esc(x.status)+'</span>':'')+'</td><td>'+usd(x.paid_cents)+'</td><td class="pos">'+usd(x.payout_cents)+'</td></tr>'}).join("")+'</table>':'<br><small>No AceHeals payments yet.</small>')+'</div>';
+  return h+pane("earn",e)+pane("store",storeHTML())+pane("ace",a)}
+
 
 function producerHTML(){
   var p=D.producer,b=D.balance,h='<div class="row" style="align-items:center;justify-content:space-between"><div><b>'+esc(p.name)+'</b>'+(p.store_admin?' <span class="pill">store admin</span>':'')+(p.kind==="seller"?' <span class="pill">seller</span>':'')+'<br><small>'+esc(p.email)+'</small></div><button class="alt sm" id="out">Sign out</button></div>';
@@ -143,7 +157,8 @@ function editForm(x){
 
 function wire(){
   var o=$("out");if(o)o.onclick=out;
-  if(mode==="p"){
+  if(isSA()){[].forEach.call(document.querySelectorAll("[data-tab]"),function(b){b.onclick=function(){tab=b.dataset.tab;show()}})}
+  if(mode==="p"&&!isSA()){
     $("savepm").onclick=function(){call("savepayout",{method:$("pm").value,handle:$("ph").value}).then(function(j){D=j;show();alert("Saved")}).catch(function(e){alert(e.message)})};
     $("cash").onclick=function(){var code=prompt("Enter the payout code from POTENT:");if(!code)return;if(confirm("Request a payout of "+usd(D.balance.available)+"?"))call("requestpayout",{amount_cents:"all",code:code}).then(function(j){D=Object.assign(D,j);show();alert("Requested. POTENT will pay you and add the confirmation number here.")}).catch(function(e){alert(e.message)})};
   }

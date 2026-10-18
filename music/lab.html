@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="color-scheme" content="dark light"><link rel="icon" href="data:,">
+<title>Beat Lab — POTENT Music</title><meta name="description" content="POTENT Beat Lab: sound packs, beat maker, multitrack recorder and mixer for POTENT engineers."><link rel="stylesheet" href="/music/base.css">
+<style>
+body{max-width:1400px}
+.lab-top{position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 0;border-bottom:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.lab-top input,.lab-top select{width:auto;margin:0;padding:8px 10px}.lab-top button{padding:8px 12px}
+#pill{font-size:13px;font-weight:700;padding:5px 10px;border-radius:99px;border:1px solid var(--line)}#pill.ok{border-color:#2ecc71;color:#2ecc71}#pill.warn{border-color:#f5a623;color:#f5a623}#pill.bad{border-color:#e74c3c;color:#e74c3c}
+.lab-tabs{display:flex;gap:6px;margin:8px 0;overflow-x:auto}.lab-tabs button{background:transparent;color:var(--ink);border:1px solid var(--line);white-space:nowrap}.lab-tabs button.on{background:var(--gold);color:#111}
+.panel{display:none}.panel.on{display:block}
+.lab-grid{display:grid;gap:12px}
+@media(min-width:1100px){.lab-grid{grid-template-columns:minmax(280px,340px) 1fr}#p-sounds{display:block!important;resize:horizontal;overflow:auto;min-width:260px;max-width:50vw;align-self:start;max-height:calc(100vh - 150px)}#t-sounds{display:none}.lab-main{min-width:0}}
+.seq{overflow-x:auto}.seqrow{display:flex;align-items:center;gap:4px;margin:3px 0;min-width:max-content}
+.seqrow .nm{width:92px;flex:none;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.cells{display:flex;gap:2px}.cell{width:26px;height:30px;border-radius:5px;border:1px solid var(--line);background:rgba(128,128,128,.16);padding:0;cursor:pointer}.cell:nth-child(4n+1){border-left:2px solid rgba(255,255,255,.3)}.cell.on{background:var(--gold)}.cell.acc{background:#fff;box-shadow:0 0 0 2px var(--gold) inset}.cell.now{outline:2px solid #ff4d4d}
+.piano{width:100%;max-width:760px;height:auto;background:#0d0d0b;border:1px solid var(--line);border-radius:10px;touch-action:none;display:block;max-width:100%}
+.tl{color:#f7f4ec;position:relative;overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:#0d0d0b}.tl-in{position:relative;min-width:max-content}
+.ruler{height:22px;display:flex;font-size:11px;color:var(--muted);border-bottom:1px solid var(--line);cursor:pointer}.ruler div{flex:none;border-left:1px solid var(--line);padding-left:3px}
+.lane{position:relative;height:54px;border-bottom:1px solid var(--line);background-image:linear-gradient(90deg,var(--line) 1px,transparent 1px);}.lane .lbl{position:sticky;left:0;z-index:3;background:rgba(10,10,10,.85);font-size:11px;padding:1px 6px;display:inline-block;border-radius:0 0 6px 0}
+.blk{position:absolute;top:14px;height:36px;border-radius:6px;background:rgba(232,255,26,.25);border:1px solid var(--gold);font-size:11px;overflow:hidden;cursor:pointer;touch-action:none}.blk canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.blk span{position:relative;padding:1px 4px}.blk.sel{background:rgba(232,255,26,.45)}
+.ph{position:absolute;top:0;bottom:0;width:2px;background:#ff4d4d;z-index:4;pointer-events:none;left:0}
+.strips{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px}.strip{flex:none;width:150px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px}.strip input[type=range]{margin:2px 0;padding:0}.strip .mt{height:8px;border-radius:4px;background:#222;overflow:hidden}.strip .mt i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2ecc71,#f5a623,#e74c3c)}
+.strip details summary{cursor:pointer;font-size:13px;color:var(--muted)}.strip label{font-size:12px;color:var(--muted);display:block}
+.snd{display:flex;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}.snd .i{flex:1;min-width:0}.snd .i b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.snd button{padding:6px 9px;font-size:13px}
+.badge{font-size:11px;border:1px solid var(--line);border-radius:99px;padding:1px 7px;margin-right:4px;color:var(--muted)}.badge.g{border-color:#2ecc71;color:#2ecc71}.badge.w{border-color:#f5a623;color:#f5a623}
+.take{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}
+.note{font-size:13px;color:var(--muted)}.warnbox{border:1px solid #f5a623;border-radius:10px;padding:8px 10px;font-size:13px;margin:8px 0}
+.two{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+</style></head><body>
+<script src="/music/nav.js"></script>
+<h1>Beat <span>Lab</span></h1>
+<div class="muted">Your private POTENT studio: sounds, beats, recording and mixing, all in the browser.</div>
+<div id="gate" class="card" style="display:none"></div>
+<div id="lab" style="display:none">
+  <div class="lab-top" role="toolbar" aria-label="Transport">
+    <b id="ptitle" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">No project open</b>
+    <span id="pill" class="warn" role="status">No project</span>
+    <label class="note">BPM <input id="bpm" type="number" min="40" max="300" step="1" value="120" style="width:72px"></label>
+    <button id="bPlayPat" class="alt" title="Loop the current pattern">▶ Pattern</button>
+    <button id="bPlaySong" title="Play the arrangement">▶ Song</button>
+    <button id="bStop" class="alt" aria-label="Stop">■ Stop</button>
+    <button id="bRec" class="alt" title="Record on the armed audio track" style="color:#ff4d4d">● Rec</button>
+    <label class="note"><input id="metro" type="checkbox" checked> Metronome</label>
+    <button id="bSave" class="alt">Save now</button>
+  </div>
+  <div class="lab-tabs" role="tablist"><button id="t-sounds" data-t="sounds">Sounds</button><button data-t="beat" class="on">Beat Maker</button><button data-t="rec">Recording</button><button data-t="mix">Mixer</button><button data-t="proj">Project</button></div>
+  <div class="lab-grid">
+    <section id="p-sounds" class="panel card" aria-label="Sound browser"></section>
+    <div class="lab-main">
+      <section id="p-beat" class="panel on"></section>
+      <section id="p-rec" class="panel"></section>
+      <section id="p-mix" class="panel"></section>
+      <section id="p-proj" class="panel"></section>
+    </div>
+  </div>
+</div>
+<script src="/music/common.js"></script>
+<script src="/music/lab-engine.js"></script>
+<script src="/music/lab-sounds.js"></script>
+<script src="/music/lab.js"></script>
+</body></html>

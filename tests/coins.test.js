@@ -2,7 +2,7 @@
 process.env.AUTH_SECRET = "t"; process.env.SUPABASE_SERVICE_ROLE_KEY = "k"; process.env.SUPABASE_URL = "https://x.supabase.co";
 const assert = require("assert"); let n = 0; const ok = (c, m) => { assert(c, m); n++; };
 const U1 = "11111111-1111-1111-1111-111111111111", P1 = "22222222-2222-2222-2222-222222222222", PR1 = "33333333-3333-3333-3333-333333333333";
-const T = { music_users: [{ id: U1, email: "buyer@x.com", name: "Buyer", active: true }], beat_settings: [{ key: "music_coin_pay", value: "1" }], music_coin_wallets: [], music_coin_ledger: [],
+const T = { music_users: [{ id: U1, email: "buyer@x.com", name: "Buyer", active: true }], beat_settings: [], music_coin_wallets: [], music_coin_ledger: [],
   beat_producers: [{ id: PR1, active: true, hold_days: 0, name: "Seller" }], music_products: [{ id: P1, producer_id: PR1, title: "Song", kind: "download", price_cents: 500, status: "published", file_ref: "f", limited_qty: null, sold_count: 0 }],
   music_sales: [], beat_wallet_txns: [], beat_audit: [], music_contract_templates: [{ key: "t1", title: "Tpl", body: "Full text of the agreement goes here.", version: 1, active: true }], music_contracts: [], music_contract_parties: [] };
 let seq = 0; const uid = () => "aaaaaaaa-0000-4000-8000-" + String(++seq).padStart(12, "0");
@@ -36,7 +36,7 @@ const call = async (a, extra, tok) => { const r = await C.handler({ httpMethod: 
   ok(T.music_sales[0].status === "refunded" && T.beat_wallet_txns.some(x => x.amount_cents === -495), "refund reverses seller share");
   r = await call("o_coin_refund", { kind: "product", sale_id: T.music_sales[0].id }, owner); ok(r.s === 409, "no double refund");
   ok(T.music_coin_wallets[0].balance_cents === 700, "balance unchanged by repeat refund");
-  await call("o_coin_set", { enabled: false }, owner); r = await call("pay_cart", { product_ids: [P1], agree: true }); ok(r.s === 403, "payments off when switched off");
+  await call("o_coin_set", { enabled: false }, owner); ok(T.beat_settings.some(x => x.key === "music_coin_pay" && x.value === "0"), "off writes 0"); r = await call("pay_cart", { product_ids: [P1], agree: true }); ok(r.s === 403, "payments off when switched off");
   // contracts
   r = await call("c_create", { template_key: "t1", parties: [{ name: "Ann", email: "ann@x.com", role: "writer" }, { name: "Bo", email: "bo@x.com" }] }); ok(r.s === 200 && r.j.links.length === 2, "contract created with links");
   const cid = r.j.id, l1 = r.j.links[0].link.split("t=")[1], l2 = r.j.links[1].link.split("t=")[1];

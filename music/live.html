@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="color-scheme" content="dark light"><link rel="icon" href="data:,">
+<title>POTENT LIVE 360° — Smoke Sessions</title><meta name="description" content="Freestyle cyphers, open mics, producer sessions and late-night studio lounges on POTENT LIVE 360°."><link rel="stylesheet" href="/music/base.css">
+<style>
+.hero{background:radial-gradient(ellipse at 30% 0,rgba(232,255,26,.18),transparent 60%),#0b0b09;border:1px solid var(--line);border-radius:16px;padding:18px;margin:10px 0}
+.sess{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--line)}.sess .i{flex:1 1 220px;min-width:0}.badge{font-size:11px;border:1px solid var(--line);border-radius:99px;padding:1px 8px;margin-right:4px;color:var(--muted)}.badge.live{border-color:#ff4d4d;color:#ff4d4d}.badge.rec{border-color:#f5a623;color:#f5a623}
+.rules{font-size:13px;color:var(--muted)}label.note{font-size:13px;color:var(--muted);display:block}
+</style></head><body>
+<script src="/music/nav.js"></script>
+<h1>POTENT <span>LIVE 360°</span></h1>
+<div class="hero"><b style="font-size:20px">SMOKE SESSIONS</b><div class="muted">Late-night cyphers, open mics, beat battles and studio lounges. Dark room, one mic, and the next artist in line.</div>
+<div class="row"><button id="host">+ Host a session</button><a class="btn alt" href="/music/lab.html">Make beats in Beat Lab</a></div>
+<div class="rules" style="margin-top:8px">House rules: be respectful. Nobody has to use anything to take part. Hosts can mute or remove anyone, and you can report or block people. Music only plays when the host has recorded why they're allowed to play it, and the room always shows whether recording is on.</div></div>
+<div id="out" class="muted">Loading…</div>
+<script src="/music/common.js"></script>
+<script>
+var esc=PM.esc,$=function(i){return document.getElementById(i)};
+function api(b){return PM.api("music-smoke",b)}
+function when(s){if(s.status==="live")return'<span class="badge live">LIVE NOW</span>';return s.starts_at?'<span class="badge">'+esc(new Date(s.starts_at).toLocaleString([], {weekday:"short",hour:"numeric",minute:"2-digit",month:"short",day:"numeric"}))+"</span>":'<span class="badge">scheduled</span>'}
+function card(s,own){return'<div class="sess"><div class="i"><b>'+esc(s.title)+'</b><br><small class="muted">'+when(s)+'<span class="badge">'+esc(s.format_label)+'</span><span class="badge">'+esc(s.visibility==="public"?"open to all":s.visibility==="invite"?"invitation only":"private link")+'</span><span class="badge '+(s.recording==="on"?"rec":"")+'">recording '+esc(s.recording)+'</span> hosted by '+esc(s.host)+'</small></div>'+(own&&s.invite_code?'<button class="alt" data-cp="'+esc(location.origin+"/music/room.html?id="+s.id+"&code="+s.invite_code)+'">Copy invite link</button>':"")+'<a class="btn" href="/music/room.html?id='+s.id+'">'+(s.status==="live"?"JOIN SESSION":"View session")+'</a></div>'}
+function load(){api({action:"s_list"}).then(function(j){var h="";function sec(t,l,own){return l.length?"<h2>"+t+"</h2>"+l.map(function(s){return card(s,own)}).join(""):""}
+ var live=j.public.filter(function(s){return s.status==="live"}),soon=j.public.filter(function(s){return s.status!=="live"});
+ h=sec("Live now",live)+sec("Coming up",soon)+sec("Invited",j.invited)+sec("Your sessions",j.mine,true);
+ $("out").innerHTML=h||"No sessions yet. Be the first to host one.";
+ [].forEach.call(document.querySelectorAll("[data-cp]"),function(b){b.onclick=function(){navigator.clipboard&&navigator.clipboard.writeText(b.dataset.cp).then(function(){PM.toast("Invite link copied")},function(){prompt("Copy this link",b.dataset.cp)})}});
+ window.FORMATS=j.formats}).catch(function(e){$("out").textContent=e.message})}
+$("host").onclick=function(){PM.need(function(){var F=window.FORMATS||{cypher:"Freestyle Cypher"};
+ PM.dialog('<h2 style="margin:0 0 6px">Host a session</h2><label class="note">Title<input id="hT" maxlength="90" placeholder="Late Night Cypher"></label><label class="note">Format<select id="hF">'+Object.keys(F).map(function(k){return'<option value="'+k+'">'+esc(F[k])+"</option>"}).join("")+'</select></label><label class="note">Who can come<select id="hV"><option value="public">Anyone (listed publicly)</option><option value="private">Private link (not listed)</option><option value="invite">Invitation only</option></select></label><label class="note">When<select id="hW"><option value="now">Open the room now</option><option value="later">Schedule it</option></select></label><input id="hD" type="datetime-local" style="display:none"><div class="two" style="display:grid;gap:8px;grid-template-columns:1fr 1fr"><label class="note">Turn length (sec)<input id="hS" type="number" min="15" max="600" value="60"></label><label class="note">Venue<input id="hVe" maxlength="60" value="Studio lounge"></label></div><label class="note">Atmosphere<select id="hA"><option>late night</option><option>smoke &amp; neon</option><option>basement cypher</option><option>studio glow</option></select></label>'+
+ '<label class="note"><input type="checkbox" id="hC" checked> Chat</label><label class="note"><input type="checkbox" id="hR" checked> Reactions</label><label class="note"><input type="checkbox" id="hQ" checked> Let people request the mic</label><label class="note"><input type="checkbox" id="hVo"> Audience voting</label>'+
+ '<label class="note">Optional stream or 360° video link (https)<input id="hSt" placeholder="https://…"></label><label class="note"><input type="checkbox" id="h360"> That link is a 360° video</label>'+
+ '<label class="note"><input type="checkbox" id="hRec"> Record this session</label><div id="hRecBox" style="display:none"><label class="note"><input type="checkbox" id="hAck"> I have permission from everyone performing and for any music that will be played.</label></div><small class="muted">Recording is off unless you turn it on, and the room shows its status to everyone. POTENT does not store recordings from this page.</small>'+
+ '<div class="row"><button id="hGo">Create session</button></div>',function(){
+  $("hW").onchange=function(){$("hD").style.display=this.value==="later"?"block":"none"};$("hRec").onchange=function(){$("hRecBox").style.display=this.checked?"block":"none"};
+  $("hGo").onclick=function(){var later=$("hW").value==="later";api({action:"s_create",title:$("hT").value,format:$("hF").value,visibility:$("hV").value,start_now:!later,starts_at:later&&$("hD").value?new Date($("hD").value).toISOString():undefined,turn_seconds:+$("hS").value,venue:$("hVe").value,atmosphere:$("hA").value,chat_on:$("hC").checked,reactions_on:$("hR").checked,requests_on:$("hQ").checked,voting_on:$("hVo").checked,stream_url:$("hSt").value||undefined,stream_is_360:$("h360").checked,recording:$("hRec").checked?"on":"off",rights_ack:$("hAck")?$("hAck").checked:false}).then(function(r){location.href="/music/room.html?id="+r.id+(r.invite_code?"&code="+r.invite_code:"")}).catch(function(e){PM.toast(e.message)})}})})};
+PM.loadMe().then(load,load);
+</script></body></html>

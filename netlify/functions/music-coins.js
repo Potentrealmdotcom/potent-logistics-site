@@ -1,10 +1,11 @@
 // POTENT Music: POTENT Coin wallet (closed-loop, ledger only) and contract e-signature records.
 // Coins: a collectible/internal credit. No transfers between users, no cash-out. Balances change only through the atomic
-// database function music_coin_apply (idempotent per ref). Coin checkout is OFF until the owner turns it on.
+// database function music_coin_apply (idempotent per ref). Coin payments are ON unless the owner switches them off. Card top-ups and rewards live in lib/coinbuy.js.
 // Contracts: the text is the user's own; this stores exactly what each person saw and assented to, with a hash of the text.
 const crypto = require("crypto");
 const B = require("./lib/beats");
 const M = require("./lib/music");
+const CB = require("./lib/coinbuy");
 const UUID = /^[0-9a-f-]{36}$/i;
 const clip = function (v, n) { return String(v == null ? "" : v).trim().slice(0, n); };
 const rows = function (r) { return r.ok && Array.isArray(r.data) ? r.data : []; };
@@ -26,7 +27,8 @@ function verifyParty(t) {
   try { return JSON.parse(Buffer.from(p[0].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8")).pid || null; } catch (e) { return null; }
 }
 
-async function coinOn() { return (await B.getSetting("music_coin_pay")) === "1"; }
+// On by default; the owner can switch it off (setting music_coin_pay = "0").
+async function coinOn() { return (await B.getSetting("music_coin_pay")) !== "0"; }
 const apply = function (uid, delta, type, ref, noteText, actor) { return B.rpc("music_coin_apply", { p_user: uid, p_delta: delta, p_type: type, p_ref: ref, p_note: noteText, p_actor: actor }); };
 
 async function walletOf(uid) { const w = rows(await B.sb("music_coin_wallets?user_id=eq." + uid + "&select=balance_cents"))[0]; return w ? Number(w.balance_cents) : 0; }
@@ -195,9 +197,24 @@ exports.handler = async function (event) {
   if (!u || u.active === false) return B.J(401, { error: "Please sign in" });
   if (tooMany("u:" + u.id, 120)) return B.J(429, { error: "Too many requests" }); note("u:" + u.id);
 
+  if (a === "topup") {
+    if (!(await coinOn())) return B.J(403, { error: "Coins are switched off right now" });
+    const cents = Math.round(Number(b.cents));
+    if (!(cents >= CB.MIN && cents <= CB.MAX) || cents % 100 !== 0) return B.J(400, { error: "Choose between $" + CB.MIN / 100 + " and $" + CB.MAX / 100 + " in whole dollars" });
+    if (!process.env.STRIPE_SECRET_KEY) return B.J(500, { error: "Payments are not set up" });
+    if (tooMany("top:" + u.id, 15)) return B.J(429, { error: "Too many attempts. Try again later." }); note("top:" + u.id);
+    const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY), h = event.headers || {};
+    const origin = /^https:\/\/([a-z0-9-]+\.)*netlify\.app$/.test(String(h.origin || "")) || String(h.origin || "") === B.SITE ? String(h.origin) : B.SITE;
+    try {
+      const s = await stripe.checkout.sessions.create({ mode: "payment", customer_email: u.email, expires_at: Math.floor(Date.now() / 1000) + 31 * 60,
+        line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: cents, product_data: { name: (cents / 100) + " POTENT Coins", description: "Closed-loop credit for POTENT purchases. Not cash, cannot be transferred or cashed out. Every $1,000 you buy earns a $100 coin reward." } } }],
+        metadata: { product: "MUSICCOIN", user_id: u.id }, success_url: origin + "/music/coins.html?topup=1", cancel_url: origin + "/music/coins.html?canceled=1" });
+      return B.J(200, { ok: true, url: s.url });
+    } catch (e) { console.error("coin checkout failed:", e.message); return B.J(500, { error: "Could not start checkout" }); }
+  }
   if (a === "wallet") {
     const [bal, led] = await Promise.all([walletOf(u.id), B.sb("music_coin_ledger?user_id=eq." + u.id + "&select=id,delta_cents,balance_after,type,note,created_at&order=created_at.desc&limit=50")]);
-    return B.J(200, { ok: true, balance_cents: bal, ledger: rows(led), pay_enabled: await coinOn(), rules: "POTENT Coins are a closed-loop credit inside POTENT Music. They cannot be sent to other people or cashed out." });
+    return B.J(200, { ok: true, balance_cents: bal, ledger: rows(led), pay_enabled: await coinOn(), packs: CB.PACKS, min_cents: CB.MIN, max_cents: CB.MAX, rewards: await CB.progress(u.id), rules: "POTENT Coins are a closed-loop credit inside POTENT Music. They cannot be sent to other people or cashed out." });
   }
   if (a === "pay_beat" || a === "pay_cart") {
     if (!(await coinOn())) return B.J(403, { error: "Paying with coins is not turned on yet" });

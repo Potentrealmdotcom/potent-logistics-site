@@ -1,6 +1,6 @@
 /* One shared top bar for the whole POTENT MUSIC world, so everything is reachable from one place. */
 (function () {
-  var items = [["Discover", "/music/", /^\/music\/(index\.html)?$|^\/music\/artist/], ["Beats", "/beats/", /^\/beats\//], ["Studio", "/studio/", /^\/studio\//], ["Coins", "/music/coins.html", /coins|sign/], ["Earnings", "/beatman/", /^\/beatman\//], ["Services", "/music/services.html", /services/], ["Projects", "/music/projects.html", /projects|approve|guide/], ["Account", "/music/account.html", /account/], ["Help", "/music/about.html", /about/]];
+  var items = [["Discover", "/music/", /^\/music\/(index\.html)?$|^\/music\/artist/], ["Beats", "/beats/", /^\/beats\//], ["Studio", "/studio/", /^\/studio\//], ["Beat Lab", "/music/lab.html", /lab/], ["Live", "/music/live.html", /live|room/], ["Coins", "/music/coins.html", /coins|sign/], ["Earnings", "/beatman/", /^\/beatman\//], ["Services", "/music/services.html", /services/], ["Projects", "/music/projects.html", /projects|approve|guide/], ["Account", "/music/account.html", /account/], ["Help", "/music/about.html", /about/]];
   var p = location.pathname, me = document.currentScript;
   var d = document.createElement("div");
   d.setAttribute("role", "navigation"); d.setAttribute("aria-label", "POTENT MUSIC");

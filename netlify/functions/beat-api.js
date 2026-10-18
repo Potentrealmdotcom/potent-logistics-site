@@ -85,15 +85,16 @@ async function loadProducer(id) {
   return r.ok && Array.isArray(r.data) && r.data[0] ? r.data[0] : null;
 }
 async function dash(p) {
-  const [bal, txns, sales, pays, beats] = await Promise.all([
+  const [bal, txns, sales, pays, beats, ace] = await Promise.all([
     B.balances(p.id),
     B.sb("beat_wallet_txns?producer_id=eq." + p.id + "&select=type,amount_cents,note,available_at,created_at&order=created_at.desc&limit=60"),
     B.sb("beat_sales?producer_id=eq." + p.id + "&select=title,sale_type,gross_cents,net_cents,split_pct,producer_cents,status,created_at&order=created_at.desc&limit=60"),
     B.sb("beat_payouts?producer_id=eq." + p.id + "&select=id,amount_cents,method,handle,status,reference,requested_at,paid_at&order=requested_at.desc&limit=40"),
-    B.sb("beat_items?producer_id=eq." + p.id + "&select=*&order=created_at.desc&limit=200")
+    B.sb("beat_items?producer_id=eq." + p.id + "&select=*&order=created_at.desc&limit=200"),
+    p.store_admin ? B.sb("ace_sales?producer_id=eq." + p.id + "&select=kind,paid_cents,payout_cents,reversed_cents,status,created_at&order=created_at.desc&limit=100") : Promise.resolve({ ok: true, data: [] })
   ]);
   return { ok: true, producer: pubProducer(p), balance: bal, minPayoutCents: MIN_PAYOUT, methods: METHODS,
-    txns: txns.data || [], sales: sales.data || [], payouts: pays.data || [], beats: (beats.data || []).map(pubBeat) };
+    txns: txns.data || [], sales: sales.data || [], payouts: p.store_admin && p.kind !== "seller" ? [] : pays.data || [], ace: ace.data || [], beats: (beats.data || []).map(pubBeat) };
 }
 
 const PUBLIC_GET = ["catalog"];

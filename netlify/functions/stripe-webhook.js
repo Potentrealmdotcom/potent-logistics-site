@@ -250,7 +250,7 @@ exports.handler = async function (event) {
     if (type.indexOf("identity.verification_session.") === 0) return { statusCode: 200, headers, body: JSON.stringify({ received: true, ignored: type }) };
 
     // ── AceHeals: Breeze earns $2 per monthly payment and $12 per lifetime sale (same Stripe account) ──
-    if (type === "checkout.session.completed" && ["MUSIC", "BEAT", "MUSICSVC", "MUSICCOLL"].indexOf((obj.metadata || {}).product) < 0) {
+    if (type === "checkout.session.completed" && ["MUSIC", "BEAT", "MUSICSVC", "MUSICCOLL", "MUSICCOIN"].indexOf((obj.metadata || {}).product) < 0) {
       try {
         const li = await stripe.checkout.sessions.listLineItems(obj.id, { limit: 20 });
         const ar = await require("./lib/aceheals").onCheckout(obj, (li.data || []).map(function (x) { return x.price && x.price.id; }));
@@ -262,6 +262,7 @@ exports.handler = async function (event) {
     // ── chargebacks on beat / music sales ──
     if (type === "charge.dispute.created" || type === "charge.dispute.closed") {
       if (type === "charge.dispute.created") { const ad = await require("./lib/aceheals").onDispute(obj); if (ad && ad.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "AceHeals chargeback failed, retry" }) }; }
+      const cd = type === "charge.dispute.created" ? await require("./lib/coinbuy").onDispute(obj) : await require("./lib/coinbuy").onDisputeClosed(obj); if (cd && cd.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Coin chargeback failed, retry" }) };
       const dr = await handleDispute(obj, type === "charge.dispute.created" ? "created" : "closed");
       if (dr && dr.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Dispute handling failed, retry" }) };
       return { statusCode: 200, headers, body: JSON.stringify({ received: true, dispute: !!(dr && dr.ok) }) };
@@ -269,6 +270,7 @@ exports.handler = async function (event) {
     // ── Beat Man: a refund takes back the producer's share automatically ──
     if (type === "charge.refunded") {
       const ar2 = await require("./lib/aceheals").onRefund(obj); if (ar2 && ar2.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "AceHeals refund failed, retry" }) };
+      const cr0 = await require("./lib/coinbuy").onRefund(obj); if (cr0 && cr0.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Coin refund failed, retry" }) };
       const rr = await refundBeat(obj);
       if (rr && rr.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Beat refund failed, retry" }) };
       const sr = await require("./lib/svc").onRefund(obj); if (sr && sr.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Services refund failed, retry" }) };
@@ -365,6 +367,9 @@ exports.handler = async function (event) {
       // POTENT Music digital product: record the sale (1% POTENT fee), credit the seller. Idempotent per Stripe session.
       const res = await fulfillMusic(obj);
       if (res && res.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Music fulfillment failed, retry" }) };
+    } else if (product === "MUSICCOIN" && isCheckoutSession) {
+      const res = await require("./lib/coinbuy").onCheckout(obj);
+      if (res && res.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Coin top-up failed, retry" }) };
     } else if ((product === "MUSICSVC" || product === "MUSICCOLL") && isCheckoutSession) {
       const res = await require("./lib/svc").onCheckout(obj);
       if (res && res.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Services fulfillment failed, retry" }) };
@@ -387,6 +392,6 @@ exports.handler = async function (event) {
 
 // SETUP: Stripe Dashboard > Developers > Webhooks > endpoint
 //   https://potentoperations.netlify.app/.netlify/functions/stripe-webhook
-//   events: checkout.session.completed, payment_intent.succeeded, charge.refunded, invoice.paid,
+//   events: checkout.session.completed, payment_intent.succeeded, charge.refunded, charge.dispute.created, charge.dispute.closed, invoice.paid,
 //           invoice.payment_failed, customer.subscription.deleted
 //   Netlify env: STRIPE_WEBHOOK_SECRET (whsec_...), STRIPE_SECRET_KEY, SUPABASE_SERVICE_ROLE_KEY
