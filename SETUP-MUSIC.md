@@ -50,9 +50,8 @@ POTENT 1% on beat sales. Seller keeps 91% or more. The rest is unassigned until 
 ## Demo data
 Nothing in the app is seeded demo data. Anything you add for testing, name it "TEST" and delete it before launch.
 
-## Beat Lab, Smoke Sessions, Breeze, LEGIT Weddings
+## Beat Lab, Smoke Sessions, Breeze
 * **Beat Lab** (/music/lab.html): owner grants engineers (owner action `o_eng_set`). Private bucket `lab-files`, 2 GB per engineer, 50 MB per file. Export is WAV only. Needs `music-lab-smoke.sql` (already applied live).
 * **Smoke Sessions / LIVE 360°** (/music/live.html): polling based (no media server), so live voice/video is a stream link only. Recording is off unless the host turns it on; POTENT stores no audio.
 * **Breeze**: one Beat Man login (`/beatman/`, user `breeze`). Store admin is ON. He sees Earnings (one wallet for beats + AceHeals), Store and AceHeals tabs, and no payout controls. Change his password on first sign-in (the old SQL file's hash is in git history).
 * **Staff roles** (moderator/support/store admin) can never reach money actions; only the owner token can. Payouts need the owner's payout code.
-* **LEGIT Weddings** (/legit/weddings.html): Georgia-only consultation requests and package catalogue ($10,000 Signature, $25,000 VIP; guest limits are editable placeholders). A request is not a booking and nothing is charged. NOT built: contracts, payments, vendor marketplace, logistics job orders, guest/RSVP tools, wedding financials.
