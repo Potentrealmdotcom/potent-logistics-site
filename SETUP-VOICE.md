@@ -34,7 +34,7 @@ Every fact and action goes back through `voice-tools`, which re-validates it; th
 ## 3. Environment variables
 **Netlify:** `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_SMS_FROM` (only for texting), `VOICE_BRIDGE_URL` (`wss://voice.<domain>/twilio`), `VOICE_BRIDGE_SECRET` (long random; the installer prints it),
 `VOICE_WEBHOOK_URL` (optional; the exact public URL of `voice-webhook`, if a proxy changes it), `ROUTING_PROVIDER` (`ors` or `osrm`) with `ORS_API_KEY` or `OSRM_URL`, plus the existing `STRIPE_*`, `AUTH_SECRET`, `MAILJET_*`.
-**Bridge host:** `OPENAI_API_KEY`, `VOICE_BRIDGE_SECRET` (same value), `SITE_URL`, optional `VOICE_AI_MODEL`. The installer writes these.
+**Bridge host:** `OPENAI_API_KEY`, `VOICE_BRIDGE_SECRET` (same value), `SITE_URL`, optional `VOICE_AI_MODEL` (default `gpt-realtime-2.1`; the older `gpt-realtime` is scheduled to shut down 20 Jan 2027; `gpt-realtime-2.1-mini` is about a third of the price). The installer writes these.
 
 ## 4. Webhooks and APIs
 * Twilio number → Voice webhook (POST): `https://<site>/.netlify/functions/voice-webhook`. Status callback: same URL `?a=status`. Other routes (`fallback`, `xfer`, `dial`) are set by the code itself.
