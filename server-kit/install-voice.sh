@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # POTENT VOICE audio bridge installer. Run AFTER install.sh (it reuses that server's Caddy for HTTPS). As root:
 #   cd potent-logistics-site/server-kit && sudo bash install-voice.sh
+# Optional: choose the cheaper model with   VOICE_AI_MODEL=gpt-realtime-2.1-mini sudo -E bash install-voice.sh
 # You need: an A record  voice.<your domain>  pointing at this server, and an OpenAI API key (platform.openai.com).
 # Not tested on a real server by the person who wrote it. Run the checks at the end.
 set -euo pipefail
@@ -27,6 +28,7 @@ services:
       VOICE_BRIDGE_SECRET: "$SECRET"
       SITE_URL: "$SITE"
       MAX_CALLS: "50"
+      VOICE_AI_MODEL: "${VOICE_AI_MODEL:-gpt-realtime-2.1}"
 EOT
 chmod 600 "$V/docker-compose.yml"
 cd "$V" && docker compose up -d --build
