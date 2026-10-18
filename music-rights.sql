@@ -1,0 +1,4 @@
+-- POTENT Music rights, splits and AI usage (already applied). Safe to re-run.
+-- Tables: music_projects, music_contributors, music_schedules (+ _lines, _approvals), music_revenue, music_allocations,
+--         music_ai_usage, music_ai_cache; column music_users.help_mode.
+-- The full CREATE statements live in the applied migrations "music_rights_splits" and "music_ai_usage_cache_mode".

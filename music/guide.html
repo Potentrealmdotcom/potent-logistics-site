@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="color-scheme" content="dark light"><link rel="icon" href="data:,">
+<title>Your First Release — From Beat to Payday</title>
+<meta name="description" content="A step-by-step guide for independent artists: buy an exclusive beat, agree splits, release and track your money.">
+<link rel="stylesheet" href="/music/base.css"></head><body>
+<script src="/music/nav.js"></script>
+<h1>YOUR FIRST RELEASE — <span>FROM BEAT TO PAYDAY</span></h1>
+<div class="muted">Ten steps. POTENT checks the ones it can verify. The rest you tick yourself and they are marked as your own notes, not verified. <b>This guide is not legal advice.</b></div>
+<div id="prog" class="card" style="margin-top:12px"></div>
+<div id="steps"></div>
+<h2>Plain-language glossary</h2>
+<div id="gl" class="card"><span class="muted">Loading…</span></div>
+<div class="card"><b>Ask a question</b><div class="row"><input id="q" placeholder="e.g. What is the difference between a split sheet and a contract?" style="flex:1 1 260px"><button id="ask">✨ Ask</button></div><div id="ans" class="muted" style="margin-top:8px"></div></div>
+<h2>For producers, songwriters, DJs and promoters</h2>
+<div class="card"><p><b>Producers:</b> <a href="/beatman/">upload and price exclusive beats</a>. Once a beat sells it is removed from the store. You get your own split for the master only if the artist's agreement says so.</p><p><b>Songwriters:</b> you are paid from the <i>publishing</i> split, which is separate from the master. Make sure your name and share are on that sheet.</p><p><b>DJs and promoters:</b> a promo deal pays you for the work you agreed to. It does not make you an owner of the song unless the agreement clearly says so. Ask for the deliverables, dates and payment in writing.</p></div>
+<script src="/music/common.js"></script>
+<script>
+function $(i){return document.getElementById(i)}var esc=PM.esc;
+var S=[
+ ["Create your account","Sign in to keep your purchases, agreements and projects together.","/music/account.html","Open my account","auto:account"],
+ ["Find an exclusive beat","Browse and preview. An exclusive beat sells once, then it is gone.","/beats/","Browse beats","auto:beat"],
+ ["Understand the beat agreement","Read what rights you get and what stays with the producer before you pay.","/beats/terms.html","Read the agreement",null],
+ ["Build your team","Add everyone who worked on the song: featured artists, producers, writers, DJs.","/music/projects.html","Open projects","auto:team"],
+ ["Agree on splits","Master (the recording) and publishing (the song) are separate. Everyone approves their own numbers.","/music/projects.html","Open projects","auto:splits"],
+ ["Finish the song and collect files","Final audio, cover art, credits, and permission for any samples. Check you have the rights to everything in it.","/studio/","Open the studio",null],
+ ["Prepare distribution and rights registration","Pick a distributor and a rights organization. POTENT does not submit these for you yet: you complete them with those services and keep the confirmations.",null,null,null],
+ ["Plan your promotion","Line up DJs, interviews and social posts. Nobody can promise streams, playlist spots or chart positions.",null,null,null],
+ ["Track how it performs","Only count numbers from a real dashboard or statement. Self-reported numbers are labelled as such.",null,null,null],
+ ["Track statements and payments","Record each statement. Calculated is not received. Mark it received only when the money has actually arrived.","/music/projects.html","Open projects","auto:revenue"]];
+var AUTO={},mine={};try{mine=JSON.parse(localStorage.getItem("pm_guide")||"{}")}catch(e){}
+function badge(s){var c={COMPLETED:"#2ecc71","IN PROGRESS":"#f1c40f","ACTION REQUIRED":"#e74c3c","NOT STARTED":"#888"}[s]||"#888";return'<span class="st" style="border-color:'+c+';color:'+c+'">'+s+'</span>'}
+function draw(){var done=0;$("steps").innerHTML=S.map(function(s,i){var st,note="";if(s[4]&&AUTO[s[4]]){st=AUTO[s[4]];note=" · checked by POTENT"}else{st=mine[i]?"COMPLETED":"NOT STARTED";note=mine[i]?" · marked by you, not verified":""}if(st==="COMPLETED")done++;
+  return'<div class="card"><b>'+(i+1)+'. '+s[0]+'</b> '+badge(st)+'<small class="muted">'+note+'</small><p style="margin:6px 0">'+s[1]+'</p><div class="row">'+(s[2]?'<a class="btn" href="'+s[2]+'">'+s[3]+'</a>':'')+(s[4]?'':'<label class="ck" style="margin:0"><input type="checkbox" data-i="'+i+'" style="width:auto"'+(mine[i]?" checked":"")+'><span>I did this</span></label>')+'</div></div>'}).join("");
+ $("prog").innerHTML='<b>'+done+' of 10 steps done</b><div style="height:8px;background:var(--line);border-radius:4px;margin-top:6px"><div style="height:100%;width:'+done*10+'%;background:var(--gold);border-radius:4px"></div></div>';
+ [].forEach.call(document.querySelectorAll("[data-i]"),function(c){c.onchange=function(){mine[c.dataset.i]=c.checked;try{localStorage.setItem("pm_guide",JSON.stringify(mine))}catch(e){}draw()}})}
+draw();
+PM.loadMe().then(function(m){if(!m)return;AUTO["auto:account"]="COMPLETED";AUTO["auto:beat"]=(m.library||[]).some(function(x){return x.kind==="beat"||x.beat_id})?"COMPLETED":"NOT STARTED";
+ return PM.api("music-rights",{action:"p_list"}).then(function(l){if(!l.projects.length){AUTO["auto:team"]="NOT STARTED";AUTO["auto:splits"]="NOT STARTED";AUTO["auto:revenue"]="NOT STARTED";return}
+  return PM.api("music-rights",{action:"p_get",project_id:l.projects[0].id}).then(function(g){var c={};g.checklist.forEach(function(x){c[x.k]=x.s});AUTO["auto:team"]=c.team;AUTO["auto:splits"]=c.master==="COMPLETED"&&c.publishing==="COMPLETED"?"COMPLETED":c.approvals==="ACTION REQUIRED"?"ACTION REQUIRED":(c.master==="NOT STARTED"&&c.publishing==="NOT STARTED")?"NOT STARTED":"IN PROGRESS";AUTO["auto:revenue"]=g.project.revenue.some(function(r){return r.status==="received"})?"COMPLETED":g.project.revenue.length?"IN PROGRESS":"NOT STARTED"})})}).then(draw).catch(function(){draw()});
+PM.api("music-rights",{action:"ai_explain"},"").then(function(j){var L={master:"Master recording",publishing:"Composition & publishing",split:"Split sheet",gross:"Gross vs. net receipts",statement:"Royalty statement",distribution:"Distribution",registration:"Rights registration",exclusive:"Exclusive beat purchase",promo:"Promotional agreement",reconciliation:"Payment reconciliation"};$("gl").innerHTML=Object.keys(L).map(function(k){return'<details><summary><b>'+L[k]+'</b></summary><p>'+esc(j.terms[k])+'</p></details>'}).join("")});
+$("ask").onclick=function(){$("ans").textContent="Thinking…";PM.api("music-rights",{action:"ai_explain",question:$("q").value},"").then(function(j){$("ans").textContent=(j.ai?"✨ ":"")+j.answer}).catch(function(e){$("ans").textContent=e.message})};
+</script></body></html>

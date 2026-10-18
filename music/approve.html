@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark light"><link rel="icon" href="data:,"><meta name="robots" content="noindex">
+<title>Approve a split — POTENT Music</title><link rel="stylesheet" href="/music/base.css"></head><body>
+<script src="/music/nav.js"></script>
+<h1>Your <span>split</span></h1>
+<div id="main"><div class="muted">Loading…</div></div>
+<script src="/music/common.js"></script>
+<script>
+function $(i){return document.getElementById(i)}var esc=PM.esc,usd=function(c){return"$"+(c/100).toFixed(2)},T=new URLSearchParams(location.search).get("t")||"";
+var CATS={master:"Master recording",publishing:"Songwriting / publishing",beat_sale:"Beat sale proceeds",promo:"DJ / promotion",other:"Other agreed income"};
+function load(){PM.api("music-rights",{action:"r_view",t:T},"").then(draw).catch(function(e){$("main").innerHTML='<div class="card err">'+esc(e.message)+'</div>'})}
+function draw(j){var nm=function(id){var c=j.people.filter(function(x){return x.id===id})[0];return c?c.name:"?"};
+ var h='<div class="card"><b>'+esc(j.project)+'</b><br><small class="muted">You are '+esc(j.me.name)+' ('+esc(j.me.roles.join(", ")||"collaborator")+')</small></div>';
+ h+=j.schedules.map(function(s){var mine=s.music_schedule_lines.filter(function(l){return l.contributor_id===j.me.id})[0],a=s.music_schedule_approvals.filter(function(x){return mine&&x.contributor_id===mine.contributor_id})[0];
+  return'<div class="card"><b>'+CATS[s.category]+'</b> · version '+s.version+' · <span class="st">'+s.status+'</span><br><small class="muted">Shares apply to '+(s.base==="gross"?"gross":"net eligible")+' receipts.</small><table>'+s.music_schedule_lines.map(function(l){return'<tr><td>'+esc(nm(l.contributor_id))+'</td><td>'+l.pct+'%</td></tr>'}).join("")+'</table>'+(s.status==="pending"&&!a?'<input id="n'+s.id+'" placeholder="Note (optional, needed if you dispute)"><div class="row"><button data-d="approved:'+s.id+'">I approve this split</button><button class="alt" data-d="disputed:'+s.id+'">I dispute it</button></div>':'<small>Your answer: '+(a?esc(a.decision):'not needed')+'</small>')+'<br><small class="muted">Approving records your agreement to these percentages for this income type only. It does not transfer any ownership.</small></div>'}).join("")||'<div class="card muted">Nothing is waiting for you.</div>';
+ h+='<div class="card"><b>Amounts calculated for you</b>'+(j.allocations.length?'<table>'+j.allocations.map(function(a){var r=a.music_revenue||{};return'<tr><td>'+CATS[r.category]+'<br><small class="muted">'+esc(r.source||"")+' · '+esc(r.status||"")+'</small></td><td>'+usd(a.cents)+'</td></tr>'}).join("")+'</table>':'<br><span class="muted">None yet.</span>')+'<br><small class="muted">'+esc(j.note)+'</small></div>';
+ $("main").innerHTML=h;[].forEach.call(document.querySelectorAll("[data-d]"),function(b){b.onclick=function(){var p=b.dataset.d.split(":");PM.api("music-rights",{action:"r_decide",t:T,schedule_id:p[1],decision:p[0],note:($("n"+p[1])||{}).value||""},"").then(function(r){PM.toast("Saved: "+r.status);load()}).catch(function(e){PM.toast(e.message)})}})}
+load();
+</script></body></html>
