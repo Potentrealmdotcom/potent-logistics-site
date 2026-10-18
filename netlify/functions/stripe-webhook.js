@@ -211,6 +211,11 @@ exports.handler = async function (event) {
       if (!subId) return { statusCode: 200, headers, body: JSON.stringify({ received: true, ignored: "not a subscription invoice" }) };
       const sub = await stripe.subscriptions.retrieve(subId);
       const smd = sub.metadata || {};
+      if (smd.kind === "voice") { // POTENT VOICE add-on (separate from the license, support and Flex)
+        const vr = await require("./lib/voice/billing").onInvoice(obj, type === "invoice.paid", sub);
+        if (vr && vr.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Voice billing failed, retry" }) };
+        return { statusCode: 200, headers, body: JSON.stringify({ received: true, voice: true }) };
+      }
       if (smd.kind !== "support" && smd.kind !== "flex") return { statusCode: 200, headers, body: JSON.stringify({ received: true, ignored: "not ours" }) };
       const paid = type === "invoice.paid";
       // The first invoice of a subscription is handled when the license payment itself is recorded
@@ -229,6 +234,16 @@ exports.handler = async function (event) {
       return { statusCode: 200, headers, body: JSON.stringify({ received: true, recorded: type }) };
     }
 
+    if (type === "invoice.created") { // POTENT VOICE: bill last period's overage minutes onto the new invoice
+      const iv = obj.subscription || (obj.parent && obj.parent.subscription_details && obj.parent.subscription_details.subscription);
+      if (iv) { const isub = await stripe.subscriptions.retrieve(iv); if ((isub.metadata || {}).kind === "voice") { const vr = await require("./lib/voice/billing").onInvoiceCreated(obj, isub); if (vr && vr.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Voice overage failed, retry" }) }; return { statusCode: 200, headers, body: JSON.stringify({ received: true, voice: true }) }; } }
+      return { statusCode: 200, headers, body: JSON.stringify({ received: true, ignored: type }) };
+    }
+    if (type === "customer.subscription.updated" || (type === "customer.subscription.deleted" && (obj.metadata || {}).kind === "voice")) {
+      const vr = await require("./lib/voice/billing").onSubscription(obj, type === "customer.subscription.deleted");
+      if (vr && vr.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Voice subscription sync failed, retry" }) };
+      return { statusCode: 200, headers, body: JSON.stringify({ received: true, voice: !!(vr && vr.ok) }) };
+    }
     if (type === "customer.subscription.deleted") {
       const smd = obj.metadata || {};
       if (smd.kind === "support") {
@@ -248,6 +263,13 @@ exports.handler = async function (event) {
       return { statusCode: lr && lr.ok === false ? 500 : 200, headers, body: JSON.stringify({ received: true, legitIdentity: true }) };
     }
     if (type.indexOf("identity.verification_session.") === 0) return { statusCode: 200, headers, body: JSON.stringify({ received: true, ignored: type }) };
+
+    // ── POTENT VOICE subscription checkout ──
+    if (type === "checkout.session.completed" && (obj.metadata || {}).product === "POTENTVOICE") {
+      const vr = await require("./lib/voice/billing").onCheckout(obj);
+      if (vr && vr.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Voice activation failed, retry" }) };
+      return { statusCode: 200, headers, body: JSON.stringify({ received: true, voice: !!(vr && vr.ok) }) };
+    }
 
     // ── AceHeals: Breeze earns $2 per monthly payment and $12 per lifetime sale (same Stripe account) ──
     if (type === "checkout.session.completed" && ["MUSIC", "BEAT", "MUSICSVC", "MUSICCOLL", "MUSICCOIN"].indexOf((obj.metadata || {}).product) < 0) {
@@ -393,5 +415,5 @@ exports.handler = async function (event) {
 // SETUP: Stripe Dashboard > Developers > Webhooks > endpoint
 //   https://potentoperations.netlify.app/.netlify/functions/stripe-webhook
 //   events: checkout.session.completed, payment_intent.succeeded, charge.refunded, charge.dispute.created, charge.dispute.closed, invoice.paid,
-//           invoice.payment_failed, customer.subscription.deleted
+//           invoice.payment_failed, invoice.created, customer.subscription.updated, customer.subscription.deleted
 //   Netlify env: STRIPE_WEBHOOK_SECRET (whsec_...), STRIPE_SECRET_KEY, SUPABASE_SERVICE_ROLE_KEY
