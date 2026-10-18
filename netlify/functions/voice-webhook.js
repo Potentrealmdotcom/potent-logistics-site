@@ -51,7 +51,7 @@ exports.handler = async function (event) {
       const ses = rows(await B.sb("voice_sessions?provider_call_id=eq." + encodeURIComponent(callSid) + "&id=eq." + encodeURIComponent(String(q.s || "")) + "&select=*&limit=1"))[0];
       if (!ses) return xmlR(TW.twimlSay("We are having trouble. Please call back shortly."));
       const cfg = await S.cfgOf(ses.org_id);
-      if (ses.state === "active" && !ses.ended_at) { await S.patchSession(ses.org_id, ses.id, { state: "failed", end_reason: "bridge_dropped" }); await health(ses.org_id, "bridge_dropped", false, ses.id); await missed(ses.org_id, ses.id, ses.from_number, "Call dropped (assistant connection lost)"); }
+      if ((ses.state === "active" || ses.state === "ringing") && !ses.ended_at) { await S.patchSession(ses.org_id, ses.id, { state: "failed", end_reason: "bridge_dropped" }); await health(ses.org_id, "bridge_dropped", false, ses.id); await missed(ses.org_id, ses.id, ses.from_number, "Call dropped (assistant connection lost)"); }
       return xmlR(cfg.human_available && cfg.transfer_number ? TW.twimlDial(cfg.transfer_number, base() + "?a=dial&s=" + ses.id, "One moment, I am connecting you to a person.") : TW.twimlSay("Sorry, we lost our connection. We will call you back."));
     }
     if (a === "status") {
