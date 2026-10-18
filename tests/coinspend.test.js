@@ -1,0 +1,35 @@
+// Run: node tests/coinspend.test.js  (spending coins on service orders and collectibles)
+process.env.AUTH_SECRET = "t"; process.env.SUPABASE_SERVICE_ROLE_KEY = "k"; process.env.SUPABASE_URL = "https://x.supabase.co";
+const assert = require("assert"); let n = 0; const ok = (c, m) => { assert(c, m); n++; };
+const U1 = "11111111-1111-1111-1111-111111111111", P1 = "22222222-2222-2222-2222-222222222222", PR1 = "33333333-3333-3333-3333-333333333333";
+const T = { music_users: [{ id: U1, email: "buyer@x.com", name: "Buyer", active: true }], beat_settings: [], music_coin_wallets: [], music_coin_ledger: [], music_coin_topups: [], notifications: [], music_notifications: [], music_service_orders: [{ id: "cccccccc-0000-4000-8000-000000000001", user_id: U1, tier_key: "cover", family: "artwork", price_cents: 6000, quote_cents: null, status: "awaiting_payment" }], music_collectibles: [{ id: "dddddddd-0000-4000-8000-000000000001", title: "Piece", price_cents: 4000, edition_size: 2, sold_count: 0, status: "published" }], units: [],
+  beat_producers: [{ id: PR1, active: true, hold_days: 0, name: "Seller" }], music_products: [{ id: P1, producer_id: PR1, title: "Song", kind: "download", price_cents: 500, status: "published", file_ref: "f", limited_qty: null, sold_count: 0 }],
+  music_sales: [], beat_wallet_txns: [], beat_audit: [], music_contract_templates: [{ key: "t1", title: "Tpl", body: "Full text of the agreement goes here.", version: 1, active: true }], music_contracts: [], music_contract_parties: [] };
+let seq = 0; const uid = () => "aaaaaaaa-0000-4000-8000-" + String(++seq).padStart(12, "0");
+function filt(rows, q) { return rows.filter(r => q.split("&").every(p => { let m = p.match(/^(\w+)=eq\.(.*)$/); if (m) return String(r[m[1]]) === decodeURIComponent(m[2]); m = p.match(/^(\w+)=is\.null$/); if (m) return r[m[1]] == null; m = p.match(/^(\w+)=like\.(.*)\*$/); if (m) return String(r[m[1]] || "").startsWith(decodeURIComponent(m[2])); return true; })); }
+function rpc(fn, a) { if (fn === "music_collectible_claim") { const c = T.music_collectibles[0]; if (T.units.some(x => x.s === a.p_session)) return { ok: true, dup: true, edition: 1 }; if (c.sold_count >= c.edition_size) return { ok: false, error: "sold_out" }; c.sold_count++; T.units.push({ s: a.p_session, ship: a.p_ship, user: a.p_user }); return { ok: true, edition: c.sold_count, code: "ABC" + c.sold_count }; }  if (fn === "music_coin_apply") { if (a.p_ref && T.music_coin_ledger.some(l => l.ref === a.p_ref)) return { ok: true, dup: true }; let w = T.music_coin_wallets.find(x => x.user_id === a.p_user); if (!w) T.music_coin_wallets.push(w = { user_id: a.p_user, balance_cents: 0 }); if (w.balance_cents + a.p_delta < 0) return { ok: false, error: "insufficient", balance: w.balance_cents }; w.balance_cents += a.p_delta; T.music_coin_ledger.push({ id: uid(), user_id: a.p_user, delta_cents: a.p_delta, balance_after: w.balance_cents, type: a.p_type, ref: a.p_ref, note: a.p_note, actor: a.p_actor, created_at: new Date().toISOString() }); return { ok: true, balance: w.balance_cents }; } return true; }
+global.fetch = async (u, o) => { o = o || {}; u = String(u); const m = o.method || "GET"; const R = (d) => ({ ok: true, status: 200, text: async () => JSON.stringify(d) });
+  const rp = u.match(/rest\/v1\/rpc\/(\w+)/); if (rp) return R(rpc(rp[1], JSON.parse(o.body)));
+  const t = (u.match(/rest\/v1\/([a-z_]+)/) || [])[1]; if (!T[t]) return R([]); const q = (u.split("?")[1] || "");
+  if (m === "GET") { let d = filt(T[t], q).map(r => Object.assign({}, r)); if (t === "music_contracts") d.forEach(c => { c.music_contract_parties = T.music_contract_parties.filter(p => p.contract_id === c.id); }); if (t === "music_products") d.forEach(c => { c.beat_producers = T.beat_producers.find(p => p.id === c.producer_id); }); return R(d); }
+  if (m === "POST") { const arr = [].concat(JSON.parse(o.body)); const out = []; for (const r of arr) { if (t === "music_coin_topups" && T[t].some(x => x.session_id === r.session_id)) continue; if (t === "beat_wallet_txns" && T[t].some(x => x.ref === r.ref)) continue; if (t === "music_sales" && T[t].some(x => x.stripe_session_id === r.stripe_session_id)) continue; if (t === "beat_settings") { const e = T[t].find(x => x.key === r.key); if (e) { Object.assign(e, r); out.push(e); continue; } } if (t === "music_contract_templates") { const e = T[t].find(x => x.key === r.key); if (e) { Object.assign(e, r); out.push(e); continue; } } const row = Object.assign({ id: uid(), created_at: new Date().toISOString() }, t === "music_contracts" ? { status: "pending" } : t === "music_coin_topups" ? { status: "paid" } : {}, r); T[t].push(row); out.push(row); } return R(out); }
+  if (m === "PATCH") { const hit = filt(T[t], q); hit.forEach(r => Object.assign(r, JSON.parse(o.body))); return R(hit); }
+  if (m === "DELETE") { filt(T[t], q).forEach(r => T[t].splice(T[t].indexOf(r), 1)); return R([]); }
+  return R([]); };
+const C = require("../netlify/functions/music-coins.js"), Mu = require("../netlify/functions/lib/music.js");
+const call = async (a, extra) => { const r = await C.handler({ httpMethod: "POST", headers: { authorization: "Bearer " + Mu.signUser(U1), "x-nf-client-connection-ip": "9.9.9." + (++seq) }, body: JSON.stringify(Object.assign({ action: a }, extra || {})) }); return { s: r.statusCode, j: JSON.parse(r.body) }; };
+const bal = () => (T.music_coin_wallets[0] || { balance_cents: 0 }).balance_cents; const OID = T.music_service_orders[0].id, CID = T.music_collectibles[0].id;
+const ship = { name: "Ann Lee", line1: "1 Main St", city: "Atlanta", state: "GA", postal_code: "30303" };
+(async () => {
+  T.music_coin_wallets.push({ user_id: U1, balance_cents: 5000 });
+  let r = await call("pay_service", { id: OID }); ok(r.s === 402 && T.music_service_orders[0].status === "awaiting_payment" && bal() === 5000, "not enough coins: nothing changes");
+  T.music_coin_wallets[0].balance_cents = 20000;
+  r = await call("pay_service", { id: OID }); ok(r.s === 200 && T.music_service_orders[0].status === "paid" && bal() === 14000, "order paid with coins: " + JSON.stringify(r.j));
+  r = await call("pay_service", { id: OID }); ok(r.s === 409 && bal() === 14000, "cannot pay the same order twice");
+  r = await call("pay_collectible", { id: CID, agree: true, ship: { name: "A" } }); ok(r.s === 400 && bal() === 14000, "needs a real US address");
+  r = await call("pay_collectible", { id: CID, agree: false, ship }); ok(r.s === 400, "must accept terms");
+  r = await call("pay_collectible", { id: CID, agree: true, ship }); ok(r.s === 200 && r.j.edition === 1 && bal() === 10000 && T.units[0].ship.address.state === "GA", "collectible bought, address saved");
+  r = await call("pay_collectible", { id: CID, agree: true, ship }); ok(r.s === 200 && r.j.edition === 2 && bal() === 6000, "second edition");
+  r = await call("pay_collectible", { id: CID, agree: true, ship }); ok(r.s === 409 && bal() === 6000, "sold out: refused, coins unchanged");
+  console.log("PASS: " + n + " assertions");
+})().catch(e => { console.error("FAIL", e); process.exit(1); });

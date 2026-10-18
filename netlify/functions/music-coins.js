@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const B = require("./lib/beats");
 const M = require("./lib/music");
 const CB = require("./lib/coinbuy");
+const SVC = require("./lib/svc");
 const UUID = /^[0-9a-f-]{36}$/i;
 const clip = function (v, n) { return String(v == null ? "" : v).trim().slice(0, n); };
 const rows = function (r) { return r.ok && Array.isArray(r.data) ? r.data : []; };
@@ -88,6 +89,39 @@ async function payCart(u, b) {
     for (const s of sales) await apply(u.id, s.gross_cents, "refund", "soldout:" + s.id, "Sold out: returned", "system");
   }
   return B.J(200, { ok: true, kind: "cart", balance: await walletOf(u.id), sold_out: out.soldOut || 0 });
+}
+
+
+// Pay a creative-service order (artwork, vinyl, etc.) with coins. 100% POTENT revenue, same fulfilment as a card payment.
+async function payService(u, b) {
+  if (!UUID.test(String(b.id || ""))) return B.J(400, { error: "Bad id" });
+  const o = rows(await B.sb("music_service_orders?id=eq." + b.id + "&user_id=eq." + u.id + "&select=*"))[0]; if (!o) return B.J(404, { error: "Not found" });
+  if (o.status !== "awaiting_payment") return B.J(409, { error: "This order cannot be paid right now" });
+  const cents = Number(o.quote_cents != null ? o.quote_cents : o.price_cents); if (!(cents >= 100)) return B.J(409, { error: "No price is set for this order yet" });
+  const sid = "coin_" + crypto.randomUUID();
+  const pay = await apply(u.id, -cents, "purchase", "pay:" + sid, "Order: " + String(o.tier_key).slice(0, 60), "user");
+  if (!pay.ok || !pay.data || pay.data.ok !== true) return B.J(pay.data && pay.data.error === "insufficient" ? 402 : 500, { error: pay.data && pay.data.error === "insufficient" ? "Not enough coins" : "Could not take payment" });
+  let out = null; try { out = await SVC.onCheckout({ id: sid, payment_status: "paid", amount_total: cents, payment_intent: null, metadata: { product: "MUSICSVC", order_id: o.id, user_id: u.id, paid_with: "coins" } }); } catch (e) { out = null; }
+  const after = rows(await B.sb("music_service_orders?id=eq." + o.id + "&select=status,stripe_session_id"))[0];
+  if (!out || out.error || !after || after.stripe_session_id !== sid) { await apply(u.id, cents, "refund", "payrev:" + sid, "Not completed", "system"); return B.J(409, { error: "That payment did not complete. Your coins were returned." }); }
+  await B.audit("user:" + u.id, "coin_service_paid", o.id, { cents: cents });
+  return B.J(200, { ok: true, kind: "service", balance: await walletOf(u.id) });
+}
+async function payCollectible(u, b) {
+  if (!UUID.test(String(b.id || ""))) return B.J(400, { error: "Bad id" });
+  if (b.agree !== true) return B.J(400, { error: "Please accept the terms first" });
+  const sh = b.ship || {}, line1 = clip(sh.line1, 120), city = clip(sh.city, 80), st = clip(sh.state, 2).toUpperCase(), zip = clip(sh.postal_code, 10), nm = clip(sh.name, 100);
+  if (nm.length < 2 || line1.length < 3 || city.length < 2 || !/^[A-Z]{2}$/.test(st) || !/^\d{5}(-\d{4})?$/.test(zip)) return B.J(400, { error: "Enter a full US shipping address" });
+  const c = rows(await B.sb("music_collectibles?id=eq." + b.id + "&status=eq.published&select=*"))[0]; if (!c) return B.J(404, { error: "Not available" });
+  if (c.sold_count >= c.edition_size) return B.J(409, { error: "This edition is sold out" });
+  const cents = Number(c.price_cents), sid = "coin_" + crypto.randomUUID();
+  const pay = await apply(u.id, -cents, "purchase", "pay:" + sid, "Collectible: " + c.title, "user");
+  if (!pay.ok || !pay.data || pay.data.ok !== true) return B.J(pay.data && pay.data.error === "insufficient" ? 402 : 500, { error: pay.data && pay.data.error === "insufficient" ? "Not enough coins" : "Could not take payment" });
+  let out = null; try { out = await SVC.onCheckout({ id: sid, payment_status: "paid", amount_total: cents, payment_intent: null, customer_details: { email: u.email }, shipping_details: { name: nm, address: { line1: line1, line2: clip(sh.line2, 120) || null, city: city, state: st, postal_code: zip, country: "US" } },
+    metadata: { product: "MUSICCOLL", collectible_id: c.id, user_id: u.id, agreement_version: B.AGREEMENT_VERSION, agreed_at: new Date().toISOString(), paid_with: "coins" } }); } catch (e) { out = null; }
+  if (!out || out.error || out.soldOut) { await apply(u.id, cents, "refund", "payrev:" + sid, out && out.soldOut ? "Sold out: returned" : "Not completed", "system"); return B.J(409, { error: out && out.soldOut ? "That edition just sold out. Your coins were returned." : "That payment did not complete. Your coins were returned." }); }
+  await B.audit("user:" + u.id, "coin_collectible_paid", c.id, { edition: out.edition });
+  return B.J(200, { ok: true, kind: "collectible", edition: out.edition, balance: await walletOf(u.id) });
 }
 
 // Owner coin refund for a coin-paid sale: puts coins back, takes the seller's share back, marks the sale refunded.
@@ -220,11 +254,11 @@ exports.handler = async function (event) {
     const [bal, led] = await Promise.all([walletOf(u.id), B.sb("music_coin_ledger?user_id=eq." + u.id + "&select=id,delta_cents,balance_after,type,note,created_at&order=created_at.desc&limit=50")]);
     return B.J(200, { ok: true, balance_cents: bal, ledger: rows(led), pay_enabled: await coinOn(), packs: CB.PACKS, min_cents: CB.MIN, max_cents: CB.MAX, rewards: await CB.progress(u.id), rules: "POTENT Coins are a closed-loop credit inside POTENT Music. They cannot be sent to other people or cashed out." });
   }
-  if (a === "pay_beat" || a === "pay_cart") {
+  if (a === "pay_beat" || a === "pay_cart" || a === "pay_service" || a === "pay_collectible") {
     if (!(await coinOn())) return B.J(403, { error: "Paying with coins is not turned on yet" });
     if ((await CB.holdOf(u.id)) > 0) return B.J(403, { error: "Your coins are on hold after a refunded or disputed top-up. Contact POTENT." });
     if (tooMany("pay:" + u.id, 20)) return B.J(429, { error: "Too many attempts. Try again later." }); note("pay:" + u.id);
-    return a === "pay_beat" ? payBeat(u, b) : payCart(u, b);
+    return a === "pay_beat" ? payBeat(u, b) : a === "pay_cart" ? payCart(u, b) : a === "pay_service" ? payService(u, b) : payCollectible(u, b);
   }
 
   if (a === "c_templates") return B.J(200, { ok: true, templates: rows(await B.sb("music_contract_templates?active=eq.true&select=key,title,body,version&order=title.asc")) });

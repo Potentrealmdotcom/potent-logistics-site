@@ -55,6 +55,19 @@
     }
     return ab;
   };
+  // MP3 (128 kbps) through lamejs, only when /music/lame.min.js has been added to the site (see SETUP-MUSIC.md).
+  E.mp3Ready = function () {
+    if (window.lamejs) return Promise.resolve(true);
+    return fetch("/music/lame.min.js", { method: "HEAD" }).then(function (r) { if (!r.ok) return false; return new Promise(function (res) { var sc = document.createElement("script"); sc.src = "/music/lame.min.js"; sc.onload = function () { res(!!window.lamejs); }; sc.onerror = function () { res(false); }; document.head.appendChild(sc); }); }).catch(function () { return false; });
+  };
+  E.encodeMp3 = function (buf, mono, kbps) {
+    var chs = mono ? 1 : Math.min(2, buf.numberOfChannels), sr = buf.sampleRate, enc = new window.lamejs.Mp3Encoder(chs, sr, kbps || 128), out = [], len = buf.length;
+    var d0 = buf.getChannelData(0), d1 = buf.numberOfChannels > 1 ? buf.getChannelData(1) : d0;
+    function pcm(a, b) { var o = new Int16Array(b - a); for (var i = a; i < b; i++) { var v = mono ? (d0[i] + d1[i]) / 2 : d0[i]; v = Math.max(-1, Math.min(1, v)); o[i - a] = v < 0 ? v * 0x8000 : v * 0x7fff; } return o; }
+    function pcmR(a, b) { var o = new Int16Array(b - a); for (var i = a; i < b; i++) { var v = Math.max(-1, Math.min(1, d1[i])); o[i - a] = v < 0 ? v * 0x8000 : v * 0x7fff; } return o; }
+    for (var i = 0; i < len; i += 1152) { var e = Math.min(len, i + 1152), c = chs === 1 ? enc.encodeBuffer(pcm(i, e)) : enc.encodeBuffer(pcm(i, e), pcmR(i, e)); if (c.length) out.push(new Uint8Array(c)); }
+    var f = enc.flush(); if (f.length) out.push(new Uint8Array(f)); return new Blob(out, { type: "audio/mpeg" });
+  };
   E.wavBytes = function (seconds, sr, mono) { return 44 + Math.ceil(seconds * sr) * (mono ? 1 : 2) * 2; };
 
   /* ---------- sound generation ---------- */
