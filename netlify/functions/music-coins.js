@@ -178,6 +178,8 @@ exports.handler = async function (event) {
       return B.J(200, { ok: true, rows: rows(l), outstanding_cents: rows(t).reduce(function (x, w) { return x + Number(w.balance_cents); }, 0) });
     }
     if (a === "o_coin_refund") return refundSale(b, who);
+    if (a === "o_coin_holds") { const ws = rows(await B.sb("music_coin_topups?status=neq.paid&select=user_id")); const ids = Array.from(new Set(ws.map(function (t) { return t.user_id; }))), out = []; for (const id of ids) { const owed = await CB.holdOf(id); if (owed > 0) { const u2 = rows(await B.sb("music_users?id=eq." + id + "&select=email"))[0]; out.push({ user_id: id, email: u2 && u2.email, owed_cents: owed }); } } return B.J(200, { ok: true, holds: out }); }
+    if (a === "o_coin_clear_hold") { if (!UUID.test(String(b.user_id || ""))) return B.J(400, { error: "Bad id" }); return B.J(200, { ok: true, cleared: await CB.forgive(b.user_id, who) }); }
     if (a === "o_tpl_list") return B.J(200, { ok: true, templates: rows(await B.sb("music_contract_templates?select=*&order=title.asc")) });
     if (a === "o_tpl_save") {
       const key = clip(b.key, 60).toLowerCase().replace(/[^a-z0-9_-]/g, ""), title = clip(b.title, 140), body = clip(b.body, 40000);
@@ -202,13 +204,15 @@ exports.handler = async function (event) {
     const cents = Math.round(Number(b.cents));
     if (!(cents >= CB.MIN && cents <= CB.MAX) || cents % 100 !== 0) return B.J(400, { error: "Choose between $" + CB.MIN / 100 + " and $" + CB.MAX / 100 + " in whole dollars" });
     if (!process.env.STRIPE_SECRET_KEY) return B.J(500, { error: "Payments are not set up" });
+    if ((await CB.holdOf(u.id)) > 0) return B.J(403, { error: "Your coins are on hold after a refunded or disputed top-up. Contact POTENT." });
+    if (b.final_sale !== true) return B.J(400, { error: "Please confirm that coin sales are final" });
     if (tooMany("top:" + u.id, 15)) return B.J(429, { error: "Too many attempts. Try again later." }); note("top:" + u.id);
     const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY), h = event.headers || {};
     const origin = /^https:\/\/([a-z0-9-]+\.)*netlify\.app$/.test(String(h.origin || "")) || String(h.origin || "") === B.SITE ? String(h.origin) : B.SITE;
     try {
       const s = await stripe.checkout.sessions.create({ mode: "payment", customer_email: u.email, expires_at: Math.floor(Date.now() / 1000) + 31 * 60,
-        line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: cents, product_data: { name: (cents / 100) + " POTENT Coins", description: "Closed-loop credit for POTENT purchases. Not cash, cannot be transferred or cashed out. Every $1,000 you buy earns a $100 coin reward." } } }],
-        metadata: { product: "MUSICCOIN", user_id: u.id }, success_url: origin + "/music/coins.html?topup=1", cancel_url: origin + "/music/coins.html?canceled=1" });
+        line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: cents, product_data: { name: (cents / 100) + " POTENT Coins", description: "Closed-loop credit for POTENT purchases. ALL COIN SALES ARE FINAL. Not cash, cannot be transferred or cashed out. Every $1,000 you buy earns a $100 coin reward." } } }],
+        custom_text: { submit: { message: "All coin sales are final. Coins are not refundable and cannot be cashed out." } }, metadata: { product: "MUSICCOIN", user_id: u.id }, success_url: origin + "/music/coins.html?topup=1", cancel_url: origin + "/music/coins.html?canceled=1" });
       return B.J(200, { ok: true, url: s.url });
     } catch (e) { console.error("coin checkout failed:", e.message); return B.J(500, { error: "Could not start checkout" }); }
   }
@@ -218,6 +222,7 @@ exports.handler = async function (event) {
   }
   if (a === "pay_beat" || a === "pay_cart") {
     if (!(await coinOn())) return B.J(403, { error: "Paying with coins is not turned on yet" });
+    if ((await CB.holdOf(u.id)) > 0) return B.J(403, { error: "Your coins are on hold after a refunded or disputed top-up. Contact POTENT." });
     if (tooMany("pay:" + u.id, 20)) return B.J(429, { error: "Too many attempts. Try again later." }); note("pay:" + u.id);
     return a === "pay_beat" ? payBeat(u, b) : payCart(u, b);
   }

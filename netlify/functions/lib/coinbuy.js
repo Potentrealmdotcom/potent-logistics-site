@@ -68,5 +68,25 @@ async function onDisputeClosed(d) {
   await B.rpc("music_coin_apply", { p_user: t.user_id, p_delta: Number(t.cents), p_type: "topup", p_ref: "topupwon:" + t.session_id, p_note: "Dispute won: top-up restored", p_actor: "system" });
   await syncRewards(t.user_id); return { ok: true };
 }
+// A refunded/disputed top-up whose coins were already spent leaves a shortfall. Until the owner clears it (or a dispute is won),
+// that account cannot buy coins or spend them. Computed from the ledger, so nothing can drift out of sync.
+async function holdOf(uid) {
+  const ts = rows(await B.sb("music_coin_topups?user_id=eq." + uid + "&select=session_id,cents,status")).filter(function (t) { return t.status !== "paid"; });
+  let owed = 0;
+  for (const t of ts) {
+    const l = rows(await B.sb("music_coin_ledger?ref=eq." + encodeURIComponent("topuprev:" + t.session_id) + "&select=delta_cents"))[0];
+    const cleared = rows(await B.sb("music_coin_ledger?ref=eq." + encodeURIComponent("forgive:" + t.session_id) + "&select=id"))[0];
+    if (cleared) continue;
+    owed += Math.max(0, Number(t.cents) - (l ? -Number(l.delta_cents) : 0));
+  }
+  return owed;
+}
+// Owner: write off what is owed on this user's top-ups (all sales are final; this is the owner's call, logged).
+async function forgive(uid, actor) {
+  const ts = rows(await B.sb("music_coin_topups?user_id=eq." + uid + "&select=session_id,status")).filter(function (t) { return t.status !== "paid"; });
+  for (const t of ts) await B.rpc("music_coin_apply", { p_user: uid, p_delta: 0, p_type: "adjustment", p_ref: "forgive:" + t.session_id, p_note: "Shortfall written off by POTENT", p_actor: actor || "owner" });
+  await B.audit(actor || "owner", "coin_shortfall_cleared", uid, { sessions: ts.length });
+  return ts.length;
+}
 async function progress(uid) { const total = await paidTotal(uid); return { topped_up_cents: total, next_reward_at_cents: (Math.floor(total / STEP) + 1) * STEP, into_cents: total % STEP, step_cents: STEP, reward_cents: REWARD, rewards_earned: Math.floor(total / STEP) }; }
-module.exports = { onCheckout, onRefund, onDispute, onDisputeClosed, progress, PACKS, MIN, MAX, STEP, REWARD, syncRewards };
+module.exports = { holdOf, forgive, onCheckout, onRefund, onDispute, onDisputeClosed, progress, PACKS, MIN, MAX, STEP, REWARD, syncRewards };

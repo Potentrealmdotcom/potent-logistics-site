@@ -419,6 +419,24 @@ async function core(event) {
     await B.sb("beat_producers?id=eq." + b.id, { method: "PATCH", prefer: "return=minimal", body: { password_hash: B.hashPw(temp) } });
     return B.J(200, { ok: true, tempPassword: temp });
   }
+  if (a === "o_payout_create") { // Owner pays a producer (e.g. Breeze, who has no self-serve payout). Needs the owner token AND the secret payout code.
+    if (!UUID.test(String(b.id || ""))) return B.J(400, { error: "Bad id" });
+    const pc = await B.getSetting("payout_code");
+    if (!pc || !pc.hash) return B.J(403, { error: "Set the payout code first" });
+    if (!B.checkPw(pc.hash, String(b.code || ""))) { await B.audit("owner", "payout_code_wrong", b.id, null); return B.J(401, { error: "Wrong payout code" }); }
+    const tp = await loadProducer(b.id); if (!tp) return B.J(404, { error: "Producer not found" });
+    const method = METHODS.indexOf(b.method) >= 0 ? b.method : (tp.payout_method || "other"), handle = clip(b.handle, 200) || tp.payout_handle || "paid by owner";
+    const bal = await B.balances(tp.id);
+    const amt = b.amount_cents === "all" || b.amount_cents == null ? bal.available : money(b.amount_cents);
+    if (!(amt >= MIN_PAYOUT)) return B.J(400, { error: "Minimum payout is $" + (MIN_PAYOUT / 100).toFixed(2) });
+    if (amt > bal.available) return B.J(400, { error: "That is more than the available balance" });
+    const ins = await B.sb("beat_payouts", { method: "POST", prefer: "return=representation", body: { producer_id: tp.id, amount_cents: amt, method: method, handle: handle } });
+    const row = ins.ok && Array.isArray(ins.data) && ins.data[0]; if (!row) return B.J(500, { error: "Could not create payout" });
+    await B.sb("beat_wallet_txns", { method: "POST", prefer: "resolution=ignore-duplicates,return=minimal", body: { producer_id: tp.id, type: "payout", amount_cents: -amt, ref: "payout:" + row.id, note: "Payout created by POTENT" } });
+    if ((await B.balances(tp.id)).available < 0) { await B.sb("beat_payouts?id=eq." + row.id, { method: "PATCH", prefer: "return=minimal", body: { status: "cancelled" } }); await B.sb("beat_wallet_txns", { method: "POST", prefer: "resolution=ignore-duplicates,return=minimal", body: { producer_id: tp.id, type: "payout_cancel", amount_cents: amt, ref: "payoutcancel:" + row.id, note: "Payout cancelled (balance changed)" } }); return B.J(409, { error: "Balance changed. Try again." }); }
+    await B.audit("owner", "payout_created_by_owner", row.id, { producer: tp.id, amount: amt });
+    return B.J(200, { ok: true, payout_id: row.id, amount_cents: amt });
+  }
   if (a === "o_markpaid" || a === "o_cancelpayout") {
     if (!UUID.test(String(b.id || ""))) return B.J(400, { error: "Bad id" });
     const g = await B.sb("beat_payouts?id=eq." + b.id + "&select=*");

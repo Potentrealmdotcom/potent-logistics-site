@@ -44,5 +44,13 @@ const bal = () => (T.music_coin_wallets[0] || { balance_cents: 0 }).balance_cent
   x = await CB.onDispute({ payment_intent: "pi_s1" }); ok(x.ok && T.music_coin_topups.find(t => t.session_id === "s1").status === "disputed", "dispute pulls coins back");
   await CB.onDisputeClosed({ payment_intent: "pi_s1", status: "won" }); ok(T.music_coin_topups.find(t => t.session_id === "s1").status === "paid", "won dispute restores top-up");
   ok((await CB.onCheckout({ id: "bad", payment_status: "paid", amount_total: 5000, metadata: { product: "MUSICCOIN", user_id: "nope" } })).bad, "bad user id ignored safely");
+  // shortfall hold: spend everything, then a chargeback lands
+  T.music_coin_wallets[0].balance_cents = 0; await CB.onCheckout(sess("h1", 5000)); T.music_coin_wallets[0].balance_cents = 1000;
+  x = await CB.onDispute({ payment_intent: "pi_h1" }); ok(x.ok && x.clawed === 1000 && (await CB.holdOf(U1)) === 4000, "dispute with spent coins leaves a 4000 shortfall");
+  r = await call("pay_cart", { product_ids: [P1], agree: true }); ok(r.s === 403 && /hold/.test(r.j.error), "spending blocked while on hold");
+  process.env.STRIPE_SECRET_KEY = "sk_test_x"; r = await call("topup", { cents: 1000, final_sale: true }); ok(r.s === 403, "buying more coins blocked while on hold");
+  delete process.env.STRIPE_SECRET_KEY;
+  await CB.forgive(U1, "owner"); ok((await CB.holdOf(U1)) === 0, "owner can clear the hold");
+  process.env.STRIPE_SECRET_KEY = "sk_test_x"; r = await call("topup", { cents: 1000 }); ok(r.s === 400 && /final/.test(r.j.error), "top-up needs the final-sale confirmation"); delete process.env.STRIPE_SECRET_KEY;
   console.log("PASS: " + n + " assertions");
 })().catch(e => { console.error("FAIL", e); process.exit(1); });
