@@ -21674,6 +21674,20 @@ function FaceMatchPanel(props) {
 // photos, but there was no actual screen to review them. Built here,
 // with the real face match wired directly in.
 // ═══════════════════════════════════════════════════════════════════
+var VET_LABEL = { AUTHORITY_ACTIVE: "FMCSA: authority active", AUTHORITY_INACTIVE_OR_REVOKED: "FMCSA: NOT allowed to operate", OUT_OF_SERVICE_ORDER: "FMCSA: out-of-service order", FMCSA_UNVERIFIED: "FMCSA could not be checked", FMCSA_NOT_FOUND: "Not found at FMCSA", NAME_MISMATCH_WITH_FMCSA: "Name differs from FMCSA record", VOIP_PHONE_LINE: "Phone is a virtual (VOIP) line", MOBILE_PHONE_LINE: "Phone is a mobile line", LANDLINE_PHONE_LINE: "Phone is a landline", PHONE_UNCHECKED: "Phone line type not checked", PHONE_LINE_TYPE_UNKNOWN: "Phone line type unknown", IDENTITY_CONFIRMED: "Live person + ID match confirmed", IDENTITY_NOT_CONFIRMED: "Live person + ID match NOT confirmed yet", ELD_NOT_CONNECTED: "ELD: not connected yet (no effect)", ELD_ZERO_UNITS_VS_FMCSA_FLEET: "ELD shows 0 units but FMCSA lists trucks", ELD_ACTIVE_HARDWARE: "ELD shows active units" };
+function VettingPanel(props) {
+    var v = props.app.vetting;
+    var col = !v ? C.dim : v.status === "APPROVED" ? C.green : v.status === "REJECTED" ? C.red : C.orange;
+    return React.createElement("div", { style: { background: C.card, border: "1px solid " + col + "66", borderRadius: 10, padding: 12, marginTop: 14 } },
+        React.createElement("div", { style: { fontSize: 11, fontWeight: 800, color: col, textTransform: "uppercase" } }, "Vetting recommendation: " + (v ? v.status.replace(/_/g, " ") + " \u00b7 risk " + v.score : "not run yet")),
+        v && React.createElement("div", { style: { fontSize: 11, color: C.dim, margin: "4px 0 6px" } }, v.reason),
+        v && (v.factors || []).map(function (f) { return React.createElement("div", { key: f, style: { fontSize: 11, color: C.white, padding: "2px 0" } }, "\u2022 " + (VET_LABEL[f] || f)); }),
+        React.createElement("div", { style: { fontSize: 10, color: C.dim, marginTop: 6 } }, "A recommendation only \u2014 you make the call. Check the ID photo against the selfie above, then record what you saw."),
+        React.createElement("div", { style: { display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" } },
+            React.createElement("button", { onClick: function () { props.onId(true); }, style: { background: "transparent", color: C.green, border: "1px solid " + C.green, borderRadius: 6, padding: "6px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "Live person, ID matches"),
+            React.createElement("button", { onClick: function () { props.onId(false); }, style: { background: "transparent", color: C.red, border: "1px solid " + C.red, borderRadius: 6, padding: "6px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "Does not match"),
+            React.createElement("button", { onClick: props.onRecheck, style: { background: "transparent", color: C.dim, border: "1px solid " + C.border, borderRadius: 6, padding: "6px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "Re-run FMCSA + phone checks")));
+}
 function PendingApplicationsView() {
     var [apps, setApps] = React.useState(null);
     var [selected, setSelected] = React.useState(null);
@@ -21683,8 +21697,16 @@ function PendingApplicationsView() {
     }
     React.useEffect(load, []);
 
-    function decide(app, status) {
-        plApi("partnerdecide", { id: app.id, status: status }).then(function () { setSelected(null); load(); });
+    function decide(app, status, override) {
+        plApi("partnerdecide", { id: app.id, status: status, override: override === true }).then(function (r) {
+            if (r && r.need_override) { if (window.confirm(r.error + "\n\nApprove anyway? This is recorded as your decision.")) decide(app, status, true); return; }
+            setSelected(null); load();
+        });
+    }
+    function vetAct(app, action, extra) {
+        plApi(action, Object.assign({ id: app.id }, extra || {})).then(function (r) {
+            if (r && r.ok) { var u = Object.assign({}, app, { vetting: r.vetting }); setSelected(u); load(); } else window.alert((r && r.error) || "Could not update.");
+        });
     }
 
     if (apps === null) return React.createElement(LoadingSpinner, { padding: 40 });
@@ -21702,6 +21724,7 @@ function PendingApplicationsView() {
                     React.createElement("div", { style: { fontSize: 10, color: C.dim, marginBottom: 4 } }, "Live Selfie"),
                     React.createElement("img", { src: selected.selfie_url, style: { width: "100%", borderRadius: 8, border: "1px solid " + C.border } }))),
             React.createElement(FaceMatchPanel, { idPhotoUrl: selected.id_image_url, selfieUrl: selected.selfie_url }),
+            React.createElement(VettingPanel, { app: selected, onRecheck: function () { vetAct(selected, "partnervet"); }, onId: function (ok) { vetAct(selected, "partneridv", { live_human: ok, doc_matches: ok }); } }),
             React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 16 } },
                 React.createElement("button", { onClick: function () { decide(selected, "verified"); }, style: { flex: 1, background: C.green, color: "#000", border: "none", borderRadius: 8, padding: 12, fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "\u2705 Approve"),
                 React.createElement("button", { onClick: function () { decide(selected, "failed"); }, style: { flex: 1, background: C.red, color: "#fff", border: "none", borderRadius: 8, padding: 12, fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, "\u274C Reject")));
@@ -21714,7 +21737,7 @@ function PendingApplicationsView() {
         apps.map(function (app) {
             return React.createElement("div", { key: app.id, onClick: function () { setSelected(app); }, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: 14, marginBottom: 8, cursor: "pointer" } },
                 React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.white } }, app.company_name),
-                React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "DOT " + (app.dot_number || "\u2014") + " \u00b7 Submitted " + new Date(app.created_at).toLocaleDateString()));
+                React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "DOT " + (app.dot_number || "\u2014") + " \u00b7 Submitted " + new Date(app.created_at).toLocaleDateString() + (app.vetting ? " \u00b7 " + app.vetting.status.replace(/_/g, " ") : "")));
         }));
 }
 

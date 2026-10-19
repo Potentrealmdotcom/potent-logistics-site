@@ -6,6 +6,9 @@ const L = require("./lib/legit");
 const G = require("./lib/google");
 const { J, sb } = L;
 const INTENTIONS = ["Dinner Night", "Late Night", "Movie Night", "Coffee Run", "Drinks", "Tonight Only", "Spontaneous", "Morning After", "Night Out", "Stay In"];
+// Optional lifestyle answers. Deliberately NOT collected: religion, politics, ethnicity, health or sexual details.
+const ABOUT = { drinking: ["never", "socially", "often"], smoking: ["never", "socially", "regularly"], kids: ["have", "want", "dont_want", "open"], pets: ["have", "want", "none"], exercise: ["rarely", "sometimes", "often", "daily"] };
+const cleanAbout = o => { const out = {}; if (o && typeof o === "object") Object.keys(ABOUT).forEach(k => { if (ABOUT[k].indexOf(o[k]) >= 0) out[k] = o[k]; }); return out; };
 const BODY = ["slim", "athletic", "average", "muscular", "curvy", "plus"];
 const INTENTS = ["serious", "casual", "one_night"];
 const UUID = /^[0-9a-f-]{36}$/i;
@@ -63,7 +66,7 @@ async function suggestOpeners(other) {
 
 function pub(u) { // what a user sees about themselves
   return { id: u.id, email: u.email, name: u.name, age: u.age, gender: u.gender, interested_in: u.interested_in, photos: u.photos, body_type: u.body_type, intent: u.intent, tonight_intentions: u.tonight_intentions,
-    bio: u.bio, prompts: u.prompts, pref_age_min: u.pref_age_min, pref_age_max: u.pref_age_max, pref_distance: u.pref_distance, pref_body: u.pref_body, identity_verified: u.identity_verified,
+    bio: u.bio, prompts: u.prompts, about: u.about || {}, onboarded: !!u.onboarded_at, pref_age_min: u.pref_age_min, pref_age_max: u.pref_age_max, pref_distance: u.pref_distance, pref_body: u.pref_body, identity_verified: u.identity_verified,
     strike_count: u.strike_count, is_admin: u.is_admin, paid: u.paid_lifetime_access, trial_ends_at: u.trial_started_at ? new Date(new Date(u.trial_started_at).getTime() + DAY).toISOString() : null };
 }
 const complete = u => !!(u.gender && u.photos && u.photos.length && u.intent && u.interested_in && u.interested_in.length);
@@ -282,6 +285,8 @@ exports.handler = async function (event) {
       if (b.body_type !== undefined) p.body_type = BODY.indexOf(b.body_type) >= 0 ? b.body_type : null;
       if (b.intent !== undefined) p.intent = INTENTS.indexOf(b.intent) >= 0 ? b.intent : null;
       if (b.tonight_intentions !== undefined) p.tonight_intentions = (Array.isArray(b.tonight_intentions) ? b.tonight_intentions : []).filter(x => INTENTIONS.indexOf(x) >= 0);
+      if (b.about !== undefined) p.about = cleanAbout(b.about);
+      if (b.onboarding_done === true) p.onboarded_at = new Date().toISOString();
       if (b.bio !== undefined) p.bio = scan(clip(b.bio, 500)).text;
       if (b.prompts !== undefined) p.prompts = (Array.isArray(b.prompts) ? b.prompts : []).slice(0, 3).map(x => ({ question: clip(x.question, 120), answer: scan(clip(x.answer, 200)).text })).filter(x => x.question && x.answer);
       if (b.pref_age_min !== undefined) p.pref_age_min = Math.max(18, Math.min(99, parseInt(b.pref_age_min, 10) || 18));
@@ -312,7 +317,7 @@ exports.handler = async function (event) {
         const d = miles(me, u); if (d != null && d > me.pref_distance) return false;
         if (fi && (u.tonight_intentions || []).indexOf(fi) < 0) return false;
         return true;
-      }).slice(0, 12).map(u => { const d = miles(me, u); return { id: u.id, name: u.name, age: u.age, photo: u.photos[0].url, body_type: u.body_type, intent: u.intent, tonight_intentions: u.tonight_intentions, bio: u.bio, area: d == null ? null : (d < 5 ? "within 5 miles" : "about " + Math.round(d / 5) * 5 + " miles"), compat: compat(me, u) }; });
+      }).slice(0, 12).map(u => { const d = miles(me, u); return { id: u.id, name: u.name, age: u.age, photo: u.photos[0].url, body_type: u.body_type, intent: u.intent, tonight_intentions: u.tonight_intentions, bio: u.bio, about: u.about || {}, area: d == null ? null : (d < 5 ? "within 5 miles" : "about " + Math.round(d / 5) * 5 + " miles"), compat: compat(me, u) }; });
       return J(200, { ok: true, cards: cards });
     }
     if (a === "profile_get") {
@@ -320,7 +325,7 @@ exports.handler = async function (event) {
       if (await blockedBetween(me.id, b.id)) return J(404, { ok: false, error: "Not available" });
       const u = await userById(b.id); if (!u || u.banned || !u.identity_verified) return J(404, { ok: false, error: "Not available" });
       const d = miles(me, u);
-      return J(200, { ok: true, profile: { id: u.id, name: u.name, age: u.age, photos: u.photos, body_type: u.body_type, intent: u.intent, tonight_intentions: u.tonight_intentions, bio: u.bio, prompts: u.prompts, id_verified: true, area: d == null ? null : "about " + Math.max(5, Math.round(d / 5) * 5) + " miles", compat: compat(me, u) } });
+      return J(200, { ok: true, profile: { id: u.id, name: u.name, age: u.age, photos: u.photos, body_type: u.body_type, intent: u.intent, tonight_intentions: u.tonight_intentions, bio: u.bio, prompts: u.prompts, about: u.about || {}, id_verified: true, area: d == null ? null : "about " + Math.max(5, Math.round(d / 5) * 5) + " miles", compat: compat(me, u) } });
     }
     if (a === "swipe") {
       const to = String(b.to || ""), kind = ["like", "super", "pass"].indexOf(b.kind) >= 0 ? b.kind : null;

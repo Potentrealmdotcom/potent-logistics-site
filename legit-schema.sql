@@ -153,3 +153,8 @@ alter table legit_admin_log enable row level security;
 
 -- AFTER you create your own LEGIT account in the app, make yourself the admin (change the email if needed):
 -- update legit_users set is_admin = true where email = 'capecodgp0421@gmail.com';
+
+-- Step-by-step onboarding (optional "about me" answers; nothing here is required to use the app).
+-- about: only the answers the person chose to share, e.g. {"drinking":"socially","kids":"open"}. Empty = shares nothing.
+alter table legit_users add column if not exists about jsonb default '{}';
+alter table legit_users add column if not exists onboarded_at timestamptz;

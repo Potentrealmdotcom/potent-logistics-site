@@ -25,6 +25,7 @@
 //   partnersignup / partnerlogin                       public: carrier partner accounts (hashed passwords)
 //   setupstatus / saveprofile / setupmark { token }       Get Started checklist, USDOT/MC, send-from email
 //   assist { token, orgId }                              POTENT owner: 60-minute logged session inside a customer account
+//   partnervet / partneridv { id }                     staff: re-run FMCSA+phone checks / record "live person, ID matches"
 //   partnerlist / partnerdecide { token }              staff: review partner applications for their own company
 //   listorgs / orgdetail { token, id }                 POTENT owner: all customers, license/support status
 //   addinvoice / setinvoice / linkinvoices / resetowner POTENT owner: invoices, billing, owner-login reset
@@ -33,6 +34,7 @@ var crypto = require("crypto");
 var billing = require("./lib/billing");
 var provision = require("./lib/provision");
 var G = require("./lib/google");
+var V = require("./lib/vetting");
 
 var SB = "https://ymvsatlrkzgxwzxybwmk.supabase.co";
 var TOKEN_TTL_MS = 30 * 24 * 3600 * 1000;
@@ -198,6 +200,22 @@ async function potentOrgId() {
 var PARTNER_FIELDS = ["dot_number", "mc_number", "company_name", "ein", "phone_number", "id_image_url", "selfie_url", "payment_method", "factoring_company_name", "noa_url", "terms_version"];
 function stripSecret(p) { var o = Object.assign({}, p); delete o.account_password; return o; }
 
+// Carrier vetting: look up FMCSA + phone line type on the SERVER, score it, and save the evidence.
+// `idvPatch` (staff-confirmed ID match) is merged into what is already stored. Returns the saved row.
+async function runVetting(profile, idvPatch, relook) {
+    var cur = await sb("carrier_vetting?profile_id=eq." + encodeURIComponent(profile.id) + "&select=*");
+    var row = cur.ok && Array.isArray(cur.data) && cur.data[0] ? cur.data[0] : null;
+    var fm = row && row.fmcsa && !relook ? row.fmcsa : await V.fmcsaLookup({ dot: profile.dot_number, mc: profile.mc_number });
+    var ph = row && row.phone && !relook ? row.phone : await V.phoneLookup(profile.phone_number);
+    var idv = Object.assign({}, row && row.idv || {}, idvPatch || {});
+    var eld = row && row.eld || { status: "not_connected" };
+    var out = V.evaluate({ company_name: profile.company_name, fmcsa: fm, phone: ph, idv: idv, eld: eld });
+    var body = { fmcsa: fm, phone: ph, idv: idv, eld: eld, status: out.status, score: out.score, factors: out.factors, reason: out.reason, checked_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+    if (row) await sb("carrier_vetting?profile_id=eq." + encodeURIComponent(profile.id), { method: "PATCH", prefer: "return=minimal", body: body });
+    else await sb("carrier_vetting", { method: "POST", prefer: "return=minimal", body: Object.assign({ profile_id: profile.id }, body) });
+    return Object.assign({ profile_id: profile.id }, body);
+}
+
 function cleanNum(v, max) { var n = Number(v); return isFinite(n) && n >= 0 ? Math.min(Math.round(n * 100) / 100, max || 1000000) : 0; }
 function cleanStr(v, n) { return String(v == null ? "" : v).replace(/[<>]/g, "").trim().slice(0, n || 120); }
 function cleanPricing(c) {
@@ -353,8 +371,10 @@ exports.handler = async function (event) {
             prow.terms_agreed_at = pf.terms_agreed ? new Date().toISOString() : null;
             if (pf.fmcsa_data && typeof pf.fmcsa_data === "object") prow.fmcsa_data = pf.fmcsa_data;
             var po = await potentOrgId(); if (po) prow.org_id = po;
-            var pins = await sb("carrier_profiles", { method: "POST", prefer: "return=minimal", body: prow });
-            return pins.ok ? J(200, { ok: true }) : J(500, { ok: false, error: "Could not save your application." });
+            var pins = await sb("carrier_profiles", { method: "POST", prefer: "return=representation", body: prow });
+            if (!pins.ok) return J(500, { ok: false, error: "Could not save your application." });
+            try { var made = Array.isArray(pins.data) ? pins.data[0] : pins.data; if (made && made.id) await runVetting(made, null, true); } catch (e) { /* vetting is a helper; the application is already saved */ }
+            return J(200, { ok: true });
         }
         if (action === "partnerlogin") {
             var dm = String(body.dotOrMc || "").trim();
@@ -411,6 +431,21 @@ exports.handler = async function (event) {
 
 
         // ── Staff: review partner applications (scoped to the staff member's own company) ──
+        if (action === "partnervet" || action === "partneridv") {
+            if (tok.role !== "owner" && tok.role !== "dispatch") return J(403, { ok: false, error: "Staff only" });
+            var vscope = tok.orgId ? String(tok.orgId) : await potentOrgId();
+            if (!vscope) return J(500, { ok: false, error: "Company not found" });
+            var vp = await sb("carrier_profiles?id=eq." + encodeURIComponent(body.id) + "&org_id=eq." + encodeURIComponent(vscope) + "&select=*");
+            var vprof = vp.ok && Array.isArray(vp.data) ? vp.data[0] : null;
+            if (!vprof) return J(404, { ok: false, error: "Application not found" });
+            var patch = null;
+            if (action === "partneridv") {
+                if (typeof body.live_human !== "boolean" || typeof body.doc_matches !== "boolean") return J(400, { ok: false, error: "live_human and doc_matches must be true or false." });
+                patch = { live_human: body.live_human, doc_matches: body.doc_matches, source: "staff", by: String(tok.uid || ""), at: new Date().toISOString() };
+            }
+            var vres = await runVetting(vprof, patch, action === "partnervet");
+            return J(200, { ok: true, vetting: vres });
+        }
         if (action === "partnerlist" || action === "partnerdecide") {
             if (tok.role !== "owner" && tok.role !== "dispatch") return J(403, { ok: false, error: "Staff only" });
             var scope = tok.orgId ? String(tok.orgId) : await potentOrgId();
@@ -418,9 +453,20 @@ exports.handler = async function (event) {
             if (action === "partnerlist") {
                 var pst = ["pending", "verified", "failed"].indexOf(body.status) > -1 ? body.status : "pending";
                 var pl = await sb("carrier_profiles?org_id=eq." + encodeURIComponent(scope) + "&verification_status=eq." + pst + "&select=*&order=created_at.desc");
-                return J(200, { ok: true, rows: (pl.ok && Array.isArray(pl.data) ? pl.data : []).map(stripSecret) });
+                var plRows = (pl.ok && Array.isArray(pl.data) ? pl.data : []).map(stripSecret);
+                var vmap = {};
+                if (plRows.length) {
+                    var vr = await sb("carrier_vetting?profile_id=in.(" + plRows.map(function (r) { return encodeURIComponent(r.id); }).join(",") + ")&select=*");
+                    (vr.ok && Array.isArray(vr.data) ? vr.data : []).forEach(function (v) { vmap[String(v.profile_id)] = v; });
+                }
+                return J(200, { ok: true, rows: plRows.map(function (r) { return Object.assign({}, r, { vetting: vmap[String(r.id)] || null }); }) });
             }
             if (["verified", "failed", "pending"].indexOf(body.status) < 0) return J(400, { ok: false, error: "Bad status" });
+            if (body.status === "verified" && body.override !== true) {
+                var vg = await sb("carrier_vetting?profile_id=eq." + encodeURIComponent(body.id) + "&select=status");
+                var vs = vg.ok && Array.isArray(vg.data) && vg.data[0] ? vg.data[0].status : null;
+                if (vs === "REJECTED" || vs === "HOLD_REQUIRES_LIVENESS") return J(409, { ok: false, need_override: true, vetting_status: vs, error: "Vetting recommends " + vs + ". Confirm to approve anyway." });
+            }
             var pd = await sb("carrier_profiles?id=eq." + encodeURIComponent(body.id) + "&org_id=eq." + encodeURIComponent(scope), { method: "PATCH", prefer: "return=minimal", body: { verification_status: body.status } });
             return pd.ok ? J(200, { ok: true }) : J(500, { ok: false, error: "Could not update." });
         }

@@ -93,8 +93,60 @@ function route(){clearTimers();
   var tabs=[["discover","Discover"],["matches","Matches"],["love","Love Board"],["wingman","Wingman"],["activity","Activity"],["profile","Profile"]];if(S.user.is_admin)tabs.push(["admin","Admin"]);
   $("#nav").hidden=false;$("#navin").innerHTML=tabs.map(function(t){return '<button class="'+(S.tab==t[0]?"on":"")+'" data-t="'+t[0]+'">'+t[1]+(t[0]=="activity"&&S.unread?'<span class="dot">'+S.unread+'</span>':'')+'</button>'}).join("");
   document.querySelectorAll("#navin button").forEach(function(b){b.onclick=function(){S.tab=b.dataset.t;route()}});
+  if(!S.user.is_admin&&!S.user.onboarded&&!S.complete)return onboard();
   if(!S.complete&&!S.user.is_admin&&S.tab!="profile"){S.tab="profile";return route()}
   ({discover:discover,matches:matches,love:love,wingman:wingmanTab,activity:activity,profile:profile,admin:admin})[S.tab]()}
+
+/* ---------- step-by-step onboarding (own screens; every lifestyle question is optional and skippable) ---------- */
+var OB={i:0,d:null};
+var OBQ=[
+ {k:"gender",t:"How do you identify?",sub:"This is shown on your profile.",opts:[["man","Man"],["woman","Woman"],["nonbinary","Nonbinary"]],req:1},
+ {k:"interested_in",t:"Who do you want to meet?",sub:"Pick one or more.",opts:[["man","Men"],["woman","Women"],["nonbinary","Nonbinary people"]],multi:1,req:1},
+ {k:"intent",t:"What are you here for?",sub:"Be honest. It saves everyone time.",opts:[["serious","Something serious"],["casual","Something casual"],["one_night","Just tonight"]],req:1},
+ {k:"photos",t:"Add your photos",sub:"Real, recent, clear face. Up to 4. No filters, no AI images.",photo:1,req:1},
+ {k:"about.drinking",t:"Do you drink?",sub:"Optional. You can skip any of these.",opts:[["never","Never"],["socially","Socially"],["often","Often"]]},
+ {k:"about.smoking",t:"Do you smoke?",sub:"Optional.",opts:[["never","Never"],["socially","Socially"],["regularly","Regularly"]]},
+ {k:"about.kids",t:"How do you feel about kids?",sub:"Optional.",opts:[["have","I have kids"],["want","I want kids"],["dont_want","I don't want kids"],["open","Open to it"]]},
+ {k:"about.pets",t:"Any pets?",sub:"Optional.",opts:[["have","I have pets"],["want","I want one"],["none","Not for me"]]},
+ {k:"about.exercise",t:"How active are you?",sub:"Optional.",opts:[["rarely","Rarely"],["sometimes","Sometimes"],["often","Often"],["daily","Daily"]]},
+ {k:"bio",t:"Say something real",sub:"A line or two. Phone numbers, emails and handles are removed automatically.",text:1},
+ {k:"prefs",t:"Who should you see?",sub:"Change any time in Profile.",prefs:1}
+];
+function obGet(u,k){return k.indexOf("about.")==0?(u.about||{})[k.slice(6)]:u[k]}
+function onboard(){clearTimers();var u=S.user;if(!OB.d)OB.d={about:Object.assign({},u.about||{}),interested_in:(u.interested_in||[]).slice(),gender:u.gender||"",intent:u.intent||"",bio:u.bio||"",photos:(u.photos||[]).slice(),a1:u.pref_age_min||18,a2:u.pref_age_max||99,ds:u.pref_distance||50};
+  var q=OBQ[OB.i],d=OB.d,n=OBQ.length,cur=q.k.indexOf("about.")==0?d.about[q.k.slice(6)]:d[q.k];
+  var body="";
+  if(q.opts)body='<div class="chips" id="ob">'+q.opts.map(function(o){var on=q.multi?(cur||[]).indexOf(o[0])>=0:cur==o[0];return '<span class="chip'+(on?" on":"")+'" data-v="'+o[0]+'" role="button" tabindex="0">'+esc(o[1])+'</span>'}).join("")+'</div>';
+  if(q.photo)body='<div class="thumbs" id="th">'+d.photos.map(function(x,i){return '<img alt="Photo '+(i+1)+'" src="'+x.url+'" data-i="'+i+'" title="Tap to remove">'}).join("")+'</div><input id="pf" type="file" accept="image/*" multiple '+(d.photos.length>=4?"disabled":"")+'><div class="dim" style="font-size:12px;margin-top:6px">Tap a photo to remove it.</div>';
+  if(q.text)body='<textarea id="bi" rows="4" maxlength="500" aria-label="Bio">'+esc(d.bio)+'</textarea>';
+  if(q.prefs)body='<div class="row"><div><label for="a1">Min age</label><input id="a1" type="number" min="18" max="99" value="'+d.a1+'"></div><div><label for="a2">Max age</label><input id="a2" type="number" min="18" max="99" value="'+d.a2+'"></div></div><label for="ds">Distance (miles)</label><input id="ds" type="number" min="1" max="500" value="'+d.ds+'"><button class="btn ghost small sp" id="loc">Use my approximate location (optional)</button><div class="dim" style="font-size:12px">Blurred to about 7 miles. Others only see a rough distance.</div>';
+  app.innerHTML='<div class="hero" style="padding:14px 0 4px"><div class="dim" style="font-size:12px">Step '+(OB.i+1)+' of '+n+'</div><div style="height:6px;background:var(--line);border-radius:99px;margin:8px 0 0"><div style="height:6px;width:'+Math.round((OB.i+1)*100/n)+'%;background:var(--red);border-radius:99px"></div></div></div>'+
+   '<div class="card"><h2 style="margin-bottom:4px">'+esc(q.t)+'</h2><p class="dim" style="margin-top:0">'+esc(q.sub||"")+'</p>'+body+'<div id="er" class="err" role="alert"></div>'+
+   '<button class="btn sp" id="nx">'+(OB.i==n-1?"Finish":"Continue")+'</button><div class="row sp">'+(OB.i>0?'<button class="btn ghost small" id="bk">Back</button>':'')+(q.req?'':'<button class="btn ghost small" id="sk">Skip</button>')+'</div></div>'+
+   '<p class="dim" style="font-size:12px;text-align:center">Your answers are only shown on your profile if you give them. You can edit or delete everything later in Profile.</p>';
+  var ob=$("#ob");if(ob)ob.querySelectorAll(".chip").forEach(function(c){c.onclick=function(){var v=c.dataset.v;
+    if(q.multi){var a=d[q.k]=d[q.k]||[],ix=a.indexOf(v);ix<0?a.push(v):a.splice(ix,1)}
+    else if(q.k.indexOf("about.")==0){var kk=q.k.slice(6);if(d.about[kk]==v)delete d.about[kk];else d.about[kk]=v}
+    else d[q.k]=v;onboard()}});
+  if(q.photo){$("#th").onclick=function(e){var i=e.target.dataset&&e.target.dataset.i;if(i===undefined)return;d.photos.splice(+i,1);onboard()};
+    $("#pf").onchange=async function(){var fs=[].slice.call(this.files).slice(0,4-d.photos.length);for(var f of fs)d.photos.push({url:await shrink(f,720)});onboard()}}
+  if(q.prefs)$("#loc").onclick=function(){navigator.geolocation?navigator.geolocation.getCurrentPosition(async function(p){var r=await api("update_profile",{lat:p.coords.latitude,lng:p.coords.longitude});$("#er").className=r.ok?"ok":"err";$("#er").textContent=r.ok?"Location saved (blurred).":"Could not save"},function(){$("#er").className="err";$("#er").textContent="Location was not allowed. That is fine, you can skip it."}):0};
+  async function save(skip){
+    if(q.text)d.bio=$("#bi").value;if(q.prefs){d.a1=$("#a1").value;d.a2=$("#a2").value;d.ds=$("#ds").value}
+    if(!skip&&q.req){var v=q.photo?d.photos.length:q.multi?(d[q.k]||[]).length:d[q.k];if(!v){$("#er").textContent=q.photo?"Add at least one photo.":"Pick an answer to continue.";return}}
+    var last=OB.i==n-1,payload={};
+    if(q.multi||q.k=="gender"||q.k=="intent")payload[q.k]=d[q.k];
+    else if(q.photo)payload.photos=d.photos;
+    else if(q.k.indexOf("about.")==0)payload.about=d.about;
+    else if(q.k=="bio")payload.bio=d.bio;
+    else if(q.prefs){payload.pref_age_min=d.a1;payload.pref_age_max=d.a2;payload.pref_distance=d.ds}
+    if(skip)delete payload[q.k.indexOf("about.")==0?"about":q.k];
+    if(last)payload.onboarding_done=true;
+    $("#nx").disabled=true;var r=Object.keys(payload).length?await api("update_profile",payload):{ok:true,user:S.user,complete:S.complete};
+    if(!r.ok){$("#er").textContent=r.error||"Could not save. Try again.";$("#nx").disabled=false;return}
+    if(r.user){S.user=r.user;S.complete=r.complete}
+    if(last){OB={i:0,d:null};S.tab="discover";return route()}OB.i++;onboard()}
+  $("#nx").onclick=function(){save(false)};var sk=$("#sk");sk&&(sk.onclick=function(){save(true)});var bk=$("#bk");bk&&(bk.onclick=function(){OB.i--;onboard()})}
 
 /* ---------- discover ---------- */
 var D={cards:[],filter:""};
@@ -238,7 +290,7 @@ function profile(){var u=S.user,ph=u.photos||[];var pr=u.prompts||[];
   '<div class="card"><label for="gd">I am</label><select id="gd"><option value="">Choose</option>'+["man","woman","nonbinary"].map(function(g){return '<option'+(u.gender==g?" selected":"")+'>'+g+'</option>'}).join("")+'</select><label>Interested in</label>'+chips("ii",["man","woman","nonbinary"],u.interested_in||[])+
   '<label for="it" class="sp">Looking for</label><select id="it"><option value="">Choose</option>'+[["serious","Serious"],["casual","Casual"],["one_night","One night"]].map(function(x){return '<option value="'+x[0]+'"'+(u.intent==x[0]?" selected":"")+'>'+x[1]+'</option>'}).join("")+'</select>'+
   '<label for="bt">Body type</label><select id="bt"><option value="">Prefer not to say</option>'+["slim","athletic","average","muscular","curvy","plus"].map(function(g){return '<option'+(u.body_type==g?" selected":"")+'>'+g+'</option>'}).join("")+'</select></div>'+
-  '<div class="card"><label for="bi">Bio</label><textarea id="bi" rows="3" maxlength="500">'+esc(u.bio||"")+'</textarea>'+[0,1,2].map(function(i){return '<label for="pq'+i+'">Prompt '+(i+1)+'</label><select id="pq'+i+'">'+PQ.map(function(q){return '<option'+((pr[i]&&pr[i].question==q)||(!pr[i]&&q==PQ[i])?" selected":"")+'>'+esc(q)+'</option>'}).join("")+'</select><input id="pa'+i+'" maxlength="200" value="'+esc(pr[i]?pr[i].answer:"")+'">'}).join("")+'<div class="dim" style="font-size:12px">Phone numbers, emails and social handles are removed automatically.</div></div>'+
+  '<div class="card"><label>About me (optional, shown only if set)</label><div class="dim" style="font-size:13px">'+(Object.keys(u.about||{}).map(function(k){return esc(k+': '+String(u.about[k]).replace('_',' '))}).join(' · ')||'Nothing shared yet.')+'</div><button class="btn ghost small sp" id="redo">Redo the setup questions</button></div><div class="card"><label for="bi">Bio</label><textarea id="bi" rows="3" maxlength="500">'+esc(u.bio||"")+'</textarea>'+[0,1,2].map(function(i){return '<label for="pq'+i+'">Prompt '+(i+1)+'</label><select id="pq'+i+'">'+PQ.map(function(q){return '<option'+((pr[i]&&pr[i].question==q)||(!pr[i]&&q==PQ[i])?" selected":"")+'>'+esc(q)+'</option>'}).join("")+'</select><input id="pa'+i+'" maxlength="200" value="'+esc(pr[i]?pr[i].answer:"")+'">'}).join("")+'<div class="dim" style="font-size:12px">Phone numbers, emails and social handles are removed automatically.</div></div>'+
   '<div class="card"><label>Tonight\'s Intention (change any time)</label>'+chips("ti",S.intentions,u.tonight_intentions||[])+'</div>'+
   '<div class="card"><label>Who I see</label><div class="row"><div><label for="a1">Min age</label><input id="a1" type="number" value="'+u.pref_age_min+'"></div><div><label for="a2">Max age</label><input id="a2" type="number" value="'+u.pref_age_max+'"></div></div><label for="ds">Distance (miles)</label><input id="ds" type="number" value="'+u.pref_distance+'"><button class="btn ghost small" id="loc">Use my approximate location</button><div class="dim" style="font-size:12px">We blur your location to about 7 miles. Others only see a rough distance.</div><label class="sp">Body types I like (none = all)</label>'+chips("pb",["slim","athletic","average","muscular","curvy","plus"],u.pref_body||[])+'</div>'+
   '<div id="er" class="err" role="alert"></div><button class="btn" id="sv">Save profile</button><button class="btn ghost sp" id="del">Delete my account</button>';
@@ -250,6 +302,7 @@ function profile(){var u=S.user,ph=u.photos||[];var pr=u.prompts||[];
   $("#sv").onclick=async function(){var prompts=[0,1,2].map(function(i){return {question:$("#pq"+i).value,answer:$("#pa"+i).value}}).filter(function(x){return x.answer.trim()});
     var r=await api("update_profile",{gender:$("#gd").value,interested_in:picked("ii"),intent:$("#it").value,body_type:$("#bt").value,bio:$("#bi").value,prompts:prompts,tonight_intentions:picked("ti"),pref_age_min:$("#a1").value,pref_age_max:$("#a2").value,pref_distance:$("#ds").value,pref_body:picked("pb")});
     if(r.ok){S.user=r.user;S.complete=r.complete;$("#er").className="ok";$("#er").textContent=r.complete?"Saved.":"Saved. Still needed: photo, who you are, who you're into, what you're looking for."}else{$("#er").className="err";$("#er").textContent=r.error||"Error"}};
+  $("#redo").onclick=function(){OB={i:0,d:null};onboard()};
   $("#del").onclick=async function(){if(confirm("Delete your account and all your data? This can't be undone.")){await api("delete_account");setTok("");auth()}}}
 
 /* ---------- admin ---------- */
