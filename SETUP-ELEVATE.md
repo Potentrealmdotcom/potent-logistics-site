@@ -47,3 +47,15 @@ native Android/desktop apps, offline local model, end-to-end encrypted messaging
 security review before any "private/untraceable" claims, so none are made.
 
 Tests: `node tests/elevate.test.js` (44), `node tests/elevate-phone.test.js` (34).
+
+## Life OS home screen (built; see what is real and what is not)
+Open `/elevate/`: the home screen has a world map, the voice orb, a Today panel and the section list. The name and the upside-down e are unchanged.
+- **Map**: Equal Earth projection (a real equal-area projection) over Natural Earth country outlines. The outlines load in the browser from `cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json` and are cached for offline reuse. If that source cannot be reached the map says so, offers Retry, and the saved-places list still works. Pan, zoom (buttons, wheel, pinch, keyboard), pick a country from the list, tap to choose a spot.
+- **Layers**: only "My saved places" is real (your own pins, rounded to about 1 km, labelled "saved by you, not live tracking"). Logistics jobs, projects and opportunities are shown as planned and switched off. Nothing on the map is animated to look like live tracking.
+- **Orb**: states come from real events only: mic and speech events from the voice connection, tool calls, text-chat requests, the network. Audio level comes from the real microphone / speech audio. "Working" is a spinner, not a percentage, because there is no real progress number to show. "Waiting for approval" exists but nothing triggers it yet because nothing needs approval yet.
+- **Today**: counts come from your real tasks. Calendar is shown as "not connected yet". "Organize my day" asks the assistant to suggest an order; it changes nothing.
+- **Settings**: Map home or Classic list home, voice (names from the speech provider's list), reduce motion (also follows the device), hide sections. These live in the browser only.
+- **Sections not built yet** (shown as "Planned" and greyed out): Life, Calendar and routines, Family and household, Health and wellness, Business, Logistics and operations, Projects, Research and creation, Agents and skills, Communications, Devices and integrations, Activity and audit.
+- Database: `elevate.sql` now allows kind `place` with `lat`/`lon` (already applied live as migration `elevate_places`).
+- Tests: `node tests/elevate.test.js` (server) and `node tests/elevate-ui.test.js` (real Chromium, stubbed API and map file).
+- Not tried against the real world-atlas file, real OpenAI voice, or a real phone yet.

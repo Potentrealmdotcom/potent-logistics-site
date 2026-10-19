@@ -82,6 +82,16 @@ const say = t => ({ choices: [{ message: { role: "assistant", content: t } }] })
   [s, r] = await call(me, { action: "voice_tool", name: "wire_money", args: {} }); ok(s === 400, "voice cannot run unlisted tools");
   [s, r] = await call(null, { action: "voice_session" }); ok(s === 401, "voice needs login");
   for (let i = 0; i < 6; i++) await call(other, { action: "voice_session" }); [s, r] = await call(other, { action: "voice_session" }); ok(s === 429, "voice start is rate limited");
+  // ── Life OS: saved places + voice choice ──
+  [s, r] = await call(me, { action: "item_save", kind: "place", title: "Home base", lat: 33.7490123, lon: -84.3879824 }); ok(s === 200 && r.item.lat === 33.75 && r.item.lon === -84.39, "place saved rounded to 2 decimals (about 1 km)");
+  [s, r] = await call(me, { action: "item_save", kind: "place", title: "Nowhere", lat: 99, lon: 0 }); ok(s === 400, "impossible latitude refused");
+  [s, r] = await call(me, { action: "item_save", kind: "place", title: "No point" }); ok(s === 400, "place without coordinates refused");
+  [s, r] = await call(me, { action: "items", kind: "place" }); ok(r.items.length === 1 && r.items[0].title === "Home base", "places list back");
+  [s, r] = await call(other, { action: "items", kind: "place" }); ok(r.items.length === 0, "another person cannot see my places");
+  [s, r] = await call(me, { action: "me" }); ok(Array.isArray(r.voices) && r.voices.indexOf("marin") >= 0, "voice list offered");
+  process.env.OPENAI_API_KEY = "sk-test";
+  [s, r] = await call(me, { action: "voice_session", voice: "cedar" }); ok(lastRt.session.audio.output.voice === "cedar", "chosen voice used");
+  [s, r] = await call(me, { action: "voice_session", voice: "../evil" }); ok(lastRt.session.audio.output.voice === "marin", "unknown voice ignored");
   delete process.env.OPENAI_API_KEY; [s, r] = await call(me, { action: "voice_session" }); ok(s === 503, "says so when OpenAI is not connected");
 
   console.log("elevate: " + n + " assertions PASS"); process.exit(0);

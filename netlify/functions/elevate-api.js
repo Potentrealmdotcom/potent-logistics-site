@@ -4,6 +4,9 @@
 //      ELEVATE_CHAT_MODEL (default gpt-4o-mini), ELEVATE_VOICE_MODEL (default gpt-realtime-2.1), ELEVATE_VOICE (default marin)
 const E = require("./lib/elevate");
 const G = require("./lib/google");
+const KINDS = ["task", "note", "memory", "place"];
+// Voices the speech provider (OpenAI Realtime) offers. Names only: no claim is made about how any of them sounds.
+const VOICES = ["marin", "cedar", "coral", "sage", "shimmer", "alloy", "ash", "ballad", "echo", "verse"];
 const J = function (s, o) { return { statusCode: s, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" }, body: JSON.stringify(o) }; };
 const fails = {}, hits = {};
 const tooMany = function (k, n, ms) { const now = Date.now(); const f = (fails[k] || []).filter(function (t) { return now - t < (ms || 900000); }); fails[k] = f; return f.length >= (n || 8); };
@@ -73,15 +76,20 @@ exports.handler = async function (event) {
     // ── everything else needs an Əlevate login ──
     const t = E.verify(bearer(event)); if (!t) return J(401, { ok: false, error: "Sign in again", login: true });
     const k = t.k;
-    if (a === "me") return J(200, { ok: true, owner: k, voice: !!process.env.OPENAI_API_KEY });
+    if (a === "me") return J(200, { ok: true, owner: k, voice: !!process.env.OPENAI_API_KEY, voices: VOICES, voice_default: process.env.ELEVATE_VOICE || "marin" });
 
     if (a === "items") {
-      const kind = ["task", "note", "memory"].indexOf(b.kind) >= 0 ? b.kind : "task";
+      const kind = KINDS.indexOf(b.kind) >= 0 ? b.kind : "task";
       const r = await E.sb("elevate_items?owner_key=eq." + E.q(k) + "&kind=eq." + kind + "&order=created_at.desc&limit=200");
       return J(200, { ok: true, items: Array.isArray(r.data) ? r.data : [] });
     }
     if (a === "item_save") {
-      const kind = ["task", "note", "memory"].indexOf(b.kind) >= 0 ? b.kind : null; const title = E.clip(b.title, 200); if (!kind || !title) return J(400, { ok: false, error: "Add some text." });
+      const kind = KINDS.indexOf(b.kind) >= 0 ? b.kind : null; const title = E.clip(b.title, 200); if (!kind || !title) return J(400, { ok: false, error: "Add some text." });
+      if (kind === "place") { // a saved place: rounded to 2 decimals (about 1 km) on purpose, so the map never holds an exact address
+        const lat = Number(b.lat), lon = Number(b.lon); if (b.lat == null || b.lon == null || !isFinite(lat) || !isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return J(400, { ok: false, error: "Pick a spot on the map." });
+        const r = await E.sb("elevate_items", { method: "POST", body: { owner_key: k, kind: "place", title: title, lat: Math.round(lat * 100) / 100, lon: Math.round(lon * 100) / 100, source: "manual" } });
+        return r.ok ? J(200, { ok: true, item: r.data[0] }) : J(500, { ok: false, error: "Could not save." });
+      }
       const due = b.due_at ? Date.parse(b.due_at) : null;
       const r = await E.sb("elevate_items", { method: "POST", body: { owner_key: k, kind: kind, title: title, body: kind === "note" ? E.clip(b.body, 4000) || null : null, due_at: kind === "task" && due && isFinite(due) ? new Date(due).toISOString() : null, source: "manual" } });
       return r.ok ? J(200, { ok: true, item: r.data[0] }) : J(500, { ok: false, error: "Could not save." });
@@ -110,7 +118,7 @@ exports.handler = async function (event) {
       let r, d;
       try {
         r = await fetch("https://api.openai.com/v1/realtime/client_secrets", { method: "POST", headers: { Authorization: "Bearer " + process.env.OPENAI_API_KEY, "Content-Type": "application/json" },
-          body: JSON.stringify({ expires_after: { anchor: "created_at", seconds: 120 }, session: { type: "realtime", model: model, instructions: E.systemPrompt({ memory: await memoryFacts(k), tz: E.clip(b.tz, 60) }) + "\nYou are speaking out loud: keep answers to one or two short sentences.", audio: { output: { voice: process.env.ELEVATE_VOICE || "marin" } }, tools: E.asRealtimeTools(), tool_choice: "auto" } }) });
+          body: JSON.stringify({ expires_after: { anchor: "created_at", seconds: 120 }, session: { type: "realtime", model: model, instructions: E.systemPrompt({ memory: await memoryFacts(k), tz: E.clip(b.tz, 60) }) + "\nYou are speaking out loud: keep answers to one or two short sentences.", audio: { output: { voice: VOICES.indexOf(b.voice) >= 0 ? b.voice : (process.env.ELEVATE_VOICE || "marin") } }, tools: E.asRealtimeTools(), tool_choice: "auto" } }) });
         d = await r.json();
       } catch (e) { return J(502, { ok: false, error: "Could not start voice. Try again." }); }
       const secret = d && (d.value || (d.client_secret && d.client_secret.value));
