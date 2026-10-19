@@ -1114,7 +1114,7 @@ function LangSwitcher({ lang, changeLang }) {
     );
 }
 var TRUCK_MPG = 9;
-var TRUCK_MAX_LBS = 4999; // working payload cap; REAL_TRUCK_PROFILE.maxPayloadLbs must match
+var TRUCK_MAX_LBS = 4500; // working payload cap; REAL_TRUCK_PROFILE.maxPayloadLbs must match
 var TRUCK_LENGTH = "16ft";
 var TRUCK_WIDTH = "93 inches wide";
 var HELPER_FEE = 100;
@@ -6382,7 +6382,7 @@ function PhoneQuotePanelInner(props) {
                             React.createElement(TxtIn, { label: "Width (in)", value: form.estWidth, onChange: function (v) { set("estWidth", v); }, type: "number", placeholder: "87 max (door)" }),
                             React.createElement(TxtIn, { label: "Height (in)", value: form.estHeight, onChange: function (v) { set("estHeight", v); }, type: "number", placeholder: "72 max (door)" })),
                         hasFlag && React.createElement("div", { style: { background: "#1a0000", border: "1px solid " + C.red + "66", borderRadius: 9, padding: "10px 14px", marginBottom: 10 } },
-                            React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.red, marginBottom: 4 } }, "\u26A0 This may not fit — truck max: 4,999 lbs, 190\"L x 87\"W door x 72\"H door"),
+                            React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.red, marginBottom: 4 } }, "\u26A0 This may not fit — truck max: 4,500 lbs, 190\"L x 87\"W door x 72\"H door"),
                             React.createElement("div", { style: { fontSize: 11, color: "#cc8888" } }, "Confirm exact measurements with the customer before booking. If measurements given are wrong and it doesn't fit on arrival, full payment is still due per policy.")));
                 })(),
                 React.createElement(TxtIn, { label: "Notes", value: form.notes, onChange: function (v) { set("notes", v); }, placeholder: "What are they moving? Any special access, fragile items, gate codes...", rows: 2, voice: true })),
@@ -16318,7 +16318,7 @@ function LiveRebuttalCards() {
             React.createElement("div", { style: { fontSize: 12, color: C.white, marginBottom: 6 } },
                 React.createElement("b", null, "Pricing: "), "$200 flat for the first 40 miles, then +$2.25/mile beyond that."),
             React.createElement("div", { style: { fontSize: 12, color: C.white, marginBottom: 6 } },
-                React.createElement("b", null, "Truck: "), "16ft dock-height, 87\"W x 72\"H door, 190\" interior length, max 4,999 lbs."),
+                React.createElement("b", null, "Truck: "), "16ft dock-height, 87\"W x 72\"H door, 190\" interior length, max 4,500 lbs."),
             React.createElement("div", { style: { fontSize: 12, color: C.white, marginBottom: 10 } },
                 React.createElement("b", null, "Opening: "), "\"Hi, this is [Name] with POTENT Logistics — I run a 16ft dock-height box truck and I'm reaching out directly because I handle one-way freight drop-offs without going through a broker app. Do you have loads that need to move that a box truck could handle?\""),
             React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "Say it simply: \"It's $200 flat for local, and for anything past about 40 miles, it's $200 plus $2.25 a mile after that.\"")),
@@ -17586,7 +17586,7 @@ var POTENT_CARRIER_INFO = {
     mcNumber: "Applying — Intrastate GA currently",
     address: "2089 Christian Cir SE, Conyers, GA 30013",
     vehicle: "16ft dock-height box truck, 2022 Ford E350",
-    capacity: "4,999 lbs max, 190\"L x 95\"W x 80\"H interior",
+    capacity: "4,500 lbs max, 190\"L x 95\"W x 80\"H interior",
     equipment: "Ramp, E-tracks, moving blankets, load bars — NO liftgate",
     serviceArea: "Georgia statewide, Atlanta metro primary",
     contact: "(470) 453-1616 \u00b7 potentlogistics@" + "proton.me",
@@ -19397,7 +19397,7 @@ var COURSE_MODULES = [
         id: "m6", title: "Module 6 — The 16-Foot Box Truck Reality",
         content: [
             "Your actual vehicle: 2022 Ford E350, 16ft box, 12,500 lb GVWR.",
-            "Real cargo limitations: your actual practical payload capacity is roughly 4,999 lbs after accounting for the truck's own weight — never take a load based on the box size alone without checking real weight.",
+            "Real cargo limitations: your actual practical payload capacity is roughly 4,500 lbs after accounting for the truck's own weight — never take a load based on the box size alone without checking real weight.",
             "Weight distribution matters — freight loaded unevenly front-to-back or side-to-side genuinely affects handling and safety, not just a theoretical concern.",
             "Dimensions: interior roughly 190\" L x 95\" W x 80\" H — measure against this before accepting anything described as 'should fit.'",
             "No liftgate: this is a hard limit. Any load requiring a liftgate for unloading is not a load you can take, full stop.",
@@ -20103,7 +20103,7 @@ function DriverProfileTab(props) {
         React.createElement("div", { style: { marginTop: 20 } }, React.createElement(PayoutMethodCard, null)),
         React.createElement("div", { style: { marginTop: 20, fontSize: 11, color: C.dim, fontWeight: 800, textTransform: "uppercase" } }, "Your Vehicle"),
         React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: 14, marginTop: 8 } },
-            [["Make/Model", "2022 Ford E-350"], ["Type", "16ft Dock-Height Box Truck"], ["Capacity", "4,999 lbs"], ["Equipment", "Ramp, E-tracks, moving blankets, load bars \u2014 no liftgate"]].map(function (r) {
+            [["Make/Model", "2022 Ford E-350"], ["Type", "16ft Dock-Height Box Truck"], ["Capacity", "4,500 lbs"], ["Equipment", "Ramp, E-tracks, moving blankets, load bars \u2014 no liftgate"]].map(function (r) {
                 return React.createElement("div", { key: r[0], style: { fontSize: 12, color: C.white, padding: "4px 0" } },
                     React.createElement("span", { style: { color: C.dim } }, r[0] + ": "), r[1]);
             })));
@@ -22561,7 +22561,7 @@ function RealCapacityCalendar(props) {
 
 // ── 1. REAL CAPACITY VALIDATION — real truck dimensions, hard limit ──
 var REAL_TRUCK_PROFILE = {
-    maxPayloadLbs: 4999, // working payload cap (single source) — never raised by historical performance
+    maxPayloadLbs: 4500, // working payload cap (single source) — never raised by historical performance
     interiorLengthIn: 190, interiorWidthIn: 94, interiorHeightIn: 80,
     doorWidthIn: 86.5, doorHeightIn: 71,
 };
@@ -23130,7 +23130,7 @@ function griffinAnswer(transcript, userEmail, userRole, token) {
         return Promise.resolve("One POTENT Coin equals one real dollar. You fund your wallet, and real bookings draw from that balance. Business accounts can also be set up on net terms \u2014 just ask dispatch.");
     }
     if (t.indexOf("fit check") > -1 || (t.indexOf("fit") > -1 && t.indexOf("truck") > -1)) {
-        return Promise.resolve("Fit Check verifies your real shipment against the actual truck's limits \u2014 4,999 pounds maximum, and it has to physically pass through an 86 and a half inch by 71 inch door.");
+        return Promise.resolve("Fit Check verifies your real shipment against the actual truck's limits \u2014 4,500 pounds maximum, and it has to physically pass through an 86 and a half inch by 71 inch door.");
     }
     if (t.indexOf("detention") > -1) {
         return Promise.resolve("Detention is the real fee charged when a truck waits beyond the included free time at a stop \u2014 POTENT's real rate is 75 dollars per hour.");
@@ -23147,7 +23147,7 @@ function griffinAnswer(transcript, userEmail, userRole, token) {
     // Real deterministic patterns didn't match — fall back to the real
     // real, free, zero-server LLM running directly in the browser via
     // WebGPU — no VPS, no monthly cost, matching "no server yet."
-    var realKnownContext = "POTENT Logistics is a direct B2B box truck carrier based in Conyers, GA. We offer net accounts through a factoring partner. 1 POTENT Coin = $1. Real truck: 2022 Ford E-350, 16ft box, 4,999 lb max payload, no liftgate, no pallet jack.";
+    var realKnownContext = "POTENT Logistics is a direct B2B box truck carrier based in Conyers, GA. We offer net accounts through a factoring partner. 1 POTENT Coin = $1. Real truck: 2022 Ford E-350, 16ft box, 4,500 lb max payload, no liftgate, no pallet jack.";
     return fetch("/.netlify/functions/life-ai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "griffin", text: transcript, context: realKnownContext }) })
         .then(function (r) { return r.json(); })
         .then(function (d) { if (d && d.ok) return d.text; return askGriffinLocalLLM(transcript, realKnownContext); })

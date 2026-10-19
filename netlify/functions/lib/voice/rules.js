@@ -1,7 +1,7 @@
 // Eligibility engine: can THIS vehicle profile carry THIS shipment? Deterministic and config-driven; the AI never decides this.
 // Result: status "eligible" | "blocked" | "review". Blocked = a hard limit is exceeded. Review = a human must look (unknown, unverified or unusual).
 const DEFAULT_PROFILE = { // verified starting values for POTENT's current truck; an administrator maintains the real record (voice_vehicle_profiles)
-  name: "2022 Ford E350 16-ft Morgan box truck", max_payload_lb: 4999, interior_l_in: 190, interior_w_in: 94, interior_h_in: 80, door_w_in: 86.5, door_h_in: 71,
+  name: "2022 Ford E350 16-ft Morgan box truck", max_payload_lb: 4500, interior_l_in: 190, interior_w_in: 94, interior_h_in: 80, door_w_in: 86.5, door_h_in: 71,
   equipment: { dock_height: true, liftgate: false, pallet_jack: false, blankets: true, e_track: true, load_bars: true }, service_area: { states: ["GA"] }, interstate_authorized: false, authorized: true };
 
 function pieceList(d) { const out = []; (d.pieces || []).forEach(function (p) { out.push(p); }); if (!out.length && d.total_dims) out.push(d.total_dims); return out; }

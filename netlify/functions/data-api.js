@@ -75,7 +75,7 @@ var TABLES = {
 var STAFF_ROLES = ["owner", "dispatch", "dispatcher", "driver"];
 
 // POTENT's own truck: working payload cap. A load heavier than the cap times its planned trips is refused here, not just on the screen.
-var MAX_PAYLOAD_LBS = Number(process.env.POTENT_MAX_PAYLOAD_LBS) || 4999;
+var MAX_PAYLOAD_LBS = Number(process.env.POTENT_MAX_PAYLOAD_LBS) || 4500;
 function capacityError(row) {
     var w = Number(row && row.est_total_lbs) || 0, trips = Math.max(1, Number(row && row.trips) || 1);
     return w > MAX_PAYLOAD_LBS * trips ? "This load is " + w + " lb, over the " + MAX_PAYLOAD_LBS + " lb truck limit" + (trips > 1 ? " for " + trips + " trips" : "") + ". Call us to arrange extra trips." : "";

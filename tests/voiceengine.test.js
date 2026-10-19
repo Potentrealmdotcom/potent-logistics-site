@@ -4,8 +4,8 @@ const I = require("../netlify/functions/lib/voice/intake"), R = require("../netl
 const NOW = Date.parse("2026-10-18T15:00:00Z");
 const good = () => ({ customer_name: "Pat Lee", callback_phone: "(404) 555-0142", pickup_address: "100 Peachtree St NE, Atlanta, GA 30303", delivery_address: "55 Roswell Rd, Marietta, GA 30060", service_date: "2026-10-22", time_window: "morning", freight_description: "boxed tile", piece_count: 4, total_weight_lb: 3000,
   pieces: [{ l: 48, w: 40, h: 50, qty: 4, weight_lb: 750 }], pickup_dock: true, delivery_dock: true });
-const SET = { onetime_min: 175, sameday_min: 225, rush_min: 350, recurring_min: 150, small_load_min: 150, partial_load_min: 225, half_truck_min: 350, full_truck_min: 500, savannah_early: 750, savannah_fullday: 850, additional_stop_fee: 50, wait_detention_hourly: 75, additional_labor_hourly: 75, breakdown_hourly: 100,
-  inside_delivery_min: 100, overnight_hold_nightly: 300, included_pickup_minutes: 30, included_delivery_minutes: 30, quote_expiration_minutes: 30, payload_limit_lbs: 4999, updated_at: "v1" };
+const SET = { onetime_min: 175, sameday_min: 225, rush_min: 350, recurring_min: 150, small_load_min: 250, partial_load_min: 225, half_truck_min: 350, full_truck_min: 500, savannah_early: 750, savannah_fullday: 850, additional_stop_fee: 50, wait_detention_hourly: 75, additional_labor_hourly: 75, breakdown_hourly: 100,
+  inside_delivery_min: 100, overnight_hold_nightly: 300, included_pickup_minutes: 30, included_delivery_minutes: 30, quote_expiration_minutes: 30, payload_limit_lbs: 4500, updated_at: "v1" };
 // ── intake ──
 let v = I.validate(good(), NOW); ok(v.ok && v.data.callback_phone === "+14045550142" && v.data.pickup_state === "GA", "complete intake passes and normalizes the phone");
 v = I.validate({}, NOW); ok(!v.ok && ["customer_name", "callback_phone", "pickup_address", "delivery_address", "service_date", "time_window", "freight_description", "piece_count", "total_weight_lb", "dimensions", "pickup_dock", "delivery_dock"].every(k => v.missing.includes(k)), "empty intake lists everything missing");
@@ -23,8 +23,8 @@ ok(I.stateOf("1 A St, Savannah, GA 31401") === "GA" && I.stateOf("1 A St, Columb
 // ── eligibility (E350 defaults) ──
 const el = d => R.evaluate(I.validate(Object.assign(good(), d), NOW).data, R.DEFAULT_PROFILE);
 ok(el({}).status === "eligible", "ordinary 3,000 lb shipment is eligible");
-ok(el({ total_weight_lb: 4999, pieces: [{ l: 48, w: 40, h: 50, qty: 4, weight_lb: 1249.75 }] }).status === "eligible", "exactly 4,999 lb is allowed");
-let e = el({ total_weight_lb: 5000, pieces: [{ l: 48, w: 40, h: 50, qty: 4, weight_lb: 1250 }] }); ok(e.status === "blocked" && e.blocks[0].code === "over_payload", "5,000 lb is blocked");
+ok(el({ total_weight_lb: 4500, pieces: [{ l: 48, w: 40, h: 50, qty: 4, weight_lb: 1125 }] }).status === "eligible", "exactly 4,500 lb is allowed");
+let e = el({ total_weight_lb: 4501, pieces: [{ l: 48, w: 40, h: 50, qty: 4, weight_lb: 1125.25 }] }); ok(e.status === "blocked" && e.blocks[0].code === "over_payload", "4,501 lb is blocked");
 e = el({ pieces: [{ l: 100, w: 80, h: 75, qty: 1 }], piece_count: 1 }); ok(e.status === "blocked" && e.blocks.some(b => b.code === "too_big_for_door"), "item too tall for the 71 in door is blocked");
 e = el({ pieces: [{ l: 200, w: 40, h: 40, qty: 1 }], piece_count: 1 }); ok(e.blocks.some(b => b.code === "too_big_for_interior"), "item longer than the 190 in cargo area is blocked");
 e = el({ pieces: [{ l: 96, w: 48, h: 70, qty: 1 }], piece_count: 1 }); ok(e.status === "eligible", "96x48x70 pallet-sized item fits (rotated through the door)");
@@ -42,28 +42,31 @@ e = R.evaluate(I.validate(good(), NOW).data, Object.assign({}, R.DEFAULT_PROFILE
 e = R.evaluate(I.validate(Object.assign(good(), { delivery_address: "9 Main St, Columbia, SC 29201" }), NOW).data, Object.assign({}, R.DEFAULT_PROFILE, { service_area: { states: ["GA", "SC"] }, interstate_authorized: true })); ok(e.status === "eligible", "an administrator can widen the area and interstate authority");
 // ── pricing ──
 const D = o => I.validate(Object.assign(good(), o), NOW).data;
-const TIERS = [{ max_lb: 1000, key: "small_load_min" }, { max_lb: 2500, key: "partial_load_min" }, { max_lb: 3500, key: "half_truck_min" }, { max_lb: 4999, key: "full_truck_min" }];
-const C0 = { size_tiers: TIERS };
-let q = P.quote(D({}), 20, SET, {}, { now: NOW }); ok(!q.ok && q.needs_review && /tiers have not been set up/.test(q.reason), "no load-size tiers configured -> goes to a person, no invented price");
-q = P.quote(D({}), 20, SET, C0, { now: NOW }); ok(q.ok && q.total_cents === 35000 && q.lines.length === 1 && /half truck/.test(q.lines[0].label), "3,000 lb = half-truck $350 minimum (beats $175 one-time minimum)");
-q = P.quote(D({ total_weight_lb: 800, pieces: [{ l: 40, w: 40, h: 40, qty: 4, weight_lb: 200 }] }), 20, SET, C0, { now: NOW }); ok(q.total_cents === 17500, "800 lb: small $150 vs one-time $175 -> $175 (the higher minimum)");
-q = P.quote(D({ service_level: "rush", total_weight_lb: 800, pieces: [{ l: 40, w: 40, h: 40, qty: 4, weight_lb: 200 }] }), 20, SET, C0, { now: NOW }); ok(q.total_cents === 35000, "rush delivery starts at $350");
-q = P.quote(D({ total_weight_lb: 800, pieces: [{ l: 40, w: 40, h: 40, qty: 4, weight_lb: 200 }], extra_stops: 2, inside_delivery: true }), 20, SET, C0, { now: NOW }); ok(q.total_cents === 17500 + 10000 + 10000, "2 extra stops ($50 each) + inside delivery ($100) added");
-q = P.quote(D({ total_weight_lb: 800, pieces: [{ l: 40, w: 40, h: 40, qty: 4, weight_lb: 200 }], labor_helpers: 2, labor_hours: 1.5, holding_nights: 1 }), 20, SET, C0, { now: NOW }); ok(q.total_cents === 17500 + 2 * 1.5 * 7500 + 30000, "labor $75/h/person and holding $300/night");
-q = P.quote(D({ total_weight_lb: 800, pieces: [{ l: 40, w: 40, h: 40, qty: 4, weight_lb: 200 }], expected_wait_minutes: 120 }), 20, SET, C0, { now: NOW }); ok(q.total_cents === 17500 + 7500, "120 min wait, 60 included -> 60 min at $75/h");
+const C0 = {};
+// One-time freight = the existing Quote-tab price list: flat by distance zone (Local $400, Regional $750, Long distance $1,500), speed adjusts it.
+let q = P.quote(D({}), 20, SET, C0, { now: NOW }); ok(q.ok && q.total_cents === 40000 && q.lines.length === 1 && /Local/.test(q.lines[0].label), "20 miles = Local zone $400");
+q = P.quote(D({}), 50, SET, C0, { now: NOW }); ok(q.total_cents === 40000, "50 miles is still Local");
+q = P.quote(D({}), 51, SET, C0, { now: NOW }); ok(q.total_cents === 75000 && /Regional/.test(q.lines[0].label), "51 miles = Regional $750");
+q = P.quote(D({}), 150, SET, C0, { now: NOW }); ok(q.total_cents === 75000, "150 miles is still Regional");
+q = P.quote(D({}), 200, SET, C0, { now: NOW }); ok(q.total_cents === 150000 && /Long distance/.test(q.lines[0].label), "over 150 miles = Long distance $1,500");
+q = P.quote(D({ service_level: "same_day" }), 20, SET, C0, { now: NOW }); ok(q.total_cents === 37500, "same-day local = $400 - $25");
+q = P.quote(D({ service_level: "rush" }), 20, SET, C0, { now: NOW }); ok(q.total_cents === 50000, "rush local = $400 + $100");
+q = P.quote(D({ service_level: "rush" }), 20, Object.assign({}, SET, { rush_min: 900 }), C0, { now: NOW }); ok(q.total_cents === 90000, "the admin minimum still acts as a floor");
+q = P.quote(D({ extra_stops: 2, inside_delivery: true }), 20, SET, C0, { now: NOW }); ok(q.total_cents === 40000 + 10000 + 10000, "2 extra stops ($50 each) + inside delivery ($100) added");
+q = P.quote(D({ labor_helpers: 2, labor_hours: 1.5, holding_nights: 1 }), 20, SET, C0, { now: NOW }); ok(q.total_cents === 40000 + 2 * 1.5 * 7500 + 30000, "labor $75/h/person and holding $300/night");
+q = P.quote(D({ expected_wait_minutes: 120 }), 20, SET, C0, { now: NOW }); ok(q.total_cents === 40000 + 7500, "120 min wait, 60 included -> 60 min at $75/h");
 q = P.quote(D({}), null, SET, C0, { now: NOW }); ok(!q.ok && /distance could not be verified/.test(q.reason), "no verified miles -> no price (never fabricated)");
-q = P.quote(D({}), 60, SET, C0, { now: NOW }); ok(!q.ok && /No per-mile rate/.test(q.reason), "trip over the included miles without a rate -> person");
-q = P.quote(D({}), 60, SET, { size_tiers: TIERS, per_mile_cents: 200 }, { now: NOW }); ok(q.ok && q.total_cents === 35000 + 35 * 200, "extra distance charged at the configured per-mile rate");
+q = P.quote(D({ service_level: "recurring" }), 20, SET, C0, { now: NOW }); ok(!q.ok && q.needs_review && /quote_special_service/.test(q.reason), "recurring is priced by the recurring tool, not guessed here");
 q = P.quote(D({ service_level: "savannah_early", delivery_address: "1 Dock Rd, Savannah, GA 31401" }), null, SET, C0, { now: NOW }); ok(q.ok && q.total_cents === 75000, "Savannah early dedicated = $750");
 q = P.quote(D({ service_level: "savannah_full", delivery_address: "1 Dock Rd, Savannah, GA 31401" }), null, SET, C0, { now: NOW }); ok(q.total_cents === 85000, "Savannah all-day dedicated = $850");
 q = P.quote(D({ service_level: "savannah_early" }), 20, SET, C0, { now: NOW }); ok(!q.ok, "Savannah price only for Savannah deliveries");
 q = P.quote(D({}), 20, SET, C0, { now: NOW, discount_cents: 5000 }); ok(!q.ok && /authorized/.test(q.reason), "a discount with no named authorizer is refused");
-q = P.quote(D({}), 20, SET, C0, { now: NOW, discount_cents: 5000, authorized_by: "owner" }); ok(q.ok && q.total_cents === 30000 && q.lines.some(l => l.code === "discount"), "authorized discount is itemized");
+q = P.quote(D({}), 20, SET, C0, { now: NOW, discount_cents: 5000, authorized_by: "owner" }); ok(q.ok && q.total_cents === 35000 && q.lines.some(l => l.code === "discount"), "authorized discount is applied and shown");
 q = P.quote(D({}), 20, SET, C0, { now: NOW, override_total_cents: 20000 }); ok(!q.ok, "override needs authorizer and reason");
-q = P.quote(D({}), 20, SET, C0, { now: NOW, override_total_cents: 20000, authorized_by: "owner", override_reason: "contract rate" }); ok(q.ok && q.total_cents === 20000 && q.lines.some(l => l.code === "override"), "authorized override is itemized and logged in the quote");
-q = P.quote(D({}), 20, SET, Object.assign({ tax_bps: 700, deposit_pct: 25, payment_text: "Pay by card on pickup" }, C0), { now: NOW }); ok(q.tax_cents === 2450 && q.total_cents === 37450 && q.deposit_cents === Math.round(37450 * 0.25) && q.payment_text === "Pay by card on pickup", "tax, deposit and payment text come from configuration");
+q = P.quote(D({}), 20, SET, C0, { now: NOW, override_total_cents: 20000, authorized_by: "owner", override_reason: "contract rate" }); ok(q.ok && q.total_cents === 20000 && q.lines.some(l => l.code === "override"), "authorized override is applied and shown");
+q = P.quote(D({}), 20, SET, { tax_bps: 700, deposit_pct: 25, payment_text: "Pay by card on pickup" }, { now: NOW }); ok(q.tax_cents === 2800 && q.total_cents === 42800 && q.deposit_cents === Math.round(42800 * 0.25) && q.payment_text === "Pay by card on pickup", "tax, deposit and payment text come from configuration");
 ok(new Date(q.expires_at).getTime() === NOW + 30 * 60000, "quote valid 30 minutes (existing setting)");
-q = P.quote(D({}), 20, SET, Object.assign({ cost_per_mile_cents: 400, min_margin_pct: 30 }, C0), { now: NOW }); ok(q.ok, "margin safeguard passes when price covers cost"); q = P.quote(D({}), 20, SET, Object.assign({ cost_per_mile_cents: 90000, min_margin_pct: 30 }, C0), { now: NOW }); ok(!q.ok && /margin/.test(q.reason), "margin safeguard stops a money-losing price");
+q = P.quote(D({}), 20, SET, { cost_per_mile_cents: 400, min_margin_pct: 30 }, { now: NOW }); ok(q.ok, "margin safeguard passes when price covers cost"); q = P.quote(D({}), 20, SET, { cost_per_mile_cents: 90000, min_margin_pct: 30 }, { now: NOW }); ok(!q.ok && /margin/.test(q.reason), "margin safeguard stops a money-losing price");
 q = P.quote(D({}), 20, null, C0, {}); ok(!q.ok && q.needs_review, "no approved pricing -> person");
 ok(P.money(35000) === "$350.00" && P.money(123456) === "$1,234.56", "money formatting");
 // ── time windows (daylight saving aware) ──

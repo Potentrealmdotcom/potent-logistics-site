@@ -3,7 +3,7 @@
 const B = require("../beats");
 const S = require("./store"), I = require("./intake"), R = require("./rules"), P = require("./pricing"), RT = require("./route"), AV = require("./availability"), V = require("./billing"), TW = require("./adapters/twilio");
 const rows = S.rows;
-const FEATURE = { lookup_customer: "inbound", create_or_update_lead: "inbound", get_approved_service_information: "inbound", collect_shipment_details: "quotes", validate_shipment_eligibility: "quotes", calculate_quote: "quotes", check_live_availability: "booking",
+const FEATURE = { lookup_customer: "inbound", create_or_update_lead: "inbound", get_approved_service_information: "inbound", collect_shipment_details: "quotes", validate_shipment_eligibility: "quotes", calculate_quote: "quotes", quote_special_service: "quotes", check_live_availability: "booking",
   create_pending_booking: "booking", confirm_eligible_booking: "booking", create_callback_task: "callbacks", request_human_handoff: "handoff", send_approved_confirmation: "notifications", look_up_booking_status: "booking", request_reschedule: "booking", request_cancellation: "booking" };
 const CRITICAL = ["pickup_address", "delivery_address", "service_date", "time_window", "service_level", "total_weight_lb", "piece_count", "pieces", "total_dims", "pickup_dock", "delivery_dock", "needs_liftgate", "needs_pallet_jack", "forklift_pickup", "forklift_delivery", "site_has_pallet_jack", "inside_delivery", "hazmat", "special_handling", "extra_stops", "labor_helpers", "labor_hours", "holding_nights", "expected_wait_minutes", "freight_description"];
 const INTAKE_KEYS = CRITICAL.concat(["customer_name", "company", "callback_phone", "email", "pickup_contact_name", "pickup_contact_phone", "delivery_contact_name", "delivery_contact_phone", "special_instructions", "po_number", "recurring"]);
@@ -30,6 +30,13 @@ function defs() {
       extra_stops: { type: "integer" }, labor_helpers: { type: "integer" }, labor_hours: { type: "number" }, expected_wait_minutes: { type: "number" }, holding_nights: { type: "integer" }, recurring: { type: "boolean" } })),
     D("validate_shipment_eligibility", "Verify both addresses and check the shipment against the verified truck limits and service area. Call after all required details are collected."),
     D("calculate_quote", "Calculate the official price. The price comes only from this tool. Never state a price from memory."),
+    D("quote_special_service", "Official price for junk removal, pop-up events, or recurring service (by load size or dedicated route). The price comes only from this tool. A person schedules these afterwards; offer create_callback_task.", obj({
+      service: { type: "string", enum: ["junk_removal", "popup_event", "recurring_load_class", "recurring_route"] },
+      pickup_address: str("junk: the address the job is at. Events and routes: the pickup address, full street address with city and state"), delivery_address: str("events and routes: the delivery or event address"),
+      load_size: { type: "string", enum: ["minimum", "quarter", "half", "threequarter", "full"], description: "junk removal volume" }, truckloads: { type: "integer", description: "junk: full truckloads needed, default 1" },
+      has_heavy_items: { type: "boolean", description: "junk: heavy items such as safes, pianos, hot tubs, or loose concrete, dirt, brick" },
+      total_weight_lb: { type: "number", description: "recurring by load size: the weight per run" }, days_per_week: { type: "integer" }, flex_window: { type: "boolean", description: "recurring by load size: customer accepts a flexible time window" },
+      direction: { type: "string", enum: ["oneway", "roundtrip"], description: "recurring_route" } }, ["service"])),
     D("check_live_availability", "Check real availability for the requested date and window. Never promise a time without this."),
     D("create_pending_booking", "After you read the quote and details back and the caller clearly says yes, save the booking request."),
     D("confirm_eligible_booking", "Confirm a saved booking request. Succeeds only if every check still passes.", obj({ booking_id: str("id returned by create_pending_booking") }, ["booking_id"])),
@@ -220,6 +227,42 @@ async function verifyRef(ctx, a) {
   return bk && last4(bk.customer_phone) && last4(bk.customer_phone) === String(a.phone_last4 || "").replace(/\D/g, "").slice(-4) ? bk : null;
 }
 TOOLS.look_up_booking_status = async function (ctx, a) { const bk = await verifyRef(ctx, a); if (!bk) return { ok: false, error: "not_verified", say: "Could not match that reference and phone number." }; const w = bk.snapshot && bk.snapshot.intake; return { ok: true, status: bk.status === "pending_review" ? "request received, awaiting confirmation" : bk.status, date: w && w.service_date, window: w && w.time_window }; };
+// Junk removal, pop-up events and recurring service, priced from POTENT's existing price list (ospricing.js). Never invents a number: anything unclear goes to a person.
+TOOLS.quote_special_service = async function (ctx, a) {
+  const OS = require("./ospricing"), svc = String(a.service || ""), review = function (why) { return { ok: false, review: true, reason: why, say: "You cannot give a price for this. Offer a callback or a person." }; };
+  const S0 = await S.pricingSettings(ctx.orgId, ctx.cfg); if (!S0) return review("No approved pricing settings were found.");
+  const cap = Number(S0.payload_limit_lbs) || OS.TRUCK_MAX_LBS, states = (ctx.cfg.service_area && ctx.cfg.service_area.states) || ["GA"];
+  const geo = async function (addr) { const g = await RT.verifyAddress(clip(addr, 240)); if (g.unknown) return { err: review("Address service is unavailable.") }; if (!g.ok) return { err: { ok: false, problems: ["address_not_found"], say: "Ask the caller to repeat the address with street, city and state." } }; if (states.indexOf(String(g.state || "").toUpperCase()) < 0) return { err: review("Outside the service area.") }; return { g: g }; };
+  const lines = [], money = function (d) { return Math.round(d * 100); }; let input = { service: svc }, miles = null, srcMiles = null, extra = {};
+  if (svc === "junk_removal") {
+    if (a.has_heavy_items === true) return review("Heavy items and loose heavy material are priced on weight by a person.");
+    const j = OS.junk(a.load_size, a.truckloads); if (!j) return { ok: false, problems: ["load_size_missing"], say: "Ask how big the load is: single item, quarter, half, three-quarter or full truck." };
+    if (!clip(a.pickup_address, 5)) return { ok: false, problems: ["address_missing"], say: "Ask for the address of the job." };
+    const g = await geo(a.pickup_address); if (g.err) return g.err;
+    lines.push({ code: "junk", label: j.load.label + (j.truckloads > 1 ? ", first truckload" : ""), cents: money(j.load.price) });
+    if (j.truckloads > 1) lines.push({ code: "extra_load", label: (j.truckloads - 1) + " additional truckload(s)", cents: money((j.truckloads - 1) * OS.EXTRA_TRUCKLOAD_FEE) });
+    input = { service: svc, load_size: j.load.id, truckloads: j.truckloads, address: g.g.matched }; extra = { range_max: j.totalMax > j.total ? P.money(money(j.totalMax)) : null };
+  } else if (svc === "popup_event" || svc === "recurring_route") {
+    if (!clip(a.pickup_address, 5) || !clip(a.delivery_address, 5)) return { ok: false, problems: ["address_missing"], say: "Ask for both addresses." };
+    const g1 = await geo(a.pickup_address); if (g1.err) return g1.err; const g2 = await geo(a.delivery_address); if (g2.err) return g2.err;
+    const r = await RT.distance(g1.g, g2.g); if (!r.ok) return review("Route distance could not be verified."); miles = r.miles; srcMiles = r.source;
+    if (svc === "popup_event") { const e = OS.popup(miles); lines.push({ code: "event", label: "Pop-up event, " + Math.round(e.roundTripMiles) + " round-trip miles" + (e.roundTripMiles > OS.EVENT.flatRoundTripMiles ? " (flat price plus $1 per mile past " + OS.EVENT.flatRoundTripMiles + ")" : " (flat price)"), cents: money(e.total) }); input = { service: svc, pickup: g1.g.matched, delivery: g2.g.matched, miles: Math.round(miles * 10) / 10 }; }
+    else {
+      if (Math.floor(Number(a.days_per_week)) !== 5) return review("Dedicated routes are priced for 5 days a week with no weekends.");
+      const rt = OS.dedicatedRoute(miles, a.direction); if (!rt) return review("This route is outside the dedicated route price list.");
+      lines.push({ code: "route", label: rt.label + ", 5 days a week", cents: money(rt.dailyPrice) }); input = { service: svc, route: rt.id, pickup: g1.g.matched, delivery: g2.g.matched, miles: Math.round(miles * 10) / 10 }; extra = { per_day: true, weekly: P.money(money(rt.weeklyPrice)) };
+    }
+  } else if (svc === "recurring_load_class") {
+    const w = Number(a.total_weight_lb); if (!(w > 0)) return { ok: false, problems: ["weight_missing"], say: "Ask for the weight per run." };
+    if (w > cap) return { ok: false, blocked: true, say: "That is over the " + cap + " lb truck limit. Explain politely and offer a person." };
+    const rl = OS.recurringLoad(w, a.days_per_week, a.flex_window === true, cap); if (!rl) return { ok: false, problems: ["days_per_week_missing"], say: "Ask how many days a week (1 to 5)." };
+    lines.push({ code: "recurring", label: rl.cls.label + " (" + rl.days + " day(s) a week" + (rl.discount ? ", " + Math.round(rl.discount * 100) + "% recurring discount" : "") + ")", cents: money(rl.perDay) }); input = { service: svc, weight_lb: w, days_per_week: rl.days, flex_window: a.flex_window === true }; extra = { per_day: true, weekly: P.money(money(rl.weekly)) };
+  } else return { ok: false, error: "unknown_service" };
+  const total = lines.reduce(function (t, l) { return t + l.cents; }, 0), number = S.ref("Q"), exp = new Date(Date.now() + (Number(S0.quote_expiration_minutes) || 30) * 60000).toISOString();
+  const ins = await B.sb("voice_quotes", { method: "POST", prefer: "return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, number: number, input: input, lines: lines, total_cents: total, miles: miles, miles_source: srcMiles || "flat_rate", settings_version: String(S0.updated_at || ""), expires_at: exp } });
+  if (!rows(ins)[0]) return { ok: false, error: "save_failed" };
+  return Object.assign({ ok: true, quote_number: number, lines: lines.map(function (l) { return l.label + ": " + P.money(l.cents); }), total: P.money(total), valid_minutes: Number(S0.quote_expiration_minutes) || 30, say: "State the total. " + (extra.range_max ? "Say it can run up to " + extra.range_max + " depending on the actual load, confirmed on site. " : "") + (extra.per_day ? "This price is per day" + (extra.weekly ? " (" + extra.weekly + " a week)" : "") + ". " : "") + "A person schedules this service; offer create_callback_task and do not say it is booked.", exclusions: ["Taxes, if any apply, are not included.", "Changes to the job may change the price."] }, extra);
+};
 const changeReq = function (kind) { return async function (ctx, a) {
   const bk = await verifyRef(ctx, a); if (!bk) return { ok: false, error: "not_verified", say: "Could not match that reference and phone number." };
   await B.sb("voice_callbacks", { method: "POST", prefer: "return=minimal", body: { org_id: ctx.orgId, session_id: ctx.session.id, name: bk.customer_name, phone: bk.customer_phone, reason: kind + " requested for " + bk.reference + (a.requested_date ? " -> " + clip(a.requested_date, 40) : "") + (a.note ? ": " + clip(a.note, 200) : "") } });

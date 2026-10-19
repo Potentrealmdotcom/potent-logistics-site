@@ -1,8 +1,8 @@
 // Deterministic quote. All money is integer cents. Numbers come from the company's existing b2b_pricing_settings (dollars) plus the voice add-on settings; the AI only repeats the result.
 const intake = require("./intake");
+const OS = require("./ospricing");
 const cents = function (d) { return Math.round(Number(d) * 100); };
-// Load-size cutoffs (which weights count as a small / partial / half / full load) are NOT defined anywhere in POTENT OS, so there is no default:
-// the owner sets them once (size_tiers: [{max_lb, key}] in ascending order). Until then quotes go to a person instead of using a guess.
+// One-time freight is priced from POTENT's existing price list (see ospricing.js, which a test keeps identical to app.js). per_mile_cents and size_tiers are no longer used.
 const DEFAULTS = { included_miles: 25, per_mile_cents: null, tax_bps: 0, deposit_pct: 0, payment_text: null, cost_per_mile_cents: null, min_margin_pct: null, size_tiers: null };
 const SIZE_KEYS = ["small_load_min", "partial_load_min", "half_truck_min", "full_truck_min"];
 const SPEED_KEY = { standard: "onetime_min", same_day: "sameday_min", rush: "rush_min", recurring: "recurring_min" };
@@ -12,22 +12,18 @@ function quote(d, miles, S, cfg, o) {
   o = o || {}; cfg = Object.assign({}, DEFAULTS, cfg || {}); const now = o.now || Date.now(), lines = [], excl = [];
   if (!S) return { ok: false, needs_review: true, reason: "No approved pricing settings were found." };
   const L = function (code, label, c) { if (c > 0) lines.push({ code: code, label: label, cents: c }); };
-  const level = d.service_level || "standard", cap = Number(S.payload_limit_lbs) || 4999;
+  const level = d.service_level || "standard";
   if (/^savannah/.test(level)) {
     if (!/savannah/i.test(intake.cityOf(d.delivery_address))) return { ok: false, needs_review: true, reason: "Savannah service applies only to deliveries in Savannah." };
     L(level, level === "savannah_early" ? "Savannah dedicated run, 5 a.m. option" : "Savannah dedicated run, all-day option", cents(level === "savannah_early" ? S.savannah_early : S.savannah_fullday));
+  } else if (level === "recurring") {
+    return { ok: false, needs_review: true, reason: "Recurring service is priced with quote_special_service (by load size or dedicated route), not this tool." };
   } else {
-    if (miles == null || !isFinite(miles)) return { ok: false, needs_review: true, reason: "Route distance could not be verified, so a price cannot be given." };
-    if (!Array.isArray(cfg.size_tiers) || !cfg.size_tiers.length) return { ok: false, needs_review: true, reason: "Load-size price tiers have not been set up yet, so this cannot be priced automatically." };
-    const w = Number(d.total_weight_lb) || 0, tier = cfg.size_tiers.find(function (t) { return w <= t.max_lb; });
-    if (!tier) return { ok: false, needs_review: true, reason: "This weight is beyond the load-size tiers that are set up." };
-    const speedMin = cents(S[SPEED_KEY[level]] || S.onetime_min), sizeMin = cents(S[tier.key] || 0);
-    const base = Math.max(speedMin, sizeMin);
-    L("base", (base === sizeMin && sizeMin > speedMin ? "Load-size minimum (" + tier.key.replace(/_min$/, "").replace(/_/g, " ") + ")" : "Service minimum (" + level.replace(/_/g, " ") + ")"), base);
-    if (miles > cfg.included_miles) {
-      if (cfg.per_mile_cents == null) return { ok: false, needs_review: true, reason: "No per-mile rate is configured for trips over " + cfg.included_miles + " miles (this trip is " + Math.round(miles) + ")." };
-      L("mileage", "Extra distance: " + Math.round(miles - cfg.included_miles) + " mi", Math.round((miles - cfg.included_miles) * cfg.per_mile_cents));
-    }
+    // One-time freight = the app's Quote tab: a flat price by distance zone, plus the speed adjustment. No per-mile charge.
+    const f = OS.freight(miles, level);
+    if (!f) return { ok: false, needs_review: true, reason: "Route distance could not be verified, so a price cannot be given." };
+    const floor = cents(S[SPEED_KEY[level]] || S.onetime_min), base = Math.max(cents(f.total), floor);
+    L("base", "Freight, " + f.zoneLabel + (f.speedAdj ? ", " + level.replace("_", "-") + " adjustment (" + (f.speedAdj > 0 ? "+" : "-") + "$" + Math.abs(f.speedAdj) + ")" : ""), base);
   }
   L("stops", d.extra_stops + " additional stop(s)", Math.round(d.extra_stops) * cents(S.additional_stop_fee));
   if (d.labor_helpers && d.labor_hours) L("labor", d.labor_helpers + " helper(s) x " + d.labor_hours + " h", Math.round(d.labor_helpers * d.labor_hours * cents(S.additional_labor_hourly)));
