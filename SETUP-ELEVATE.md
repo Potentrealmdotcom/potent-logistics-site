@@ -59,3 +59,10 @@ Open `/elevate/`: the home screen has a world map, the voice orb, a Today panel 
 - Database: `elevate.sql` now allows kind `place` with `lat`/`lon` (already applied live as migration `elevate_places`).
 - Tests: `node tests/elevate.test.js` (server) and `node tests/elevate-ui.test.js` (real Chromium, stubbed API and map file).
 - Not tried against the real world-atlas file, real OpenAI voice, or a real phone yet.
+
+## Offline (Ghost Mode style)
+Install `/elevate/` to the home screen (Android: browser menu > Install app; iPhone: Share > Add to Home Screen), open it once with a connection, and from then on it opens with no signal.
+- **Works offline**: the whole app opens; your last-loaded tasks, notes, memory and saved places are readable; the map outlines come from the saved copy; you can add, tick off and delete tasks, notes, memory and places. Those changes wait in an outbox on the device ("N waiting to sync" at the top) and go to the server, in order, when the connection returns (and every 30 seconds while online).
+- **Needs a connection** (cannot be offline): the AI assistant (text and voice), the phone line, first sign-in, and anything you have never loaded before. The orb says "Not connected" with this note instead of pretending.
+- **Honest limits**: the outbox lives in this browser, so clearing site data or signing out before it syncs loses those changes (sign-out warns you first). If the connection drops at the exact moment a save is confirmed, that one item can be saved twice. Offline changes made on two devices are applied in the order they arrive; there is no merge.
+- Files: `elevate/sw.js` (service worker, caches the app and the map file), outbox code in `elevate/index.html`. Tested in a real browser with the network cut: `node tests/elevate-ui.test.js`.

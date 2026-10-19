@@ -12,17 +12,19 @@ let n = 0; const ok = (c, m) => { assert(c, m); n++; };
   async function open(opts) {
     opts = opts || {}; const ctx = await browser.newContext({ viewport: opts.viewport || { width: 1280, height: 900 }, reducedMotion: opts.reduced ? "reduce" : "no-preference" });
     const page = await ctx.newPage(); const errs = []; page.on("pageerror", e => errs.push(String(e)));
-    const db = { place: [], task: [{ id: "t1", title: "Call dispatcher", done: false, due_at: new Date(Date.now() - 3600e3).toISOString() }, { id: "t2", title: "Pay insurance", done: false, due_at: null }] }; const calls = [];
-    await page.route("**/.netlify/functions/elevate-api", async rt => { const b = JSON.parse(rt.request().postData() || "{}"); calls.push(b); let out = { ok: true };
+    const st = { off: false }; const db = { place: [], task: [{ id: "t1", title: "Call dispatcher", done: false, due_at: new Date(Date.now() - 3600e3).toISOString() }, { id: "t2", title: "Pay insurance", done: false, due_at: null }] }; const calls = [];
+    await ctx.route("**/.netlify/functions/elevate-api", async rt => { if (st.off) return rt.abort("internetdisconnected"); const b = JSON.parse(rt.request().postData() || "{}"); calls.push(b); let out = { ok: true };
       if (b.action === "me") out = { ok: true, owner: "me@x.com", voice: true, voices: ["marin", "cedar"], voice_default: "marin" };
       else if (b.action === "items") out = { ok: true, items: db[b.kind] || [] };
       else if (b.action === "item_save" && b.kind === "place") { const it = { id: "p" + (db.place.length + 1), kind: "place", title: b.title, lat: b.lat, lon: b.lon }; db.place.push(it); out = { ok: true, item: it }; }
       else if (b.action === "item_delete") db.place = db.place.filter(x => x.id !== b.id);
+      else if (b.action === "item_save" && b.kind === "task") { const it = { id: "t" + (db.task.length + 1 + 10), title: b.title, done: false, due_at: b.due_at || null }; db.task.push(it); out = { ok: true, item: it }; }
+      else if (b.action === "item_toggle") { const t = db.task.filter(x => x.id === b.id)[0]; if (t) t.done = b.done; }
       else if (b.action === "chat") out = { ok: true, reply: "Do the call first.", did: [] };
       await rt.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(out) }); });
-    await page.route("https://cdn.jsdelivr.net/**", rt => opts.noMap ? rt.abort() : rt.fulfill({ status: 200, contentType: "application/json", body: fs.readFileSync(path.join(ROOT, "tests/fixtures/mini-world.json")) }));
+    await ctx.route("https://cdn.jsdelivr.net/**", rt => opts.noMap || st.off ? rt.abort() : rt.fulfill({ status: 200, contentType: "application/json", body: fs.readFileSync(path.join(ROOT, "tests/fixtures/mini-world.json")) }));
     await page.addInitScript(() => { try { localStorage.setItem("elv_t", "tok"); } catch (e) {} });
-    await page.goto(base + "/elevate/"); await page.waitForSelector("#orb"); return { page, errs, db, calls, ctx };
+    await page.goto(base + "/elevate/"); await page.waitForSelector("#orb"); return { page, errs, db, calls, ctx, st };
   }
   // ── desktop, map home ──
   let { page, errs, db, calls, ctx } = await open();
@@ -70,6 +72,26 @@ let n = 0; const ok = (c, m) => { assert(c, m); n++; };
   ({ page, errs, ctx } = await open({ noMap: true })); await page.waitForFunction(() => /unavailable/.test(document.querySelector("#mapstat").textContent));
   ok(await page.locator("#mapstat button").isVisible(), "unavailable map offers Retry"); ok(/No saved places/.test(await page.textContent("#plist")), "list still works without the map");
   ok(errs.length === 0, "no page errors when map is down: " + errs.join("|")); await ctx.close();
+  // ── offline, Ghost Mode style ──
+  let st; ({ page, errs, db, calls, ctx, st } = await open());
+  await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await page.waitForSelector("#orb"); await page.waitForFunction(() => !!navigator.serviceWorker.controller);
+  await page.waitForFunction(() => document.querySelectorAll("#map path.c").length === 2);
+  await page.click("nav >> text=Tasks"); await page.waitForSelector(".row"); ok(await page.locator(".row").count() === 2, "online: tasks load");
+  st.off = true; await ctx.setOffline(true); await page.evaluate(() => window.dispatchEvent(new Event("offline")));
+  ok(/Offline/.test(await page.textContent("#syncst")), "offline pill shown");
+  await page.fill("form.card input[placeholder='Add a task…']", "Buy straps offline"); await page.click("form.card button"); await page.waitForFunction(() => /Buy straps offline/.test(document.querySelector("main").textContent));
+  ok(/Waiting to sync/.test(await page.textContent("main")), "offline task is listed and marked waiting to sync: " + await page.textContent("main"));
+  await page.locator(".row input[type=checkbox]").nth(1).check(); ok(/1 waiting|2 waiting/.test(await page.textContent("#syncst")), "pill counts waiting changes: " + await page.textContent("#syncst"));
+  await page.reload(); await page.waitForSelector("#orb"); ok(true, "app opens offline (service worker)");
+  ok(/Offline/.test(await page.textContent("#syncst")) && (await page.getAttribute("#orb", "data-state")) === "blocked", "reload offline: still signed in, orb shows not connected");
+  await page.waitForFunction(() => document.querySelectorAll("#map path.c").length === 2); ok(true, "map outlines come back from the saved copy offline");
+  await page.click("nav >> text=Tasks"); await page.waitForSelector(".row"); ok(/Buy straps offline/.test(await page.textContent("main")), "queued task survives a reload offline");
+  const before = calls.filter(c => c.action === "item_save" && c.kind === "task").length;
+  st.off = false; await ctx.setOffline(false); await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await page.waitForFunction(() => document.getElementById("syncst").classList.contains("hide")); 
+  ok(calls.filter(c => c.action === "item_save" && c.kind === "task").length === before + 1 && db.task.some(t => t.title === "Buy straps offline"), "back online: queued task reaches the server once");
+  ok(calls.some(c => c.action === "item_toggle"), "back online: queued tick reaches the server");
+  ok(!/Waiting to sync/.test(await page.textContent("main")), "nothing left waiting"); ok(errs.length === 0, "no page errors offline: " + errs.join("|")); await ctx.close();
   // ── phone, reduced motion, screenshots ──
   ({ page, errs, ctx } = await open({ viewport: { width: 390, height: 844 }, reduced: true }));
   await page.waitForFunction(() => document.querySelectorAll("#map path.c").length === 2);

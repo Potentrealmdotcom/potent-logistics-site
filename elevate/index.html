@@ -92,7 +92,7 @@ body.calm .orb *{animation:none!important;transition:none!important}body.calm .o
   <p class="dim" style="font-size:13px">Only people the owner has added can sign in.</p>
 </div>
 <div id="app" class="hide" style="display:flex;flex-direction:column;flex:1;min-height:0">
-<header><span class="mark" aria-hidden="true">Ə</span><span class="logo">ƏLEVATE<small>YOUR WORLD. OFFLINE &amp; ONLINE.</small></span><span class="sp"></span><span class="pill" id="micst" aria-live="polite">Mic off</span><span class="pill" id="who"></span><button class="alt" id="out">Sign out</button></header>
+<header><span class="mark" aria-hidden="true">Ə</span><span class="logo">ƏLEVATE<small>YOUR WORLD. OFFLINE &amp; ONLINE.</small></span><span class="sp"></span><span class="pill hide" id="syncst" aria-live="polite"></span><span class="pill" id="micst" aria-live="polite">Mic off</span><span class="pill" id="who"></span><button class="alt" id="out">Sign out</button></header>
 <nav id="tabs" aria-label="Sections"></nav>
 <main id="main"></main>
 <form class="bar" id="bar"><button type="button" class="mic" id="mic" title="Talk" aria-label="Talk to Əlevate">🎙</button><input id="msg" placeholder="Ask or tell Əlevate…" autocomplete="off" maxlength="2000" aria-label="Message"><button id="send">Send</button></form>
@@ -104,8 +104,33 @@ var API="/.netlify/functions/elevate-api",$=function(i){return document.getEleme
 var MAPURL="https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json";
 try{TOK=localStorage.getItem("elv_t")||""}catch(e){}
 function setTok(t){TOK=t||"";try{t?localStorage.setItem("elv_t",t):localStorage.removeItem("elv_t")}catch(e){}}
-function api(b){return fetch(API,{method:"POST",headers:Object.assign({"Content-Type":"application/json"},TOK?{Authorization:"Bearer "+TOK}:{}),body:JSON.stringify(b)})
-  .then(function(r){return r.json().catch(function(){return{ok:false,error:"Server error"}})}).then(function(j){if(j&&j.login){setTok("");showLogin()}return j}).catch(function(){return{ok:false,error:"No connection right now."}})}
+function rawApi(b){return fetch(API,{method:"POST",headers:Object.assign({"Content-Type":"application/json"},TOK?{Authorization:"Bearer "+TOK}:{}),body:JSON.stringify(b)})
+  .then(function(r){return r.json().catch(function(){return{ok:false,error:"Server error"}})}).then(function(j){if(j&&j.login){setTok("");showLogin()}return j}).catch(function(){return{ok:false,offline:true,error:"No connection right now."}})}
+/* ---------- offline (Ghost Mode style): last-known lists + an outbox for changes made with no signal. Kept in this browser. ---------- */
+function ls(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||"null");if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,JSON.stringify(v))}catch(e){}return null}
+var OUT=ls("elv_out")||[],IDMAP={},syncing=false,syncFail=0;
+function saveOut(){ls("elv_out",OUT.length?OUT:null);syncPill()}
+function isLocal(id){return typeof id==="string"&&id.indexOf("local-")===0}
+function withPending(kind,items){var gone={},done={};OUT.forEach(function(o){if(o.a==="item_delete")gone[o.b.id]=1;if(o.a==="item_toggle")done[o.b.id]=o.b.done});
+  var out=items.filter(function(x){return!gone[x.id]}).map(function(x){return done[x.id]===undefined?x:Object.assign({},x,{done:done[x.id],pending:true})});
+  OUT.filter(function(o){return o.a==="item_save"&&o.b.kind===kind}).reverse().forEach(function(o){var b=o.b;out.unshift({id:o.tmp,kind:kind,title:b.title,lat:b.lat!=null?Math.round(b.lat*100)/100:undefined,lon:b.lon!=null?Math.round(b.lon*100)/100:undefined,due_at:b.due_at||null,done:!!(done[o.tmp]),pending:true})});return out}
+function api(b){var a=b.action;
+  if(a==="items")return rawApi(b).then(function(j){if(j.ok){ls("elv_c_"+b.kind,j.items);return Object.assign({},j,{items:withPending(b.kind,j.items)})}
+    if(j.offline){var c=ls("elv_c_"+b.kind);return{ok:true,offline:true,items:withPending(b.kind,c||[])}}return j});
+  if(a==="item_save"||a==="item_toggle"||a==="item_delete"){
+    if(isLocal(b.id)&&!IDMAP[b.id]){ // a change to something that has not reached the server yet: edit the outbox instead
+      if(a==="item_delete"){OUT=OUT.filter(function(o){return o.tmp!==b.id&&!(o.b&&o.b.id===b.id)});saveOut();return Promise.resolve({ok:true})}
+      OUT.push({a:a,b:b});saveOut();return Promise.resolve({ok:true,queued:true})}
+    return rawApi(Object.assign({},b,IDMAP[b.id]?{id:IDMAP[b.id]}:{})).then(function(j){if(!j.offline)return j;
+      var o={a:a,b:b};if(a==="item_save")o.tmp="local-"+Date.now()+"-"+Math.random().toString(36).slice(2,7);OUT.push(o);saveOut();return{ok:true,queued:true,item:a==="item_save"?{id:o.tmp,title:b.title}:undefined}})}
+  return rawApi(b)}
+function sync(){if(syncing||!OUT.length||navigator.onLine===false||!TOK)return Promise.resolve();syncing=true;var did=0;
+  function next(){if(!OUT.length)return Promise.resolve();var o=OUT[0],b=Object.assign({},o.b);if(b.id&&IDMAP[b.id])b.id=IDMAP[b.id];
+    if(b.id&&isLocal(b.id)){OUT.shift();return next()} // its create never succeeded; nothing to change
+    return rawApi(b).then(function(j){if(j.offline)return Promise.reject("offline");if(j.ok&&o.tmp&&j.item&&j.item.id)IDMAP[o.tmp]=j.item.id;if(!j.ok)syncFail++;OUT.shift();did++;saveOut();return next()})}
+  return next().catch(function(){}).then(function(){syncing=false;saveOut();if(did){if(tab==="home"||tab==="task"||tab==="note"||tab==="memory")draw();if(!OUT.length&&orbState!=="speaking")setOrb(pc?"listening":"idle","Synced "+did+" change"+(did>1?"s":"")+".",3500)}})}
+function syncPill(){var p=$("syncst");if(!p)return;var off=navigator.onLine===false;if(!off&&!OUT.length){p.className="pill hide";return}p.className="pill"+(off?"":" on");p.textContent=(off?"Offline":"Online")+(OUT.length?" · "+OUT.length+" waiting to sync":"")}
+window.addEventListener("online",function(){syncPill();sync()});window.addEventListener("offline",syncPill);setInterval(function(){if(OUT.length)sync()},30000);
 function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
 var TZ="America/New_York";try{TZ=Intl.DateTimeFormat().resolvedOptions().timeZone||TZ}catch(e){}
 
@@ -125,7 +150,8 @@ function reduced(){return SET.calm||(window.matchMedia&&matchMedia("(prefers-red
 function watchAmp(stream){stopAmp();if(reduced()||!stream)return;try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();var src=actx.createMediaStreamSource(stream);ampNode=actx.createAnalyser();ampNode.fftSize=256;src.connect(ampNode);ampBuf=new Uint8Array(ampNode.fftSize);
   (function tick(){var o=$("orb");if(!ampNode)return;if(o){ampNode.getByteTimeDomainData(ampBuf);var m=0;for(var i=0;i<ampBuf.length;i++){var v=Math.abs(ampBuf[i]-128)/128;if(v>m)m=v}o.style.setProperty("--amp",(orbState==="speaking"||orbState==="listening")?Math.min(1,m*2.2).toFixed(2):"0")}ampRaf=requestAnimationFrame(tick)})()}catch(e){}}
 function stopAmp(){cancelAnimationFrame(ampRaf);ampNode=null;var o=$("orb");if(o)o.style.setProperty("--amp","0")}
-window.addEventListener("offline",function(){if(orbState!=="speaking")setOrb("blocked","You are offline. Notes and tasks need a connection right now.")});
+var OFFNOTE="Offline: notes, tasks, memory and places still work and sync later. The assistant and voice need a connection.";
+window.addEventListener("offline",function(){if(orbState!=="speaking")setOrb("blocked",OFFNOTE)});
 window.addEventListener("online",function(){setOrb(pc?"listening":"idle")});
 
 /* ---------- sign in ---------- */
@@ -133,9 +159,9 @@ function showLogin(){stopVoice();$("app").classList.add("hide");$("login").class
   PotentGoogle.mount($("gbtn"),{endpoint:API,action:"google",onError:function(m){$("lerr").textContent=m},onResult:function(j){setTok(j.token);start()}});
   var os="";try{os=localStorage.getItem("pl_token")||""}catch(e){}
   if(os){$("osbtn").classList.remove("hide");$("osbtn").onclick=function(){api({action:"from_os",os_token:os}).then(function(j){if(j.ok){setTok(j.token);start()}else $("lerr").textContent=j.error})}}}
-$("out").onclick=function(){setTok("");chat=[];showLogin()};
-function start(){api({action:"me"}).then(function(j){if(!j||!j.ok){showLogin();return}ME=j;if(j.voices&&j.voices.length)VOICES=j.voices;
-  $("login").classList.add("hide");$("app").classList.remove("hide");$("who").textContent=j.owner;drawTabs();draw()})}
+$("out").onclick=function(){if(OUT.length&&!confirm(OUT.length+" change(s) have not synced yet and will be lost if you sign out. Sign out anyway?"))return;OUT=[];ls("elv_out",null);["task","note","memory","place"].forEach(function(k){ls("elv_c_"+k,null)});ls("elv_me",null);setTok("");chat=[];showLogin()};
+function start(){rawApi({action:"me"}).then(function(j){if(j&&j.offline){j=ls("elv_me");if(j)j.offline=true}else if(j&&j.ok)ls("elv_me",j);if(!j||!j.ok){showLogin();return}ME=j;if(j.voices&&j.voices.length)VOICES=j.voices;
+  $("login").classList.add("hide");$("app").classList.remove("hide");$("who").textContent=j.owner;drawTabs();draw();syncPill();sync();if(navigator.onLine===false)setOrb("blocked",OFFNOTE)})}
 
 /* ---------- tabs ---------- */
 function drawTabs(){var n=$("tabs");n.innerHTML="";[["home","Home"],["chat","Chat"],["task","Tasks"],["note","Notes"],["memory","Memory"],["set","Settings"]].forEach(function(t){
@@ -151,7 +177,7 @@ function draw(){var m=$("main");m.innerHTML="";m.className="";$("bar").classList
   function load(){api({action:"items",kind:tab}).then(function(j){list.innerHTML="";if(!j.ok||!j.items.length){list.appendChild(el("div","dim",j.ok?"Nothing here yet.":j.error));return}
     j.items.forEach(function(it){var r=el("div","row"+(it.done?" done":""));
       if(tab==="task"){var c=el("input");c.type="checkbox";c.checked=!!it.done;c.setAttribute("aria-label","Done: "+it.title);c.onchange=function(){api({action:"item_toggle",id:it.id,done:c.checked}).then(load)};r.appendChild(c)}
-      var t=el("div","t",it.title);if(it.due_at){t.appendChild(el("small",null,"Due "+new Date(it.due_at).toLocaleString()))}if(it.body){t.appendChild(el("small",null,it.body))}r.appendChild(t);
+      var t=el("div","t",it.title);if(it.pending)t.appendChild(el("small",null,"Waiting to sync"));if(it.due_at){t.appendChild(el("small",null,"Due "+new Date(it.due_at).toLocaleString()))}if(it.body){t.appendChild(el("small",null,it.body))}r.appendChild(t);
       var x=el("button","x","Delete");x.onclick=function(){if(confirm("Delete this?"))api({action:"item_delete",id:it.id}).then(load)};r.appendChild(x);list.appendChild(r)})})}
   add.onsubmit=function(e){e.preventDefault();if(!inp.value.trim())return;api({action:"item_save",kind:tab,title:inp.value,due_at:due&&due.value?new Date(due.value).toISOString():undefined}).then(function(j){if(j.ok){inp.value="";if(due)due.value="";load()}else alert(j.error)})};
   load()}
@@ -189,7 +215,7 @@ function home(m){
     var open=j.items.filter(function(x){return!x.done}),now=Date.now(),eod=new Date();eod.setHours(23,59,59,999);
     var over=open.filter(function(x){return x.due_at&&Date.parse(x.due_at)<now}).length,today=open.filter(function(x){return x.due_at&&Date.parse(x.due_at)>=now&&Date.parse(x.due_at)<=eod.getTime()}).length;
     [["Open tasks",open.length],["Due today",today],["Overdue",over]].forEach(function(p){tb.appendChild(el("span","dim",p[0]));tb.appendChild(el("b",null,String(p[1])))});
-    tb.appendChild(el("span","dim","Calendar"));tb.appendChild(el("span","dim","Not connected yet"));tb.appendChild(el("span","dim","Waiting for approval"));tb.appendChild(el("span","dim","None (nothing needs approval yet)"))});
+    tb.appendChild(el("span","dim","Calendar"));tb.appendChild(el("span","dim","Not connected yet"));tb.appendChild(el("span","dim","Waiting to sync"));tb.appendChild(el("span","dim",OUT.length?OUT.length+" change"+(OUT.length>1?"s":""):"Nothing"));tb.appendChild(el("span","dim","Waiting for approval"));tb.appendChild(el("span","dim","None (nothing needs approval yet)"))});
   var cc=el("div","card");cc.appendChild(el("h2",null,"Everything Əlevate will cover"));var grid=el("div","cats");
   CATS.forEach(function(c){var live=c[2]!=="Planned";var b=el("button","cat"+(live?" live":""));b.appendChild(document.createTextNode(c[1]));b.appendChild(el("small",null,live?"Available":"Planned, not built yet"));b.disabled=!live;
     b.onclick=function(){go(c[2]==="home"?"home":c[2]==="set"?"set":c[2]==="task"?"task":"note")};grid.appendChild(b)});cc.appendChild(grid);side.appendChild(cc);
@@ -256,6 +282,7 @@ function say(role,text){if(text){chat.push({role:role,content:text});if(tab==="c
 function stopVoice(){try{if(dc)dc.close()}catch(e){}try{if(pc)pc.close()}catch(e){}try{if(ms)ms.getTracks().forEach(function(t){t.stop()})}catch(e){}clearTimeout(vt);pc=dc=ms=null;if(audio){audio.srcObject=null}window._remote=null;stopAmp();$("mic").classList.remove("live");$("mic").textContent="🎙";micStat();if(orbState!=="error")setOrb(navigator.onLine===false?"blocked":"idle");if(tab==="home"&&$("main")&&!$("app").classList.contains("hide"))draw()}
 $("mic").onclick=async function(){
   if(pc){stopVoice();return}
+  if(navigator.onLine===false){setOrb("blocked","Voice needs a connection. Type, or save notes and tasks and they will sync later.",5000);return}
   $("mic").disabled=true;setOrb("thinking","Connecting voice…");
   try{var s=await api({action:"voice_session",tz:TZ,voice:SET.voice||undefined});if(!s.ok)throw new Error(s.error||"Voice is unavailable.");
     pc=new RTCPeerConnection();audio=audio||document.createElement("audio");audio.autoplay=true;pc.ontrack=function(e){audio.srcObject=e.streams[0];window._remote=e.streams[0]};
@@ -282,5 +309,6 @@ function onEvt(m){var e;try{e=JSON.parse(m.data)}catch(x){return}
       setOrb("executing","Running: "+String(e.name||"task").replace(/_/g," "));
       api({action:"voice_tool",name:e.name,args:args}).then(function(out){setOrb(out&&out.ok?"done":"error",out&&out.ok?"Finished: "+String(e.name).replace(/_/g," "):(out&&out.error)||"That did not work.",2500);if(!dc||dc.readyState!=="open")return;
         dc.send(JSON.stringify({type:"conversation.item.create",item:{type:"function_call_output",call_id:e.call_id,output:JSON.stringify(out)}}));dc.send(JSON.stringify({type:"response.create"}))});break}}}
+if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/elevate/sw.js",{scope:"/elevate/"}).catch(function(){})})}
 if(TOK)start();else showLogin();
 </script></body></html>
