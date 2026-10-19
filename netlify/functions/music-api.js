@@ -2,6 +2,7 @@
 // POST JSON { action, ... }. Buyer calls send the buyer token; sellers send the Beat Man producer token; the owner sends the owner token.
 const B = require("./lib/beats");
 const M = require("./lib/music");
+const G = require("./lib/google");
 
 const UUID = /^[0-9a-f-]{36}$/i;
 const arr = function (v, n, f) { return (Array.isArray(v) ? v : []).slice(0, n).map(f).filter(Boolean); };
@@ -224,6 +225,19 @@ async function core(event) {
     const r = await B.sb("music_users", { method: "POST", prefer: "return=representation", body: { email: email, name: clip(b.name, 80) || null, password_hash: B.hashPw(b.password), marketing_opt_in: b.marketing_opt_in === true } });
     if (!r.ok) return B.J(r.status === 409 ? 409 : 500, { error: r.status === 409 ? "That email already has an account. Sign in instead." : "Could not create the account" });
     return B.J(200, { ok: true, token: M.signUser(r.data[0].id), user: { email: email, name: r.data[0].name } });
+  }
+  if (a === "googleconfig") return B.J(200, { ok: true, enabled: G.configured(), clientId: G.configured() ? G.clientId() : null });
+  if (a === "google") { // buyers: Google proves the email; first time creates the account (respects the sign-ups switch)
+    const gk = "glogin:" + ip(event); if (tooMany(gk)) return B.J(429, { error: "Too many attempts. Try again in 15 minutes." });
+    const gv = await G.verifyIdToken(b.credential); if (!gv.ok) { noteFail(gk); return B.J(401, { error: gv.error }); }
+    const gr = await B.sb("music_users?email=eq." + encodeURIComponent(gv.email) + "&select=*"); let gu = gr.ok && Array.isArray(gr.data) && gr.data[0];
+    if (gu && !gu.active) return B.J(403, { error: "This account is turned off" });
+    if (!gu) {
+      if (!(await flag("signups", true))) return B.J(403, { error: "New sign-ups are paused right now" });
+      const mk = await B.sb("music_users", { method: "POST", prefer: "return=representation", body: { email: gv.email, name: clip(gv.name, 80) || null, password_hash: G.lockedPasswordHash(B.hashPw), marketing_opt_in: false } });
+      if (!mk.ok) return B.J(500, { error: "Could not create the account" }); gu = mk.data[0];
+    }
+    return B.J(200, { ok: true, token: M.signUser(gu.id), user: { email: gu.email, name: gu.name } });
   }
   if (a === "login") {
     const email = lc(b.email, 200), k = "ulogin:" + email; if (tooMany(k)) return B.J(429, { error: "Too many attempts. Try again in 15 minutes." });

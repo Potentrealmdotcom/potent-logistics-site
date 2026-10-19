@@ -38,6 +38,7 @@ nav button.on{color:var(--red)}nav .dot{position:absolute;top:6px;right:22%;back
 pre.snap{white-space:pre-wrap;background:#0b0b0d;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px;max-height:160px;overflow:auto}
 </style></head><body>
 <div id="app" aria-live="polite"></div><footer id="ft" style="text-align:center;padding:6px 0 30px;color:var(--dim);font-size:11px"><img src="/potent-griffin-icon.png" alt="POTENT&reg;" style="height:20px;width:20px;vertical-align:middle;margin-right:6px;opacity:.7"><span id="cp" style="user-select:none;-webkit-user-select:none">&copy; 2026 POTENT&reg; &middot; LEGIT &middot; All Rights Reserved</span> &middot; <a href="/legit/terms.html" style="color:var(--dim)">Terms</a> &middot; <a href="/legit/privacy.html" style="color:var(--dim)">Privacy</a></footer><nav id="nav" hidden><div id="navin"></div></nav>
+<script src="/google-signin.js"></script>
 <script>
 var API="/.netlify/functions/legit-api", TK="legit_token", S={user:null,access:null,tab:"discover",intentions:[],complete:false,pendingLB:0,unread:0};
 var $=function(s){return document.querySelector(s)}, app=$("#app");
@@ -62,8 +63,13 @@ function auth(mode){mode=mode||"signup";clearTimers();$("#nav").hidden=true;
   (mode=="signup"?'<label for="n">First name</label><input id="n" autocomplete="given-name"><label for="ag">Age (18+)</label><input id="ag" type="number" min="18" max="99" inputmode="numeric">':'')+
   '<label for="e">Email</label><input id="e" type="email" autocomplete="email"><label for="p">Password (8+ characters)</label><input id="p" type="password" autocomplete="'+(mode=="signup"?"new-password":"current-password")+'">'+
   (mode=="signup"?'<label style="text-transform:none;font-size:13px;display:flex;gap:8px;align-items:flex-start;letter-spacing:0"><input type="checkbox" id="ag2" style="width:auto;margin:3px 0 0"><span>I am 18 or older and agree to the <a href="/legit/terms.html" target="_blank" style="color:var(--red)">Terms of Service</a> and <a href="/legit/privacy.html" target="_blank" style="color:var(--red)">Privacy Policy</a>, including that messages are scanned and may be reviewed by LEGIT for safety.</span></label>':'')+'<div id="er" class="err" role="alert"></div><button class="btn" id="go">'+(mode=="signup"?"Create account":"Log in")+'</button>'+
+  '<div id="gg" style="margin:12px 0 0;display:flex;justify-content:center"></div>'+
   (mode=="signup"?'<p class="dim" style="font-size:12px">Next you verify your ID. No ID, no entry. Adults 18+ only. One-time $39.99 after your free 24 hours. No subscription.</p>':'')+'</div>';
   $("#m1").onclick=function(){auth("signup")};$("#m2").onclick=function(){auth("login")};
+  if(window.PotentGoogle)PotentGoogle.mount($("#gg"),{endpoint:"/.netlify/functions/legit-api",action:"google",
+    extra:function(){return mode=="signup"?{name:$("#n").value,age:$("#ag").value,agree:$("#ag2").checked}:{}},
+    onError:function(m){$("#er").textContent=m},
+    onResult:function(d){if(d.ok){setTok(d.token);boot()}else if(d.need_signup){if(mode!="signup"){auth("signup");$("#er").textContent="New here? Add your first name and age, tick the Terms box, then tap Continue with Google again."}else $("#er").textContent=d.error}}});
   $("#go").onclick=async function(){$("#go").disabled=true;var d=await api(mode,{name:mode=="signup"?$("#n").value:undefined,age:mode=="signup"?$("#ag").value:undefined,agree:mode=="signup"?$("#ag2").checked:undefined,email:$("#e").value,password:$("#p").value});
     if(d.ok){setTok(d.token);boot()}else{$("#er").textContent=d.error||"Try again.";$("#go").disabled=false}}}
 
@@ -272,4 +278,5 @@ async function adminPay(){var d=await api("a_payments");if(!d.ok)return;$("#ad")
   $("#ad").innerHTML='<div class="card"><div class="dim">Total collected</div><div class="h" style="font-size:32px">$'+(d.totalCents/100).toFixed(2)+'</div></div>'+(d.payments.length?d.payments.map(function(p){var u=p.legit_users||{};return '<div class="card"><b>$'+((p.amount_cents||0)/100).toFixed(2)+'</b> · '+esc(u.name||"deleted user")+' <span class="dim">'+esc(u.email||"")+'</span><div class="dim" style="font-size:12px">'+new Date(p.created_at).toLocaleString()+'<br>Stripe ref '+esc(p.stripe_session_id)+'</div></div>'}).join(""):'<div class="card dim">No payments yet.</div>')}
 (function(){var n=0,t=0;document.getElementById("cp").onclick=function(){var now=Date.now();n=(now-t<3000?n:0)+1;t=now;if(n>=5){n=0;location.href="/legit/admin/"}}})();
 boot();
-</script></body></html>
+</script>
+</body></html>

@@ -34,6 +34,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{text-align:left;p
     <label>User ID or email<input id="pe" type="text" autocomplete="username" autocapitalize="none"></label>
     <label>Password<input id="pp" type="password" autocomplete="current-password"></label>
     <button id="goP">Sign in</button>
+    <div id="gP" style="display:flex;justify-content:center;margin-top:12px"></div>
   </div>
   <div id="fO" class="hide">
     <label>Staff ID<input id="oid" value="potent" autocomplete="username"></label>
@@ -45,6 +46,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{text-align:left;p
 
 <div id="app" class="hide"></div>
 
+<script src="/google-signin.js"></script>
 <script>
 var API="/.netlify/functions/beat-api",tok="",mode="",D=null,S=null,ST=null,AP=null,AU=null;
 var RIGHTS="Exclusive rights to the master recording of this instrumental: the finished instrumental recording and the audio files listed under 'What you get'. You may use it in new recordings and release them commercially. Only one buyer ever gets this beat. Ownership of the underlying composition (melody and arrangement) and any publishing share stays with the producer unless the listing says otherwise.";
@@ -65,6 +67,7 @@ $("tabO").onclick=function(){$("fO").classList.remove("hide");$("fP").classList.
 function loadAll(){
   if(mode==="o")return Promise.all([call("o_list"),call("o_stats"),call("o_apps")]).then(function(r){D=r[0];ST=r[1];AP=r[2].apps;show()});
   return call("me").then(function(j){D=j;return j.producer.store_admin?call("s_list").then(function(s){S=s}):null}).then(show)}
+if(window.PotentGoogle)PotentGoogle.mount($("gP"),{endpoint:"/.netlify/functions/beat-api",action:"google",onError:function(m){$("lerr").textContent=m},onResult:function(j){tok=j.token;mode="p";try{sessionStorage.setItem("bm",JSON.stringify({t:tok,m:"p"}))}catch(e){}loadAll().catch(function(e){$("lerr").textContent=e.message})}});
 $("goP").onclick=function(){$("lerr").textContent="";call("login",{email:$("pe").value,password:$("pp").value}).then(function(j){tok=j.token;mode="p";try{sessionStorage.setItem("bm",JSON.stringify({t:tok,m:"p"}))}catch(e){}return loadAll()}).catch(function(e){$("lerr").textContent=e.message})};
 $("goO").onclick=function(){$("lerr").textContent="";fetch("/.netlify/functions/auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"staff",userId:$("oid").value,password:$("op").value})}).then(function(r){return r.json()}).then(function(j){if(!j.ok||j.role!=="owner")throw new Error(j.error||"Owner only");tok=j.token;mode="o";try{sessionStorage.setItem("bm",JSON.stringify({t:tok,m:"o"}))}catch(e){}return loadAll()}).catch(function(e){$("lerr").textContent=e.message})};
 function out(){tok="";mode="";D=S=ST=AP=AU=null;try{sessionStorage.removeItem("bm")}catch(e){}$("app").classList.add("hide");$("login").classList.remove("hide");$("pp").value="";$("op").value=""}

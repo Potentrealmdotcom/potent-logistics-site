@@ -3,6 +3,7 @@
 // POST { action, ... } + Authorization: Bearer <legit token>.
 // Env: AUTH_SECRET, SUPABASE_SERVICE_ROLE_KEY, STRIPE_SECRET_KEY, (optional) GEMINI_API_KEY
 const L = require("./lib/legit");
+const G = require("./lib/google");
 const { J, sb } = L;
 const INTENTIONS = ["Dinner Night", "Late Night", "Movie Night", "Coffee Run", "Drinks", "Tonight Only", "Spontaneous", "Morning After", "Night Out", "Stay In"];
 const BODY = ["slim", "athletic", "average", "muscular", "curvy", "plus"];
@@ -112,6 +113,20 @@ exports.handler = async function (event) {
       if (!r.ok) return J(r.status === 409 ? 409 : 500, { ok: false, error: r.status === 409 ? "That email already has an account." : "Could not create the account. Has the LEGIT SQL been run?" });
       await logAdmin(r.data[0].id, "terms_accepted", r.data[0].id, "v1 " + new Date().toISOString());
       return J(200, { ok: true, token: L.sign(r.data[0].id) });
+    }
+    if (a === "googleconfig") return J(200, { ok: true, enabled: G.configured(), clientId: G.configured() ? G.clientId() : null });
+    if (a === "google") { // existing account -> sign in. New account -> same 18+ and Terms rules as the sign-up form.
+      if (limited("gl" + ip, 12, 900000)) return J(429, { ok: false, error: "Too many tries. Wait 15 minutes." });
+      const gv = await G.verifyIdToken(b.credential); if (!gv.ok) return J(401, { ok: false, error: gv.error });
+      const gr = await sb("legit_users?email=eq." + encodeURIComponent(gv.email) + "&select=id");
+      const gu = gr.ok && gr.data && gr.data[0];
+      if (gu) return J(200, { ok: true, token: L.sign(gu.id) });
+      const gname = clip(b.name || gv.name, 40), gage = parseInt(b.age, 10);
+      if (!gname || !(gage >= 18 && gage <= 99) || b.agree !== true) return J(200, { ok: false, need_signup: true, email: gv.email, name: gv.name, error: "New here: confirm your first name, that you are 18+, and the Terms to finish." });
+      const mk = await sb("legit_users", { method: "POST", prefer: "return=representation", body: { email: gv.email, password_hash: G.lockedPasswordHash(L.hashPw), name: gname, age: gage } });
+      if (!mk.ok) return J(500, { ok: false, error: "Could not create the account." });
+      await logAdmin(mk.data[0].id, "terms_accepted", mk.data[0].id, "v1 google " + new Date().toISOString());
+      return J(200, { ok: true, token: L.sign(mk.data[0].id) });
     }
     if (a === "login") {
       const email = clip(b.email, 120).toLowerCase();

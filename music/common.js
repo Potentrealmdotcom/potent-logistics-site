@@ -28,11 +28,15 @@
   PM.close = function () { var d = $("pmdlg"); if (d) d.style.display = "none"; var v = $("pmdb"); if (v) v.innerHTML = ""; };
 
   /* ---------- buyer account ---------- */
+  (function () { if (!window.PotentGoogle && !document.getElementById("pgs")) { var g = document.createElement("script"); g.id = "pgs"; g.src = "/google-signin.js"; g.async = true; document.head.appendChild(g); } })();
   PM.loadMe = function () { if (!gt()) { PM.me = null; return Promise.resolve(null); } return PM.api("music-api", { action: "me" }).then(function (j) { PM.me = j; return j; }).catch(function () { st(""); PM.me = null; return null; }); };
   PM.login = function (after) {
-    PM.dialog('<h2 style="margin:0 0 8px">Sign in or create an account</h2><small class="muted">An account keeps your purchases, downloads, favorites and playlists in one place.</small><input id="lem" type="email" placeholder="Email" autocomplete="email"><input id="lpw" type="password" placeholder="Password (10+ characters)" autocomplete="current-password"><input id="lnm" placeholder="Your name (new accounts)"><label class="ck"><input type="checkbox" id="lop" style="width:auto"> <span>Email me about new music (optional)</span></label><div class="row"><button id="lgo">Sign in</button><button class="alt" id="lre">Create account</button></div><div class="err" id="ler" style="color:#e74c3c;min-height:20px"></div>', function (m) {
+    PM.dialog('<h2 style="margin:0 0 8px">Sign in or create an account</h2><small class="muted">An account keeps your purchases, downloads, favorites and playlists in one place.</small><input id="lem" type="email" placeholder="Email" autocomplete="email"><input id="lpw" type="password" placeholder="Password (10+ characters)" autocomplete="current-password"><input id="lnm" placeholder="Your name (new accounts)"><label class="ck"><input type="checkbox" id="lop" style="width:auto"> <span>Email me about new music (optional)</span></label><div class="row"><button id="lgo">Sign in</button><button class="alt" id="lre">Create account</button></div><div id="lgg" style="display:flex;justify-content:center;margin:10px 0 0"></div><div class="err" id="ler" style="color:#e74c3c;min-height:20px"></div>', function (m) {
       function go(a) { PM.api("music-api", { action: a, email: $("lem").value, password: $("lpw").value, name: $("lnm").value, marketing_opt_in: $("lop").checked }, "").then(function (j) { st(j.token); return PM.loadMe(); }).then(function () { PM.close(); PM.toast("Signed in"); if (PM.onAuth) PM.onAuth(); if (after) after(); }).catch(function (e) { $("ler").textContent = e.message; }); }
       $("lgo").onclick = function () { go("login"); }; $("lre").onclick = function () { go("register"); };
+      if (window.PotentGoogle) PotentGoogle.mount($("lgg"), { endpoint: "/.netlify/functions/music-api", action: "google",
+        onError: function (m) { $("ler").textContent = m; },
+        onResult: function (j) { st(j.token); PM.loadMe().then(function () { PM.close(); PM.toast("Signed in"); if (PM.onAuth) PM.onAuth(); if (after) after(); }); } });
     });
   };
   PM.need = function (fn) { if (gt() && PM.me) return fn(); PM.loadMe().then(function (m) { if (m) fn(); else PM.login(fn); }); };

@@ -329,6 +329,15 @@ function plSwapNamespace(target) {
 var PL_TOKEN_KEY = "pl_token";
 function plTokenGet() { try { return localStorage.getItem(PL_TOKEN_KEY) || ""; } catch (e) { return ""; } }
 function plTokenSet(t) { try { if (t) localStorage.setItem(PL_TOKEN_KEY, t); else localStorage.removeItem(PL_TOKEN_KEY); } catch (e) { } }
+// "Continue with Google" button (renders nothing until GOOGLE_CLIENT_ID is set on the server)
+function GoogleBtn(props) {
+    var ref = React.useRef(null);
+    React.useEffect(function () {
+        if (!ref.current || !window.PotentGoogle) return;
+        window.PotentGoogle.mount(ref.current, { endpoint: "/.netlify/functions/auth", action: props.action, extra: props.extra, onResult: props.onResult, onError: props.onError });
+    }, [props.action]);
+    return React.createElement("div", { ref: ref, style: { display: "flex", justifyContent: "center", margin: "12px 0 2px", minHeight: 0 } });
+}
 function plApi(action, body) {
     return fetch("/.netlify/functions/auth", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -8035,6 +8044,12 @@ function AdminLogin(props) {
                     React.createElement(TxtIn, { label: "Password", value: pw, onChange: function (v) { setPw(v); }, type: "password", placeholder: "Enter your password" }),
                     coErr && React.createElement("div", { style: { color: C.red, fontSize: 12, marginBottom: 10 } }, "⚠ " + coErr),
                     React.createElement(Btn, { onClick: companyGo, disabled: !coEmail || !pw || coBusy, style: { width: "100%" } }, coBusy ? "Signing in…" : "Sign In →"),
+                    React.createElement(GoogleBtn, { action: "googlecompany", onError: function (m) { setCoErr(m); }, onResult: function (res) {
+                        plTokenSet(res.token);
+                        var cuser = plBuildCompanyUser(res);
+                        logAdminAction("Company Login", "Signed in with Google from " + getDeviceInfo(), (res.org.name || res.org.slug) + " / " + res.user.name);
+                        props.onLogin(cuser);
+                    } }),
                     React.createElement("div", { onClick: function () { setCompanyMode(false); setCoErr(""); setPw(""); }, style: { textAlign: "center", marginTop: 14, fontSize: 11, color: C.orange, cursor: "pointer", textDecoration: "underline" } }, "← POTENT team sign in"))));
     }
     return React.createElement("div", { style: { minHeight: "100vh", background: C.black, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
@@ -10979,7 +10994,10 @@ function CustomerPortal(props) {
                     React.createElement(TxtIn, { label: "Your Email Address", value: email, onChange: setEmail, type: "email", placeholder: "your@email.com" }),
                     React.createElement(TxtIn, { label: "Password", value: pw, onChange: setPw, type: "password" }),
                     loginErr && React.createElement("div", { style: { color: C.red, fontSize: 12, marginBottom: 8 } }, loginErr),
-                    React.createElement(Btn, { onClick: mode === "login" ? login : createAccount, disabled: !email || !pw, style: { width: "100%" } }, mode === "login" ? "Log In \u2192" : "Create Account \u2192"))));
+                    React.createElement(Btn, { onClick: mode === "login" ? login : createAccount, disabled: !email || !pw, style: { width: "100%" } }, mode === "login" ? "Log In \u2192" : "Create Account \u2192"),
+                    React.createElement(GoogleBtn, { action: "googlecust", extra: function () { return { org_slug: PL_ORG_SLUG }; }, onError: function (m) { setLoginErr(m); }, onResult: function (res) {
+                        setCustToken(res.token); setAutopayEnabled(!!res.autopay_enabled); setAccountRole(res.account_role || "admin"); finishLogin(res.token);
+                    } }))));
     return React.createElement("div", { style: { minHeight: "100vh", background: C.black, fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
         React.createElement("div", { style: { borderBottom: "1px solid " + C.border, padding: "12px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: C.black, zIndex: 100 } },
             React.createElement("div", null,

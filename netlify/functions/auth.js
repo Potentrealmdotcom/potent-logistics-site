@@ -32,6 +32,7 @@
 var crypto = require("crypto");
 var billing = require("./lib/billing");
 var provision = require("./lib/provision");
+var G = require("./lib/google");
 
 var SB = "https://ymvsatlrkzgxwzxybwmk.supabase.co";
 var TOKEN_TTL_MS = 30 * 24 * 3600 * 1000;
@@ -231,6 +232,27 @@ async function tenantBySlug(slug) {
     var o = r.ok && Array.isArray(r.data) ? r.data[0] : null;
     return o && billing.isPaid(o) ? o : null;
 }
+
+// Builds the signed-in response for a company login. Shared by password login and Google login,
+// so both always end in exactly the same session (same role, same limits, same suspended-company check).
+async function companySession(row, email) {
+    var o = await sb("organizations?id=eq." + row.org_id + "&select=*");
+    var org = o.ok && Array.isArray(o.data) ? o.data[0] : null;
+    if (!org) return J(404, { ok: false, error: "Company account not found." });
+    if (org.status && ["suspended", "cancelled", "canceled", "inactive"].indexOf(String(org.status).toLowerCase()) > -1) {
+        return J(403, { ok: false, error: "This company account is not active. Contact POTENT." });
+    }
+    return J(200, {
+        ok: true,
+        token: sign({ uid: "org-" + row.id, role: row.role === "owner" ? "owner" : (row.role || "dispatch"), orgId: org.id, exp: Date.now() + TOKEN_TTL_MS }),
+        user: { id: "org-" + row.id, name: row.name || email, role: row.role === "owner" ? "owner" : (row.role || "dispatch") },
+        org: { id: org.id, slug: org.slug, name: org.name },
+        limits: limitsFor(org),
+        pricing: org.pricing_config || null,
+        billing: billingView(org),
+        branding: billing.isPaid(org) ? (org.branding || null) : null
+    });
+}
 exports.handler = async function (event) {
     if (event.httpMethod !== "POST") return J(405, { ok: false, error: "POST only" });
     if (!process.env.AUTH_SECRET || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -272,22 +294,7 @@ exports.handler = async function (event) {
                 return (!r.status || r.status === "active") && String(r.email || "").toLowerCase() === email && checkPw(r.password_hash, body.password);
             }) : null;
             if (!row) { noteFail(limitKey2); return J(401, { ok: false, error: "Wrong email or password." }); }
-            var o = await sb("organizations?id=eq." + row.org_id + "&select=*");
-            var org = o.ok && Array.isArray(o.data) ? o.data[0] : null;
-            if (!org) return J(404, { ok: false, error: "Company account not found." });
-            if (org.status && ["suspended", "cancelled", "canceled", "inactive"].indexOf(String(org.status).toLowerCase()) > -1) {
-                return J(403, { ok: false, error: "This company account is not active. Contact POTENT." });
-            }
-            return J(200, {
-                ok: true,
-                token: sign({ uid: "org-" + row.id, role: row.role === "owner" ? "owner" : (row.role || "dispatch"), orgId: org.id, exp: Date.now() + TOKEN_TTL_MS }),
-                user: { id: "org-" + row.id, name: row.name || email, role: row.role === "owner" ? "owner" : (row.role || "dispatch") },
-                org: { id: org.id, slug: org.slug, name: org.name },
-                limits: limitsFor(org),
-                pricing: org.pricing_config || null,
-                billing: billingView(org),
-                branding: billing.isPaid(org) ? (org.branding || null) : null
-            });
+            return await companySession(row, email);
         }
 
         // ── public: a company's name, look and prices for its own booking page ──
@@ -359,6 +366,41 @@ exports.handler = async function (event) {
             if (!pm) { noteFail(plk); return J(401, { ok: false, error: "No account found with that DOT/MC number and password." }); }
             if (String(pm.account_password).indexOf("scrypt$") !== 0) await sb("carrier_profiles?id=eq." + encodeURIComponent(pm.id), { method: "PATCH", prefer: "return=minimal", body: { account_password: hashPw(String(body.password)) } });
             return J(200, { ok: true, profile: stripSecret(pm), token: sign({ uid: "partner:" + pm.id, role: "partner", orgId: null, exp: Date.now() + TOKEN_TTL_MS }) });
+        }
+
+        // ── Continue with Google ──────────────────────────────────
+        // Public: lets the page know whether to show the Google button, and which client to use.
+        if (action === "googleconfig") return J(200, { ok: true, enabled: G.configured(), clientId: G.configured() ? G.clientId() : null });
+
+        // Company staff: ONLY an email the company already added (active org_users row). Google never creates staff
+        // and never raises a role; whatever role the owner gave that email is what the session gets.
+        if (action === "googlecompany") {
+            var gl = "gco:" + String(event.headers && (event.headers["x-nf-client-connection-ip"] || event.headers["x-forwarded-for"]) || "x");
+            if (tooMany(gl)) return J(429, { ok: false, error: "Too many attempts. Try again in 15 minutes." });
+            var gv = await G.verifyIdToken(body.credential);
+            if (!gv.ok) { noteFail(gl); return J(401, { ok: false, error: gv.error }); }
+            var gu = await sb("org_users?email=ilike." + encodeURIComponent(gv.email) + "&select=*");
+            var grow = gu.ok && Array.isArray(gu.data) ? gu.data.find(function (r) { return (!r.status || r.status === "active") && String(r.email || "").toLowerCase() === gv.email; }) : null;
+            if (!grow) { noteFail(gl); return J(403, { ok: false, error: "That Google email is not set up as a login for any company. Ask your company owner to add " + gv.email + ", or use your password." }); }
+            return await companySession(grow, gv.email);
+        }
+
+        // Customers: first Google sign-in creates the customer account (customers can only manage their own autopay).
+        if (action === "googlecust") {
+            var cl = "gcu:" + String(event.headers && (event.headers["x-nf-client-connection-ip"] || event.headers["x-forwarded-for"]) || "x");
+            if (tooMany(cl)) return J(429, { ok: false, error: "Too many attempts. Try again in 15 minutes." });
+            var cv = await G.verifyIdToken(body.credential);
+            if (!cv.ok) { noteFail(cl); return J(401, { ok: false, error: cv.error }); }
+            var corg2 = null;
+            if (body.org_slug && String(body.org_slug) !== "potent-logistics") { corg2 = await tenantBySlug(body.org_slug); if (!corg2) return J(404, { ok: false, error: "That company page was not found." }); }
+            var ckey2 = corg2 ? String(corg2.id) + ":" + cv.email : cv.email;
+            var ca2 = await sb("customer_accounts?email=eq." + encodeURIComponent(ckey2) + "&select=*");
+            var acct2 = ca2.ok && Array.isArray(ca2.data) ? ca2.data[0] : null;
+            if (!acct2) {
+                var mk2 = await sb("customer_accounts", { method: "POST", prefer: "return=minimal", body: { email: ckey2, password: G.lockedPasswordHash(hashPw) } });
+                if (!mk2.ok) return J(500, { ok: false, error: "Could not create account." });
+            }
+            return J(200, { ok: true, token: sign({ uid: "cust:" + cv.email, role: "customer", orgId: corg2 ? corg2.id : null, exp: Date.now() + TOKEN_TTL_MS }), autopay_enabled: !!(acct2 && acct2.autopay_enabled), account_role: (acct2 && acct2.account_role) || "admin", email: cv.email, name: cv.name });
         }
 
         // everything below needs a valid token

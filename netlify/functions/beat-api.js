@@ -2,6 +2,7 @@
 // POST JSON { action, ... }.  Producer calls send  Authorization: Bearer <producer token>.
 // Owner calls send the normal POTENT owner staff token (from auth.js action "staff").
 const B = require("./lib/beats");
+const G = require("./lib/google");
 
 const METHODS = ["paypal", "airtm", "zinli", "usdt", "binance", "westernunion", "wise", "zelle", "other"];
 const UUID = /^[0-9a-f-]{36}$/i;
@@ -195,6 +196,18 @@ async function core(event) {
       }
       return B.J(200, { ok: true, title: it && it.title, url: dl, license: s.metadata.sale_type });
     } catch (e) { return B.J(500, { error: "Could not verify payment" }); }
+  }
+
+  // ───────── producer login with Google: only a producer POTENT has already approved (never creates one) ─────────
+  if (a === "googleconfig") return B.J(200, { ok: true, enabled: G.configured(), clientId: G.configured() ? G.clientId() : null });
+  if (a === "google") {
+    const gk = "beatg:" + String((event.headers || {})["x-nf-client-connection-ip"] || "x");
+    if (tooMany(gk)) return B.J(429, { error: "Too many attempts. Try again in 15 minutes." });
+    const gv = await G.verifyIdToken(b.credential); if (!gv.ok) { noteFail(gk); return B.J(401, { error: gv.error }); }
+    const gr = await B.sb("beat_producers?email=eq." + encodeURIComponent(gv.email) + "&select=*");
+    const gp = gr.ok && Array.isArray(gr.data) && gr.data[0];
+    if (!gp || !gp.active) { noteFail(gk); return B.J(403, { error: "No approved producer account uses " + gv.email + ". Apply first, or sign in with your password." }); }
+    return B.J(200, Object.assign({ ok: true }, await dash(gp), { token: B.signProducer(gp.id) }));
   }
 
   // ───────── producer login ─────────
