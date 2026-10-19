@@ -8,6 +8,7 @@ const V = require("./lib/voice/billing");
 const T = require("./lib/voice/tools");
 const P = require("./lib/voice/prompt");
 const PR = require("./lib/voice/pricing");
+const EP = require("./lib/elevate-phone");   // Əlevate phone calls: separate table, separate rules
 const rows = S.rows;
 const secret = function () { return process.env.VOICE_BRIDGE_SECRET || ""; };
 const base = function () { return process.env.VOICE_WEBHOOK_URL || ((process.env.URL || B.SITE) + "/.netlify/functions/voice-webhook"); };
@@ -37,8 +38,10 @@ exports.handler = async function (event) {
   try {
     const act = String(b.action || "");
     if (act === "health") { await B.sb("voice_provider_health", { method: "POST", prefer: "return=minimal", body: { provider: String(b.provider || "bridge").slice(0, 40), kind: String(b.kind || "ping").slice(0, 40), ok: b.ok !== false, detail: b.detail ? String(b.detail).slice(0, 300) : null } }); return B.J(200, { ok: true }); }
+    if (EP.rowId(b.session_id)) { const r = await EP.handle(act, b); return B.J(r.status, r.body); }          // an Əlevate call: never touches voice_* tables
     if (act === "context") {
       const tok = TW.readStreamToken(secret(), b.token); if (!tok) return B.J(403, { error: "Bad or expired stream token" });
+      if (tok.o === "elevate") { const r = await EP.context(tok); return B.J(r.status, r.body); }
       const ses = rows(await B.sb("voice_sessions?org_id=eq." + tok.o + "&provider=eq.twilio&provider_call_id=eq." + encodeURIComponent(tok.c) + "&select=*&limit=1"))[0];
       if (!ses) return B.J(404, { error: "No such call" });
       if (ses.state !== "ringing" && ses.state !== "active") return B.J(409, { error: "Call is not open" });
