@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#000000"><link rel="manifest" href="/elevate/manifest.json"><link rel="icon" href="/elevate/icon.svg" type="image/svg+xml">
+<title>Əlevate</title>
+<style>
+:root{--bg:#000;--card:#111;--line:#262626;--tx:#f4f4f4;--dim:#9a9a9a;--y:#F0E000;--red:#ff6b5e}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+body{display:flex;flex-direction:column;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.logo{font-weight:800;font-size:22px;letter-spacing:.14em;color:var(--y)}.sp{flex:1}
+.pill{font-size:12px;color:var(--dim)}
+button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:10px 14px;background:var(--y);color:#000;font-weight:700}
+button.alt{background:#1b1b1b;color:var(--tx);border:1px solid var(--line)}button:disabled{opacity:.5}
+nav{display:flex;gap:6px;padding:8px 16px;border-bottom:1px solid var(--line);overflow-x:auto}
+nav button{background:transparent;color:var(--dim);border:1px solid transparent;padding:8px 12px}
+nav button.on{color:#000;background:var(--y)}
+main{flex:1;overflow:auto;padding:16px;max-width:760px;width:100%;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.msg{padding:10px 14px;border-radius:16px;margin:8px 0;max-width:88%;white-space:pre-wrap;word-wrap:break-word}
+.me{background:#1d1d1d;margin-left:auto;border-bottom-right-radius:4px}.ai{background:#15140a;border:1px solid #3a3600;border-bottom-left-radius:4px}
+.did{font-size:12px;color:var(--y);margin:-2px 0 6px 4px}
+form.bar{display:flex;gap:8px;padding:10px 16px;border-top:1px solid var(--line);max-width:760px;width:100%;margin:0 auto}
+input,textarea{font:inherit;color:var(--tx);background:#0b0b0b;border:1px solid var(--line);border-radius:12px;padding:12px;width:100%}
+input:focus,textarea:focus{outline:2px solid var(--y)}
+.row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.row:last-child{border:0}
+.row .t{flex:1;word-break:break-word}.row small{color:var(--dim);display:block}.done .t{text-decoration:line-through;color:var(--dim)}
+.x{background:transparent;color:var(--dim);padding:6px 10px;border:1px solid var(--line)}
+.err{color:var(--red);min-height:22px;font-size:14px}.dim{color:var(--dim)}
+.mic{width:48px;height:48px;border-radius:50%;padding:0;font-size:20px}.mic.live{background:var(--red);color:#fff}
+.center{margin:12vh auto 0;text-align:center;max-width:380px}.center h1{color:var(--y);letter-spacing:.2em;font-size:34px;margin:.2em 0}
+#gbtn{display:flex;justify-content:center;margin:14px 0}
+.hide{display:none!important}
+</style></head><body>
+<div id="login" class="center card hide">
+  <h1>Əlevate</h1><div class="dim">Your private assistant.</div>
+  <div id="gbtn"></div>
+  <button id="osbtn" class="alt hide">Continue as POTENT owner</button>
+  <div class="err" id="lerr" role="alert"></div>
+  <p class="dim" style="font-size:13px">Only people the owner has added can sign in.</p>
+</div>
+<div id="app" class="hide" style="display:flex;flex-direction:column;flex:1;min-height:0">
+<header><span class="logo">ƏLEVATE</span><span class="sp"></span><span class="pill" id="who"></span><button class="alt" id="out">Sign out</button></header>
+<nav id="tabs"><button data-t="chat" class="on">Chat</button><button data-t="task">Tasks</button><button data-t="note">Notes</button><button data-t="memory">Memory</button></nav>
+<main id="main"></main>
+<form class="bar" id="bar"><button type="button" class="mic" id="mic" title="Talk" aria-label="Talk to Əlevate">🎙</button><input id="msg" placeholder="Ask or tell Əlevate…" autocomplete="off" maxlength="2000"><button id="send">Send</button></form>
+</div>
+<script src="/google-signin.js"></script>
+<script>
+var API="/.netlify/functions/elevate-api",$=function(i){return document.getElementById(i)},tab="chat",chat=[],TOK="";
+try{TOK=localStorage.getItem("elv_t")||""}catch(e){}
+function setTok(t){TOK=t||"";try{t?localStorage.setItem("elv_t",t):localStorage.removeItem("elv_t")}catch(e){}}
+function api(b){return fetch(API,{method:"POST",headers:Object.assign({"Content-Type":"application/json"},TOK?{Authorization:"Bearer "+TOK}:{}),body:JSON.stringify(b)})
+  .then(function(r){return r.json().catch(function(){return{ok:false,error:"Server error"}})}).then(function(j){if(j&&j.login){setTok("");showLogin()}return j}).catch(function(){return{ok:false,error:"Can't reach the server."}})}
+function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
+var TZ="America/New_York";try{TZ=Intl.DateTimeFormat().resolvedOptions().timeZone||TZ}catch(e){}
+
+/* ---------- sign in ---------- */
+function showLogin(){stopVoice();$("app").classList.add("hide");$("login").classList.remove("hide");
+  PotentGoogle.mount($("gbtn"),{endpoint:API,action:"google",onError:function(m){$("lerr").textContent=m},onResult:function(j){setTok(j.token);start()}});
+  var os="";try{os=localStorage.getItem("pl_token")||""}catch(e){}
+  if(os){$("osbtn").classList.remove("hide");$("osbtn").onclick=function(){api({action:"from_os",os_token:os}).then(function(j){if(j.ok){setTok(j.token);start()}else $("lerr").textContent=j.error})}}}
+$("out").onclick=function(){setTok("");chat=[];showLogin()};
+function start(){api({action:"me"}).then(function(j){if(!j||!j.ok){showLogin();return}
+  $("login").classList.add("hide");$("app").classList.remove("hide");$("who").textContent=j.owner;draw()})}
+
+/* ---------- tabs ---------- */
+[].forEach.call($("tabs").children,function(b){b.onclick=function(){tab=b.dataset.t;[].forEach.call($("tabs").children,function(x){x.classList.toggle("on",x===b)});draw()}});
+function draw(){var m=$("main");m.innerHTML="";$("bar").classList.toggle("hide",tab!=="chat");
+  if(tab==="chat"){if(!chat.length)m.appendChild(el("div","card dim","Hi. Type or tap the mic and talk. I can save notes, add tasks and reminders, and remember things for you. I can't send messages, make calls or move money yet."));
+    chat.forEach(function(c){var d=el("div","msg "+(c.role==="user"?"me":"ai"),c.content);m.appendChild(d);if(c.did)c.did.forEach(function(x){m.appendChild(el("div","did","✓ "+(x.item&&x.item.title||"saved")))})});m.scrollTop=m.scrollHeight;return}
+  var add=el("form","card"),inp=el("input");inp.placeholder=tab==="task"?"Add a task…":tab==="note"?"Add a note…":"Something to remember…";inp.maxLength=200;add.appendChild(inp);
+  var due;if(tab==="task"){due=el("input");due.type="datetime-local";due.style.marginTop="8px";add.appendChild(due)}
+  var b=el("button",null,"Add");b.style.marginTop="8px";add.appendChild(b);m.appendChild(add);var list=el("div","card");m.appendChild(list);
+  function load(){api({action:"items",kind:tab}).then(function(j){list.innerHTML="";if(!j.ok||!j.items.length){list.appendChild(el("div","dim","Nothing here yet."));return}
+    j.items.forEach(function(it){var r=el("div","row"+(it.done?" done":""));
+      if(tab==="task"){var c=el("input");c.type="checkbox";c.checked=!!it.done;c.style.width="auto";c.onchange=function(){api({action:"item_toggle",id:it.id,done:c.checked}).then(load)};r.appendChild(c)}
+      var t=el("div","t",it.title);if(it.due_at){t.appendChild(el("small",null,"Due "+new Date(it.due_at).toLocaleString()))}if(it.body){t.appendChild(el("small",null,it.body))}r.appendChild(t);
+      var x=el("button","x","Delete");x.onclick=function(){if(confirm("Delete this?"))api({action:"item_delete",id:it.id}).then(load)};r.appendChild(x);list.appendChild(r)})})}
+  add.onsubmit=function(e){e.preventDefault();if(!inp.value.trim())return;api({action:"item_save",kind:tab,title:inp.value,due_at:due&&due.value?new Date(due.value).toISOString():undefined}).then(function(j){if(j.ok){inp.value="";if(due)due.value="";load()}else alert(j.error)})};
+  load()}
+
+/* ---------- text chat ---------- */
+$("bar").onsubmit=function(e){e.preventDefault();var v=$("msg").value.trim();if(!v)return;$("msg").value="";chat.push({role:"user",content:v});draw();$("send").disabled=true;
+  api({action:"chat",tz:TZ,messages:chat.map(function(c){return{role:c.role,content:c.content}})}).then(function(j){$("send").disabled=false;
+    chat.push({role:"assistant",content:j.ok?j.reply:(j.error||"Something went wrong."),did:j.ok?j.did:null});draw()})};
+
+/* ---------- voice (browser <-> OpenAI Realtime over WebRTC) ---------- */
+var pc=null,dc=null,ms=null,vt=null,audio=null;
+function say(role,text){if(text){chat.push({role:role,content:text});if(tab==="chat")draw()}}
+function stopVoice(){try{if(dc)dc.close()}catch(e){}try{if(pc)pc.close()}catch(e){}try{if(ms)ms.getTracks().forEach(function(t){t.stop()})}catch(e){}clearTimeout(vt);pc=dc=ms=null;if(audio){audio.srcObject=null}$("mic").classList.remove("live");$("mic").textContent="🎙"}
+$("mic").onclick=async function(){
+  if(pc){stopVoice();return}
+  tab="chat";draw();$("mic").disabled=true;
+  try{var s=await api({action:"voice_session",tz:TZ});if(!s.ok)throw new Error(s.error||"Voice is unavailable.");
+    pc=new RTCPeerConnection();audio=audio||document.createElement("audio");audio.autoplay=true;pc.ontrack=function(e){audio.srcObject=e.streams[0]};
+    ms=await navigator.mediaDevices.getUserMedia({audio:true});pc.addTrack(ms.getTracks()[0]);
+    dc=pc.createDataChannel("oai-events");dc.onmessage=onEvt;
+    var offer=await pc.createOffer();await pc.setLocalDescription(offer);
+    var r=await fetch("https://api.openai.com/v1/realtime/calls",{method:"POST",body:offer.sdp,headers:{Authorization:"Bearer "+s.client_secret,"Content-Type":"application/sdp"}});
+    if(!r.ok)throw new Error("Could not connect voice.");await pc.setRemoteDescription({type:"answer",sdp:await r.text()});
+    $("mic").classList.add("live");$("mic").textContent="■";vt=setTimeout(function(){say("assistant","Voice ended after "+s.max_minutes+" minutes.");stopVoice()},s.max_minutes*60000);
+  }catch(err){stopVoice();say("assistant",err.name==="NotAllowedError"?"I need microphone permission to hear you.":err.message||"Voice failed.")}
+  $("mic").disabled=false};
+function onEvt(m){var e;try{e=JSON.parse(m.data)}catch(x){return}
+  if(e.type==="conversation.item.input_audio_transcription.completed")say("user",e.transcript&&e.transcript.trim());
+  else if(e.type==="response.output_audio_transcript.done"||e.type==="response.audio_transcript.done")say("assistant",e.transcript);
+  else if(e.type==="response.function_call_arguments.done"){var args={};try{args=JSON.parse(e.arguments||"{}")}catch(x){}
+    api({action:"voice_tool",name:e.name,args:args}).then(function(out){if(!dc||dc.readyState!=="open")return;
+      dc.send(JSON.stringify({type:"conversation.item.create",item:{type:"function_call_output",call_id:e.call_id,output:JSON.stringify(out)}}));dc.send(JSON.stringify({type:"response.create"}))})}}
+if("serviceWorker" in navigator){}
+if(TOK)start();else showLogin();
+</script></body></html>
