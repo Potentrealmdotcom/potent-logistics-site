@@ -86,6 +86,7 @@ body.calm .orb *{animation:none!important;transition:none!important}body.calm .o
 <div id="login" class="center card hide">
   <div class="tag">YOUR WORLD. OFFLINE &amp; ONLINE.</div>
   <h1>Əlevate</h1><div class="dim">Your private assistant.</div>
+  <select id="intent" aria-label="What would you like to do?" style="margin:6px 0"><option value="">Sign in</option><option value="sub">Subscribe: $50 a month (120 voice minutes)</option><option value="pack:1000">Buy credits: $10 (40 minutes)</option><option value="pack:2500">Buy credits: $25 (100 minutes)</option><option value="pack:5000">Buy credits: $50 (200 minutes)</option></select>
   <div id="gbtn"></div>
   <button id="osbtn" class="alt hide">Continue as POTENT owner</button>
   <div class="err" id="lerr" role="alert"></div>
@@ -156,7 +157,7 @@ window.addEventListener("online",function(){setOrb(pc?"listening":"idle")});
 
 /* ---------- sign in ---------- */
 function showLogin(){stopVoice();$("app").classList.add("hide");$("login").classList.remove("hide");
-  PotentGoogle.mount($("gbtn"),{endpoint:API,action:"google",onError:function(m){$("lerr").textContent=m},onResult:function(j){setTok(j.token);start()}});
+  PotentGoogle.mount($("gbtn"),{endpoint:API,action:"google",extra:function(){return{intent:$("intent").value}},onError:function(m){$("lerr").textContent=m},onResult:function(j){if(j.url){location.href=j.url;return}setTok(j.token);start()}});
   var os="";try{os=localStorage.getItem("pl_token")||""}catch(e){}
   if(os){$("osbtn").classList.remove("hide");$("osbtn").onclick=function(){api({action:"from_os",os_token:os}).then(function(j){if(j.ok){setTok(j.token);start()}else $("lerr").textContent=j.error})}}}
 $("out").onclick=function(){if(OUT.length&&!confirm(OUT.length+" change(s) have not synced yet and will be lost if you sign out. Sign out anyway?"))return;OUT=[];ls("elv_out",null);["task","note","memory","place"].forEach(function(k){ls("elv_c_"+k,null)});ls("elv_me",null);setTok("");chat=[];showLogin()};
@@ -191,6 +192,19 @@ function settings(m){var c=el("div","card");c.appendChild(el("h2",null,"Settings
   m.appendChild(c);var c2=el("div","card");c2.appendChild(el("h2",null,"Show or hide sections"));
   [["home","Home"],["chat","Chat"],["task","Tasks"],["note","Notes"],["memory","Memory"]].forEach(function(t){var cb=el("input");cb.type="checkbox";cb.checked=!SET.hidden[t[0]];cb.setAttribute("aria-label",t[1]);cb.onchange=function(){if(cb.checked)delete SET.hidden[t[0]];else SET.hidden[t[0]]=1;saveSet();drawTabs()};var r=el("div","row");r.appendChild(cb);r.appendChild(el("div","t",t[1]));c2.appendChild(r)});
   c2.appendChild(el("p","dim","These choices live in this browser only."));m.appendChild(c2);
+  var bc=el("div","card");bc.appendChild(el("h2",null,"Plan and voice minutes"));var bb=el("div","dim","Loading…");bc.appendChild(bb);m.appendChild(bc);
+  rawApi({action:"billing"}).then(function(j){bb.innerHTML="";if(!j||!j.ok||!j.plan||!j.packs){bb.textContent=j&&j.offline?"Needs a connection.":(j&&j.error)||"Could not load.";return}
+    var kv=el("div","kv");function line(a,b){kv.appendChild(el("span","dim",a));kv.appendChild(el("b",null,b))}
+    if(j.unlimited){line("Plan","Owner: voice is never blocked (still logged)")}else{
+      line("Plan",j.subscribed?"Əlevate AI, $"+(j.plan.price_cents/100)+" a month":"No monthly plan");
+      if(j.subscribed){line("Plan minutes left",j.included_left_minutes+" of "+j.plan.included_minutes);if(j.period_end)line("Renews",new Date(j.period_end).toLocaleDateString())}
+      line("Credit minutes",String(j.credit_left_minutes))}
+    bb.appendChild(kv);if(j.unlimited)return;
+    var row=el("div");row.style.cssText="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px";
+    function buy(what,label){var b=el("button",what==="sub"?"":"alt",label);b.onclick=function(){b.disabled=true;rawApi({action:"buy",what:what}).then(function(r){b.disabled=false;if(r&&r.url)location.href=r.url;else alert((r&&r.error)||"Could not start checkout.")})};row.appendChild(b)}
+    if(!j.subscribed)buy("sub","Subscribe: $"+(j.plan.price_cents/100)+"/month");
+    j.packs.forEach(function(p){buy("pack:"+p.cents,"Add "+p.minutes+" min: $"+(p.cents/100))});
+    bb.appendChild(row);bb.appendChild(el("p","dim","Credits cost $0.25 a minute and last 12 months. The plan's minutes reset every billing month. Text chat, notes, tasks and the map are not metered."))});
   var c3=el("div","card");c3.appendChild(el("h2",null,"What is kept"));c3.appendChild(el("p","dim","Your notes, tasks, memory and saved places are stored under your sign-in only. Saved places are rounded to about 1 km, so the map never holds an exact address. Voice words and audio are not stored. Nothing here sends messages, calls anyone or spends money."));m.appendChild(c3)}
 
 /* ---------- home: map + orb + today ---------- */
@@ -215,7 +229,7 @@ function home(m){
     var open=j.items.filter(function(x){return!x.done}),now=Date.now(),eod=new Date();eod.setHours(23,59,59,999);
     var over=open.filter(function(x){return x.due_at&&Date.parse(x.due_at)<now}).length,today=open.filter(function(x){return x.due_at&&Date.parse(x.due_at)>=now&&Date.parse(x.due_at)<=eod.getTime()}).length;
     [["Open tasks",open.length],["Due today",today],["Overdue",over]].forEach(function(p){tb.appendChild(el("span","dim",p[0]));tb.appendChild(el("b",null,String(p[1])))});
-    tb.appendChild(el("span","dim","Calendar"));tb.appendChild(el("span","dim","Not connected yet"));tb.appendChild(el("span","dim","Waiting to sync"));tb.appendChild(el("span","dim",OUT.length?OUT.length+" change"+(OUT.length>1?"s":""):"Nothing"));tb.appendChild(el("span","dim","Waiting for approval"));tb.appendChild(el("span","dim","None (nothing needs approval yet)"))});
+    tb.appendChild(el("span","dim","Calendar"));tb.appendChild(el("span","dim","Not connected yet"));tb.appendChild(el("span","dim","Voice minutes left"));var vm=el("span","dim","…");tb.appendChild(vm);rawApi({action:"billing"}).then(function(b){vm.textContent=!b||!b.ok?"Needs a connection":b.unlimited?"Unlimited (owner)":(b.included_left_minutes+b.credit_left_minutes)+" min"});tb.appendChild(el("span","dim","Waiting to sync"));tb.appendChild(el("span","dim",OUT.length?OUT.length+" change"+(OUT.length>1?"s":""):"Nothing"));tb.appendChild(el("span","dim","Waiting for approval"));tb.appendChild(el("span","dim","None (nothing needs approval yet)"))});
   var cc=el("div","card");cc.appendChild(el("h2",null,"Everything Əlevate will cover"));var grid=el("div","cats");
   CATS.forEach(function(c){var live=c[2]!=="Planned";var b=el("button","cat"+(live?" live":""));b.appendChild(document.createTextNode(c[1]));b.appendChild(el("small",null,live?"Available":"Planned, not built yet"));b.disabled=!live;
     b.onclick=function(){go(c[2]==="home"?"home":c[2]==="set"?"set":c[2]==="task"?"task":"note")};grid.appendChild(b)});cc.appendChild(grid);side.appendChild(cc);
@@ -276,15 +290,16 @@ function sendText(v){chat.push({role:"user",content:v});setOrb("thinking","Worki
 $("bar").onsubmit=function(e){e.preventDefault();var v=$("msg").value.trim();if(!v)return;$("msg").value="";sendText(v)};
 
 /* ---------- voice (browser <-> OpenAI Realtime over WebRTC) ---------- */
-var pc=null,dc=null,ms=null,vt=null,audio=null;
+var pc=null,dc=null,ms=null,vt=null,audio=null,VREF="",hb=null;
 function micStat(){var t=ms&&ms.getTracks()[0],p=$("micst");if(!p)return;if(!pc){p.textContent="Mic off";p.className="pill"}else if(t&&!t.enabled){p.textContent="Mic paused";p.className="pill"}else{p.textContent="Mic on";p.className="pill on"}}
 function say(role,text){if(text){chat.push({role:role,content:text});if(tab==="chat")draw()}}
-function stopVoice(){try{if(dc)dc.close()}catch(e){}try{if(pc)pc.close()}catch(e){}try{if(ms)ms.getTracks().forEach(function(t){t.stop()})}catch(e){}clearTimeout(vt);pc=dc=ms=null;if(audio){audio.srcObject=null}window._remote=null;stopAmp();$("mic").classList.remove("live");$("mic").textContent="🎙";micStat();if(orbState!=="error")setOrb(navigator.onLine===false?"blocked":"idle");if(tab==="home"&&$("main")&&!$("app").classList.contains("hide"))draw()}
+function stopVoice(){try{if(dc)dc.close()}catch(e){}try{if(pc)pc.close()}catch(e){}try{if(ms)ms.getTracks().forEach(function(t){t.stop()})}catch(e){}clearTimeout(vt);clearInterval(hb);if(VREF){rawApi({action:"voice_end",ref:VREF});VREF=""}pc=dc=ms=null;if(audio){audio.srcObject=null}window._remote=null;stopAmp();$("mic").classList.remove("live");$("mic").textContent="🎙";micStat();if(orbState!=="error")setOrb(navigator.onLine===false?"blocked":"idle");if(tab==="home"&&$("main")&&!$("app").classList.contains("hide"))draw()}
 $("mic").onclick=async function(){
   if(pc){stopVoice();return}
   if(navigator.onLine===false){setOrb("blocked","Voice needs a connection. Type, or save notes and tasks and they will sync later.",5000);return}
   $("mic").disabled=true;setOrb("thinking","Connecting voice…");
   try{var s=await api({action:"voice_session",tz:TZ,voice:SET.voice||undefined});if(!s.ok)throw new Error(s.error||"Voice is unavailable.");
+    VREF=s.ref||"";clearInterval(hb);hb=setInterval(function(){if(VREF)rawApi({action:"voice_ping",ref:VREF})},60000);
     pc=new RTCPeerConnection();audio=audio||document.createElement("audio");audio.autoplay=true;pc.ontrack=function(e){audio.srcObject=e.streams[0];window._remote=e.streams[0]};
     pc.onconnectionstatechange=function(){if(pc&&(pc.connectionState==="failed"||pc.connectionState==="disconnected")){say("assistant","Voice disconnected.");stopVoice();setOrb("blocked","Voice disconnected.")}};
     ms=await navigator.mediaDevices.getUserMedia({audio:true});pc.addTrack(ms.getTracks()[0]);
@@ -310,5 +325,6 @@ function onEvt(m){var e;try{e=JSON.parse(m.data)}catch(x){return}
       api({action:"voice_tool",name:e.name,args:args}).then(function(out){setOrb(out&&out.ok?"done":"error",out&&out.ok?"Finished: "+String(e.name).replace(/_/g," "):(out&&out.error)||"That did not work.",2500);if(!dc||dc.readyState!=="open")return;
         dc.send(JSON.stringify({type:"conversation.item.create",item:{type:"function_call_output",call_id:e.call_id,output:JSON.stringify(out)}}));dc.send(JSON.stringify({type:"response.create"}))});break}}}
 if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/elevate/sw.js",{scope:"/elevate/"}).catch(function(){})})}
+window.addEventListener("pagehide",function(){if(VREF&&navigator.sendBeacon){try{navigator.sendBeacon(API,new Blob([JSON.stringify({action:"voice_end",ref:VREF,token:TOK})],{type:"application/json"}))}catch(e){}}});
 if(TOK)start();else showLogin();
 </script></body></html>

@@ -39,3 +39,48 @@ alter table public.elevate_items drop constraint if exists elevate_items_kind_ch
 alter table public.elevate_items add constraint elevate_items_kind_check check (kind in ('note','task','memory','place'));
 alter table public.elevate_items drop constraint if exists elevate_items_place_has_point;
 alter table public.elevate_items add constraint elevate_items_place_has_point check (kind <> 'place' or (lat is not null and lon is not null));
+
+-- Billing: $50/month plan (120 voice minutes) + prepaid voice credits. Applied live as migration "elevate_billing". Server-only (RLS on, no policies).
+create table if not exists public.elevate_accounts (
+  owner_key text primary key,
+  mode text not null default 'free' check (mode in ('free','paid','comped')),
+  sub_status text,
+  stripe_customer text,
+  stripe_sub text,
+  period_start timestamptz,
+  period_end timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create table if not exists public.elevate_usage (
+  id uuid primary key default gen_random_uuid(),
+  owner_key text not null,
+  kind text not null check (kind in ('voice','phone')),
+  ref text not null unique,
+  state text not null default 'open' check (state in ('open','closed')),
+  started_at timestamptz not null default now(),
+  last_seen timestamptz,
+  ended_at timestamptz,
+  seconds int not null default 0 check (seconds >= 0),
+  from_included int not null default 0 check (from_included >= 0),
+  from_credit int not null default 0 check (from_credit >= 0),
+  created_at timestamptz not null default now()
+);
+create index if not exists elevate_usage_owner on public.elevate_usage (owner_key, started_at desc);
+create table if not exists public.elevate_credits (
+  id uuid primary key default gen_random_uuid(),
+  owner_key text not null,
+  seconds int not null check (seconds > 0),
+  expires_at timestamptz not null,
+  ref text not null unique,
+  source text not null check (source in ('purchase','grant')),
+  cents int,
+  payment_intent text,
+  status text not null default 'paid' check (status in ('paid','refunded','disputed')),
+  created_at timestamptz not null default now()
+);
+create index if not exists elevate_credits_owner on public.elevate_credits (owner_key);
+create index if not exists elevate_credits_pi on public.elevate_credits (payment_intent);
+alter table public.elevate_accounts enable row level security;
+alter table public.elevate_usage enable row level security;
+alter table public.elevate_credits enable row level security;

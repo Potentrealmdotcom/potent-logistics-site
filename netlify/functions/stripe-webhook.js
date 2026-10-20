@@ -211,6 +211,11 @@ exports.handler = async function (event) {
       if (!subId) return { statusCode: 200, headers, body: JSON.stringify({ received: true, ignored: "not a subscription invoice" }) };
       const sub = await stripe.subscriptions.retrieve(subId);
       const smd = sub.metadata || {};
+      if (smd.kind === "elevate") { // Əlevate AI monthly plan
+        const er = await require("./lib/elevate-billing").applySub(sub, false);
+        if (er && er.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Elevate billing failed, retry" }) };
+        return { statusCode: 200, headers, body: JSON.stringify({ received: true, elevate: true }) };
+      }
       if (smd.kind === "voice") { // POTENT VOICE add-on (separate from the license, support and Flex)
         const vr = await require("./lib/voice/billing").onInvoice(obj, type === "invoice.paid", sub);
         if (vr && vr.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Voice billing failed, retry" }) };
@@ -238,6 +243,11 @@ exports.handler = async function (event) {
       const iv = obj.subscription || (obj.parent && obj.parent.subscription_details && obj.parent.subscription_details.subscription);
       if (iv) { const isub = await stripe.subscriptions.retrieve(iv); if ((isub.metadata || {}).kind === "voice") { const vr = await require("./lib/voice/billing").onInvoiceCreated(obj, isub); if (vr && vr.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Voice overage failed, retry" }) }; return { statusCode: 200, headers, body: JSON.stringify({ received: true, voice: true }) }; } }
       return { statusCode: 200, headers, body: JSON.stringify({ received: true, ignored: type }) };
+    }
+    if ((type === "customer.subscription.updated" || type === "customer.subscription.deleted") && (obj.metadata || {}).kind === "elevate") {
+      const er2 = await require("./lib/elevate-billing").applySub(obj, type === "customer.subscription.deleted");
+      if (er2 && er2.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Elevate subscription sync failed, retry" }) };
+      return { statusCode: 200, headers, body: JSON.stringify({ received: true, elevate: true }) };
     }
     if (type === "customer.subscription.updated" || (type === "customer.subscription.deleted" && (obj.metadata || {}).kind === "voice")) {
       const vr = await require("./lib/voice/billing").onSubscription(obj, type === "customer.subscription.deleted");
@@ -271,6 +281,13 @@ exports.handler = async function (event) {
       return { statusCode: 200, headers, body: JSON.stringify({ received: true, voice: !!(vr && vr.ok) }) };
     }
 
+    // ── Əlevate AI: monthly plan or voice credit pack ──
+    if (type === "checkout.session.completed" && (obj.metadata || {}).product === "ELEVATE") {
+      const er3 = await require("./lib/elevate-billing").onCheckout(obj);
+      if (er3 && er3.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Elevate activation failed, retry" }) };
+      return { statusCode: 200, headers, body: JSON.stringify({ received: true, elevate: !!(er3 && er3.ok) }) };
+    }
+
     // ── AceHeals: Breeze earns $2 per monthly payment and $12 per lifetime sale (same Stripe account) ──
     if (type === "checkout.session.completed" && ["MUSIC", "BEAT", "MUSICSVC", "MUSICCOLL", "MUSICCOIN"].indexOf((obj.metadata || {}).product) < 0) {
       try {
@@ -284,6 +301,7 @@ exports.handler = async function (event) {
     // ── chargebacks on beat / music sales ──
     if (type === "charge.dispute.created" || type === "charge.dispute.closed") {
       if (type === "charge.dispute.created") { const ad = await require("./lib/aceheals").onDispute(obj); if (ad && ad.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "AceHeals chargeback failed, retry" }) }; }
+      try { await require("./lib/elevate-billing").onDispute(obj, type === "charge.dispute.closed"); } catch (e) { console.error("elevate dispute", e.message); }
       const cd = type === "charge.dispute.created" ? await require("./lib/coinbuy").onDispute(obj) : await require("./lib/coinbuy").onDisputeClosed(obj); if (cd && cd.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Coin chargeback failed, retry" }) };
       const dr = await handleDispute(obj, type === "charge.dispute.created" ? "created" : "closed");
       if (dr && dr.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Dispute handling failed, retry" }) };
@@ -292,6 +310,7 @@ exports.handler = async function (event) {
     // ── Beat Man: a refund takes back the producer's share automatically ──
     if (type === "charge.refunded") {
       const ar2 = await require("./lib/aceheals").onRefund(obj); if (ar2 && ar2.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "AceHeals refund failed, retry" }) };
+      try { await require("./lib/elevate-billing").onRefund(obj); } catch (e) { console.error("elevate refund", e.message); }
       const cr0 = await require("./lib/coinbuy").onRefund(obj); if (cr0 && cr0.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Coin refund failed, retry" }) };
       const rr = await refundBeat(obj);
       if (rr && rr.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Beat refund failed, retry" }) };

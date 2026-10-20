@@ -15,6 +15,8 @@ let n = 0; const ok = (c, m) => { assert(c, m); n++; };
     const st = { off: false }; const db = { place: [], task: [{ id: "t1", title: "Call dispatcher", done: false, due_at: new Date(Date.now() - 3600e3).toISOString() }, { id: "t2", title: "Pay insurance", done: false, due_at: null }] }; const calls = [];
     await ctx.route("**/.netlify/functions/elevate-api", async rt => { if (st.off) return rt.abort("internetdisconnected"); const b = JSON.parse(rt.request().postData() || "{}"); calls.push(b); let out = { ok: true };
       if (b.action === "me") out = { ok: true, owner: "me@x.com", voice: true, voices: ["marin", "cedar"], voice_default: "marin" };
+      else if (b.action === "billing") out = { ok: true, plan: { price_cents: 5000, included_minutes: 120 }, packs: [{ cents: 1000, minutes: 40 }, { cents: 2500, minutes: 100 }, { cents: 5000, minutes: 200 }], unlimited: false, subscribed: false, included_left_minutes: 0, credit_left_minutes: 12 };
+      else if (b.action === "buy") out = { ok: true, url: "https://checkout.stripe.test/x" };
       else if (b.action === "items") out = { ok: true, items: db[b.kind] || [] };
       else if (b.action === "item_save" && b.kind === "place") { const it = { id: "p" + (db.place.length + 1), kind: "place", title: b.title, lat: b.lat, lon: b.lon }; db.place.push(it); out = { ok: true, item: it }; }
       else if (b.action === "item_delete") db.place = db.place.filter(x => x.id !== b.id);
@@ -22,6 +24,7 @@ let n = 0; const ok = (c, m) => { assert(c, m); n++; };
       else if (b.action === "item_toggle") { const t = db.task.filter(x => x.id === b.id)[0]; if (t) t.done = b.done; }
       else if (b.action === "chat") out = { ok: true, reply: "Do the call first.", did: [] };
       await rt.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(out) }); });
+    await ctx.route("https://checkout.stripe.test/**", rt => rt.fulfill({ status: 200, contentType: "text/html", body: "<title>pay</title>" }));
     await ctx.route("https://cdn.jsdelivr.net/**", rt => opts.noMap || st.off ? rt.abort() : rt.fulfill({ status: 200, contentType: "application/json", body: fs.readFileSync(path.join(ROOT, "tests/fixtures/mini-world.json")) }));
     await page.addInitScript(() => { try { localStorage.setItem("elv_t", "tok"); } catch (e) {} });
     await page.goto(base + "/elevate/"); await page.waitForSelector("#orb"); return { page, errs, db, calls, ctx, st };
@@ -66,8 +69,14 @@ let n = 0; const ok = (c, m) => { assert(c, m); n++; };
   await page.click("nav >> text=Settings"); await page.selectOption("select[aria-label='Home layout']", "classic"); await page.click("nav >> text=Home"); ok(await page.locator("#map").count() === 0 && await page.locator("#orb").count() === 1, "classic layout: no map, still has orb");
   await page.click("nav >> text=Settings"); await page.selectOption("select[aria-label='Home layout']", "map");
   await page.uncheck("input[aria-label='Memory']"); ok(await page.locator("nav >> text=Memory").count() === 0, "section can be hidden");
+  await page.click("nav >> text=Settings"); await page.waitForSelector("text=Credit minutes"); ok(/No monthly plan/.test(await page.textContent("main")) && /Add 100 min: \$25/.test(await page.textContent("main")), "settings shows plan and credit packs");
+  await Promise.all([page.waitForURL("https://checkout.stripe.test/x"), page.click("button:has-text('Add 100 min')")]); ok(calls.some(c => c.action === "buy" && c.what === "pack:2500"), "buying a pack asks the server for a checkout link and goes there");
+  await page.goto(base + "/elevate/"); await page.waitForSelector("#orb"); await page.click("nav >> text=Settings");
   await page.check("input[aria-label='Reduce motion']"); ok(await page.evaluate(() => document.body.classList.contains("calm")), "reduce motion applies");
   ok(errs.length === 0, "no page errors: " + errs.join("|")); await ctx.close();
+  // ── login screen offers sign in or subscribe ──
+  { const c2 = await browser.newContext(); const pg = await c2.newPage(); const pe = []; pg.on("pageerror", e => pe.push(String(e))); await c2.route("**/.netlify/functions/**", rt => rt.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, enabled: false }) }));
+    await pg.goto(base + "/elevate/"); await pg.waitForSelector("#intent"); const opts = await pg.$$eval("#intent option", o => o.map(x => x.value)); ok(opts.join() === ",sub,pack:1000,pack:2500,pack:5000", "login lets you sign in, subscribe or buy a pack: " + opts); ok(/Əlevate/.test(await pg.textContent("#login h1")) && pe.length === 0, "login shows the name, no errors"); await c2.close(); }
   // ── map data unavailable ──
   ({ page, errs, ctx } = await open({ noMap: true })); await page.waitForFunction(() => /unavailable/.test(document.querySelector("#mapstat").textContent));
   ok(await page.locator("#mapstat button").isVisible(), "unavailable map offers Retry"); ok(/No saved places/.test(await page.textContent("#plist")), "list still works without the map");

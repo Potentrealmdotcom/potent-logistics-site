@@ -4,6 +4,7 @@
 //      ELEVATE_CHAT_MODEL (default gpt-4o-mini), ELEVATE_VOICE_MODEL (default gpt-realtime-2.1), ELEVATE_VOICE (default marin)
 const E = require("./lib/elevate");
 const G = require("./lib/google");
+const Bill = require("./lib/elevate-billing");
 const KINDS = ["task", "note", "memory", "place"];
 // Voices the speech provider (OpenAI Realtime) offers. Names only: no claim is made about how any of them sounds.
 const VOICES = ["marin", "cedar", "coral", "sage", "shimmer", "alloy", "ash", "ballad", "echo", "verse"];
@@ -64,7 +65,11 @@ exports.handler = async function (event) {
     if (a === "google") {
       if (tooMany("eg:" + ip)) return J(429, { ok: false, error: "Too many attempts. Try again in 15 minutes." });
       const gv = await G.verifyIdToken(b.credential); if (!gv.ok) { noteFail("eg:" + ip); return J(401, { ok: false, error: gv.error }); }
-      if (E.owners().indexOf(gv.email) < 0) { noteFail("eg:" + ip); return J(403, { ok: false, error: gv.email + " does not have an Əlevate assistant yet." }); }
+      const intent = String(b.intent || "");
+      if (intent === "sub" || /^pack:\d+$/.test(intent)) { // buying (the email is proven by Google, so the purchase can only land on the buyer's own account)
+        const c = await Bill.checkout(gv.email, intent); return J(c.status, c);
+      }
+      if (E.owners().indexOf(gv.email) < 0 && !(await Bill.canSignIn(gv.email))) { noteFail("eg:" + ip); return J(403, { ok: false, error: gv.email + " does not have an Əlevate assistant yet. Choose Subscribe to get one." }); }
       return J(200, { ok: true, token: E.mint(gv.email), name: gv.name || gv.email });
     }
     if (a === "from_os") { // you are already signed in to POTENT OS as the owner
@@ -74,9 +79,26 @@ exports.handler = async function (event) {
     }
 
     // ── everything else needs an Əlevate login ──
-    const t = E.verify(bearer(event)); if (!t) return J(401, { ok: false, error: "Sign in again", login: true });
+    const t = E.verify(bearer(event)) || (a === "voice_end" ? E.verify(b.token) : null);; // (the page's last-gasp beacon cannot set headers, so voice_end also accepts the token in its body)
+    if (!t) return J(401, { ok: false, error: "Sign in again", login: true });
     const k = t.k;
     if (a === "me") return J(200, { ok: true, owner: k, voice: !!process.env.OPENAI_API_KEY, voices: VOICES, voice_default: process.env.ELEVATE_VOICE || "marin" });
+    if (a === "billing") {
+      const st = await Bill.standing(k);
+      return J(200, { ok: true, plan: { price_cents: Bill.PRICE_CENTS, included_minutes: Bill.INCLUDED_S / 60 }, packs: Object.keys(Bill.PACKS).map(function (c) { return { cents: Number(c), minutes: Bill.PACKS[c] / 60 }; }),
+        comped: st.comped, subscribed: st.subscribed, sub_status: st.sub_status, period_end: st.period_end, included_left_minutes: Math.floor(st.included_left_s / 60), credit_left_minutes: Math.floor(st.credits_left_s / 60), unlimited: st.comped });
+    }
+    if (a === "buy") { const c = await Bill.checkout(k, String(b.what || "")); return J(c.status, c); }
+    if (a === "voice_ping") return J(200, await Bill.ping(k, b.ref));
+    if (a === "voice_end") { const r = await Bill.end(k, b.ref); return J(r.ok ? 200 : (r.status || 400), r); }
+    if (/^o_/.test(a)) { // the owner only: add people, give free minutes
+      if (!Bill.isOwner(k)) return J(403, { ok: false, error: "Owner only." });
+      const em = E.clip(b.email, 200).toLowerCase();
+      if (a === "o_overview") { const r = await E.sb("elevate_accounts?order=created_at.desc&limit=200"); return J(200, { ok: true, accounts: Array.isArray(r.data) ? r.data : [] }); }
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return J(400, { ok: false, error: "Enter an email." });
+      if (a === "o_account_set") { if (["free", "comped"].indexOf(b.mode) < 0) return J(400, { ok: false, error: "Mode is free or comped." }); await Bill.setAccount(em, { mode: b.mode }); return J(200, { ok: true }); }
+      if (a === "o_credit_grant") { const min = Math.floor(Number(b.minutes)); if (!(min >= 1 && min <= 600)) return J(400, { ok: false, error: "1 to 600 minutes." }); const r = await Bill.addCredit(em, min * 60, "grant:" + Date.now() + ":" + Math.random().toString(36).slice(2, 8), "grant"); return J(r.ok ? 200 : 500, { ok: r.ok }); }
+    }
 
     if (a === "items") {
       const kind = KINDS.indexOf(b.kind) >= 0 ? b.kind : "task";
@@ -104,6 +126,7 @@ exports.handler = async function (event) {
 
     // ── text assistant ──
     if (a === "chat") {
+      if (!Bill.isOwner(k) && !(await Bill.canSignIn(k))) return J(402, { ok: false, error: "Subscribe or add credits in Settings to use the assistant." });
       if (!process.env.OPENAI_API_KEY) return J(503, { ok: false, error: "The assistant's brain is not connected yet (OPENAI_API_KEY)." });
       if (rate("ec:" + k, 40, 3600000)) return J(429, { ok: false, error: "That's a lot of messages this hour. Take a breather." });
       const out = await chat(k, b.messages, E.clip(b.tz, 60) || "America/New_York");
@@ -114,15 +137,17 @@ exports.handler = async function (event) {
     if (a === "voice_session") {
       if (!process.env.OPENAI_API_KEY) return J(503, { ok: false, error: "Voice is not connected yet (OPENAI_API_KEY)." });
       if (rate("ev:" + k, 6, 3600000)) return J(429, { ok: false, error: "Voice was started a lot this hour. Try again later." });
+      const bs = await Bill.start(k, "voice"); if (!bs.ok) return J(bs.status, { ok: false, error: bs.error });
       const model = process.env.ELEVATE_VOICE_MODEL || "gpt-realtime-2.1";
       let r, d;
       try {
         r = await fetch("https://api.openai.com/v1/realtime/client_secrets", { method: "POST", headers: { Authorization: "Bearer " + process.env.OPENAI_API_KEY, "Content-Type": "application/json" },
           body: JSON.stringify({ expires_after: { anchor: "created_at", seconds: 120 }, session: { type: "realtime", model: model, instructions: E.systemPrompt({ memory: await memoryFacts(k), tz: E.clip(b.tz, 60) }) + "\nYou are speaking out loud: keep answers to one or two short sentences.", audio: { output: { voice: VOICES.indexOf(b.voice) >= 0 ? b.voice : (process.env.ELEVATE_VOICE || "marin") } }, tools: E.asRealtimeTools(), tool_choice: "auto" } }) });
         d = await r.json();
-      } catch (e) { return J(502, { ok: false, error: "Could not start voice. Try again." }); }
+      } catch (e) { await Bill.end(k, bs.ref, Date.now()); return J(502, { ok: false, error: "Could not start voice. Try again." }); }
       const secret = d && (d.value || (d.client_secret && d.client_secret.value));
-      return r.ok && secret ? J(200, { ok: true, client_secret: secret, model: model, max_minutes: 15 }) : J(502, { ok: false, error: "Could not start voice. Try again." });
+      if (!(r.ok && secret)) { await Bill.end(k, bs.ref, Date.now()); return J(502, { ok: false, error: "Could not start voice. Try again." }); }
+      return J(200, { ok: true, client_secret: secret, model: model, max_minutes: bs.max_seconds / 60, ref: bs.ref });
     }
     if (a === "voice_tool") { // the browser relays a tool call the voice model asked for; only the listed tools can run
       if (rate("et:" + k, 120, 3600000)) return J(429, { ok: false, error: "Slow down" });

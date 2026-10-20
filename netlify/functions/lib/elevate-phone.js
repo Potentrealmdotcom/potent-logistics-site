@@ -64,6 +64,7 @@ async function handle(act, b) { // transcript / tool / end / transfer for an Əl
     if (c.state === "ended") return { status: 200, body: { ok: true, already: true } };
     const secs = Math.max(0, Math.min(Math.floor(Number(b.seconds) || 0), 3600));
     await E.sb("elevate_calls?id=eq." + c.id, { method: "PATCH", prefer: "return=minimal", body: { state: "ended", ended_at: iso(Date.now()), seconds: secs, end_reason: String(b.reason || "hangup").slice(0, 60) } });
+    try { await require("./elevate-billing").recordPhone(c.owner_key, "elv-" + c.id, secs); } catch (e) { }   // logged for the owner's own line (comped); never blocks hanging up
     return { status: 200, body: { ok: true, seconds: secs } };
   }
   if (act === "transfer") return { status: 200, body: { ok: false, error: "no_transfer_on_this_line" } };
