@@ -199,7 +199,16 @@ function settings(m){var c=el("div","card");c.appendChild(el("h2",null,"Settings
       line("Plan",j.subscribed?"Əlevate AI, $"+(j.plan.price_cents/100)+" a month":"No monthly plan");
       if(j.subscribed){line("Plan minutes left",j.included_left_minutes+" of "+j.plan.included_minutes);if(j.period_end)line("Renews",new Date(j.period_end).toLocaleDateString())}
       line("Credit minutes",String(j.credit_left_minutes))}
-    bb.appendChild(kv);if(j.unlimited)return;
+    bb.appendChild(kv);
+    if(j.owner){var oc=el("div","card");oc.style.marginTop="12px";oc.appendChild(el("h2",null,"People (owner only)"));
+      var em=el("input");em.type="email";em.placeholder="their@email.com";em.setAttribute("aria-label","Person's email");oc.appendChild(em);
+      var mn=el("input");mn.type="number";mn.min="1";mn.max="600";mn.placeholder="Free minutes to give (1 to 600)";mn.setAttribute("aria-label","Free minutes");mn.style.marginTop="8px";oc.appendChild(mn);
+      var orow=el("div");orow.style.cssText="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px";var omsg=el("div","dim");omsg.style.marginTop="8px";
+      function oact(label,body){var b=el("button","alt",label);b.onclick=function(){if(!em.value.trim()){omsg.textContent="Enter an email first.";return}b.disabled=true;rawApi(Object.assign({email:em.value.trim()},body())).then(function(r){b.disabled=false;omsg.textContent=r&&r.ok?"Done.":(r&&r.error)||"Could not do that."})};orow.appendChild(b)}
+      oact("Give free minutes",function(){return{action:"o_credit_grant",minutes:Number(mn.value)}});oact("Let in free (comped)",function(){return{action:"o_account_set",mode:"comped"}});oact("Remove free access",function(){return{action:"o_account_set",mode:"free"}});
+      oc.appendChild(orow);oc.appendChild(omsg);var lst=el("div","dim","Loading people…");lst.style.marginTop="8px";oc.appendChild(lst);bb.appendChild(oc);
+      rawApi({action:"o_overview"}).then(function(r){lst.innerHTML="";if(!r||!r.ok||!r.accounts.length){lst.textContent="No one added yet.";return}r.accounts.forEach(function(a){lst.appendChild(el("div",null,a.owner_key+" · "+a.mode+(a.sub_status?" · "+a.sub_status:"")))})})}
+    if(j.unlimited)return;
     var row=el("div");row.style.cssText="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px";
     function buy(what,label){var b=el("button",what==="sub"?"":"alt",label);b.onclick=function(){b.disabled=true;rawApi({action:"buy",what:what}).then(function(r){b.disabled=false;if(r&&r.url)location.href=r.url;else alert((r&&r.error)||"Could not start checkout.")})};row.appendChild(b)}
     if(j.subscribed){var pm=el("button","alt","Manage or cancel plan");pm.onclick=function(){rawApi({action:"portal"}).then(function(r){if(r&&r.url)location.href=r.url;else alert((r&&r.error)||"Could not open billing.")})};row.appendChild(pm)}

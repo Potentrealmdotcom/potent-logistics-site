@@ -90,7 +90,7 @@ const T0 = Date.parse("2026-10-20T12:00:00Z"), MIN = 60;
   v = await B.start("partner@x.com", "voice", T0); await B.end("partner@x.com", v.ref, T0 + 120000); ok(T.elevate_usage.find(u => u.ref === v.ref).seconds === 120 && T.elevate_usage.find(u => u.ref === v.ref).from_credit === 0, "comped calls are logged but cost no minutes");
   await hook("customer.subscription.updated", { id: "sub_9", customer: "cus_9", status: "active", metadata: { kind: "elevate", owner_key: "partner@x.com" }, current_period_start: ps, current_period_end: pe }); ok(T.elevate_accounts.find(a => a.owner_key === "partner@x.com").mode === "comped", "a Stripe event never downgrades a comped account");
   // ── API: billing view, ping/end, gating of chat ──
-  [s, r] = await call(boss, { action: "billing" }); ok(r.unlimited && r.plan.price_cents === 5000 && r.packs.length === 3 && r.packs[1].minutes === 100, "billing view shows plan and packs");
+  [s, r] = await call(boss, { action: "billing" }); ok(r.owner === true && (await call(tok, { action: "billing" }))[1].owner === false && r.unlimited && r.plan.price_cents === 5000 && r.packs.length === 3 && r.packs[1].minutes === 100, "billing view shows plan and packs");
   [s, r] = await call(E.mint("nobody@x.com"), { action: "chat", messages: [{ role: "user", content: "hi" }] }); ok(s === 402, "someone with no plan and no credits cannot use the assistant");
   [s, r] = await call(boss, { action: "voice_session" }); ok(s === 200 && r.ref && r.max_minutes === 15 && rt.length === 1, "owner voice session starts with a 15 minute cap and a session ref");
   [s, r2] = await call(boss, { action: "voice_ping", ref: r.ref }); ok(r2.ok, "ping accepted");

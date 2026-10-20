@@ -86,7 +86,7 @@ exports.handler = async function (event) {
     if (a === "billing") {
       const st = await Bill.standing(k);
       return J(200, { ok: true, plan: { price_cents: Bill.PRICE_CENTS, included_minutes: Bill.INCLUDED_S / 60 }, packs: Object.keys(Bill.PACKS).map(function (c) { return { cents: Number(c), minutes: Bill.PACKS[c] / 60 }; }),
-        comped: st.comped, subscribed: st.subscribed, sub_status: st.sub_status, period_end: st.period_end, included_left_minutes: Math.floor(st.included_left_s / 60), credit_left_minutes: Math.floor(st.credits_left_s / 60), unlimited: st.comped });
+        owner: Bill.isOwner(k), comped: st.comped, subscribed: st.subscribed, sub_status: st.sub_status, period_end: st.period_end, included_left_minutes: Math.floor(st.included_left_s / 60), credit_left_minutes: Math.floor(st.credits_left_s / 60), unlimited: st.comped });
     }
     if (a === "portal") { const c = await Bill.portal(k); return J(c.status, c); }
     if (a === "buy") { const c = await Bill.checkout(k, String(b.what || "")); return J(c.status, c); }
