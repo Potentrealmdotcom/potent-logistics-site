@@ -16475,7 +16475,7 @@ function MyDocumentsVault() {
 // ═══════════════════════════════════════════════════════════════════
 // RECURRING ROUTES — standing weekly/ongoing arrangements. This is
 // what wins construction/industrial B2B accounts wanting regular
-// service instead of one-off bookings, same as Curri's "Ongoing"
+// service instead of one-off bookings, same as a standard "Ongoing"
 // duration option.
 // ═══════════════════════════════════════════════════════════════════
 var DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -17394,7 +17394,7 @@ function CompanyLoadsIntake() {
 
 // ═══════════════════════════════════════════════════════════════════
 // INCOMING LOADS — admin view. Accept a load at the rate offered, or
-// send back a bid. Real Curri-style, but you're the one deciding.
+// send back a bid. Marketplace-style, but you're the one deciding.
 // ═══════════════════════════════════════════════════════════════════
 function IncomingLoadsView() {
     var [loads, setLoads] = React.useState(null);
@@ -17569,7 +17569,7 @@ function CustomerBOLUpload() {
 // [render relocated to end of file]
 
 // ═══════════════════════════════════════════════════════════════════
-// COMPANY/DISPATCH PARTNER ONBOARDING — real Curri-style flow.
+// COMPANY/DISPATCH PARTNER ONBOARDING — standard onboarding flow.
 // DOT lookup via FMCSA, simple ID upload (no face-matching complexity),
 // exact fields as specified: their info, POTENT's info (auto-filled,
 // real), business role classification, and per-load documentation.
@@ -18177,7 +18177,7 @@ function PartnerLogin() {
 // [render relocated to end of file]
 
 // ═══════════════════════════════════════════════════════════════════
-// BOL GENERATOR — matches the real Curri BOL layout exactly, POTENT
+// BOL GENERATOR — follows the standard BOL layout, POTENT
 // branded. Auto-populated from a real job. Print-to-PDF, same
 // reliable pattern used for the onboarding packet.
 // ═══════════════════════════════════════════════════════════════════
@@ -20318,11 +20318,11 @@ function BusinessDashboardShell(props) {
 
 // ═══════════════════════════════════════════════════════════════════
 // POTENT LOGISTICS — REAL 21-SECTION DISPATCH/CARRIER AGREEMENT
-// Structure and real legal patterns adapted from Curri's actual real
+// Structure and real legal patterns adapted from standard
 // Broker-Carrier Agreement (verified directly, section by section).
 // POTENT is the Carrier throughout; the counterparty (dispatch/broker
 // partner) fills the "Broker" role. Real numbers used: Net 7 (not
-// Curri's platform-pay), $750,000 AL / $100,000 Cargo (matching
+// platform-pay), $750,000 AL / $100,000 Cargo (matching
 // POTENT's actual real COI on file), 48-hour documentation window.
 // ═══════════════════════════════════════════════════════════════════
 
@@ -22428,7 +22428,7 @@ function tryInstantBook(jobDraft, allScheduledJobs) {
 // new pricing system — the exact same real numbers already proven
 // (PRICE_TABLE, LOAD_SIZES, recurring blocks), shown as one tap
 // instead of a multi-step wizard. Built after your real $1,500/5-day
-// Curri data confirmed the local-zone pricing is already right.
+// Market data confirmed the local-zone pricing is already right.
 // ═══════════════════════════════════════════════════════════════════
 function QuickQuotePanel() {
     var [category, setCategory] = React.useState("events");
@@ -22484,7 +22484,7 @@ function QuickQuotePanel() {
 
 // ═══════════════════════════════════════════════════════════════════
 // REAL CAPACITY CALENDAR — day-by-day real availability for your one
-// truck, matching Curri's real "capacity-aware delivery slots" feature
+// truck, matching a "capacity-aware delivery slots" feature
 // but correctly scoped to a single-truck reality. Pulls real committed
 // hours from your actual recurring_routes and junk_jobs, computes real
 // remaining capacity against the real 10-hr/day ceiling already used
