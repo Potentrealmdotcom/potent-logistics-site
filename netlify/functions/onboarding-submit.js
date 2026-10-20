@@ -12,7 +12,7 @@ const DOC_PREFIX = () => SB + "/storage/v1/object/public/driver-documents/";
 const REQUIRED_DOCS = ["truck_registration_url", "truck_photo_url", "license_front_url", "license_back_url", "medical_card_url", "coi_url"];
 const OPTIONAL_DOCS = ["eld_photo_url", "applicant_photo_url"];
 const str = (v, n) => String(v == null ? "" : v).trim().slice(0, n || 200);
-const FROM = () => process.env.MAILJET_FROM_EMAIL || "potentlogistics@" + "proton.me";
+const FROM = () => process.env.MAIL_FROM_EMAIL || "info@potentworld.online";
 const ownerEmail = () => process.env.OWNER_ALERT_EMAIL || "potentlogistics@" + "proton.me";
 
 function sb(path, opts) {

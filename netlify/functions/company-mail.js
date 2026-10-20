@@ -12,7 +12,7 @@
 var crypto = require("crypto");
 
 var SB = "https://ymvsatlrkzgxwzxybwmk.supabase.co";
-var FROM_EMAIL = process.env.MAILJET_FROM_EMAIL; // verified Mailjet sender (Netlify env var)
+var FROM_EMAIL = process.env.MAIL_FROM_EMAIL || "info@potentworld.online"; // verified sender domain in Resend (Netlify env var)
 var FROM_NAME = "POTENT Logistics";
 
 function J(s, o) { return { statusCode: s, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" }, body: JSON.stringify(o) }; }
@@ -47,16 +47,17 @@ function tooMany(key) {
 }
 function noteHit(key) { (hits[key] = hits[key] || []).push(Date.now()); }
 
-async function sendMailjet(to, subject, message, fromName, replyTo) {
-    var key = process.env.MAILJET_API_KEY, secret = process.env.MAILJET_SECRET_KEY;
-    if (!key || !secret) throw new Error("Mail is not configured.");
-    var auth = Buffer.from(key + ":" + secret).toString("base64");
-    var msg = { From: { Email: FROM_EMAIL, Name: fromName || FROM_NAME }, To: [{ Email: to }], Subject: subject, TextPart: message };
-    if (replyTo) msg.ReplyTo = { Email: replyTo };
-    var res = await fetch("https://api.mailjet.com/v3.1/send", {
+async function sendViaResend(to, subject, message, fromName, replyTo) {
+    var key = process.env.RESEND_API_KEY;
+    if (!key) throw new Error("Mail is not configured.");
+    // Sends from POTENT's verified domain under the company's display name;
+    // replies go to the company's own address (replyTo).
+    var msg = { from: (fromName || FROM_NAME) + " <" + FROM_EMAIL + ">", to: [to], subject: subject, text: message };
+    if (replyTo) msg.reply_to = replyTo;
+    var res = await fetch("https://api.resend.com/emails", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: "Basic " + auth },
-        body: JSON.stringify({ Messages: [msg] })
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
+        body: JSON.stringify(msg)
     });
     var data = await res.json().catch(function () { return null; });
     if (!res.ok) { var e = new Error("The email service refused it."); e.data = data; throw e; }
@@ -65,7 +66,7 @@ async function sendMailjet(to, subject, message, fromName, replyTo) {
 
 exports.handler = async function (event) {
     if (event.httpMethod !== "POST") return J(405, { ok: false, error: "POST only" });
-    if (!process.env.AUTH_SECRET || !process.env.SUPABASE_SERVICE_ROLE_KEY || !process.env.MAILJET_FROM_EMAIL) return J(500, { ok: false, error: "Server not configured" });
+    if (!process.env.AUTH_SECRET || !process.env.SUPABASE_SERVICE_ROLE_KEY || !process.env.RESEND_API_KEY) return J(500, { ok: false, error: "Server not configured" });
     var body;
     try { body = JSON.parse(event.body || "{}"); } catch (e) { return J(400, { ok: false, error: "Bad JSON" }); }
 
@@ -114,7 +115,7 @@ exports.handler = async function (event) {
 
     noteHit("cm:" + ip);
     try {
-        await sendMailjet(to, subject, message, fromName, replyTo);
+        await sendViaResend(to, subject, message, fromName, replyTo);
         return J(200, { ok: true });
     } catch (e) {
         return J(502, { ok: false, error: "Could not send the email. Try again." });

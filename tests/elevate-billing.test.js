@@ -14,7 +14,7 @@ const dbFetch = global.fetch; let gtok = {}, rt = [];
 global.fetch = async (u, o) => { u = String(u);
   if (u.startsWith("https://oauth2.googleapis.com/tokeninfo")) { const d = gtok[decodeURIComponent(u.split("id_token=")[1]).split(".").pop()]; return d ? { ok: true, json: async () => d } : { ok: false, json: async () => ({}) }; }
   if (u.includes("/v1/realtime/client_secrets")) { rt.push(JSON.parse(o.body)); return { ok: true, json: async () => ({ value: "ek_test" }) }; }
-  if (u.includes("api.mailjet.com")) return { ok: true, json: async () => ({}) };
+  if (u.includes("api.resend.com")) return { ok: true, json: async () => ({ id: "re_1" }) };
   return dbFetch(u, o); };
 const E = require("../netlify/functions/lib/elevate.js"), B = require("../netlify/functions/lib/elevate-billing.js"), api = require("../netlify/functions/elevate-api.js"), W = require("../netlify/functions/stripe-webhook.js"), P = require("../netlify/functions/lib/elevate-phone.js");
 const call = (tok, body, ip) => api.handler({ httpMethod: "POST", headers: Object.assign({ "x-nf-client-connection-ip": ip || "1.1.1.1" }, tok ? { authorization: "Bearer " + tok } : {}), body: JSON.stringify(body) }).then(r => [r.statusCode, JSON.parse(r.body)]);

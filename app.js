@@ -3958,8 +3958,8 @@ function sendEmail(job) {
     }
     catch (e) { return Promise.reject(e); }
 }
-// ── LEAD EMAIL AUTOMATION — Mailjet ─────────────────────────────────
-// Reuses the same Mailjet function already wired for booking
+// ── LEAD EMAIL AUTOMATION — Resend ─────────────────────────────────
+// Reuses the same email function already wired for booking
 // confirmations. We tell it which "email_type" this is and pass the
 // subject/body text pre-built here, so template_nxubdce just needs to
 // render {{subject}} and {{message_html}} (or your own field names —
@@ -4014,12 +4014,12 @@ function sendLeadEmail(lead, templateKey, senderName) {
     }).then(function(res){
         if (res.ok) return res;
         return res.text().then(function(errText){
-            throw new Error("Mailjet rejected the request (status " + res.status + "): " + errText);
+            throw new Error("The email service rejected the request (status " + res.status + "): " + errText);
         });
     });
 }
 // ── CUSTOMER ETA ALERT — "your truck is close" email ────────────────
-// Reuses the same Mailjet function already wired up for lead outreach.
+// Reuses the same email function already wired up for lead outreach.
 // Sent once per job when the live-tracked truck comes within
 // ETA_ALERT_MILES of the destination — a simple straight-line distance
 // check (same haversine function used for job pricing), not a real
@@ -8865,7 +8865,7 @@ function WaitlistPage() {
         { cat: "📈 Reporting & Analytics", items: ["Revenue per truck", "Revenue per mile (RPM)", "Cost per mile (CPM)", "Profit per mile", "Profit per job", "Lane profitability", "Driver productivity", "Customer profitability", "Equipment utilization", "On-time performance", "Accounts receivable aging", "Cash flow report", "Deadhead tracking", "Lane history", "KPI dashboard"] },
         { cat: "📊 QuickBooks Export", items: ["Invoice CSV export", "Expense CSV export", "Settlement CSV export", "QuickBooks-compatible format", "One-click download"] },
         { cat: "💳 Payments", items: ["Stripe live integration", "Card payments at booking", "Cash discount (10%)", "Payment status tracking", "Refund process (Owner only)", "Payment failure alerts", "Net 7 partner accounts", "Net 14 payment terms"] },
-        { cat: "📧 Communications", items: ["Mailjet booking confirmations", "Customer confirmation email", "Call/text buttons from job records", "Status notification emails", "Quote request via customer portal"] },
+        { cat: "📧 Communications", items: ["Email booking confirmations", "Customer confirmation email", "Call/text buttons from job records", "Status notification emails", "Quote request via customer portal"] },
         { cat: "🤖 AI Document Extraction", items: ["Rate confirmation scanning", "BOL scanning", "Receipt/expense scanning", "CDL scanning", "Auto-creates draft job from rate con", "Auto-logs expense from receipt", "~$0.01 per scan"] },
         { cat: "🤝 Carrier & Broker Management", items: ["Carrier database (MC/DOT/contact)", "Insurance expiry tracking", "30-day insurance alerts", "Carrier performance rating (1-5 stars)", "Rate agreement notes", "Broker database", "Broker credit score tracking", "Broker days-to-pay tracking", "Credit limit tracking"] },
         { cat: "📍 Geocoding & Mapping", items: ["Real geocoding for any US address", "Distance calculation (haversine)", "Road factor adjustment (×1.25)", "Route state breakdown for IFTA"] },
@@ -12292,7 +12292,7 @@ function LeadsBoard(props) {
             setEmailSending(false);
             setTimeout(function () { setEmailMsg(""); }, 4000);
         }).catch(function (err) {
-            setEmailMsg("\u26A0 " + (err && err.message ? err.message : "Failed to send. Check Mailjet setup."));
+            setEmailMsg("\u26A0 " + (err && err.message ? err.message : "Failed to send. Check email setup."));
             setEmailSending(false);
             setTimeout(function () { setEmailMsg(""); }, 8000);
         });
@@ -14893,7 +14893,7 @@ function OwnerSettings(props){
     activeSection==="testEmail"&&React.createElement("div",null,
       React.createElement("div",{style:{background:C.card,border:"1px solid "+C.border,borderRadius:12,padding:"16px"}},
         React.createElement("div",{style:{fontSize:12,fontWeight:700,color:C.white,marginBottom:6}},"Send Test Email"),
-        React.createElement("div",{style:{fontSize:11,color:C.dim,marginBottom:14,lineHeight:1.7}},"Sends a real test email through Mailjet to "+BUSINESS_EMAIL+" and shows you exactly whether it succeeded or failed \u2014 and why."),
+        React.createElement("div",{style:{fontSize:11,color:C.dim,marginBottom:14,lineHeight:1.7}},"Sends a real test email through Resend to "+BUSINESS_EMAIL+" and shows you exactly whether it succeeded or failed \u2014 and why."),
         React.createElement(TestEmailTool,null)
       )
     ),
@@ -15247,7 +15247,7 @@ function TestEmailTool(){
   function runTest(){
     setSending(true);
     setResult(null);
-    var message = "This is a test email sent from the Settings → Test Email tool to verify Mailjet is working correctly.\n\nSent: " + new Date().toLocaleString();
+    var message = "This is a test email sent from the Settings → Test Email tool to verify email sending is working correctly.\n\nSent: " + new Date().toLocaleString();
     fetch("/.netlify/functions/send-email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -15258,7 +15258,7 @@ function TestEmailTool(){
         if(data && data.sent){
           setResult({ok:true, msg:"✅ Email sent successfully to " + toEmail + ". Check your inbox (and spam folder) in the next minute."});
         } else {
-          setResult({ok:false, msg:"❌ Mailjet rejected the request. Response: " + JSON.stringify(data && data.error)});
+          setResult({ok:false, msg:"❌ The email service rejected the request. Response: " + JSON.stringify(data && data.error)});
         }
       });
     }).catch(function(err){
@@ -15277,7 +15277,7 @@ function TestEmailTool(){
     ),
     result && React.createElement("div",{style:{background:result.ok?"#0a1a0a":"#1a0000",border:"1px solid "+(result.ok?C.green:C.red)+"44",borderRadius:8,padding:"12px 14px",fontSize:12,color:result.ok?C.green:C.red,lineHeight:1.6}},result.msg),
     React.createElement("div",{style:{fontSize:10,color:C.faint,marginTop:12,lineHeight:1.7}},
-      "If this fails, check that potentlogistics@" + "proton.me is a verified sender in your Mailjet account — Mailjet rejects sends from unverified addresses.")
+      "If this fails, check that info@potentworld.online is the verified sender domain in Resend — sends from unverified domains are rejected.")
   );
 }
 

@@ -1,14 +1,13 @@
 // netlify/functions/send-email.js
 // Upload to: potent-logistics-site/netlify/functions/send-email.js
 //
-// Sends real email via Mailjet's REST API. Credentials stay server-side here —
+// Sends real email via Resend's REST API. Credentials stay server-side here —
 // never expose the API key/secret in client-side app.jsx code, since anyone
 // could read them from the browser and send spam through your account.
 
 // Credentials come from Netlify environment variables (never hardcode them —
-const MAILJET_API_KEY = process.env.MAILJET_API_KEY;
-const MAILJET_SECRET_KEY = process.env.MAILJET_SECRET_KEY;
-const FROM_EMAIL = "potentlogistics@proton.me"; // must be a verified sender in your Mailjet account
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const FROM_EMAIL = process.env.MAIL_FROM_EMAIL || "info@potentworld.online"; // verified sender domain in Resend
 const FROM_NAME = "POTENT Logistics";
 
 exports.handler = async (event) => {
@@ -28,21 +27,17 @@ if (!to || !subject || !message) {
 return { statusCode: 400, headers, body: JSON.stringify({ error: "Missing to, subject, or message" }) };
 }
 
-const auth = Buffer.from(`${MAILJET_API_KEY}:${MAILJET_SECRET_KEY}`).toString("base64");
-
-const res = await fetch("https://api.mailjet.com/v3.1/send", {
+const res = await fetch("https://api.resend.com/emails", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
-    "Authorization": `Basic ${auth}`
+    "Authorization": `Bearer ${RESEND_API_KEY}`
   },
   body: JSON.stringify({
-    Messages: [{
-      From: { Email: FROM_EMAIL, Name: FROM_NAME },
-      To: [{ Email: to }],
-      Subject: subject,
-      TextPart: message
-    }]
+    from: `${FROM_NAME} <${FROM_EMAIL}>`,
+    to: [to],
+    subject: subject,
+    text: message
   })
 });
 

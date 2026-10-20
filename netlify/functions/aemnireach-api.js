@@ -5,9 +5,8 @@
 
 const SUPABASE_URL = "https://ymvsatlrkzgxwzxybwmk.supabase.co";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const MAILJET_KEY = process.env.MAILJET_API_KEY;
-const MAILJET_SECRET = process.env.MAILJET_SECRET_KEY;
-const FROM_EMAIL = process.env.MAILJET_FROM_EMAIL;
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const FROM_EMAIL = process.env.MAIL_FROM_EMAIL || "info@potentworld.online";
 
 async function sb(path, method, body) {
     const r = await fetch(SUPABASE_URL + "/rest/v1/" + path, {
@@ -32,27 +31,25 @@ function err(msg, code) {
 }
 
 // SMS disabled — email-only mode (no Twilio configured)
-// ── Send one email via Mailjet ───────────────────────────────────────
+// ── Send one email via Resend ───────────────────────────────────────
 async function sendEmail(to, subject, html) {
-    const r = await fetch("https://api.mailjet.com/v3.1/send", {
+    const r = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
-            "Authorization": "Basic " + Buffer.from(MAILJET_KEY + ":" + MAILJET_SECRET).toString("base64"),
+            "Authorization": "Bearer " + RESEND_API_KEY,
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            Messages: [{
-                From: { Email: FROM_EMAIL, Name: "POTENT OS" },
-                To: [{ Email: to }],
-                Subject: subject,
-                HTMLPart: html,
-                TextPart: html.replace(/<[^>]*>/g, "")
-            }]
+            from: "POTENT OS <" + FROM_EMAIL + ">",
+            to: [to],
+            subject: subject,
+            html: html,
+            text: html.replace(/<[^>]*>/g, "")
         })
     });
     const j = await r.json();
-    if (!r.ok) throw new Error("Mailjet send failed");
-    return j.Messages[0].To[0].MessageID;
+    if (!r.ok) throw new Error("Email send failed");
+    return j.id;
 }
 
 // ── Check subscription ───────────────────────────────────────────────

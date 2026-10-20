@@ -9,7 +9,7 @@
 //   ai_map { kind, headers, sample }-> which spreadsheet column is which field (free Gemini if GEMINI_API_KEY is set)
 //   import_trucks | import_drivers | import_jobs { rows }
 //   help_request { platform, notes, contact } -> "do it for me": emails POTENT with the company's details
-// Env: AUTH_SECRET, SUPABASE_SERVICE_ROLE_KEY   (optional: GEMINI_API_KEY, MAILJET_API_KEY, MAILJET_SECRET_KEY, NOTIFY_EMAIL)
+// Env: AUTH_SECRET, SUPABASE_SERVICE_ROLE_KEY   (optional: GEMINI_API_KEY, RESEND_API_KEY, NOTIFY_EMAIL)
 var crypto = require("crypto");
 var billing = require("./lib/billing");
 
@@ -131,13 +131,13 @@ async function aiMap(kind, headers, sample) {
 }
 
 async function mailTony(subject, text) {
-    var key = process.env.MAILJET_API_KEY, secret = process.env.MAILJET_SECRET_KEY;
-    var from = process.env.MAILJET_FROM_EMAIL || "potentlogistics@proton.me", to = process.env.NOTIFY_EMAIL || "potentlogistics@proton.me";
+    var key = process.env.RESEND_API_KEY;
+    var from = process.env.MAIL_FROM_EMAIL || "info@potentworld.online", to = process.env.NOTIFY_EMAIL || "potentlogistics@proton.me";
     console.log("POTENT migration help request: " + subject + "\n" + text);
-    if (!key || !secret) return false;
+    if (!key) return false;
     try {
-        var r = await fetch("https://api.mailjet.com/v3.1/send", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Basic " + Buffer.from(key + ":" + secret).toString("base64") },
-            body: JSON.stringify({ Messages: [{ From: { Email: from, Name: "POTENT OS" }, To: [{ Email: to }], Subject: subject, TextPart: text }] }) });
+        var r = await fetch("https://api.resend.com/emails", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
+            body: JSON.stringify({ from: "POTENT OS <" + from + ">", to: [to], subject: subject, text: text }) });
         return r.ok;
     } catch (e) { return false; }
 }

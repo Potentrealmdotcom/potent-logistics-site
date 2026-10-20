@@ -15,7 +15,7 @@
 //  - notifies POTENT of every payment event
 //
 // Env vars: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, SUPABASE_SERVICE_ROLE_KEY
-//   MAILJET_API_KEY, MAILJET_SECRET_KEY, MAILJET_FROM_EMAIL (for buyer + owner emails)
+//   RESEND_API_KEY, MAIL_FROM_EMAIL (for buyer + owner emails)
 // Stripe events to send to this endpoint:
 //   checkout.session.completed, payment_intent.succeeded,
 //   invoice.paid, invoice.payment_failed, customer.subscription.deleted
@@ -43,9 +43,9 @@ function sb(path, opts) {
 // Email the buyer their new company login. Temp password is emailed once and
 // never stored in plain text anywhere.
 async function emailBuyerWelcome(email, companyName, slug, tempPassword, tier) {
-  const key = process.env.MAILJET_API_KEY, secret = process.env.MAILJET_SECRET_KEY;
-  const from = process.env.MAILJET_FROM_EMAIL || "potentlogistics@proton.me";
-  if (!key || !secret || !email || !tempPassword) { console.error("Buyer welcome email skipped (missing config)"); return false; }
+  const key = process.env.RESEND_API_KEY;
+  const from = process.env.MAIL_FROM_EMAIL || "info@potentworld.online";
+  if (!key || !email || !tempPassword) { console.error("Buyer welcome email skipped (missing config)"); return false; }
   const pageLink = "https://potentoperations.netlify.app/?c=" + slug;
   const text =
     "Welcome to POTENT OS, " + companyName + "!\n\n" +
@@ -57,11 +57,10 @@ async function emailBuyerWelcome(email, companyName, slug, tempPassword, tier) {
     "Your " + tier + " license is active. If you need help, reply to this email.\n\n" +
     "- POTENT Logistics";
   try {
-    const auth = Buffer.from(key + ":" + secret).toString("base64");
-    const res = await fetch("https://api.mailjet.com/v3.1/send", {
+    const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Basic " + auth },
-      body: JSON.stringify({ Messages: [{ From: { Email: from, Name: "POTENT Logistics" }, To: [{ Email: email }], Subject: "Your POTENT OS company is ready — sign in here", TextPart: text }] })
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+      body: JSON.stringify({ from: "POTENT Logistics <" + from + ">", to: [email], subject: "Your POTENT OS company is ready — sign in here", text: text })
     });
     return res.ok;
   } catch (e) { console.error("Buyer welcome email failed:", e.message); return false; }
@@ -70,17 +69,16 @@ async function emailBuyerWelcome(email, companyName, slug, tempPassword, tier) {
 // Payment alert to Tony (every event). Log-only if mail isn't configured.
 async function notifyTony(type, summary) {
   const to = process.env.NOTIFY_EMAIL || "potentlogistics@proton.me";
-  const key = process.env.MAILJET_API_KEY, secret = process.env.MAILJET_SECRET_KEY;
-  const from = process.env.MAILJET_FROM_EMAIL || "potentlogistics@proton.me";
+  const key = process.env.RESEND_API_KEY;
+  const from = process.env.MAIL_FROM_EMAIL || "info@potentworld.online";
   const lines = Object.entries(summary || {}).map(function (kv) { return kv[0] + ": " + kv[1]; }).join("\n");
   console.log("POTENT Stripe event: " + type + "\n\n" + lines);
-  if (!key || !secret) return;
+  if (!key) return;
   try {
-    const auth = Buffer.from(key + ":" + secret).toString("base64");
-    await fetch("https://api.mailjet.com/v3.1/send", {
+    await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Basic " + auth },
-      body: JSON.stringify({ Messages: [{ From: { Email: from, Name: "POTENT Logistics" }, To: [{ Email: to }], Subject: "POTENT payment: " + type, TextPart: "POTENT Stripe event: " + type + "\n\n" + lines }] })
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+      body: JSON.stringify({ from: "POTENT Logistics <" + from + ">", to: [to], subject: "POTENT payment: " + type, text: "POTENT Stripe event: " + type + "\n\n" + lines })
     });
   } catch (e) { console.error("Payment alert email failed:", e.message); }
 }
