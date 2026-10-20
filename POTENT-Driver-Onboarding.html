@@ -52,6 +52,7 @@ input[type=file]{padding:8px;font-size:11px;}
     <input id="phone" type="tel" placeholder="(555) 555-5555">
     <label>Email</label>
     <input id="email" type="email" placeholder="you@email.com">
+    <input id="hp_website" type="text" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;opacity:0;height:0;width:0;" aria-hidden="true">
     <label>EIN Number</label>
     <input id="ein" placeholder="XX-XXXXXXX">
     <label>Vehicle Class</label>
@@ -131,6 +132,8 @@ input[type=file]{padding:8px;font-size:11px;}
 <div class="container success" id="successView" style="display:none;">
   <h2>✅ Submitted</h2>
   <p style="color:#888;font-size:13px;">Thank you — POTENT Logistics has received your documents. We'll follow up shortly.</p>
+  <p style="font-size:15px;margin-top:14px;">Your reference number:<br><b id="refNo" style="font-size:22px;color:#F0E000;letter-spacing:1px;"></b></p>
+  <p id="confirmLine" style="color:#888;font-size:12px;"></p>
 </div>
 
 <script>
@@ -190,12 +193,13 @@ function submitForm(){
   document.getElementById('submitBtn').disabled = true;
   document.getElementById('submitBtn').textContent = 'Submitting...';
 
-  fetch(SUPABASE_URL + '/rest/v1/driver_onboarding', {
+  fetch('/.netlify/functions/onboarding-submit', {
     method: 'POST',
-    headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       driver_name: driverName, phone: phone, email: email, ein: ein, vehicle_class: vehicleClass,
       payment_method: paymentMethod, payment_details: paymentDetails,
+      website: (document.getElementById('hp_website') || {}).value || '',
       truck_registration_url: uploadedUrls.truck_registration_url,
       truck_photo_url: uploadedUrls.truck_photo_url,
       license_front_url: uploadedUrls.license_front_url,
@@ -204,11 +208,15 @@ function submitForm(){
       medical_card_url: uploadedUrls.medical_card_url,
       coi_url: uploadedUrls.coi_url
     })
-  }).then(function(){
+  }).then(function(res){ return res.json().catch(function(){ return { ok: false }; }).then(function(d){ d.httpOk = res.ok; return d; }); })
+  .then(function(d){
+    if (!d.ok || !d.httpOk) throw new Error(d.error || 'save failed');
+    document.getElementById('refNo').textContent = d.reference;
+    document.getElementById('confirmLine').textContent = d.confirmation_emailed ? 'A confirmation was emailed to you.' : (email ? 'We could not email a confirmation, so please save this reference number.' : 'Please save this reference number.');
     document.getElementById('formView').style.display = 'none';
     document.getElementById('successView').style.display = 'block';
-  }).catch(function(){
-    alert('Something went wrong submitting. Please try again.');
+  }).catch(function(err){
+    alert('Your application was NOT submitted. ' + (err && err.message && err.message !== 'save failed' ? err.message : 'Please try again or call (470) 453-1616.'));
     document.getElementById('submitBtn').disabled = false;
     document.getElementById('submitBtn').textContent = 'Submit Onboarding';
   });
