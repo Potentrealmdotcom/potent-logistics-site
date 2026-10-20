@@ -18238,7 +18238,7 @@ function downloadInvoice(job) {
             "<tr><td>Final Amount</td><td>$" + job.finalPrice + "</td></tr>" +
             "<tr><td>Reason for Change</td><td>" + (job.priceChangeReason || "\u2014") + "</td></tr></table>" : "") +
         "<div style='display:flex;justify-content:space-between;'><div style='font-size:11px;'>Pay Terms: NET 7 Days (Maximum)</div><div class='total'>TOTAL AMOUNT DUE: $" + (job.finalPrice || 0) + "</div></div>" +
-        "<div class='remit'><b>REMIT PAYMENT TO</b><br>Business Name: POTENT OPERATIONS LLC (DBA Potent Logistics)<br>Bank: Middlesex Federal Savings, F.A. (affiliated bank of Novo)<br>Routing Number: 211370150<br>Account Number: 103687060<br>Business Address: 2089 Christian Cir SE, Conyers, GA 30013</div>" +
+        "<div class='remit'><b>REMIT PAYMENT TO</b><br>Business Name: POTENT OPERATIONS LLC (DBA Potent Logistics)<br>Payment instructions: contact (470) 453-1616 for current remittance details.<br>Business Address: 2089 Christian Cir SE, Conyers, GA 30013</div>" +
         "<p style='font-size:10px;color:#888;margin-top:16px;'>Thank you for your business. Please contact us with any questions regarding this invoice.</p>" +
         "</body></html>"
     );
