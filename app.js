@@ -17589,10 +17589,8 @@ var POTENT_CARRIER_INFO = {
     capacity: "4,500 lbs max, 190\"L x 95\"W x 80\"H interior",
     equipment: "Ramp, E-tracks, moving blankets, load bars — NO liftgate",
     serviceArea: "Georgia statewide, Atlanta metro primary",
-    contact: "(470) 453-1616 \u00b7 potentlogistics@" + "proton.me",
-    bankName: "Middlesex Federal Savings (Novo)",
-    routingNumber: "211370150",
-    accountNumber: "103687060"
+    contact: "(470) 453-1616 \u00b7 potentlogistics@" + "proton.me"
+    // Bank details intentionally NOT stored in the app. Send a bank letter directly when asked.
 };
 
 function CompanyOnboarding() {
