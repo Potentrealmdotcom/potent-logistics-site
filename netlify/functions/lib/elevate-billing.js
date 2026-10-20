@@ -114,6 +114,11 @@ async function checkout(email, what) {
     metadata: Object.assign({ what: "pack", cents: String(cents) }, md), payment_intent_data: { metadata: { kind: "elevate", owner_key: k } } }, cust.customer ? { customer: cust.customer } : { customer_email: k }, back));
   return { ok: true, status: 200, url: s.url, price_cents: cents, minutes: PACKS[cents] / 60 };
 }
+async function portal(k) {
+  const acc = await account(k); if (!acc || !acc.stripe_customer) return { ok: false, status: 404, error: "No subscription to manage yet." };
+  const p = await stripe().billingPortal.sessions.create({ customer: acc.stripe_customer, return_url: SITE() + "/elevate/" });
+  return { ok: true, status: 200, url: p.url };
+}
 async function applySub(sub, deleted) {
   const md = (sub && sub.metadata) || {}, k = lower(md.owner_key); if (!k) return { skipped: true };
   const it = sub.items && sub.items.data && sub.items.data[0] || {}, ps = sub.current_period_start || it.current_period_start, pe = sub.current_period_end || it.current_period_end;
@@ -153,4 +158,4 @@ async function onDispute(d, closed) {
   if (d.status !== "won") return { skipped: true };
   const r2 = await E.sb("elevate_credits?payment_intent=eq." + q(d.payment_intent) + "&status=eq.disputed", { method: "PATCH", body: { status: "paid" } }); return { ok: r2.ok };
 }
-module.exports = { PRICE_CENTS, INCLUDED_S, MAX_CALL_S, PACKS, CREDIT_MONTHS, isOwner, account, subscribed, standing, canSignIn, start, ping, end, recordPhone, addCredit, setAccount, checkout, applySub, onCheckout, onRefund, onDispute, balances };
+module.exports = { PRICE_CENTS, INCLUDED_S, MAX_CALL_S, PACKS, CREDIT_MONTHS, isOwner, account, subscribed, standing, canSignIn, start, ping, end, recordPhone, addCredit, setAccount, checkout, portal, applySub, onCheckout, onRefund, onDispute, balances };

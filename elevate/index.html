@@ -202,6 +202,7 @@ function settings(m){var c=el("div","card");c.appendChild(el("h2",null,"Settings
     bb.appendChild(kv);if(j.unlimited)return;
     var row=el("div");row.style.cssText="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px";
     function buy(what,label){var b=el("button",what==="sub"?"":"alt",label);b.onclick=function(){b.disabled=true;rawApi({action:"buy",what:what}).then(function(r){b.disabled=false;if(r&&r.url)location.href=r.url;else alert((r&&r.error)||"Could not start checkout.")})};row.appendChild(b)}
+    if(j.subscribed){var pm=el("button","alt","Manage or cancel plan");pm.onclick=function(){rawApi({action:"portal"}).then(function(r){if(r&&r.url)location.href=r.url;else alert((r&&r.error)||"Could not open billing.")})};row.appendChild(pm)}
     if(!j.subscribed)buy("sub","Subscribe: $"+(j.plan.price_cents/100)+"/month");
     j.packs.forEach(function(p){buy("pack:"+p.cents,"Add "+p.minutes+" min: $"+(p.cents/100))});
     bb.appendChild(row);bb.appendChild(el("p","dim","Credits cost $0.25 a minute and last 12 months. The plan's minutes reset every billing month. Text chat, notes, tasks and the map are not metered."))});

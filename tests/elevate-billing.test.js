@@ -7,7 +7,7 @@ const T = { elevate_items: [], elevate_accounts: [], elevate_usage: [], elevate_
 make(T, { unique: { elevate_accounts: (x, r) => x.owner_key === r.owner_key, elevate_usage: (x, r) => x.ref === r.ref, elevate_credits: (x, r) => x.ref === r.ref }, defaults: { elevate_credits: { status: "paid" }, elevate_usage: { seconds: 0, from_included: 0, from_credit: 0 }, elevate_items: { done: false } } });
 // fake Stripe
 const CALLS = [], SUBS = {};
-const fake = { checkout: { sessions: { create: async a => { CALLS.push(a); return { id: "cs_" + CALLS.length, url: "https://checkout.stripe.test/" + CALLS.length }; } } },
+const fake = { billingPortal: { sessions: { create: async a => ({ url: "https://portal.stripe.test/" + a.customer }) } }, checkout: { sessions: { create: async a => { CALLS.push(a); return { id: "cs_" + CALLS.length, url: "https://checkout.stripe.test/" + CALLS.length }; } } },
   subscriptions: { retrieve: async id => SUBS[id] }, webhooks: { constructEvent: (body, sig) => { if (sig !== "good") throw new Error("bad sig"); return JSON.parse(body); } } };
 const Module = require("module"), orig = Module._load; Module._load = function (r) { if (r === "stripe") return function () { return fake; }; return orig.apply(this, arguments); };
 const dbFetch = global.fetch; let gtok = {}, rt = [];
@@ -99,6 +99,8 @@ const T0 = Date.parse("2026-10-20T12:00:00Z"), MIN = 60;
   // ── phone line is logged, once ──
   await B.recordPhone("boss@gmail.com", "elv-xyz", 95, T0); await B.recordPhone("boss@gmail.com", "elv-xyz", 95, T0); ok(T.elevate_usage.filter(u => u.ref === "elv-xyz").length === 1 && T.elevate_usage.find(u => u.ref === "elv-xyz").seconds === 95 && T.elevate_usage.find(u => u.ref === "elv-xyz").kind === "phone", "phone call logged once");
   [s, r] = await call(null, { action: "billing" }); ok(s === 401, "billing needs a login");
+  [s, r] = await call(E.mint("friend@x.com"), { action: "portal" }); ok(s === 404, "no portal without a subscription");
+  await B.setAccount("friend@x.com", { stripe_customer: "cus_f" }); [s, r] = await call(E.mint("friend@x.com"), { action: "portal" }); ok(s === 200 && r.url === "https://portal.stripe.test/cus_f", "subscriber gets a Stripe portal link to manage or cancel");
   [s, r] = await call(null, { action: "buy", what: "sub" }); ok(s === 401, "buying from inside needs a login");
   [s, r] = await call(null, { action: "o_credit_grant", email: "a@b.co", minutes: 5 }); ok(s === 401, "owner actions need a login");
   const v3 = await B.start("friend@x.com", "voice", Date.now()); [s, r] = await call(null, { action: "voice_end", ref: v3.ref, token: E.mint("friend@x.com") }); ok(s === 200 && r.ok, "the page's last-gasp beacon can end a session with the token in its body");

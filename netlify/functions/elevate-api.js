@@ -88,6 +88,7 @@ exports.handler = async function (event) {
       return J(200, { ok: true, plan: { price_cents: Bill.PRICE_CENTS, included_minutes: Bill.INCLUDED_S / 60 }, packs: Object.keys(Bill.PACKS).map(function (c) { return { cents: Number(c), minutes: Bill.PACKS[c] / 60 }; }),
         comped: st.comped, subscribed: st.subscribed, sub_status: st.sub_status, period_end: st.period_end, included_left_minutes: Math.floor(st.included_left_s / 60), credit_left_minutes: Math.floor(st.credits_left_s / 60), unlimited: st.comped });
     }
+    if (a === "portal") { const c = await Bill.portal(k); return J(c.status, c); }
     if (a === "buy") { const c = await Bill.checkout(k, String(b.what || "")); return J(c.status, c); }
     if (a === "voice_ping") return J(200, await Bill.ping(k, b.ref));
     if (a === "voice_end") { const r = await Bill.end(k, b.ref); return J(r.ok ? 200 : (r.status || 400), r); }
