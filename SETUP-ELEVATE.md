@@ -66,3 +66,10 @@ Install `/elevate/` to the home screen (Android: browser menu > Install app; iPh
 - **Needs a connection** (cannot be offline): the AI assistant (text and voice), the phone line, first sign-in, and anything you have never loaded before. The orb says "Not connected" with this note instead of pretending.
 - **Honest limits**: the outbox lives in this browser, so clearing site data or signing out before it syncs loses those changes (sign-out warns you first). If the connection drops at the exact moment a save is confirmed, that one item can be saved twice. Offline changes made on two devices are applied in the order they arrive; there is no merge.
 - Files: `elevate/sw.js` (service worker, caches the app and the map file), outbox code in `elevate/index.html`. Tested in a real browser with the network cut: `node tests/elevate-ui.test.js`.
+
+## Pricing (decided Oct 20, 2026; nothing in the app charges yet)
+- **Əlevate alone** (people who do not own POTENT OS): **$50 a month**. Covers the AI assistant, voice and offline app.
+- **With a POTENT OS license**: the Əlevate app (offline notes, tasks, map) is included at no extra charge. License prices are the v12 grid: $4,995 (1–10 trucks), $9,995 (11–50), $19,995 (51–150), $34,995 (151–300), custom above 300.
+- **AI assistant and voice for license holders**: part of the optional annual support (v12: $1,788 / $2,988 / $4,788 / $7,188 a year), or they use their own OpenAI key.
+- Check the real OpenAI cost per person after a week of use; $50 should leave a healthy margin over that.
+- **Not built**: billing. There is no checkout, no subscription, and no plan check inside Əlevate yet. Today the owner's allow-list (`ELEVATE_OWNER_EMAILS`) is the only gate.
