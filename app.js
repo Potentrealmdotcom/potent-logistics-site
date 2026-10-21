@@ -8428,7 +8428,7 @@ function PublicApp(props) {
             React.createElement("div", { id: "services", style: { background: "linear-gradient(135deg,#0d0d00,#080808)", borderBottom: "2px solid " + C.orange, padding: "36px 20px", scrollMarginTop: 44 } },
                 React.createElement("div", { style: { maxWidth: 720, margin: "0 auto", textAlign: "center" } },
                     React.createElement("div", { style: { fontSize: 11, color: C.orange, fontWeight: 800, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 8 } }, "Conyers \u00B7 Covington \u00B7 Lithonia \u00B7 Surrounding Areas"),
-                    React.createElement("div", { style: { fontSize: 26, fontWeight: 900, color: "#fff", marginBottom: 6 } }, "The Best Price In The City. Guaranteed."),
+                    React.createElement("div", { style: { fontSize: 26, fontWeight: 900, color: "#fff", marginBottom: 6 } }, "The Best Price In The City."),
                     React.createElement("div", { style: { fontSize: 13, color: "rgba(255,255,255,0.75)", maxWidth: 560, margin: "0 auto 18px", lineHeight: 1.7, fontStyle: "italic" } }, "Most companies make you request a quote and wait. We break our pricing down right here, transparently \u2014 so you know exactly what you'll pay before you ever call."),
                     React.createElement("div", { style: { fontSize: 13, color: "rgba(255,255,255,0.7)", maxWidth: 500, margin: "0 auto 24px", lineHeight: 1.6 } }, "Same crew, same trucks, same-day service \u2014 for less than anyone else in your area."),
                     React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 10, marginBottom: 20 } }, [

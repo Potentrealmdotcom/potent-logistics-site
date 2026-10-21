@@ -15,7 +15,9 @@ const d = ad.diag(); ok(d.sc.inputTranscription === 1 && d.top.usageMetadata ===
 const def = T.defs().find(x => x.name === "collect_shipment_details" || (x.function && x.function.name === "collect_shipment_details"));
 ok(JSON.stringify(def).includes("use_caller_id"), "collect_shipment_details accepts use_caller_id");
 const PB = require("../netlify/functions/lib/voice/playbook.js");
-ok(PB.NAMES.length === 13 && PB.NAMES.every(k => PB.get(k).ok && PB.get(k).script.length > 100) && !PB.get("nope").ok, "every playbook topic returns a script; unknown topic is refused");
+ok(PB.NAMES.length === 15 && PB.NAMES.every(k => PB.get(k).ok && PB.get(k).script.length > 100) && !PB.get("nope").ok, "every playbook topic returns a script; unknown topic is refused");
 ok(!/\$\s?\d/.test(JSON.stringify(PB.TOPICS)), "playbook scripts contain no dollar prices (prices only come from tools)");
 ok(/get_playbook/.test(JSON.stringify(T.defs())) && /price_pushback/.test(JSON.stringify(T.defs())), "get_playbook tool is offered with the topic list");
+ok(/YOUR VOICE IS THE CLOSER'S PLAYBOOK/.test(b) && /Problems before products/.test(b) && /Never argue/.test(b) && /Out of curiosity/.test(b), "she talks like the Closer's Playbook on every call");
+ok(/LIKE FAMILY/.test(b) && /NEVER GUESS/.test(b) && /yes ma'am/.test(b), "Southern, family, never guess");
 console.log("voice owner fixes: " + n + " assertions PASS");
