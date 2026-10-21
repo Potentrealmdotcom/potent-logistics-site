@@ -302,6 +302,43 @@ exports.handler = async function (event) {
             return J(200, { ok: true, token: sign({ uid: uid, role: role, orgId: null, exp: Date.now() + TOKEN_TTL_MS }), role: role });
         }
 
+        // ── POTENT team: email me a sign-in code (no password to remember) ──
+        if (action === "staffcode_send" || action === "staffcode_verify") {
+            var cuid = String(body.userId || ""), cip = String((event.headers && (event.headers["x-nf-client-connection-ip"] || event.headers["x-forwarded-for"])) || "x").split(",")[0].trim();
+            var ck1 = "sc:" + cuid, ck2 = "sci:" + cip;
+            if (tooMany(ck1) || tooMany(ck2)) return J(429, { ok: false, error: "Too many attempts. Try again in 15 minutes." });
+            var crec = staffMap()[cuid];
+            if (!crec) { noteFail(ck1); noteFail(ck2); return J(401, { ok: false, error: "Could not do that." }); }
+            var crev = await sb("revoked_users?user_id=eq." + encodeURIComponent(cuid) + "&select=user_id");
+            if (crev.ok && Array.isArray(crev.data) && crev.data.length) return J(403, { ok: false, error: "revoked" });
+            var hashCode = function (c) { return crypto.createHash("sha256").update(String(c) + "|" + cuid + "|" + process.env.AUTH_SECRET).digest("hex"); };
+            var sl = await sb("staff_logins?user_id=eq." + encodeURIComponent(cuid) + "&select=*");
+            if (!sl.ok) return J(503, { ok: false, error: "Email sign-in is not set up yet. Use your password." });
+            var srow = Array.isArray(sl.data) ? sl.data[0] : null;
+            if (action === "staffcode_send") {
+                var toEmail = (srow && srow.email) || ((crec.r === "owner") ? (process.env.OWNER_ALERT_EMAIL || "potentlogistics@" + "proton.me") : "");
+                if (!toEmail) return J(404, { ok: false, error: "No email is on file for you. Ask the owner to add it, or use your password." });
+                noteFail(ck1); noteFail(ck2); // each request counts, so codes cannot be spammed
+                var code = String(crypto.randomInt(0, 1000000)).padStart(6, "0");
+                var sv = await sb("staff_logins?on_conflict=user_id", { method: "POST", prefer: "resolution=merge-duplicates,return=minimal", body: { user_id: cuid, code_hash: hashCode(code), code_exp: new Date(Date.now() + 10 * 60000).toISOString(), tries: 0, updated_at: new Date().toISOString() } });
+                if (!sv.ok) return J(500, { ok: false, error: "Could not create a code. Use your password." });
+                var ms = await require("./lib/mail.js").send(toEmail, "Your POTENT OS sign-in code: " + code, "Your sign-in code is " + code + ".\n\nIt works once and expires in 10 minutes. If you did not ask for it, ignore this email.", "");
+                if (!(ms && ms.ok)) return J(502, { ok: false, error: "The email could not be sent. Use your password." });
+                var at = toEmail.indexOf("@");
+                return J(200, { ok: true, sent_to: toEmail.slice(0, 2) + "***" + toEmail.slice(at) });
+            }
+            // verify
+            var okCode = !!(srow && srow.code_hash && srow.code_exp && new Date(srow.code_exp).getTime() > Date.now() && (srow.tries || 0) < 5 && /^\d{6}$/.test(String(body.code || "")) && eq(hashCode(body.code), srow.code_hash));
+            if (!okCode) {
+                noteFail(ck1); noteFail(ck2);
+                if (srow) await sb("staff_logins?user_id=eq." + encodeURIComponent(cuid), { method: "PATCH", prefer: "return=minimal", body: { tries: (srow.tries || 0) + 1 } });
+                return J(401, { ok: false, error: "That code is wrong or expired. Ask for a new one." });
+            }
+            await sb("staff_logins?user_id=eq." + encodeURIComponent(cuid), { method: "PATCH", prefer: "return=minimal", body: { code_hash: null, code_exp: null, tries: 0 } }); // one use
+            var crole = crec.r || "dispatch";
+            return J(200, { ok: true, token: sign({ uid: cuid, role: crole, orgId: null, exp: Date.now() + TOKEN_TTL_MS }), role: crole });
+        }
+
         // ── Company login ─────────────────────────────────────────
         if (action === "company") {
             var email = String(body.email || "").trim().toLowerCase();
@@ -639,8 +676,16 @@ exports.handler = async function (event) {
 
 
         // ── POTENT owner: customers / licenses / invoices ─────────
-        if (["listorgs", "orgdetail", "addinvoice", "setinvoice", "linkinvoices", "resetowner"].indexOf(action) > -1) {
+        if (["listorgs", "orgdetail", "addinvoice", "setinvoice", "linkinvoices", "resetowner", "staff_email_set"].indexOf(action) > -1) {
             if (tok.orgId || tok.role !== "owner") return J(403, { ok: false, error: "Owner only" });
+
+            if (action === "staff_email_set") { // owner adds the email a team member's sign-in code goes to
+                var seU = String(body.userId || ""), seE = String(body.email || "").trim().toLowerCase();
+                if (!staffMap()[seU]) return J(404, { ok: false, error: "No such team member." });
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(seE)) return J(400, { ok: false, error: "Enter a real email." });
+                var sr = await sb("staff_logins?on_conflict=user_id", { method: "POST", prefer: "resolution=merge-duplicates,return=minimal", body: { user_id: seU, email: seE, updated_at: new Date().toISOString() } });
+                return sr.ok ? J(200, { ok: true }) : J(500, { ok: false, error: "Could not save." });
+            }
 
             if (action === "listorgs") {
                 var lo = await sb("organizations?select=*&order=created_at.desc");

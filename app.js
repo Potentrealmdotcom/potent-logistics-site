@@ -7937,6 +7937,35 @@ function AdminLogin(props) {
     var [coEmail, setCoEmail] = useState("");
     var [coBusy, setCoBusy] = useState(false);
     var [coErr, setCoErr] = useState("");
+    // ── TEAM EMAIL CODE: pick your name, get a 6-digit code by email, no password ──
+    var [codeStage, setCodeStage] = useState("");
+    var [codeVal, setCodeVal] = useState("");
+    var [codeMsg, setCodeMsg] = useState("");
+    var [codeBusy, setCodeBusy] = useState(false);
+    function codeSend() {
+        if (!selected) return;
+        setCodeBusy(true); setCodeMsg("");
+        plApi("staffcode_send", { userId: selected }).then(function (res) {
+            setCodeBusy(false);
+            if (res && res.ok) { setCodeStage("sent"); setCodeVal(""); setCodeMsg("We emailed a 6-digit code to " + res.sent_to + ". It works once for 10 minutes."); }
+            else if (res && res.error === "revoked") setRevokedErr(true);
+            else setCodeMsg(res && res.error === "network" ? "Can't reach the server. Check your connection." : ((res && res.error) || "Could not send a code."));
+        });
+    }
+    function codeGo() {
+        var user = USERS.find(function (u) { return u.id === selected; });
+        if (!user || !/^\d{6}$/.test(codeVal.trim())) return;
+        setCodeBusy(true); setCodeMsg("");
+        plApi("staffcode_verify", { userId: selected, code: codeVal.trim() }).then(function (res) {
+            setCodeBusy(false);
+            if (!res || !res.ok) { setCodeMsg(res && res.error === "network" ? "Can't reach the server. Check your connection." : ((res && res.error) || "That code did not work.")); return; }
+            plTokenSet(res.token);
+            var device = getDeviceInfo(), name = getDisplayName(user);
+            logAdminAction("Login (email code)", "Signed in from " + device, name + " (" + user.role + ")");
+            alertLoginEmail("\uD83D\uDD10 POTENT OS Login: " + name, name + " (" + user.role + ") signed in with an email code.\n\nDevice: " + device + "\nTime: " + new Date().toLocaleString());
+            props.onLogin(Object.assign({}, user, { name: name }));
+        });
+    }
     function companyGo() {
         var email = coEmail.trim().toLowerCase();
         if (!email || !pw) return;
@@ -8067,7 +8096,7 @@ function AdminLogin(props) {
                 React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white, marginBottom: 4 } }, "Who are you?"),
                 React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 14 } }, "Choose your name from the list, then enter your password."),
                 React.createElement("div", { style: { marginBottom: 10 } },
-                    React.createElement("select", { value: selected, onChange: function (e) { setSelected(e.target.value); setPw(""); setErr(false); setRevokedErr(false); setEditingName(false); }, style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 9, color: C.white, padding: "12px 14px", fontSize: 14, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box", cursor: "pointer" } },
+                    React.createElement("select", { value: selected, onChange: function (e) { setSelected(e.target.value); setPw(""); setErr(false); setRevokedErr(false); setEditingName(false); setCodeStage(""); setCodeMsg(""); setCodeVal(""); }, style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 9, color: C.white, padding: "12px 14px", fontSize: 14, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box", cursor: "pointer" } },
                         React.createElement("option", { value: "" }, "\u2014 Select your name \u2014"),
                         USERS.map(function (u) { return React.createElement("option", { key: u.id, value: u.id }, u.emoji + " " + getDisplayName(u) + " (" + u.role + ")"); }))),
                 selectedUser && !editingName && React.createElement("div", { style: { display: "flex", justifyContent: "flex-end", marginBottom: 14 } },
@@ -8094,6 +8123,11 @@ function AdminLogin(props) {
                         disabled: !pw, style: { width: "100%" }
                     }, !camConsent ? "Allow Camera To Continue" : camError ? "\u26A0 Camera Needed \u2014 Try Again" : "Sign In \u2192"),
                     camError && React.createElement("div", { style: { color: C.red, fontSize: 11, marginTop: 8, textAlign: "center" } }, "Camera access is needed for documents, BOL uploads, and photo verification inside the app. Please allow it in your browser and try again."),
+                    codeStage === "sent" && React.createElement("div", { style: { marginTop: 14 } },
+                        React.createElement(TxtIn, { label: "6-digit code from your email", value: codeVal, onChange: function (v) { setCodeVal(String(v).replace(/\D/g, "").slice(0, 6)); }, placeholder: "123456" }),
+                        React.createElement(Btn, { onClick: codeGo, disabled: codeBusy || codeVal.length !== 6, style: { width: "100%" } }, codeBusy ? "Checking\u2026" : "Sign in with code \u2192")),
+                    codeMsg && React.createElement("div", { style: { color: codeStage === "sent" ? C.dim : C.red, fontSize: 12, marginTop: 8, textAlign: "center" } }, codeMsg),
+                    React.createElement("div", { onClick: function () { if (!codeBusy) codeSend(); }, style: { textAlign: "center", marginTop: 10, fontSize: 12, color: C.orange, cursor: "pointer", textDecoration: "underline" } }, codeStage === "sent" ? "Send a new code" : "Forgot it? Email me a sign-in code instead"),
                     React.createElement("div", { style: { fontSize: 9, color: "#444", textAlign: "center", marginTop: 8 } }, "By clicking Sign In, you accept the Terms of Access.")),
                 React.createElement("div", { onClick: function () { setCompanyMode(true); setPw(""); setErr(false); }, style: { textAlign: "center", marginTop: 14, fontSize: 11, color: C.orange, cursor: "pointer", textDecoration: "underline" } }, "Have a company account? Sign in with email →"))));
 }
