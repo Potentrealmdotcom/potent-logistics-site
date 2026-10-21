@@ -33,7 +33,7 @@ function declarations(tools) {
 
 function create(opts) {
   opts = opts || {}; const model = opts.model || process.env.VOICE_AI_MODEL || DEFAULT_MODEL;
-  let lastTextAt = 0, upPrev = 0, dnRest = [], callerBuf = "", agentBuf = "", n = 0, agentSpoke = false;
+  const seen = { top: {}, sc: {} }; let lastTextAt = 0, upPrev = 0, dnRest = [], callerBuf = "", agentBuf = "", n = 0, agentSpoke = false;
   const flushCaller = function (ev) { if (callerBuf.trim()) ev.push({ kind: "caller_text", text: callerBuf.trim(), key: "c:" + (++n) }); callerBuf = ""; };
   const flushAgent = function (ev) { if (agentBuf.trim()) ev.push({ kind: "agent_text", text: agentBuf.trim(), key: "a:" + (++n) }); agentBuf = ""; };
   return {
@@ -41,9 +41,9 @@ function create(opts) {
     setup: function (o) {
       const voice = VOICES.indexOf(o.voice) >= 0 ? o.voice : (process.env.VOICE_NAME && VOICES.indexOf(process.env.VOICE_NAME) >= 0 ? process.env.VOICE_NAME : DEFAULT_VOICE);
       const decl = declarations(o.tools);
-      return [{ setup: { model: "models/" + model, generationConfig: { responseModalities: ["AUDIO"], speechConfig: Object.assign({ voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } }, process.env.VOICE_LANGUAGE_CODE ? { languageCode: process.env.VOICE_LANGUAGE_CODE } : {}) },
+      return [{ setup: { model: "models/" + model, generationConfig: { responseModalities: ["AUDIO"], ...(Number.isFinite(Number(process.env.VOICE_THINKING_BUDGET)) && process.env.VOICE_THINKING_BUDGET !== undefined && process.env.VOICE_THINKING_BUDGET !== "" ? { thinkingConfig: { thinkingBudget: Number(process.env.VOICE_THINKING_BUDGET) } } : {}), speechConfig: Object.assign({ voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } }, process.env.VOICE_LANGUAGE_CODE ? { languageCode: process.env.VOICE_LANGUAGE_CODE } : {}) },
         systemInstruction: { parts: [{ text: o.instructions || "" }] }, tools: decl.length ? [{ functionDeclarations: decl }] : [],
-        realtimeInputConfig: { automaticActivityDetection: { prefixPaddingMs: 300, silenceDurationMs: o.silence_ms || 600 } },
+        realtimeInputConfig: { automaticActivityDetection: { startOfSpeechSensitivity: "START_SENSITIVITY_HIGH", endOfSpeechSensitivity: "END_SENSITIVITY_HIGH", prefixPaddingMs: 200, silenceDurationMs: o.silence_ms || Number(process.env.VOICE_SILENCE_MS) || 350 } },
         inputAudioTranscription: {}, outputAudioTranscription: {} } }];
     },
     // phone -> Gemini: mu-law 8 kHz base64 -> PCM16 16 kHz base64
@@ -59,10 +59,13 @@ function create(opts) {
     flush: function (idleMs) { if (idleMs && Date.now() - lastTextAt < idleMs) return []; const ev = []; flushCaller(ev); flushAgent(ev); return ev; },
     // context only: added to the conversation WITHOUT asking the model to answer (turnComplete false), used for the language-lock reminder
     noteSilent: function (text) { return { clientContent: { turns: [{ role: "user", parts: [{ text: "[system reminder, do not reply to this] " + text }] }], turnComplete: false } }; },
+    diag: function () { return JSON.parse(JSON.stringify(seen)); },   // which message types Gemini actually sent (proves whether transcripts were produced)
     truncate: null, // Gemini needs no "how much was heard" report after an interruption
     // Gemini -> events
     parse: function (m) {
       const ev = [];
+      Object.keys(m || {}).forEach(function (k) { seen.top[k] = (seen.top[k] || 0) + 1; });
+      if (m && m.serverContent) Object.keys(m.serverContent).forEach(function (k) { seen.sc[k] = (seen.sc[k] || 0) + 1; });
       if (m.setupComplete) ev.push({ kind: "ready" });
       const c = m.serverContent;
       if (c) {
