@@ -15,16 +15,18 @@ async function verifyAddress(addr) {
 function routingOn() { return !!((process.env.ROUTING_PROVIDER === "ors" && process.env.ORS_API_KEY) || (process.env.ROUTING_PROVIDER === "osrm" && process.env.OSRM_URL)); }
 // Why a route failed is returned (never guessed): routing_not_configured, ors_key_rejected (401/403), ors_rate_limited (429), ors_no_road_near_address (404/2010),
 // ors_http_NNN, routing_timeout, routing_unavailable. "detail" carries the service's own error text (never the key). A price is still never given without a verified distance.
-async function orsOnce(a, b) {
+// api.openrouteservice.org is deprecated (10% quota since Aug 27, shut down Nov 2-6, 2026). The new host is api.heigit.org; the same key works. ORS_BASE_URL overrides it.
+const ORS_HOSTS = function () { const b = String(process.env.ORS_BASE_URL || "https://api.heigit.org/openrouteservice").replace(/\/+$/, ""); return [b, "https://api.openrouteservice.org"].filter(function (x, i, l) { return l.indexOf(x) === i; }); };
+async function orsOnce(a, b, base) {
   const key = String(process.env.ORS_API_KEY || "").replace(/\s+/g, "");          // a pasted key often carries a trailing newline/space, which makes the request fail
-  const r = await fetch("https://api.openrouteservice.org/v2/directions/driving-car", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json", Authorization: key },
+  const r = await fetch(base + "/v2/directions/driving-car", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json", Authorization: key },
     body: JSON.stringify({ coordinates: [[a.lon, a.lat], [b.lon, b.lat]], radiuses: [-1, -1] }), signal: T(9000) });   // -1 = snap to the nearest road however far (building centers can sit off the road)
   let d = null, raw = ""; try { raw = await r.text(); d = JSON.parse(raw); } catch (e) { }
   const s = r.ok && d && d.routes && d.routes[0] && d.routes[0].summary;
   if (s) return { ok: true, miles: s.distance / 1609.344, minutes: s.duration / 60, source: "openrouteservice" };
   const st = r.status, code = d && d.error && d.error.code, msg = String((d && d.error && (d.error.message || d.error)) || raw || "").replace(/\s+/g, " ").slice(0, 160);
-  const reason = st === 401 || st === 403 ? "ors_key_rejected" : st === 429 ? "ors_rate_limited" : (st === 404 || code === 2010) ? "ors_no_road_near_address" : "ors_http_" + st;
-  console.error("route: ORS HTTP " + st + " " + msg);   // visible in the Netlify function log
+  const reason = st === 401 || st === 403 ? "ors_key_rejected" : st === 429 ? "ors_rate_limited" : (code === 2010 || /routable/i.test(msg)) ? "ors_no_road_near_address" : "ors_http_" + st;
+  console.error("route: ORS " + base + " HTTP " + st + " " + msg);   // visible in the Netlify function log
   return { ok: false, reason: reason, detail: "HTTP " + st + (msg ? ": " + msg : ""), retry: st === 429 || st >= 500 };
 }
 async function distance(a, b) { // a, b: {lat, lon}
@@ -32,8 +34,12 @@ async function distance(a, b) { // a, b: {lat, lon}
   const fail = function (e) { return { ok: false, reason: e && e.name === "TimeoutError" ? "routing_timeout" : "routing_unavailable", detail: String(e && e.message || e).slice(0, 160), retry: true }; };
   try {
     if (process.env.ROUTING_PROVIDER === "ors") {
-      let r = await orsOnce(a, b).catch(fail);
-      if (!r.ok && r.retry) { await new Promise(function (ok) { setTimeout(ok, 700); }); r = await orsOnce(a, b).catch(fail); }
+      const hosts = ORS_HOSTS(); let r;
+      for (let h = 0; h < hosts.length; h++) {   // new host first; the old one only if the new one is unreachable or does not know the route path
+        r = await orsOnce(a, b, hosts[h]).catch(fail);
+        if (!r.ok && r.retry) { await new Promise(function (ok) { setTimeout(ok, 700); }); r = await orsOnce(a, b, hosts[h]).catch(fail); }
+        if (r.ok || !(r.reason === "routing_unavailable" || r.reason === "routing_timeout" || /^ors_http_404$/.test(r.reason))) break;
+      }
       return r;
     }
     const base = String(process.env.OSRM_URL).replace(/\/+$/, "");

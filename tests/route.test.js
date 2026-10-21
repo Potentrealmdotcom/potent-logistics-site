@@ -10,6 +10,7 @@ const resp = (st, body) => ({ ok: st < 300, status: st, text: async () => typeof
   seq = [resp(200, { routes: [{ summary: { distance: 32187, duration: 1800 } }] })];
   let r = await RT.distance(A, B);
   assert.ok(r.ok && Math.abs(r.miles - 20) < 0.01 && r.minutes === 30, "good route returns miles and minutes");
+  assert.ok(/^https:\/\/api\.heigit\.org\/openrouteservice\/v2\/directions\/driving-car$/.test(calls[0].u), "uses the new HeiGIT host");
   assert.strictEqual(calls[0].o.headers.Authorization, "abc123", "key is trimmed of spaces and newlines");
   assert.deepStrictEqual(JSON.parse(calls[0].o.body).radiuses, [-1, -1], "snaps to the nearest road");
   calls = []; seq = [resp(403, { error: { message: "Access to this API has been disallowed" } })];
@@ -24,4 +25,12 @@ const resp = (st, body) => ({ ok: st < 300, status: st, text: async () => typeof
   r = await RT.distance(A, B); assert.ok(!r.ok && r.reason === "routing_timeout", "timeout reported");
   delete process.env.ORS_API_KEY; r = await RT.distance(A, B); assert.ok(!r.ok && r.reason === "routing_not_configured", "no key: not configured");
   console.log("route ok");
+})().catch(e => { console.error(e); process.exit(1); });
+// host fallback
+(async () => {
+  process.env.ORS_API_KEY = "k"; const urls = [];
+  global.fetch = async (u) => { urls.push(String(u)); return /heigit/.test(u) ? { ok: false, status: 404, text: async () => "{}" } : { ok: true, status: 200, text: async () => JSON.stringify({ routes: [{ summary: { distance: 1609.344, duration: 60 } }] }) }; };
+  const r = await require("../netlify/functions/lib/voice/route.js").distance({ lat: 1, lon: 1 }, { lat: 2, lon: 2 });
+  assert.ok(r.ok && urls.length === 2 && /heigit/.test(urls[0]) && /openrouteservice\.org/.test(urls[1]), "falls back to the old host only if the new one 404s");
+  console.log("route host ok");
 })().catch(e => { console.error(e); process.exit(1); });
