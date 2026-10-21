@@ -87,6 +87,14 @@ h1.headline{font-size:2.1rem;color:#fff;font-weight:600;margin-top:22px;line-hei
 .cta:hover{background:var(–gold);color:#000;}
 .cta-url{color:var(–gold);font-size:0.85rem;}
 
+.demo-dd{position:relative;display:inline-block;}
+.demo-dd summary{list-style:none;cursor:pointer;display:inline-block;background:#f0e000;color:#000;font-family:"Oswald",sans-serif;font-weight:600;font-size:0.95rem;letter-spacing:0.03em;padding:14px 26px;border:1px solid #f0e000;}
+.demo-dd summary::-webkit-details-marker{display:none;}
+.demo-dd-menu{position:absolute;left:0;top:100%;margin-top:6px;z-index:50;min-width:290px;background:#111;border:1px solid #f0e000;box-shadow:0 8px 28px rgba(0,0,0,.6);}
+.demo-dd-menu a{display:block;padding:13px 16px;color:#fff;text-decoration:none;font-size:0.9rem;border-bottom:1px solid #2a2a2a;}
+.demo-dd-menu a:last-child{border-bottom:none;}
+.demo-dd-menu a:hover{background:#f0e000;color:#000;}
+
 section.pricing{padding:44px 0 8px;}
 .tier-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
 .tier{background:var(–card);border:1px solid var(–line);padding:20px 18px;}
@@ -171,15 +179,22 @@ h1.headline{font-size:1.6rem;}
       <div class="tagline">Transportation Management System<span class="sub2">One-Time License · You Own It Forever</span></div>
     </div>
 
-```
 <h1 class="headline">One-time license. You own it forever.</h1>
 <p class="subline">Dispatch, settlements, IFTA, fleet maintenance, compliance, and CRM — <strong>one system, one login, paid once.</strong> Offline PWA, voice-activated quoting, and live GPS tracking, with real features no competitor bundles into one platform.</p>
 
 <div class="cta-row">
   <a class="cta" href="https://potentoperations.netlify.app?apply">Apply for Access</a>
+  <details class="demo-dd">
+    <summary>Try the Demo &#9662;</summary>
+    <div class="demo-dd-menu">
+      <a href="https://potentoperations.netlify.app/?demo">&#127918; Demo Mode &mdash; free, sample data, click every screen</a>
+      <a href="https://calendly.com/potentrealm-pm/30min" target="_blank" rel="noopener">&#128197; Book a live 30-minute demo</a>
+      <a href="tel:+19129142166">&#128222; Talk to &#399;levate &mdash; (912) 914-2166</a>
+      <a href="https://potentoperations.netlify.app?apply">&#128273; Apply for Access</a>
+    </div>
+  </details>
   <span class="cta-url">potentoperations.netlify.app?apply</span>
 </div>
-```
 
   </div>
 </header>
@@ -223,7 +238,6 @@ h1.headline{font-size:1.6rem;}
     <h2 class="section-title">What's included in every plan</h2>
     <p class="section-note">No add-on tiers. No feature gates. Every truck gets the full system.</p>
 
-```
 <div class="feat-grid">
   <div class="feat"><h4>Offline PWA &amp; Dispatch</h4><p>Works 100% offline, installs like an app. Booking site, live job tracking, anti-overbooking calendar.</p></div>
   <div class="feat"><h4>Voice-Activated Quoting</h4><p>Hands-free dispatch during live calls — fields auto-fill from speech.</p></div>
@@ -238,7 +252,6 @@ h1.headline{font-size:1.6rem;}
   <div class="feat"><h4>Advanced Analytics</h4><p>RPM, CPM, lane profitability, driver productivity, AR aging, cash flow.</p></div>
   <div class="feat"><h4>14 Languages</h4><p>Full admin and public booking translation, including Spanish, Arabic, Chinese, and Vietnamese.</p></div>
 </div>
-```
 
   </div>
 </section>
