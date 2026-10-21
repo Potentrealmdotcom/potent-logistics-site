@@ -416,11 +416,10 @@ function getOrgId() {
         var _su = JSON.parse(localStorage.getItem("pl_user") || "null");
         if (_su && _su.orgId) { _plOrgId = _su.orgId; return Promise.resolve(_plOrgId); }
     } catch (e) { }
-    return fetch(SUPABASE_URL + "/rest/v1/organizations?slug=eq." + PL_ORG_SLUG + "&select=id", { headers: sbHeaders() })
-        .then(function (r) { return r.json(); })
+    return plApi("orgid", { slug: PL_ORG_SLUG })
         .then(function (data) {
-        if (data && data[0] && data[0].id) {
-            _plOrgId = data[0].id;
+        if (data && data.ok && data.id) {
+            _plOrgId = data.id;
         }
         // signed in: the server picks the company from the login, so any value works as the placeholder
         return _plOrgId || (plTokenGet() ? "from-login" : null);

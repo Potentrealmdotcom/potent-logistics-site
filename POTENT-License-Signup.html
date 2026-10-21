@@ -792,16 +792,21 @@ async function createRealAccount(){
   document.getElementById('createAcctBtn').disabled = true;
   document.getElementById('createAcctBtn').textContent = 'Creating...';
   try {
-    var res = await fetch('https://ymvsatlrkzgxwzxybwmk.supabase.co/rest/v1/os_licenses', {
+    var res = await fetch('/.netlify/functions/auth', {
       method: 'POST',
-      headers: { apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltdnNhdGxya3pneHd6eHlid21rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4NzgwMTQsImV4cCI6MjEwMzQ1NDAxNH0.KbW0enJr5FOzJmDQnT3Thhr5NJdbI4Ehp1vkhVEyPEg', Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltdnNhdGxya3pneHd6eHlid21rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4NzgwMTQsImV4cCI6MjEwMzQ1NDAxNH0.KbW0enJr5FOzJmDQnT3Thhr5NJdbI4Ehp1vkhVEyPEg', 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
-      // Real upsert, keyed on email -- works whether the webhook's row already
-      // exists (just adds the credentials to it) or hasn't landed yet (creates
-      // a real row here, which the webhook then safely merges into later).
-      body: JSON.stringify({ email: S.email, company: S.company, tier: S.tier, account_username: username, account_password: password, status: 'active' })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'licenseaccount', email: S.email, username: username, password: password })
     });
+    var rj = await res.json().catch(function(){ return {}; });
+    if(!res.ok || !rj.ok){
+      msgEl.style.color = '#E53E3E';
+      msgEl.textContent = rj.error || 'Something went wrong. Call (470) 453-1616 and we\'ll set it up directly.';
+      document.getElementById('createAcctBtn').disabled = false;
+      document.getElementById('createAcctBtn').textContent = 'Create Account';
+      return;
+    }
     msgEl.style.color = '#1DB954';
-    msgEl.textContent = '\u2705 Account created \u2014 you can log in anytime at potentoperations.netlify.app/?staff-login';
+    msgEl.textContent = '\u2705 Saved. POTENT will activate your company login and email you when it is ready.';
     document.getElementById('createAcctBtn').textContent = 'Account Created';
     // Real push notification opt-in right here, while they're already engaged —
     // this is the only real window where a brand-new user can actually subscribe.

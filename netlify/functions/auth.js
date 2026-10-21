@@ -302,6 +302,28 @@ exports.handler = async function (event) {
             return J(200, { ok: true, token: sign({ uid: uid, role: role, orgId: null, exp: Date.now() + TOKEN_TTL_MS }), role: role });
         }
 
+        // ── public: a company page's id from its web address (the id alone; nothing else about the company) ──
+        if (action === "orgid") {
+            var oslug = String(body.slug || "").trim().toLowerCase();
+            if (!/^[a-z0-9\-]{2,60}$/.test(oslug)) return J(400, { ok: false, error: "Bad slug" });
+            var oq = await sb("organizations?slug=eq." + encodeURIComponent(oslug) + "&select=id&limit=1");
+            var orow = oq.ok && Array.isArray(oq.data) ? oq.data[0] : null;
+            return orow ? J(200, { ok: true, id: orow.id }) : J(404, { ok: false });
+        }
+
+        // ── public: a buyer picks the login they want, right after paying. Only works for a PAID license; the password is stored hashed, never readable. ──
+        if (action === "licenseaccount") {
+            var lip2 = String((event.headers && (event.headers["x-nf-client-connection-ip"] || event.headers["x-forwarded-for"])) || "x").split(",")[0].trim(), lk3 = "la:" + lip2;
+            if (tooMany(lk3)) return J(429, { ok: false, error: "Too many attempts. Try again in 15 minutes." });
+            noteFail(lk3);
+            var lem = String(body.email || "").trim().toLowerCase(), lun = String(body.username || "").trim().slice(0, 60), lpw = String(body.password || "");
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(lem) || !lun || lpw.length < 6 || lpw.length > 200) return J(400, { ok: false, error: "Enter a username and a password of at least 6 characters." });
+            var lr = await sb("os_licenses?email=eq." + encodeURIComponent(lem) + "&status=eq.active&select=email&limit=1");
+            if (!(lr.ok && Array.isArray(lr.data) && lr.data.length)) return J(404, { ok: false, error: "We have not seen the payment for that email yet. Wait a minute and try again, or call (470) 453-1616." });
+            var lu = await sb("os_licenses?email=eq." + encodeURIComponent(lem), { method: "PATCH", prefer: "return=minimal", body: { account_username: lun, account_password: hashPw(lpw) } });
+            return lu.ok ? J(200, { ok: true }) : J(500, { ok: false, error: "Could not save. Call (470) 453-1616 and we will set it up directly." });
+        }
+
         // ── POTENT team: email me a sign-in code (no password to remember) ──
         if (action === "staffcode_send" || action === "staffcode_verify") {
             var cuid = String(body.userId || ""), cip = String((event.headers && (event.headers["x-nf-client-connection-ip"] || event.headers["x-forwarded-for"])) || "x").split(",")[0].trim();
