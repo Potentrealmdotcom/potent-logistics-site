@@ -37,13 +37,13 @@ function create(opts) {
   const flushCaller = function (ev) { if (callerBuf.trim()) ev.push({ kind: "caller_text", text: callerBuf.trim(), key: "c:" + (++n) }); callerBuf = ""; };
   const flushAgent = function (ev) { if (agentBuf.trim()) ev.push({ kind: "agent_text", text: agentBuf.trim(), key: "a:" + (++n) }); agentBuf = ""; };
   return {
-    name: "gemini-live", version: "2026-10-21b",
+    name: "gemini-live", version: "2026-10-21c",
     setup: function (o) {
       const voice = DEFAULT_VOICE; // LOCKED: Elevate is always the same female voice (Kore), on every call and every reconnect. No config, env or caller can change it.
       const decl = declarations(o.tools);
       return [{ setup: { model: "models/" + model, generationConfig: { responseModalities: ["AUDIO"], ...(Number.isFinite(Number(process.env.VOICE_THINKING_BUDGET)) && process.env.VOICE_THINKING_BUDGET !== undefined && process.env.VOICE_THINKING_BUDGET !== "" ? { thinkingConfig: { thinkingBudget: Number(process.env.VOICE_THINKING_BUDGET) } } : {}), speechConfig: Object.assign({ voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } }, process.env.VOICE_LANGUAGE_CODE ? { languageCode: process.env.VOICE_LANGUAGE_CODE } : {}) },
         systemInstruction: { parts: [{ text: o.instructions || "" }] }, tools: decl.length ? [{ functionDeclarations: decl }] : [],
-        realtimeInputConfig: { automaticActivityDetection: process.env.VOICE_FAST_TURNS === "on" ? { startOfSpeechSensitivity: "START_SENSITIVITY_HIGH", endOfSpeechSensitivity: "END_SENSITIVITY_HIGH", prefixPaddingMs: 200, silenceDurationMs: o.silence_ms || Number(process.env.VOICE_SILENCE_MS) || 350 } : { prefixPaddingMs: 300, silenceDurationMs: o.silence_ms || 600 } },   // faster turn-taking only when VOICE_FAST_TURNS=on (it can cut a caller off mid-address)
+        realtimeInputConfig: { automaticActivityDetection: process.env.VOICE_FAST_TURNS === "on" ? { startOfSpeechSensitivity: "START_SENSITIVITY_HIGH", endOfSpeechSensitivity: "END_SENSITIVITY_HIGH", prefixPaddingMs: 200, silenceDurationMs: o.silence_ms || Number(process.env.VOICE_SILENCE_MS) || 350 } : { startOfSpeechSensitivity: process.env.VOICE_START_SENS === "high" ? "START_SENSITIVITY_HIGH" : "START_SENSITIVITY_LOW", prefixPaddingMs: 300, silenceDurationMs: o.silence_ms || 600 } },   // faster turn-taking only when VOICE_FAST_TURNS=on (it can cut a caller off mid-address)
         inputAudioTranscription: {}, outputAudioTranscription: {} } }];
     },
     // phone -> Gemini: mu-law 8 kHz base64 -> PCM16 16 kHz base64

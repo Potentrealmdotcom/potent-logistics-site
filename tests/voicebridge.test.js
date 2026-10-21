@@ -26,7 +26,8 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
   ok(!r.aiSock.sent.some(m => m.clientContent), "nothing is said before the AI confirms its setup");
   r.phone({ event: "media", media: { track: "inbound", payload: Buffer.alloc(160, 0xff).toString("base64"), timestamp: "10" } }); r.ready(); await sleep(10);
   ok(r.aiSock.sent.some(m => m.clientContent && JSON.stringify(m).includes("Hello")), "greeting spoken once the AI is ready");
-  ok(r.aiSock.sent.some(m => m.realtimeInput && m.realtimeInput.audio.mimeType === "audio/pcm;rate=16000"), "audio heard before the AI was ready is delivered, as 16 kHz PCM");
+  ok(!r.aiSock.sent.some(m => m.realtimeInput), "caller audio is held back while the greeting plays, so background noise cannot interrupt it");
+  r.ai(sc({ turnComplete: true })); await sleep(5); // greeting finished: caller audio now flows
   const inAudio = r.aiSock.sent.filter(m => m.realtimeInput).length;
   r.phone({ event: "media", media: { track: "inbound", payload: Buffer.alloc(160, 0xff).toString("base64"), timestamp: "100" } }); ok(r.aiSock.sent.filter(m => m.realtimeInput).length === inAudio + 1, "caller audio goes to the AI");
   const l = JSON.stringify(r.aiSock.sent.filter(m => m.realtimeInput).pop()); const bytes = Buffer.from(JSON.parse(l).realtimeInput.audio.data, "base64").length; ok(bytes === 160 * 4, "8 kHz mu-law becomes 16 kHz 16-bit (4 bytes per input byte)");

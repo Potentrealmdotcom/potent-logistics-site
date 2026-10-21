@@ -18,7 +18,7 @@ function createBridge(deps) {
   const sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
 
   function handle(tw) {
-    let lastCallerAt = 0, lastAgentAt = 0, toolDoneAt = 0, toolBusy = 0, nudges = 0, burst = 0, readyAt = 0, wdTimer = null;
+    let greetHold = true, greetT = null, lastCallerAt = 0, lastAgentAt = 0, toolDoneAt = 0, toolBusy = 0, nudges = 0, burst = 0, readyAt = 0, wdTimer = null;
     let lang = "English", langTimer = null, flushTimer = null, retries = 0, reconnecting = false, timersSet = false, hist = [], streamSid = null, ctx = null, ai = null, prov = null, connectTimerRef = null, spokeSinceTool = false, toolAt = 0, done = false, aiReady = false, buffered = [], lastItem = null, assistStart = null, mediaTs = 0, marks = 0, markQ = [], transferPending = false, transferred = false, startedAt = Date.now(), timers = [], nm = 0;
     const timer = function (fn, ms) { const t = setTimeout(fn, ms); timers.push(t); return t; };
     const twSend = function (o) { if (tw.readyState === 1) tw.send(JSON.stringify(o)); };
@@ -76,7 +76,8 @@ function createBridge(deps) {
 
     function onReady() { // the AI accepted its setup: start the conversation (or resume it after a reconnect)
       clearTimeout(connectTimerRef);
-      aiReady = true; readyAt = Date.now(); nudges = 0; lastCallerAt = 0; toolDoneAt = 0; buffered.forEach(function (b) { aiSend(prov.audioIn(b)); }); buffered = [];
+      aiReady = true; readyAt = Date.now(); nudges = 0; lastCallerAt = 0; toolDoneAt = 0; buffered = []; // caller audio is not forwarded while the greeting plays, so background noise cannot interrupt it
+      greetHold = !reconnecting; clearTimeout(greetT); if (greetHold) greetT = setTimeout(function () { greetHold = false; }, 12000);
       if (reconnecting) {
         reconnecting = false;
         const recap = hist.slice(-24).map(function (h) { return (h.role === "caller" ? "Caller: " : "You: ") + h.text; }).join("\n");
@@ -100,7 +101,7 @@ function createBridge(deps) {
       else if (t === "agent_text") { hist.push({ role: "agent", text: String(e.text).slice(0, 400) }); note("agent", e.text, e.key); }
       else if (t === "go_away") { log("ai says it will close soon", e.left); }
       else if (t === "tool") runTool(e);
-      else if (t === "turn_done") { if (transferPending && (spokeSinceTool || e.spoke)) { transferPending = false; doTransfer(); } }
+      else if (t === "turn_done") { if (greetHold) { greetHold = false; clearTimeout(greetT); } if (transferPending && (spokeSinceTool || e.spoke)) { transferPending = false; doTransfer(); } }
       else if (t === "error") { log("ai reported error", e.message); }
     }
 
@@ -141,7 +142,7 @@ function createBridge(deps) {
     tw.on("message", function (raw) {
       let m; try { m = JSON.parse(raw.toString()); } catch (e) { return; }
       if (m.event === "start") { streamSid = m.start && m.start.streamSid; const tok = m.start && m.start.customParameters && m.start.customParameters.token; if (!tok) return finish("no_token", true); begin(tok); }
-      else if (m.event === "media" && m.media && (!m.media.track || m.media.track === "inbound")) { mediaTs = Number(m.media.timestamp) || mediaTs; if (loud(m.media.payload)) { if (++burst >= 8) lastCallerAt = Date.now(); } else burst = Math.max(0, burst - 1); if (aiReady) aiSend(prov.audioIn(m.media.payload)); else if (buffered.length < 200) buffered.push(m.media.payload); }
+      else if (m.event === "media" && m.media && (!m.media.track || m.media.track === "inbound")) { mediaTs = Number(m.media.timestamp) || mediaTs; if (loud(m.media.payload)) { if (++burst >= 8) lastCallerAt = Date.now(); } else burst = Math.max(0, burst - 1); if (aiReady && !greetHold) aiSend(prov.audioIn(m.media.payload)); }
       else if (m.event === "mark") markQ.shift();
       else if (m.event === "stop") finish(transferred ? "transferred" : "caller_hangup", false);
     });
