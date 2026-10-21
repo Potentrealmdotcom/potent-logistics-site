@@ -348,7 +348,7 @@ function plApi(action, body) {
 // ── TENANT GATEWAY — company data goes through the server, never straight to the database ──
 // Every read/write of these tables is sent to /.netlify/functions/data-api with the
 // signed-in login, so each company only ever sees and changes its own rows.
-var PL_GATED = ["fleet_vehicles","fleet_maintenance","driver_locations","voice_room_messages","driver_compliance","brokers_carriers_backup","storage_partners","safety_alerts","job_route_legs","job_events","job_scope_changes","vendors","disposal_facilities","properties","potent_wallets","wallet_transactions","rate_cards","service_zones","job_templates","quote_terms_acceptance","jobs","job_photos","junk_jobs","jobs_backup","audit_log_real","expenses_real","commission_rates_real","payment_references","cost_profiles","customer_rate_cards","claims","change_orders","addon_authorizations","my_documents","deadlines","shift_handoffs","escalation_timers","site_profiles","customer_locations","incoming_loads","user_display_names","revoked_users","receipts","job_communications","login_log","push_subscriptions","griffin_queries","recurring_routes","reviews","waitlist","os_prospects","business_rules","factoring_receivables"];
+var PL_GATED = ["fleet_vehicles","fleet_maintenance","driver_locations","voice_room_messages","driver_compliance","brokers_carriers_backup","storage_partners","safety_alerts","job_route_legs","job_events","job_scope_changes","vendors","disposal_facilities","properties","potent_wallets","wallet_transactions","rate_cards","service_zones","job_templates","quote_terms_acceptance","jobs","job_photos","junk_jobs","jobs_backup","audit_log_real","expenses_real","commission_rates_real","payment_references","cost_profiles","customer_rate_cards","claims","change_orders","addon_authorizations","my_documents","deadlines","shift_handoffs","escalation_timers","site_profiles","customer_locations","incoming_loads","user_display_names","revoked_users","receipts","job_communications","login_log","push_subscriptions","griffin_queries","recurring_routes","reviews","waitlist","os_prospects","business_rules","factoring_receivables","employee_settings","driver_availability","vehicle_availability","b2b_pricing_settings"];
 (function () {
     if (typeof window === "undefined" || !window.fetch || window.__plGate) return;
     window.__plGate = true;
@@ -362,6 +362,7 @@ var PL_GATED = ["fleet_vehicles","fleet_maintenance","driver_locations","voice_r
                 if (PL_GATED.indexOf(table) >= 0) {
                     init = init || {};
                     var method = (init.method || "GET").toUpperCase();
+                    if (table === "b2b_pricing_settings" && method === "GET") return orig(input, init); // the price list stays publicly readable
                     // customer tracking page: public, one job, position only
                     var tm = table === "driver_locations" && method === "GET" && /(^|&)job_id=eq\.([^&]+)/.exec(query);
                     if (tm) return orig("/.netlify/functions/data-api?track=" + encodeURIComponent(decodeURIComponent(tm[2])));

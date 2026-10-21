@@ -58,6 +58,11 @@ var TABLES = {
     customer_locations: {},
     incoming_loads: { pk: "id", writeRoles: ["owner", "dispatch", "dispatcher"] },
     user_display_names: {},
+    // ── POTENT staff records: the POTENT login only (RUN-THIS-SQL-5A adds org_id) ──
+    employee_settings: { potentOnly: true, pk: "id", readRoles: ["owner"], writeRoles: ["owner"] },   // pay rates and bank details: owner only, read and write
+    driver_availability: { potentOnly: true, pk: "id", writeRoles: ["owner", "dispatch", "dispatcher"] },
+    vehicle_availability: { potentOnly: true, pk: "id", writeRoles: ["owner", "dispatch", "dispatcher"] },
+    b2b_pricing_settings: { potentOnly: true, pk: "id", writeRoles: ["owner"], noDelete: true },      // reads stay public (customers need the price list); only the owner changes it
     revoked_users: { writeRoles: ["owner"] },
     // tables that customers also write from public forms (signed-out writes still go straight in, insert-only; staff reads come through here)
     receipts: {}, job_communications: {}, login_log: {}, push_subscriptions: {}, griffin_queries: {}, recurring_routes: {}, reviews: { writeRoles: ["owner", "dispatch", "dispatcher"] },
@@ -587,6 +592,7 @@ exports.handler = async function (event) {
     var method = event.httpMethod;
     if (["GET", "POST", "PATCH", "DELETE"].indexOf(method) < 0) return J(405, { error: "Method not allowed" });
     if (method === "DELETE" && !q) return J(400, { error: "Filter required" });
+    if (method === "GET" && cfg.readRoles && cfg.readRoles.indexOf(tok.role) < 0) return J(403, { error: "Only the owner can see this." });
     if (method !== "GET") {
         if (cfg.writeRoles && cfg.writeRoles.indexOf(tok.role) < 0) return J(403, { error: "Only the owner or dispatch can change this." });
         if (method === "PATCH" && (cfg.noPatch || (cfg.patchRoles && cfg.patchRoles.indexOf(tok.role) < 0))) return J(403, { error: "Only the owner or dispatch can change this." });
