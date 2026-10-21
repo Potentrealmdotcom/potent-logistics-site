@@ -1,4 +1,4 @@
-// Private API for the audio bridge (server-kit/voice-bridge). The bridge holds the OpenAI key and the phone audio; this function holds the data and the rules.
+// Private API for the audio bridge (server-kit/voice-bridge). The bridge holds the Gemini key and the phone audio; this function holds the data and the rules.
 // Auth: shared secret. The model never reaches this endpoint directly: the bridge forwards tool calls and the server re-checks everything.
 const crypto = require("crypto");
 const B = require("./lib/beats");

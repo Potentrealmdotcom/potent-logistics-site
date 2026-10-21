@@ -67,15 +67,15 @@ exports.handler = async function (event) {
 
   if (b.action === "draftplan") {
     if (!UUID.test(String(b.id || ""))) return C.J(400, { error: "Bad id" });
-    if (!process.env.OPENAI_API_KEY) return C.J(503, { error: "OPENAI_API_KEY is not set." });
+    if (!process.env.GEMINI_API_KEY) return C.J(503, { error: "GEMINI_API_KEY is not set." });
     const g = await C.sb("ccml_dfy_clients?id=eq." + b.id + "&select=*");
     const c = g.ok && Array.isArray(g.data) && g.data[0];
     if (!c) return C.J(404, { error: "Not found" });
     const facts = ["current_score", "bankruptcy_last2", "negative_items", "total_negative", "goal_amount", "timeline", "funding_use", "llc_state", "trademark_filed"].map(function (k) { return k + ": " + clip(c[k], 400); }).join("\n");
     try {
-      const r = await fetch("https://api.openai.com/v1/chat/completions", { method: "POST",
-        headers: { Authorization: "Bearer " + process.env.OPENAI_API_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: process.env.CCML_AI_MODEL || "gpt-4o-mini", temperature: 0.3, max_tokens: 900, messages: [
+      const r = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", { method: "POST",
+        headers: { Authorization: "Bearer " + process.env.GEMINI_API_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ model: process.env.CCML_AI_MODEL || "gemini-3.8-flash", temperature: 0.3, max_tokens: 4000, messages: [
           { role: "system", content: "You draft an internal working plan for a credit coach's staff. Be concrete, flag risks and anything needing a human or attorney, promise no outcomes." },
           { role: "user", content: "Draft a step-by-step funding readiness plan for this client:\n" + facts }] }) });
       if (!r.ok) return C.J(502, { error: "AI is busy. Try again." });

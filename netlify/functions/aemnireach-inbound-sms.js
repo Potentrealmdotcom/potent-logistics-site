@@ -5,7 +5,7 @@
 
 const SUPABASE_URL = "https://ymvsatlrkzgxwzxybwmk.supabase.co";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const OPENAI_KEY = process.env.OPENAI_API_KEY;
+const AI_KEY = process.env.GEMINI_API_KEY;
 
 async function sb(path, method, body) {
     const r = await fetch(SUPABASE_URL + "/rest/v1/" + path, {
@@ -25,18 +25,18 @@ async function findOwner(toNumber) {
 }
 
 async function aiReply(text) {
-    if (!OPENAI_KEY) return null;
+    if (!AI_KEY) return null;
     try {
-        const r = await fetch("https://api.openai.com/v1/chat/completions", {
+        const r = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
             method: "POST",
-            headers: { "Authorization": "Bearer " + OPENAI_KEY, "Content-Type": "application/json" },
+            headers: { "Authorization": "Bearer " + AI_KEY, "Content-Type": "application/json" },
             body: JSON.stringify({
-                model: "gpt-4o-mini",
+                model: "gemini-3.8-flash",
                 messages: [
                     { role: "system", content: "You are the SMS auto-reply for POTENT OS, a logistics + business software company. Keep replies under 160 characters, friendly, professional. If they want a human, say someone will call them shortly." },
                     { role: "user", content: text }
                 ],
-                max_tokens: 60
+                max_tokens: 600
             })
         });
         const j = await r.json();

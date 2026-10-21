@@ -1,8 +1,8 @@
-// Run:  OPENAI_API_KEY=... VOICE_BRIDGE_SECRET=... SITE_URL=https://potentoperations.netlify.app node server.js
+// Run:  GEMINI_API_KEY=... VOICE_BRIDGE_SECRET=... SITE_URL=https://potentoperations.netlify.app node server.js
 // Caddy puts HTTPS (wss://voice.<domain>/twilio) in front of this. It listens only on 127.0.0.1.
 const http = require("http"), WebSocket = require("ws");
 const { createBridge } = require("./bridge");
-for (const k of ["OPENAI_API_KEY", "VOICE_BRIDGE_SECRET", "SITE_URL"]) if (!process.env[k]) { console.error("Missing " + k); process.exit(1); }
+for (const k of ["GEMINI_API_KEY", "VOICE_BRIDGE_SECRET", "SITE_URL"]) if (!process.env[k]) { console.error("Missing " + k); process.exit(1); }
 const bridge = createBridge({ env: process.env, WebSocket: WebSocket, fetch: fetch, log: function () { console.log.apply(console, [new Date().toISOString()].concat([].slice.call(arguments))); } });
 const MAX = Number(process.env.MAX_CALLS) || 50; let live = 0;
 const server = http.createServer(function (req, res) { if (req.url === "/health") { res.writeHead(200); return res.end("ok " + live); } res.writeHead(404); res.end(); });

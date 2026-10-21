@@ -7,7 +7,7 @@
 // Public on purpose (customers book jobs before they have a login), so it is limited:
 // fixed language list, short phrases, small batches, per-visitor and daily caps.
 //
-// Env: ANTHROPIC_API_KEY or OPENAI_API_KEY (either one), SUPABASE_SERVICE_ROLE_KEY   (optional TRANSLATE_DAILY_MAX, default 4000 new phrases/day; TRANSLATE_MODEL)
+// Env: ANTHROPIC_API_KEY or GEMINI_API_KEY (either one), SUPABASE_SERVICE_ROLE_KEY   (optional TRANSLATE_DAILY_MAX, default 4000 new phrases/day; TRANSLATE_MODEL)
 
 var SB = "https://ymvsatlrkzgxwzxybwmk.supabase.co";
 var LANGS = { es: "Spanish (Latin American)", pt: "Portuguese (Brazilian)", kk: "Kazakh", ru: "Russian", fr: "French", zh: "Simplified Chinese", ko: "Korean", vi: "Vietnamese", ar: "Arabic", hi: "Hindi", ht: "Haitian Creole", pl: "Polish", de: "German" };
@@ -40,7 +40,7 @@ function parseList(txt, list) {
     var m = String(txt).match(/\[[\s\S]*\]/); if (!m) return null;
     try { var arr = JSON.parse(m[0]); return Array.isArray(arr) && arr.length === list.length && arr.every(function (x) { return typeof x === "string"; }) ? arr : null; } catch (e) { return null; }
 }
-// Uses Anthropic if ANTHROPIC_API_KEY is set, otherwise OpenAI if OPENAI_API_KEY is set.
+// Uses Anthropic if ANTHROPIC_API_KEY is set, otherwise Gemini if GEMINI_API_KEY is set.
 async function askModel(lang, list) {
     var sys = "You translate short user-interface strings of a trucking and freight dispatch app from English into " + LANGS[lang] + ". " +
                 "Return ONLY a JSON array of strings, the same length and order as the input. Keep it short and natural, the way a trucking app would say it. " +
@@ -56,10 +56,10 @@ async function askModel(lang, list) {
         var d = await r.json().catch(function () { return null; });
         return parseList(d && d.content && d.content[0] && d.content[0].text, list);
     }
-    var o = await fetch("https://api.openai.com/v1/chat/completions", {
+    var o = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
         method: "POST",
-        headers: { Authorization: "Bearer " + process.env.OPENAI_API_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: process.env.TRANSLATE_MODEL || "gpt-4o-mini", temperature: 0, messages: [{ role: "system", content: sys }, { role: "user", content: JSON.stringify(list) }] })
+        headers: { Authorization: "Bearer " + process.env.GEMINI_API_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ model: process.env.TRANSLATE_MODEL || "gemini-3.8-flash", temperature: 0, max_tokens: 8000, messages: [{ role: "system", content: sys }, { role: "user", content: JSON.stringify(list) }] })
     });
     if (!o.ok) return null;
     var od = await o.json().catch(function () { return null; });
@@ -90,7 +90,7 @@ exports.handler = async function (event) {
     }
     var missing = phrases.filter(function (p) { return out[p] === undefined; });
     // 2) translate only what is new
-    if (missing.length && (process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY) && dailyLeft(missing.length)) {
+    if (missing.length && (process.env.ANTHROPIC_API_KEY || process.env.GEMINI_API_KEY) && dailyLeft(missing.length)) {
         var tr = null; try { tr = await askModel(lang, missing); } catch (e) { tr = null; }
         if (tr) {
             var rows = [];

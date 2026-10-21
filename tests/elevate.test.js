@@ -1,6 +1,6 @@
 // Run: node tests/elevate.test.js  (no network). Əlevate: sign-in, isolation, tools, text + voice endpoints.
 process.env.AUTH_SECRET = "t"; process.env.SUPABASE_SERVICE_ROLE_KEY = "k"; process.env.GOOGLE_CLIENT_ID = "cid.apps.googleusercontent.com";
-process.env.OPENAI_API_KEY = "sk-test"; process.env.ELEVATE_OWNER_EMAILS = "Me@Gmail.com, second@gmail.com";
+process.env.GEMINI_API_KEY = "sk-test"; process.env.ELEVATE_OWNER_EMAILS = "Me@Gmail.com, second@gmail.com";
 const assert = require("assert"), crypto = require("crypto");
 let n = 0; const ok = (c, m) => { assert(c, m); n++; };
 const make = require("./_mock.js"); const E = require("../netlify/functions/lib/elevate.js"); const api = require("../netlify/functions/elevate-api.js");
@@ -10,8 +10,8 @@ const T = { elevate_items: [] }; make(T, { defaults: { elevate_items: { done: fa
 const dbFetch = global.fetch; let openai = []; let gtok = {};
 global.fetch = async (u, o) => { u = String(u);
   if (u.startsWith("https://oauth2.googleapis.com/tokeninfo")) { const d = gtok[decodeURIComponent(u.split("id_token=")[1]).split(".").pop()]; return d ? { ok: true, json: async () => d } : { ok: false, json: async () => ({}) }; }
-  if (u.includes("/v1/chat/completions")) { const step = openai.shift(); lastChat = JSON.parse(o.body); return step ? { ok: true, json: async () => step } : { ok: false, json: async () => ({}) }; }
-  if (u.includes("/v1/realtime/client_secrets")) { lastRt = JSON.parse(o.body); return { ok: true, json: async () => ({ value: "ek_test", expires_at: 1 }) }; }
+  if (u.includes("/chat/completions")) { const step = openai.shift(); lastChat = JSON.parse(o.body); return step ? { ok: true, json: async () => step } : { ok: false, json: async () => ({}) }; }
+  if (u.includes("/v1beta/auth_tokens")) { lastRt = JSON.parse(o.body); return { ok: true, json: async () => ({ name: "ek_test" }) }; }
   return dbFetch(u, o); };
 let lastChat, lastRt;
 const call = (tok, body, ip) => api.handler({ httpMethod: "POST", headers: Object.assign({ "x-nf-client-connection-ip": ip || "1.1.1.1" }, tok ? { authorization: "Bearer " + tok } : {}), body: JSON.stringify(body) }).then(r => [r.statusCode, JSON.parse(r.body)]);
@@ -76,8 +76,8 @@ const say = t => ({ choices: [{ message: { role: "assistant", content: t } }] })
 
   // ── voice ──
   [s, r] = await call(me, { action: "voice_session" }); ok(s === 200 && r.client_secret === "ek_test", "voice key minted");
-  ok(lastRt.session.tools.length === E.TOOLS.length && lastRt.session.tools.every(t => t.type === "function" && t.name), "voice gets the same tool list");
-  ok(lastRt.expires_after.seconds <= 120, "voice key expires fast");
+  ok(r.setup.setup.tools[0].functionDeclarations.length === E.TOOLS.length && r.setup.setup.tools[0].functionDeclarations.every(t => t.name), "voice gets the same tool list");
+  ok(new Date(lastRt.newSessionExpireTime) - Date.now() <= 100000 && lastRt.uses === 1, "voice key must be used within seconds and only once");
   [s, r] = await call(me, { action: "voice_tool", name: "add_note", args: { title: "From voice" } }); ok(r.ok && T.elevate_items.some(x => x.title === "From voice" && x.source === "voice"), "voice tool call saves");
   [s, r] = await call(me, { action: "voice_tool", name: "wire_money", args: {} }); ok(s === 400, "voice cannot run unlisted tools");
   [s, r] = await call(null, { action: "voice_session" }); ok(s === 401, "voice needs login");
@@ -88,11 +88,11 @@ const say = t => ({ choices: [{ message: { role: "assistant", content: t } }] })
   [s, r] = await call(me, { action: "item_save", kind: "place", title: "No point" }); ok(s === 400, "place without coordinates refused");
   [s, r] = await call(me, { action: "items", kind: "place" }); ok(r.items.length === 1 && r.items[0].title === "Home base", "places list back");
   [s, r] = await call(other, { action: "items", kind: "place" }); ok(r.items.length === 0, "another person cannot see my places");
-  [s, r] = await call(me, { action: "me" }); ok(Array.isArray(r.voices) && r.voices.indexOf("marin") >= 0, "voice list offered");
-  process.env.OPENAI_API_KEY = "sk-test";
-  [s, r] = await call(me, { action: "voice_session", voice: "cedar" }); ok(lastRt.session.audio.output.voice === "cedar", "chosen voice used");
-  [s, r] = await call(me, { action: "voice_session", voice: "../evil" }); ok(lastRt.session.audio.output.voice === "marin", "unknown voice ignored");
-  delete process.env.OPENAI_API_KEY; [s, r] = await call(me, { action: "voice_session" }); ok(s === 503, "says so when OpenAI is not connected");
+  [s, r] = await call(me, { action: "me" }); ok(Array.isArray(r.voices) && r.voices.indexOf("Kore") >= 0, "voice list offered");
+  process.env.GEMINI_API_KEY = "sk-test";
+  [s, r] = await call(me, { action: "voice_session", voice: "Puck" }); ok(r.setup.setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName === "Puck", "chosen voice used");
+  [s, r] = await call(me, { action: "voice_session", voice: "../evil" }); ok(r.setup.setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName === "Kore" && lastRt.uses === 1, "unknown voice ignored; token is one-use");
+  delete process.env.GEMINI_API_KEY; [s, r] = await call(me, { action: "voice_session" }); ok(s === 503, "says so when Gemini is not connected");
 
   console.log("elevate: " + n + " assertions PASS"); process.exit(0);
 })().catch(e => { console.error("FAIL", e); process.exit(1); });

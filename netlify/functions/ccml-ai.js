@@ -1,4 +1,4 @@
-// POST { report }  + Bearer token (paid members only). Runs the credit-report analyzer on the server with POTENT's OpenAI key.
+// POST { report }  + Bearer token (paid members only). Runs the credit-report analyzer on the server with POTENT's Gemini key.
 const C = require("./lib/ccml");
 const hits = {};
 
@@ -8,7 +8,7 @@ exports.handler = async function (event) {
   if (!user) return C.J(401, { ok: false, error: "Sign in again" });
   const prof = await C.profileById(user.id);
   if (!prof || (C.RANK[prof.plan] || 0) < 1) return C.J(402, { ok: false, error: "Unlock the course first" });
-  if (!process.env.OPENAI_API_KEY) return C.J(503, { ok: false, error: "The analyzer is not turned on yet." });
+  if (!process.env.GEMINI_API_KEY) return C.J(503, { ok: false, error: "The analyzer is not turned on yet." });
   const k = user.id + ":" + new Date().toISOString().slice(0, 10);
   hits[k] = (hits[k] || 0) + 1;
   if (hits[k] > 20) return C.J(429, { ok: false, error: "Daily analyzer limit reached." });
@@ -16,10 +16,10 @@ exports.handler = async function (event) {
   const report = String(b.report || "").slice(0, 12000);
   if (report.trim().length < 20) return C.J(400, { ok: false, error: "Paste more of the report." });
   try {
-    const r = await fetch("https://api.openai.com/v1/chat/completions", {
+    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
-      headers: { Authorization: "Bearer " + process.env.OPENAI_API_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: process.env.CCML_AI_MODEL || "gpt-4o-mini", temperature: 0.2, max_tokens: 900, messages: [
+      headers: { Authorization: "Bearer " + process.env.GEMINI_API_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: process.env.CCML_AI_MODEL || "gemini-3.8-flash", temperature: 0.2, max_tokens: 4000, messages: [
         { role: "system", content: "You help a person organize a credit dispute. This is educational information, not legal advice, and no outcome is guaranteed. Be concise and specific." },
         { role: "user", content: "Analyze this credit report and identify: 1) Each negative item, 2) Best letter type (FCRA Fraudulent Removal, Payment History, Trademark Infringement, MOV Demand, Secondary Notice), 3) Priority order and why. Be concise and specific.\n\nReport:\n" + report }
       ] })

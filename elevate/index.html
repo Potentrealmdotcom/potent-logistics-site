@@ -101,7 +101,7 @@ body.calm .orb *{animation:none!important;transition:none!important}body.calm .o
 <script src="/google-signin.js"></script>
 <script src="/elevate/map.js"></script>
 <script>
-var API="/.netlify/functions/elevate-api",$=function(i){return document.getElementById(i)},tab="home",chat=[],TOK="",VOICES=["marin"],ME={};
+var API="/.netlify/functions/elevate-api",$=function(i){return document.getElementById(i)},tab="home",chat=[],TOK="",VOICES=["Kore"],ME={};
 var MAPURL="https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json";
 try{TOK=localStorage.getItem("elv_t")||""}catch(e){}
 function setTok(t){TOK=t||"";try{t?localStorage.setItem("elv_t",t):localStorage.removeItem("elv_t")}catch(e){}}
@@ -187,7 +187,7 @@ function draw(){var m=$("main");m.innerHTML="";m.className="";$("bar").classList
 function settings(m){var c=el("div","card");c.appendChild(el("h2",null,"Settings and privacy"));
   function row(label,node){var r=el("div","row");r.appendChild(el("div","t",label));r.appendChild(node);c.appendChild(r)}
   var lay=el("select");[["map","Map home"],["classic","Classic list home"]].forEach(function(o){var op=el("option",null,o[1]);op.value=o[0];lay.appendChild(op)});lay.value=SET.layout;lay.setAttribute("aria-label","Home layout");lay.onchange=function(){SET.layout=lay.value;saveSet()};lay.style.width="auto";row("Home layout",lay);
-  var vs=el("select");var d=el("option",null,"Default ("+(ME.voice_default||"marin")+")");d.value="";vs.appendChild(d);VOICES.forEach(function(v){var o=el("option",null,v);o.value=v;vs.appendChild(o)});vs.value=SET.voice;vs.setAttribute("aria-label","Voice");vs.onchange=function(){SET.voice=vs.value;saveSet()};vs.style.width="auto";row("Voice (from the speech provider's list)",vs);
+  var vs=el("select");var d=el("option",null,"Default ("+(ME.voice_default||"Kore")+")");d.value="";vs.appendChild(d);VOICES.forEach(function(v){var o=el("option",null,v);o.value=v;vs.appendChild(o)});vs.value=SET.voice;vs.setAttribute("aria-label","Voice");vs.onchange=function(){SET.voice=vs.value;saveSet()};vs.style.width="auto";row("Voice (from the speech provider's list)",vs);
   var calm=el("input");calm.type="checkbox";calm.checked=!!SET.calm;calm.setAttribute("aria-label","Reduce motion");calm.onchange=function(){SET.calm=calm.checked;saveSet();stopAmp()};row("Reduce motion (also follows your device setting)",calm);
   m.appendChild(c);var c2=el("div","card");c2.appendChild(el("h2",null,"Show or hide sections"));
   [["home","Home"],["chat","Chat"],["task","Tasks"],["note","Notes"],["memory","Memory"]].forEach(function(t){var cb=el("input");cb.type="checkbox";cb.checked=!SET.hidden[t[0]];cb.setAttribute("aria-label",t[1]);cb.onchange=function(){if(cb.checked)delete SET.hidden[t[0]];else SET.hidden[t[0]]=1;saveSet();drawTabs()};var r=el("div","row");r.appendChild(cb);r.appendChild(el("div","t",t[1]));c2.appendChild(r)});
@@ -299,41 +299,57 @@ function sendText(v){chat.push({role:"user",content:v});setOrb("thinking","Worki
     if(tab==="chat")draw()})}
 $("bar").onsubmit=function(e){e.preventDefault();var v=$("msg").value.trim();if(!v)return;$("msg").value="";sendText(v)};
 
-/* ---------- voice (browser <-> OpenAI Realtime over WebRTC) ---------- */
-var pc=null,dc=null,ms=null,vt=null,audio=null,VREF="",hb=null;
+/* ---------- voice (browser <-> Gemini Live over a WebSocket; the browser holds only a one-use token) ---------- */
+var pc=null,dc=null,ms=null,vt=null,audio=null,VREF="",hb=null,vctx=null,vproc=null,octx=null,odest=null,nextT=0,osrcs=[],uBuf="",aBuf="",vready=false;
 function micStat(){var t=ms&&ms.getTracks()[0],p=$("micst");if(!p)return;if(!pc){p.textContent="Mic off";p.className="pill"}else if(t&&!t.enabled){p.textContent="Mic paused";p.className="pill"}else{p.textContent="Mic on";p.className="pill on"}}
 function say(role,text){if(text){chat.push({role:role,content:text});if(tab==="chat")draw()}}
-function stopVoice(){try{if(dc)dc.close()}catch(e){}try{if(pc)pc.close()}catch(e){}try{if(ms)ms.getTracks().forEach(function(t){t.stop()})}catch(e){}clearTimeout(vt);clearInterval(hb);if(VREF){rawApi({action:"voice_end",ref:VREF});VREF=""}pc=dc=ms=null;if(audio){audio.srcObject=null}window._remote=null;stopAmp();$("mic").classList.remove("live");$("mic").textContent="🎙";micStat();if(orbState!=="error")setOrb(navigator.onLine===false?"blocked":"idle");if(tab==="home"&&$("main")&&!$("app").classList.contains("hide"))draw()}
+function flushU(){if(uBuf.trim())say("user",uBuf.trim());uBuf=""}
+function flushA(){if(aBuf.trim())say("assistant",aBuf.trim());aBuf=""}
+function stopPlay(){osrcs.forEach(function(s){try{s.onended=null;s.stop()}catch(e){}});osrcs=[];nextT=0}
+function stopVoice(){var w=pc;pc=null;vready=false;try{if(w)w.close()}catch(e){}try{if(vproc){vproc.onaudioprocess=null;vproc.disconnect()}}catch(e){}try{if(vctx)vctx.close()}catch(e){}stopPlay();try{if(octx)octx.close()}catch(e){}try{if(ms)ms.getTracks().forEach(function(t){t.stop()})}catch(e){}vproc=vctx=octx=odest=ms=dc=null;clearTimeout(vt);clearInterval(hb);if(VREF){rawApi({action:"voice_end",ref:VREF});VREF=""}uBuf=aBuf="";window._remote=null;stopAmp();$("mic").classList.remove("live");$("mic").textContent="🎙";micStat();if(orbState!=="error")setOrb(navigator.onLine===false?"blocked":"idle");if(tab==="home"&&$("main")&&!$("app").classList.contains("hide"))draw()}
+function b64(buf){var b=new Uint8Array(buf),s="";for(var i=0;i<b.length;i+=0x8000)s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(s)}
+function playChunk(d){if(!octx)return;var bin=atob(d),n=bin.length>>1,f=new Float32Array(n);for(var i=0;i<n;i++){var v=bin.charCodeAt(2*i)|(bin.charCodeAt(2*i+1)<<8);if(v>=32768)v-=65536;f[i]=v/32768}
+  var buf=octx.createBuffer(1,n,24000);buf.copyToChannel(f,0);var src=octx.createBufferSource();src.buffer=buf;src.connect(octx.destination);if(odest)src.connect(odest);
+  var t=Math.max(nextT,octx.currentTime+0.02);src.start(t);nextT=t+buf.duration;osrcs.push(src);
+  if(orbState!=="speaking"){setOrb("speaking","");if(window._remote)watchAmp(window._remote)}
+  src.onended=function(){osrcs=osrcs.filter(function(x){return x!==src});if(!osrcs.length&&pc){setOrb("listening","");watchAmp(ms)}}}
+function startMic(ws){vctx=new (window.AudioContext||window.webkitAudioContext)({sampleRate:16000});var src=vctx.createMediaStreamSource(ms);vproc=vctx.createScriptProcessor(4096,1,1);var ratio=vctx.sampleRate/16000,g=vctx.createGain();g.gain.value=0;
+  vproc.onaudioprocess=function(e){if(!vready||ws.readyState!==1)return;var x=e.inputBuffer.getChannelData(0),n=Math.floor(x.length/ratio),o=new Int16Array(n);for(var i=0;i<n;i++){var a=Math.floor(i*ratio),z=Math.max(a+1,Math.floor((i+1)*ratio)),sum=0;for(var j=a;j<z&&j<x.length;j++)sum+=x[j];var v=Math.max(-1,Math.min(1,sum/(z-a)));o[i]=v<0?v*32768:v*32767}
+    ws.send(JSON.stringify({realtimeInput:{audio:{mimeType:"audio/pcm;rate=16000",data:b64(o.buffer)}}}))};
+  src.connect(vproc);vproc.connect(g);g.connect(vctx.destination)}
 $("mic").onclick=async function(){
   if(pc){stopVoice();return}
   if(navigator.onLine===false){setOrb("blocked","Voice needs a connection. Type, or save notes and tasks and they will sync later.",5000);return}
   $("mic").disabled=true;setOrb("thinking","Connecting voice…");
   try{var s=await api({action:"voice_session",tz:TZ,voice:SET.voice||undefined});if(!s.ok)throw new Error(s.error||"Voice is unavailable.");
     VREF=s.ref||"";clearInterval(hb);hb=setInterval(function(){if(VREF)rawApi({action:"voice_ping",ref:VREF})},60000);
-    pc=new RTCPeerConnection();audio=audio||document.createElement("audio");audio.autoplay=true;pc.ontrack=function(e){audio.srcObject=e.streams[0];window._remote=e.streams[0]};
-    pc.onconnectionstatechange=function(){if(pc&&(pc.connectionState==="failed"||pc.connectionState==="disconnected")){say("assistant","Voice disconnected.");stopVoice();setOrb("blocked","Voice disconnected.")}};
-    ms=await navigator.mediaDevices.getUserMedia({audio:true});pc.addTrack(ms.getTracks()[0]);
-    dc=pc.createDataChannel("oai-events");dc.onmessage=onEvt;
-    var offer=await pc.createOffer();await pc.setLocalDescription(offer);
-    var r=await fetch("https://api.openai.com/v1/realtime/calls",{method:"POST",body:offer.sdp,headers:{Authorization:"Bearer "+s.client_secret,"Content-Type":"application/sdp"}});
-    if(!r.ok)throw new Error("Could not connect voice.");await pc.setRemoteDescription({type:"answer",sdp:await r.text()});
+    ms=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
+    octx=new (window.AudioContext||window.webkitAudioContext)({sampleRate:24000});octx.resume();odest=octx.createMediaStreamDestination();window._remote=odest.stream;nextT=0;
+    var ws=new WebSocket("wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained?access_token="+encodeURIComponent(s.client_secret));pc=ws;
+    ws.onopen=function(){ws.send(JSON.stringify(s.setup))};
+    ws.onmessage=function(m){if(typeof m.data==="string")onEvt(ws,m.data);else if(m.data&&m.data.text)m.data.text().then(function(t){onEvt(ws,t)})};
+    ws.onerror=function(){if(pc===ws){say("assistant","Voice could not connect.");stopVoice();setOrb("error","Voice could not connect.",5000)}};
+    ws.onclose=function(){if(pc===ws){say("assistant","Voice disconnected.");stopVoice();setOrb("blocked","Voice disconnected.")}};
+    startMic(ws);
     $("mic").classList.add("live");$("mic").textContent="■";micStat();watchAmp(ms);vt=setTimeout(function(){say("assistant","Voice ended after "+s.max_minutes+" minutes.");stopVoice()},s.max_minutes*60000);
     if(tab==="home")draw();setOrb("listening","Say something, or type.");
   }catch(err){stopVoice();var msg=err.name==="NotAllowedError"?"I need microphone permission to hear you.":err.message||"Voice failed.";say("assistant",msg);setOrb("error",msg,6000)}
   $("mic").disabled=false};
-function onEvt(m){var e;try{e=JSON.parse(m.data)}catch(x){return}
-  switch(e.type){
-    case"input_audio_buffer.speech_started":setOrb("listening","I hear you.");watchAmp(ms);break;
-    case"input_audio_buffer.speech_stopped":case"response.created":setOrb("thinking","");break;
-    case"output_audio_buffer.started":setOrb("speaking","");if(window._remote)watchAmp(window._remote);break;
-    case"output_audio_buffer.stopped":case"output_audio_buffer.cleared":setOrb("listening","");watchAmp(ms);break;
-    case"error":setOrb("error",(e.error&&e.error.message)||"Voice error.",6000);break;
-    case"conversation.item.input_audio_transcription.completed":say("user",e.transcript&&e.transcript.trim());break;
-    case"response.output_audio_transcript.done":case"response.audio_transcript.done":say("assistant",e.transcript);break;
-    case"response.function_call_arguments.done":{var args={};try{args=JSON.parse(e.arguments||"{}")}catch(x){}
-      setOrb("executing","Running: "+String(e.name||"task").replace(/_/g," "));
-      api({action:"voice_tool",name:e.name,args:args}).then(function(out){setOrb(out&&out.ok?"done":"error",out&&out.ok?"Finished: "+String(e.name).replace(/_/g," "):(out&&out.error)||"That did not work.",2500);if(!dc||dc.readyState!=="open")return;
-        dc.send(JSON.stringify({type:"conversation.item.create",item:{type:"function_call_output",call_id:e.call_id,output:JSON.stringify(out)}}));dc.send(JSON.stringify({type:"response.create"}))});break}}}
+function onEvt(ws,raw){var e;try{e=JSON.parse(raw)}catch(x){return}if(pc!==ws)return;
+  if(e.setupComplete){vready=true;return}
+  var c=e.serverContent;
+  if(c){
+    if(c.interrupted){stopPlay();setOrb("listening","I hear you.");watchAmp(ms)}
+    if(c.inputTranscription&&c.inputTranscription.text){uBuf+=c.inputTranscription.text;if(orbState!=="speaking")setOrb("listening","I hear you.")}
+    if(c.outputTranscription&&c.outputTranscription.text){flushU();aBuf+=c.outputTranscription.text}
+    if(c.modelTurn&&c.modelTurn.parts)c.modelTurn.parts.forEach(function(p){if(p.inlineData&&p.inlineData.data){flushU();playChunk(p.inlineData.data)}});
+    if(c.turnComplete){flushU();flushA()}
+  }
+  if(e.toolCall&&e.toolCall.functionCalls)e.toolCall.functionCalls.forEach(function(fc){flushU();
+    setOrb("executing","Running: "+String(fc.name||"task").replace(/_/g," "));
+    api({action:"voice_tool",name:fc.name,args:fc.args||{}}).then(function(out){setOrb(out&&out.ok?"done":"error",out&&out.ok?"Finished: "+String(fc.name).replace(/_/g," "):(out&&out.error)||"That did not work.",2500);if(pc!==ws||ws.readyState!==1)return;
+      ws.send(JSON.stringify({toolResponse:{functionResponses:[{id:fc.id,name:fc.name,response:{output:out}}]}}))})});
+  if(e.goAway){say("assistant","Voice is ending soon.")}}
 if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/elevate/sw.js",{scope:"/elevate/"}).catch(function(){})})}
 window.addEventListener("pagehide",function(){if(VREF&&navigator.sendBeacon){try{navigator.sendBeacon(API,new Blob([JSON.stringify({action:"voice_end",ref:VREF,token:TOK})],{type:"application/json"}))}catch(e){}}});
 if(TOK)start();else showLogin();

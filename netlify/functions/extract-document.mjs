@@ -1,13 +1,12 @@
 // netlify/functions/extract-document.mjs
-// AI Document Extraction using OpenAI Vision API
+// AI Document Extraction using Gemini vision
 // Handles: Rate Cons, BOLs, Receipts, CDLs
 
 export default async function(req) {
 if(req.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
-const OPENAI_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_BASE = process.env.OPENAI_BASE_URL;
-if(!OPENAI_KEY || !OPENAI_BASE) return Response.json({ error: "AI Gateway not configured" }, { status: 500 });
+const AI_KEY = process.env.GEMINI_API_KEY;
+if(!AI_KEY) return Response.json({ error: "AI is not configured" }, { status: 500 });
 
 try {
 const { imageBase64, docType } = await req.json();
@@ -79,27 +78,27 @@ Return only the JSON object.`
 const prompt = prompts[docType];
 if(!prompt) return Response.json({ error: "Invalid docType" }, { status: 400 });
 
-const response = await fetch(OPENAI_BASE.replace(/\/+$/, "") + "/chat/completions", {
+const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
   method: "POST",
   headers: {
-    "Authorization": "Bearer " + OPENAI_KEY,
+    "Authorization": "Bearer " + AI_KEY,
     "Content-Type": "application/json"
   },
   body: JSON.stringify({
-    model: "gpt-4o-mini",
-    max_tokens: 500,
+    model: "gemini-3.8-flash",
+    max_tokens: 4000,
     messages: [{
       role: "user",
       content: [
         { type: "text", text: prompt },
-        { type: "image_url", image_url: { url: imageBase64, detail: "low" } }
+        { type: "image_url", image_url: { url: imageBase64 } }
       ]
     }]
   })
 });
 
 const data = await response.json();
-if(!response.ok) return Response.json({ error: data.error?.message || "OpenAI error" }, { status: 500 });
+if(!response.ok) return Response.json({ error: data.error?.message || "AI error" }, { status: 500 });
 
 const text = data.choices?.[0]?.message?.content || "";
 // Clean and parse JSON

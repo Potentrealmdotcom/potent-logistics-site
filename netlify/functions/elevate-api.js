@@ -1,13 +1,13 @@
 // netlify/functions/elevate-api.js — Əlevate: the private assistant (text + voice).
 // Sign-in: Google (only emails listed in ELEVATE_OWNER_EMAILS) or the POTENT OS owner login.
-// Env: AUTH_SECRET, SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY, GOOGLE_CLIENT_ID (optional), ELEVATE_OWNER_EMAILS,
-//      ELEVATE_CHAT_MODEL (default gpt-4o-mini), ELEVATE_VOICE_MODEL (default gpt-realtime-2.1), ELEVATE_VOICE (default marin)
+// Env: AUTH_SECRET, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY, GOOGLE_CLIENT_ID (optional), ELEVATE_OWNER_EMAILS,
+//      GEMINI_API_KEY, ELEVATE_CHAT_MODEL (default gemini-3.8-flash), ELEVATE_VOICE_MODEL (default gemini-3.8-live), ELEVATE_VOICE (default Kore)
 const E = require("./lib/elevate");
 const G = require("./lib/google");
 const Bill = require("./lib/elevate-billing");
 const KINDS = ["task", "note", "memory", "place"];
-// Voices the speech provider (OpenAI Realtime) offers. Names only: no claim is made about how any of them sounds.
-const VOICES = ["marin", "cedar", "coral", "sage", "shimmer", "alloy", "ash", "ballad", "echo", "verse"];
+// Voices the speech provider (Gemini Live) offers. Names only: no claim is made about how any of them sounds.
+const VOICES = ["Kore", "Puck", "Charon", "Fenrir", "Aoede", "Leda", "Orus", "Zephyr"];
 const J = function (s, o) { return { statusCode: s, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" }, body: JSON.stringify(o) }; };
 const fails = {}, hits = {};
 const tooMany = function (k, n, ms) { const now = Date.now(); const f = (fails[k] || []).filter(function (t) { return now - t < (ms || 900000); }); fails[k] = f; return f.length >= (n || 8); };
@@ -22,6 +22,14 @@ async function memoryFacts(k) {
   return (Array.isArray(r.data) ? r.data : []).map(function (x) { return String(x.title).slice(0, 200); });
 }
 
+// The first message the browser sends Gemini Live (the browser holds only a one-use token; the instructions and tool list come from here).
+function liveSetup(model, instructions, voice) {
+  return { setup: { model: "models/" + model, generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } } },
+    systemInstruction: { parts: [{ text: instructions }] }, tools: [{ functionDeclarations: E.TOOLS.map(function (t) { return { name: t.name, description: t.description, parameters: t.parameters }; }) }],
+    inputAudioTranscription: {}, outputAudioTranscription: {} } };
+}
+exports.liveSetup = liveSetup;
+
 // The text assistant: model proposes tool calls, THIS code runs them (only the tools in the list), up to MAX_STEPS rounds.
 async function chat(k, messages, tz, fetchImpl) {
   const f = fetchImpl || fetch;
@@ -33,8 +41,8 @@ async function chat(k, messages, tz, fetchImpl) {
   for (let step = 0; step < MAX_STEPS; step++) {
     let r;
     try {
-      r = await f("https://api.openai.com/v1/chat/completions", { method: "POST", headers: { Authorization: "Bearer " + process.env.OPENAI_API_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: process.env.ELEVATE_CHAT_MODEL || "gpt-4o-mini", temperature: 0.4, max_tokens: 600, messages: msgs, tools: E.asChatTools(), tool_choice: "auto" }) });
+      r = await f("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", { method: "POST", headers: { Authorization: "Bearer " + process.env.GEMINI_API_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ model: process.env.ELEVATE_CHAT_MODEL || "gemini-3.8-flash", temperature: 0.4, max_tokens: 2000, messages: msgs, tools: E.asChatTools(), tool_choice: "auto" }) });
     } catch (e) { return { ok: false, error: "I could not reach my brain. Try again." }; }
     if (!r.ok) return { ok: false, error: "I'm busy right now. Try again in a moment." };
     const d = await r.json(); const m = d && d.choices && d.choices[0] && d.choices[0].message;
@@ -82,7 +90,7 @@ exports.handler = async function (event) {
     const t = E.verify(bearer(event)) || (a === "voice_end" ? E.verify(b.token) : null);; // (the page's last-gasp beacon cannot set headers, so voice_end also accepts the token in its body)
     if (!t) return J(401, { ok: false, error: "Sign in again", login: true });
     const k = t.k;
-    if (a === "me") return J(200, { ok: true, owner: k, voice: !!process.env.OPENAI_API_KEY, voices: VOICES, voice_default: process.env.ELEVATE_VOICE || "marin" });
+    if (a === "me") return J(200, { ok: true, owner: k, voice: !!process.env.GEMINI_API_KEY, voices: VOICES, voice_default: process.env.ELEVATE_VOICE || "Kore" });
     if (a === "billing") {
       const st = await Bill.standing(k);
       return J(200, { ok: true, plan: { price_cents: Bill.PRICE_CENTS, included_minutes: Bill.INCLUDED_S / 60 }, packs: Object.keys(Bill.PACKS).map(function (c) { return { cents: Number(c), minutes: Bill.PACKS[c] / 60 }; }),
@@ -128,27 +136,29 @@ exports.handler = async function (event) {
     // ── text assistant ──
     if (a === "chat") {
       if (!Bill.isOwner(k) && !(await Bill.canSignIn(k))) return J(402, { ok: false, error: "Subscribe or add credits in Settings to use the assistant." });
-      if (!process.env.OPENAI_API_KEY) return J(503, { ok: false, error: "The assistant's brain is not connected yet (OPENAI_API_KEY)." });
+      if (!process.env.GEMINI_API_KEY) return J(503, { ok: false, error: "The assistant's brain is not connected yet (GEMINI_API_KEY)." });
       if (rate("ec:" + k, 40, 3600000)) return J(429, { ok: false, error: "That's a lot of messages this hour. Take a breather." });
       const out = await chat(k, b.messages, E.clip(b.tz, 60) || "America/New_York");
       return J(out.ok ? 200 : 502, out);
     }
 
-    // ── voice (browser connects straight to OpenAI with a short-lived key made here) ──
+    // ── voice (browser connects straight to Gemini Live with a one-use, short-lived token made here) ──
     if (a === "voice_session") {
-      if (!process.env.OPENAI_API_KEY) return J(503, { ok: false, error: "Voice is not connected yet (OPENAI_API_KEY)." });
+      if (!process.env.GEMINI_API_KEY) return J(503, { ok: false, error: "Voice is not connected yet (GEMINI_API_KEY)." });
       if (rate("ev:" + k, 6, 3600000)) return J(429, { ok: false, error: "Voice was started a lot this hour. Try again later." });
       const bs = await Bill.start(k, "voice"); if (!bs.ok) return J(bs.status, { ok: false, error: bs.error });
-      const model = process.env.ELEVATE_VOICE_MODEL || "gpt-realtime-2.1";
+      const model = process.env.ELEVATE_VOICE_MODEL || "gemini-3.8-live";
+      const setup = liveSetup(model, E.systemPrompt({ memory: await memoryFacts(k), tz: E.clip(b.tz, 60) }) + "\nYou are speaking out loud: keep answers to one or two short sentences.", VOICES.indexOf(b.voice) >= 0 ? b.voice : (process.env.ELEVATE_VOICE || "Kore"));
       let r, d;
       try {
-        r = await fetch("https://api.openai.com/v1/realtime/client_secrets", { method: "POST", headers: { Authorization: "Bearer " + process.env.OPENAI_API_KEY, "Content-Type": "application/json" },
-          body: JSON.stringify({ expires_after: { anchor: "created_at", seconds: 120 }, session: { type: "realtime", model: model, instructions: E.systemPrompt({ memory: await memoryFacts(k), tz: E.clip(b.tz, 60) }) + "\nYou are speaking out loud: keep answers to one or two short sentences.", audio: { output: { voice: VOICES.indexOf(b.voice) >= 0 ? b.voice : (process.env.ELEVATE_VOICE || "marin") } }, tools: E.asRealtimeTools(), tool_choice: "auto" } }) });
+        const now = Date.now();
+        r = await fetch("https://generativelanguage.googleapis.com/v1beta/auth_tokens", { method: "POST", headers: { "x-goog-api-key": process.env.GEMINI_API_KEY, "Content-Type": "application/json" },
+          body: JSON.stringify({ uses: 1, expireTime: new Date(now + (bs.max_seconds + 120) * 1000).toISOString(), newSessionExpireTime: new Date(now + 90000).toISOString() }) });
         d = await r.json();
       } catch (e) { await Bill.end(k, bs.ref, Date.now()); return J(502, { ok: false, error: "Could not start voice. Try again." }); }
-      const secret = d && (d.value || (d.client_secret && d.client_secret.value));
-      if (!(r.ok && secret)) { await Bill.end(k, bs.ref, Date.now()); return J(502, { ok: false, error: "Could not start voice. Try again." }); }
-      return J(200, { ok: true, client_secret: secret, model: model, max_minutes: bs.max_seconds / 60, ref: bs.ref });
+      const token = d && d.name;
+      if (!(r.ok && token)) { await Bill.end(k, bs.ref, Date.now()); return J(502, { ok: false, error: "Could not start voice. Try again." }); }
+      return J(200, { ok: true, client_secret: token, setup: setup, model: model, max_minutes: bs.max_seconds / 60, ref: bs.ref });
     }
     if (a === "voice_tool") { // the browser relays a tool call the voice model asked for; only the listed tools can run
       if (rate("et:" + k, 120, 3600000)) return J(429, { ok: false, error: "Slow down" });

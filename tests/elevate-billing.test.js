@@ -1,6 +1,6 @@
-// Run: node tests/elevate-billing.test.js  (no network; fake Stripe + fake OpenAI). Əlevate AI: $50/month plan, 120 voice minutes, credit packs, metering.
+// Run: node tests/elevate-billing.test.js  (no network; fake Stripe + fake Gemini). Əlevate AI: $50/month plan, 120 voice minutes, credit packs, metering.
 process.env.AUTH_SECRET = "t"; process.env.SUPABASE_SERVICE_ROLE_KEY = "k"; process.env.GOOGLE_CLIENT_ID = "cid.apps.googleusercontent.com";
-process.env.OPENAI_API_KEY = "sk-test"; process.env.ELEVATE_OWNER_EMAILS = "boss@gmail.com"; process.env.STRIPE_SECRET_KEY = "sk_test_x"; process.env.STRIPE_WEBHOOK_SECRET = "whsec_x";
+process.env.GEMINI_API_KEY = "sk-test"; process.env.ELEVATE_OWNER_EMAILS = "boss@gmail.com"; process.env.STRIPE_SECRET_KEY = "sk_test_x"; process.env.STRIPE_WEBHOOK_SECRET = "whsec_x";
 const assert = require("assert"); let n = 0; const ok = (c, m) => { assert(c, m); n++; };
 const make = require("./_mock.js");
 const T = { elevate_items: [], elevate_accounts: [], elevate_usage: [], elevate_credits: [] };
@@ -13,7 +13,7 @@ const Module = require("module"), orig = Module._load; Module._load = function (
 const dbFetch = global.fetch; let gtok = {}, rt = [];
 global.fetch = async (u, o) => { u = String(u);
   if (u.startsWith("https://oauth2.googleapis.com/tokeninfo")) { const d = gtok[decodeURIComponent(u.split("id_token=")[1]).split(".").pop()]; return d ? { ok: true, json: async () => d } : { ok: false, json: async () => ({}) }; }
-  if (u.includes("/v1/realtime/client_secrets")) { rt.push(JSON.parse(o.body)); return { ok: true, json: async () => ({ value: "ek_test" }) }; }
+  if (u.includes("/v1beta/auth_tokens")) { rt.push(JSON.parse(o.body)); return { ok: true, json: async () => ({ name: "ek_test" }) }; }
   if (u.includes("api.resend.com")) return { ok: true, json: async () => ({ id: "re_1" }) };
   return dbFetch(u, o); };
 const E = require("../netlify/functions/lib/elevate.js"), B = require("../netlify/functions/lib/elevate-billing.js"), api = require("../netlify/functions/elevate-api.js"), W = require("../netlify/functions/stripe-webhook.js"), P = require("../netlify/functions/lib/elevate-phone.js");

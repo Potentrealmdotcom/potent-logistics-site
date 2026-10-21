@@ -2,10 +2,10 @@
 
 Open `/elevate/` (installs to a phone home screen). Type or tap the mic and talk.
 
-## What works today (tested with mocks; voice not yet tried against real OpenAI)
+## What works today (tested with mocks; voice not yet tried against real Gemini)
 - Sign in with Google (only emails in `ELEVATE_OWNER_EMAILS`) or "Continue as POTENT owner" if you are already signed in to POTENT OS.
 - Text chat that can save notes, add tasks/reminders, mark tasks done, remember facts, list and search them.
-- Voice: the browser talks straight to OpenAI Realtime with a 2-minute key minted by `elevate-api`; the same tools run through `voice_tool`. Auto-stops at 15 minutes.
+- Voice: the browser talks straight to Gemini Live with a one-use key minted by `elevate-api`; the same tools run through `voice_tool`. Auto-stops at 15 minutes.
 - Tasks / Notes / Memory tabs: add, tick off, delete (you can see and delete everything the assistant saved).
 
 ## What it deliberately cannot do yet
@@ -16,13 +16,13 @@ Those come later and will each need your tap to approve.
 | Variable | What |
 |---|---|
 | `ELEVATE_OWNER_EMAILS` | your Gmail(s), comma separated. Also sets which account the OS-owner sign-in maps to |
-| `OPENAI_API_KEY` | already set for other tools; Əlevate uses it too |
+| `GEMINI_API_KEY` | already set; Əlevate chat and voice use it |
 | `GOOGLE_CLIENT_ID` | optional, from Google Cloud; shared with Continue-with-Google everywhere |
 | `ELEVATE_OWNER_PHONES` | your cell number(s), like +14045550100 (phone line) |
 | `ELEVATE_PHONE_NUMBERS` | the Twilio number bought for Əlevate (not the logistics one) |
 | `ELEVATE_PIN_HASH` | output of `node server-kit/elevate-pin.js` |
-| `ELEVATE_CHAT_MODEL` | optional, default `gpt-4o-mini` |
-| `ELEVATE_VOICE_MODEL` / `ELEVATE_VOICE` | optional, default `gpt-realtime-2.1` / `marin` |
+| `ELEVATE_CHAT_MODEL` | optional, default `gemini-3.8-flash` |
+| `ELEVATE_VOICE_MODEL` / `ELEVATE_VOICE` | optional, default `gemini-3.8-live` / `Kore` |
 
 Database: `elevate.sql` (already applied to the live POTENT project; table `elevate_items`, RLS on, server-only).
 
@@ -58,7 +58,7 @@ Open `/elevate/`: the home screen has a world map, the voice orb, a Today panel 
 - **Sections not built yet** (shown as "Planned" and greyed out): Life, Calendar and routines, Family and household, Health and wellness, Business, Logistics and operations, Projects, Research and creation, Agents and skills, Communications, Devices and integrations, Activity and audit.
 - Database: `elevate.sql` now allows kind `place` with `lat`/`lon` (already applied live as migration `elevate_places`).
 - Tests: `node tests/elevate.test.js` (server) and `node tests/elevate-ui.test.js` (real Chromium, stubbed API and map file).
-- Not tried against the real world-atlas file, real OpenAI voice, or a real phone yet.
+- Not tried against the real world-atlas file, real Gemini voice, or a real phone yet.
 
 ## Offline (Ghost Mode style)
 Install `/elevate/` to the home screen (Android: browser menu > Install app; iPhone: Share > Add to Home Screen), open it once with a connection, and from then on it opens with no signal.
@@ -70,8 +70,8 @@ Install `/elevate/` to the home screen (Android: browser menu > Install app; iPh
 ## Pricing (decided Oct 20, 2026; nothing in the app charges yet)
 - **Əlevate alone** (people who do not own POTENT OS): **$50 a month**. Covers the AI assistant, voice and offline app.
 - **With a POTENT OS license**: the Əlevate app (offline notes, tasks, map) is included at no extra charge. License prices are the v12 grid: $4,995 (1–10 trucks), $9,995 (11–50), $19,995 (51–150), $34,995 (151–300), custom above 300.
-- **AI assistant and voice for license holders**: part of the optional annual support (v12: $1,788 / $2,988 / $4,788 / $7,188 a year), or they use their own OpenAI key.
-- Check the real OpenAI cost per person after a week of use; $50 should leave a healthy margin over that.
+- **AI assistant and voice for license holders**: part of the optional annual support (v12: $1,788 / $2,988 / $4,788 / $7,188 a year), or they use their own Gemini key.
+- Check the real Gemini cost per person after a week of use; $50 should leave a healthy margin over that.
 - **Not built**: billing. There is no checkout, no subscription, and no plan check inside Əlevate yet. Today the owner's allow-list (`ELEVATE_OWNER_EMAILS`) is the only gate.
 
 ## Billing: Əlevate AI $50/month + voice credits (built; NOT yet tried with a real Stripe payment)
@@ -80,5 +80,5 @@ Install `/elevate/` to the home screen (Android: browser menu > Install app; iPh
 - **How minutes are counted**: the server times each voice session itself (starts when the voice key is made; the page pings each minute; ends when the page says so; if the page vanishes it is charged up to the last ping plus one minute). One voice session at a time per person. A call can run at most 15 minutes and never longer than the minutes left. The phone line is logged too.
 - **Buying**: on the login screen pick Subscribe or a pack, then Continue with Google (Google proves the email, so the purchase lands on that person's own account). Signed-in people use Settings, Plan and voice minutes.
 - **Needs set up by you**: Netlify env `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (already used by POTENT). The existing Stripe webhook must send: `checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.updated`, `customer.subscription.deleted`, `charge.refunded`, `charge.dispute.created`, `charge.dispute.closed` (most are on already for POTENT OS and POTENT VOICE).
-- **Honest limits**: tested only with fake Stripe and fake OpenAI. Please do one real $10 test purchase and one real call before selling. Settings has a "Manage or cancel plan" button (Stripe portal; turn the portal on in Stripe settings once). Not built: invoices/receipts screen, minutes top-up reminders, and a per-person cost report (compare each person's logged minutes with your OpenAI bill after a week).
+- **Honest limits**: tested only with fake Stripe and fake Gemini. Please do one real $10 test purchase and one real call before selling. Settings has a "Manage or cancel plan" button (Stripe portal; turn the portal on in Stripe settings once). Not built: invoices/receipts screen, minutes top-up reminders, and a per-person cost report (compare each person's logged minutes with your OpenAI bill after a week).
 - Tests: `node tests/elevate-billing.test.js`. Database: `elevate.sql` (applied live as migration `elevate_billing`).

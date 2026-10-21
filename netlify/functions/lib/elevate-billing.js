@@ -1,5 +1,5 @@
 // lib/elevate-billing.js — Əlevate AI: $50/month (120 voice minutes) + prepaid voice credits ($0.25/minute packs).
-// Minutes are counted on the SERVER (the browser talks to OpenAI directly, so the server times each session itself:
+// Minutes are counted on the SERVER (the browser talks to Gemini directly, so the server times each session itself:
 // it opens a session row when it mints the voice key, the page pings every minute, and the row is closed when the
 // page says it is done or, if the page vanished, from the last ping). Text chat is not metered (it costs almost nothing).
 // The owner's own accounts (ELEVATE_OWNER_EMAILS and the POTENT OS owner) and any account the owner marks "comped" are never blocked, but still logged.

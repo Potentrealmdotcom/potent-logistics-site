@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # POTENT VOICE audio bridge installer. Run AFTER install.sh (it reuses that server's Caddy for HTTPS). As root:
 #   cd potent-logistics-site/server-kit && sudo bash install-voice.sh
-# Optional: choose the cheaper model with   VOICE_AI_MODEL=gpt-realtime-2.1-mini sudo -E bash install-voice.sh
-# You need: an A record  voice.<your domain>  pointing at this server, and an OpenAI API key (platform.openai.com).
+# Optional: choose another model with   VOICE_AI_MODEL=<gemini live model id> sudo -E bash install-voice.sh
+# You need: an A record  voice.<your domain>  pointing at this server, and a Gemini API key (aistudio.google.com).
 # Not tested on a real server by the person who wrote it. Run the checks at the end.
 set -euo pipefail
 [ "$(id -u)" = 0 ] || { echo "Run as root (sudo)."; exit 1; }
@@ -11,12 +11,12 @@ KIT="$(cd "$(dirname "$0")" && pwd)"; OUT=/opt/potent-media; V=/opt/potent-voice
 [ -f "$OUT/Caddyfile" ] || { echo "STOP: run install.sh first (it sets up Caddy)."; exit 1; }
 PUBIP="$(curl -4 -fsS https://api.ipify.org)"
 getent ahostsv4 "voice.$DOMAIN" | awk '{print $1}' | grep -qx "$PUBIP" || { echo "STOP: voice.$DOMAIN does not point to this server ($PUBIP). Add the A record in Namecheap, wait, run again."; exit 1; }
-if [ -z "${OPENAI_API_KEY:-}" ]; then read -r -s -p "Paste your OpenAI API key (hidden): " OPENAI_API_KEY; echo; fi
-[ -n "$OPENAI_API_KEY" ] || { echo "No key given."; exit 1; }
+if [ -z "${GEMINI_API_KEY:-}" ]; then read -r -s -p "Paste your Gemini API key (hidden): " GEMINI_API_KEY; echo; fi
+[ -n "$GEMINI_API_KEY" ] || { echo "No key given."; exit 1; }
 mkdir -p "$V"; umask 077
 SECRET="$( [ -f "$V/.secret" ] && cat "$V/.secret" || openssl rand -hex 24 )"; echo "$SECRET" > "$V/.secret"
 rm -rf "$V/app"; mkdir -p "$V/app"; cp "$KIT/voice-bridge/"{package.json,bridge.js,server.js,Dockerfile} "$V/app/"
-cp "$KIT/../netlify/functions/lib/voice/adapters/realtime.js" "$V/app/realtime.js"
+cp "$KIT/../netlify/functions/lib/voice/adapters/gemini-live.js" "$V/app/gemini-live.js"
 cat > "$V/docker-compose.yml" <<EOT
 services:
   voice-bridge:
@@ -24,11 +24,11 @@ services:
     network_mode: host
     restart: unless-stopped
     environment:
-      OPENAI_API_KEY: "$OPENAI_API_KEY"
+      GEMINI_API_KEY: "$GEMINI_API_KEY"
       VOICE_BRIDGE_SECRET: "$SECRET"
       SITE_URL: "$SITE"
       MAX_CALLS: "50"
-      VOICE_AI_MODEL: "${VOICE_AI_MODEL:-gpt-realtime-2.1}"
+      VOICE_AI_MODEL: "${VOICE_AI_MODEL:-gemini-3.8-live}"
 EOT
 chmod 600 "$V/docker-compose.yml"
 cd "$V" && docker compose up -d --build

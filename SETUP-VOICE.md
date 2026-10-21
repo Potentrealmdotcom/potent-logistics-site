@@ -8,8 +8,8 @@ and either books the job or hands the call to a person. It lives inside POTENT O
 ```
  Caller ──phone──▶ Twilio number ──(1) POST signed webhook──▶ Netlify  voice-webhook  ──▶ TwiML <Connect><Stream wss://voice.<domain>/twilio>
                          │                                            │ checks: signature, number→company, subscription, call limits, emergency stop
-                         └──(2) mu-law audio over WebSocket──▶ Hetzner VPS: voice-bridge (Node) ◀──WebSocket──▶ OpenAI Realtime (speech in/out)
-                                                                   │  holds NO rules and NO data; only OPENAI_API_KEY
+                         └──(2) mu-law audio over WebSocket──▶ Hetzner VPS: voice-bridge (Node) ◀──WebSocket──▶ Google Gemini Live (speech in/out)
+                                                                   │  holds NO rules and NO data; only GEMINI_API_KEY
                                                                    ▼ (3) HTTPS + shared secret
                                                    Netlify  voice-tools  ──▶ lib/voice/tools.js (15 tools) ──▶ Supabase (service role only)
                                                                    │          intake · rules · pricing · availability · booking RPC (atomic)
@@ -24,7 +24,7 @@ Every fact and action goes back through `voice-tools`, which re-validates it; th
 |---|---|
 | Billing / tiers | `netlify/functions/lib/voice/billing.js`, `voice-billing.js`, `stripe-webhook.js` (voice branches), `voice-billing.sql` |
 | Core engine | `lib/voice/{intake,rules,pricing,route,availability,store,tools,prompt,outbound,auth}.js` |
-| Provider adapters | `lib/voice/adapters/{twilio,realtime}.js` (replaceable) |
+| Provider adapters | `lib/voice/adapters/{twilio,gemini-live}.js` (replaceable) |
 | Endpoints | `voice-webhook.js` (phone company → us), `voice-tools.js` (bridge → us), `voice-api.js` (Control Center), `voice-billing.js` |
 | Bridge + installer | `server-kit/voice-bridge/*`, `server-kit/install-voice.sh` |
 | Control Center | `voice/index.html` (also linked from the OS Partner Apps menu) |
@@ -34,7 +34,7 @@ Every fact and action goes back through `voice-tools`, which re-validates it; th
 ## 3. Environment variables
 **Netlify:** `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_SMS_FROM` (only for texting), `VOICE_BRIDGE_URL` (`wss://voice.<domain>/twilio`), `VOICE_BRIDGE_SECRET` (long random; the installer prints it),
 `VOICE_WEBHOOK_URL` (optional; the exact public URL of `voice-webhook`, if a proxy changes it), `ROUTING_PROVIDER` (`ors` or `osrm`) with `ORS_API_KEY` or `OSRM_URL`, plus the existing `STRIPE_*`, `AUTH_SECRET`, `MAILJET_*`.
-**Bridge host:** `OPENAI_API_KEY`, `VOICE_BRIDGE_SECRET` (same value), `SITE_URL`, optional `VOICE_AI_MODEL` (default `gpt-realtime-2.1`; the older `gpt-realtime` is scheduled to shut down 20 Jan 2027; `gpt-realtime-2.1-mini` is about a third of the price). The installer writes these.
+**Bridge host:** `GEMINI_API_KEY`, `VOICE_BRIDGE_SECRET` (same value), `SITE_URL`, optional `VOICE_AI_MODEL` (default `gemini-3.8-live`). The installer writes these.
 
 ## 4. Webhooks and APIs
 * Twilio number → Voice webhook (POST): `https://<site>/.netlify/functions/voice-webhook`. Status callback: same URL `?a=status`. Other routes (`fallback`, `xfer`, `dial`) are set by the code itself.
@@ -56,7 +56,7 @@ No subscription is ever shown active unless Stripe reports it paid.
 ## 7. Tested live / tested with fakes / not built
 **Tested against the real thing:** database migrations applied to the live Supabase project; Twilio signature algorithm checked against Twilio's published example.
 **Tested with fakes (logic proven, provider behavior not):** all 325 voice assertions — tiers and billing, intake, eligibility, pricing, availability, booking race (second request refused), duplicate/replayed events, bad signature, emergency stop, cross-company access, plan gating, bridge barge-in/transfer/timeouts, outbound gates, the Control Center API. The Postgres booking function is emulated in tests; its SQL is live but has not been exercised by a real concurrent call.
-**Not yet verified with real services (must be done by a person, see the checklist):** a real Twilio call; OpenAI Realtime event names for the model you choose (the adapter accepts both known naming styles); the bridge on a real server; a real Stripe subscription and webhooks; Census and routing lookups; Mailjet confirmations; SMS.
+**Not yet verified with real services (must be done by a person, see the checklist):** a real Twilio call; Gemini Live behavior with the model you choose (event names, tool calls, audio quality over the phone); the bridge on a real server; a real Stripe subscription and webhooks; Census and routing lookups; Mailjet confirmations; SMS.
 **Not built:** the automatic outbound dialer (`a=outbound` route) — campaigns can be drafted, approved and checked, but no calls are placed; SMS delivery needs Twilio A2P/10DLC registration before it works to US phones; call-recording playback; per-company bridge scaling beyond one VPS.
 
 ## 8. Known limits that affect real calls
