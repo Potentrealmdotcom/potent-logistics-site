@@ -409,6 +409,9 @@ exports.handler = async function (event) {
     } else if (product === "MUSICCOIN" && isCheckoutSession) {
       const res = await require("./lib/coinbuy").onCheckout(obj);
       if (res && res.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Coin top-up failed, retry" }) };
+    } else if (product === "VOICEJOB" && isCheckoutSession) { // a phone booking paid through the secure link the voice agent emailed
+      const res = await require("./lib/voice/jobpay").onCheckout(obj);
+      if (res && res.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Voice job payment failed, retry" }) };
     } else if ((product === "MUSICSVC" || product === "MUSICCOLL") && isCheckoutSession) {
       const res = await require("./lib/svc").onCheckout(obj);
       if (res && res.error) return { statusCode: 500, headers, body: JSON.stringify({ error: "Services fulfillment failed, retry" }) };

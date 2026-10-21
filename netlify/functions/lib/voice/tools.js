@@ -4,7 +4,7 @@ const B = require("../beats");
 const S = require("./store"), I = require("./intake"), R = require("./rules"), P = require("./pricing"), RT = require("./route"), AV = require("./availability"), V = require("./billing"), TW = require("./adapters/twilio");
 const rows = S.rows;
 const FEATURE = { lookup_customer: "inbound", create_or_update_lead: "inbound", get_approved_service_information: "inbound", collect_shipment_details: "quotes", validate_shipment_eligibility: "quotes", calculate_quote: "quotes", quote_special_service: "quotes", check_live_availability: "booking",
-  create_pending_booking: "booking", confirm_eligible_booking: "booking", create_callback_task: "callbacks", book_demo: "callbacks", request_human_handoff: "handoff", send_approved_confirmation: "notifications", look_up_booking_status: "booking", request_reschedule: "booking", request_cancellation: "booking" };
+  create_pending_booking: "booking", confirm_eligible_booking: "booking", send_payment_link: "notifications", create_callback_task: "callbacks", book_demo: "callbacks", request_human_handoff: "handoff", send_approved_confirmation: "notifications", look_up_booking_status: "booking", request_reschedule: "booking", request_cancellation: "booking" };
 const CRITICAL = ["pickup_address", "delivery_address", "service_date", "time_window", "service_level", "total_weight_lb", "piece_count", "pieces", "total_dims", "pickup_dock", "delivery_dock", "needs_liftgate", "needs_pallet_jack", "forklift_pickup", "forklift_delivery", "site_has_pallet_jack", "inside_delivery", "hazmat", "special_handling", "extra_stops", "labor_helpers", "labor_hours", "holding_nights", "expected_wait_minutes", "freight_description"];
 const INTAKE_KEYS = CRITICAL.concat(["customer_name", "company", "callback_phone", "email", "pickup_contact_name", "pickup_contact_phone", "delivery_contact_name", "delivery_contact_phone", "special_instructions", "po_number", "recurring"]);
 const clip = function (v, n) { return String(v == null ? "" : v).trim().slice(0, n); };
@@ -43,6 +43,7 @@ function defs() {
     D("book_demo", "Book a 30-minute POTENT OS demo with a person. Use only after the prospect agreed to a demo and you have their name and email. Emails them the booking link and alerts the owner.", obj({ name: str(""), company: str(""), trucks: { type: "integer", description: "how many trucks they run" }, phone: str("number to reach them"), email: str("their email, read back and confirmed"), notes: str("their problem and what they pay today, in a sentence") }, ["name", "email"])),
     D("create_callback_task", "Create a callback for a person to follow up.", obj({ name: str(""), phone: str("number to call"), reason: str(""), preferred_time: str("") }, ["reason"])),
     D("request_human_handoff", "Ask to transfer to a person: negotiations, discounts, complaints, safety concerns, anything uncertain, or when the caller asks for one.", obj({ reason: str("why"), summary: str("one or two sentences for the person") }, ["reason"])),
+    D("send_payment_link", "After a booking is CONFIRMED and the caller wants to pay by card, email them a secure Stripe payment link for the exact quoted total. The caller pays on Stripe's page; you never take or repeat card numbers. Needs the confirmed booking_id and an email read back and confirmed.", obj({ booking_id: str(""), email: str("their email, read back and confirmed") }, ["booking_id", "email"])),
     D("send_approved_confirmation", "Send the approved written confirmation or request-received notice for this call's booking.", obj({ booking_id: str(""), channel: { type: "string", enum: ["email", "sms"] }, email: str("only for email"), sms_consent: { type: "boolean", description: "caller agreed to a text message" } }, ["booking_id", "channel"])),
     D("look_up_booking_status", "Look up a booking. Needs the booking reference and the last 4 digits of the phone number on the booking.", obj({ reference: str(""), phone_last4: str("") }, ["reference", "phone_last4"])),
     D("request_reschedule", "Record a reschedule request (a person completes it).", obj({ reference: str(""), phone_last4: str(""), requested_date: str(""), note: str("") }, ["reference", "phone_last4"])),
@@ -208,6 +209,19 @@ const TOOLS = {
     await notifyOwner(ctx.orgId, "OS demo requested: " + clip(a.name, 60) + (a.company ? " (" + clip(a.company, 60) + ")" : ""), reason + (phone ? " Phone " + phone : "") + ". Booking link sent: " + (mail && mail.ok ? "yes" : "NOT SENT, follow up by hand") + ".");
     await S.patchSession(ctx.orgId, ctx.session.id, { outcome: "callback" });
     return { ok: true, callback_id: rows(r)[0] && rows(r)[0].id, link_emailed: !!(mail && mail.ok), say: mail && mail.ok ? "Tell them you just emailed the booking link and they can pick any time that works for a 30-minute demo. Do not say a time is booked." : "Tell them honestly the email could not be sent right now, that a person will follow up with a time, and do not say a time is booked." };
+  },
+  async send_payment_link(ctx, a) {
+    if (!S.UUID.test(String(a.booking_id || ""))) return { ok: false, error: "bad_booking" };
+    const email = clip(a.email, 120).toLowerCase(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { ok: false, error: "need_valid_email", say: "Ask for their email and read it back letter by letter." };
+    const bk = rows(await B.sb("voice_bookings?org_id=eq." + ctx.orgId + "&id=eq." + a.booking_id + "&session_id=eq." + ctx.session.id + "&select=*&limit=1"))[0];
+    if (!bk) return { ok: false, error: "booking_not_found" };
+    if (bk.status !== "confirmed" || !bk.job_id) return { ok: false, error: "not_confirmed", say: "The booking is not confirmed yet, so there is nothing to pay. Do not send a payment link. Tell the caller a person will confirm it first." };
+    const JP = require("./jobpay"), r = await JP.createLink(bk, email);
+    if (!r.ok) return { ok: false, error: r.error, say: "The payment link could not be created. Tell the caller honestly, and that they can pay cash or card before the job, or a person will send a link. Never ask for a card number." };
+    const total = P.money(r.cents), text = "Thank you for booking with POTENT Logistics. Reference " + bk.reference + ".\n\nPay " + total + " securely by card on Stripe's own page (you can also pay cash or card before the job starts). This link works for 23 hours:";
+    const mail = await require("../mail").send(email, "Pay for your POTENT delivery " + bk.reference + " (" + total + ")", text, r.url);
+    await notifyOwner(ctx.orgId, "Payment link sent for " + bk.reference, total + " to " + email + ". Sent: " + (mail && mail.ok ? "yes" : "NOT SENT, follow up"));
+    return { ok: true, emailed: !!(mail && mail.ok), amount: total, say: mail && mail.ok ? "Tell the caller you just emailed a secure payment link for " + total + ". They pay on the secure page, never by telling you a card number. Do not say it is paid; payment is confirmed automatically when they finish." : "The email did not go out. Tell the caller honestly and that a person will send the link or they can pay cash or card before the job." };
   },
   async create_callback_task(ctx, a) {
     const phone = I.phone(a.phone) || ctx.session.from_number; if (!phone) return { ok: false, error: "need_phone_number" };
