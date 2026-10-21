@@ -1333,7 +1333,7 @@ var TOS_SECTIONS = [
  {
   "num": 1,
   "title": "Agreement to These Terms",
-  "body": "POTENT LOGISTICS LLC (DOT# 9166689, 2089 Christian Cir SE, Conyers, GA 30013) (\"POTENT,\" \"we,\" \"us\") provides delivery, freight, junk removal, cleanout and related hauling services in Georgia and nearby areas. By booking a job, accepting a quote, paying a deposit or invoice, or letting us start work, you (\"Customer,\" \"you\") agree to these Terms, our Privacy Policy, and any written quote or rate confirmation for your job (together, the \"Agreement\"). If you are booking for a business, you confirm you have authority to bind it. If you do not agree, do not book."
+  "body": "POTENT OPERATIONS LLC d/b/a POTENT Logistics (DOT# 9166689, 2089 Christian Cir SE, Conyers, GA 30013) (\"POTENT,\" \"we,\" \"us\") provides delivery, freight, junk removal, cleanout and related hauling services in Georgia and nearby areas. By booking a job, accepting a quote, paying a deposit or invoice, or letting us start work, you (\"Customer,\" \"you\") agree to these Terms, our Privacy Policy, and any written quote or rate confirmation for your job (together, the \"Agreement\"). If you are booking for a business, you confirm you have authority to bind it. If you do not agree, do not book."
  },
  {
   "num": 2,
@@ -1463,14 +1463,14 @@ var TOS_SECTIONS = [
  {
   "num": 27,
   "title": "Contact",
-  "body": "POTENT LOGISTICS LLC, 2089 Christian Cir SE, Conyers, GA 30013. Email potentlogistics@" + "proton.me. Phone (912) 914-2166."
+  "body": "POTENT OPERATIONS LLC d/b/a POTENT Logistics, 2089 Christian Cir SE, Conyers, GA 30013. Email potentlogistics@" + "proton.me. Phone (912) 914-2166."
  }
 ];
 var POTENT_LOGISTICS_TOS_SECTIONS = [
  {
   "num": 1,
   "title": "Parties, Purpose and Order of Documents",
-  "body": "This Dispatch / Carrier Agreement is between POTENT LOGISTICS LLC (DOT# 9166689, EIN 42-2446741, 2089 Christian Cir SE, Conyers, GA 30013) (\"POTENT\" or \"Carrier\") and the dispatcher, broker, shipper or company that completes this onboarding (\"Dispatch Partner\"). It sets the standing terms for every load POTENT accepts from Dispatch Partner. Each load is confirmed by its own written rate confirmation. If the two conflict, the rate confirmation controls for that load only."
+  "body": "This Dispatch / Carrier Agreement is between POTENT OPERATIONS LLC d/b/a POTENT Logistics (DOT# 9166689, EIN 42-2446741, 2089 Christian Cir SE, Conyers, GA 30013) (\"POTENT\" or \"Carrier\") and the dispatcher, broker, shipper or company that completes this onboarding (\"Dispatch Partner\"). It sets the standing terms for every load POTENT accepts from Dispatch Partner. Each load is confirmed by its own written rate confirmation. If the two conflict, the rate confirmation controls for that load only."
  },
  {
   "num": 2,
@@ -1744,7 +1744,7 @@ var POTENT_PRIVACY_SECTIONS = [
  {
   "num": 1,
   "title": "Who We Are and What This Covers",
-  "body": "POTENT LOGISTICS LLC and POTENT OPERATIONS LLC (\"POTENT,\" \"we\") provide delivery, junk removal and hauling services and the POTENT OS software platform. This policy explains what personal information we collect through our websites, apps, text messages, calls and services (the \"Services\"), how we use it, and your choices. It applies to customers who book with us, drivers and carriers, dispatch partners, and software customers and their staff. When a company that licenses POTENT OS uses it to serve its own customers, that company decides how that information is used, and we process it on its behalf."
+  "body": "POTENT OPERATIONS LLC (doing business as POTENT Logistics) (\"POTENT,\" \"we\") provides delivery, junk removal and hauling services and the POTENT OS software platform. This policy explains what personal information we collect through our websites, apps, text messages, calls and services (the \"Services\"), how we use it, and your choices. It applies to customers who book with us, drivers and carriers, dispatch partners, and software customers and their staff. When a company that licenses POTENT OS uses it to serve its own customers, that company decides how that information is used, and we process it on its behalf."
  },
  {
   "num": 2,
@@ -1824,7 +1824,7 @@ var POTENT_PRIVACY_SECTIONS = [
  {
   "num": 17,
   "title": "Contact",
-  "body": "POTENT LOGISTICS LLC, 2089 Christian Cir SE, Conyers, GA 30013, potentlogistics@" + "proton.me, (912) 914-2166."
+  "body": "POTENT OPERATIONS LLC d/b/a POTENT Logistics, 2089 Christian Cir SE, Conyers, GA 30013, potentlogistics@" + "proton.me, (912) 914-2166."
  }
 ];
 var LEGAL_UPDATED = "October 8, 2026";
@@ -4342,7 +4342,7 @@ function PartnerApplicationModal(props) {
                         bondPhotoUrl && React.createElement("div", { style: { fontSize: 11, color: C.green, fontWeight: 700 } }, "\u2705 Surety bond photo uploaded")),
                     React.createElement("div", { style: { display: "flex", alignItems: "flex-start", gap: 10, background: C.surface, border: "1px solid " + C.border, borderRadius: 9, padding: "12px 14px", marginBottom: 14 } },
                         React.createElement("div", { onClick: function () { set("agreeToTerms", !f.agreeToTerms); }, style: { width: 20, height: 20, borderRadius: 5, background: f.agreeToTerms ? C.orange : "transparent", border: "1.5px solid " + (f.agreeToTerms ? C.orange : C.border), display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#000", fontWeight: 800, flexShrink: 0, marginTop: 1, cursor: "pointer" } }, f.agreeToTerms ? "✓" : ""),
-                        React.createElement("div", { style: { fontSize: 11, color: C.dim, lineHeight: 1.6 } }, "I confirm this information is accurate and I understand that account activation requires approval and a signed service agreement with Potent Logistics LLC.")),
+                        React.createElement("div", { style: { fontSize: 11, color: C.dim, lineHeight: 1.6 } }, "I confirm this information is accurate and I understand that account activation requires approval and a signed service agreement with POTENT OPERATIONS LLC.")),
                     React.createElement("div", { style: { display: "flex", gap: 8 } },
                         React.createElement(Btn, { variant: "ghost", onClick: function () { setStep(1); }, style: { flex: 1 } }, "\u2190 Back"),
                         React.createElement(Btn, { onClick: submit, disabled: !f.agreeToTerms || f.services.length === 0, style: { flex: 2 } }, "Submit Application \uD83E\uDD1D"))))));
@@ -4494,7 +4494,7 @@ function StripeCardForm(props) {
 }
 // A company that licenses POTENT OS shows its own name to its own customers (the legal text names POTENT Logistics).
 function plTenantLegal(txt) {
-    try { var u = loadCurrentUser(); var nm = (PL_BRAND && PL_BRAND.name) || (u && u.orgId && u.branding && u.branding.name) || ""; if (nm) return String(txt).replace(/POTENT LOGISTICS LLC/g, nm).replace(/POTENT/g, nm); } catch (e) { }
+    try { var u = loadCurrentUser(); var nm = (PL_BRAND && PL_BRAND.name) || (u && u.orgId && u.branding && u.branding.name) || ""; if (nm) return String(txt).replace(/POTENT OPERATIONS LLC( d\/b\/a POTENT Logistics| \(doing business as POTENT Logistics\))?/g, nm).replace(/POTENT/g, nm); } catch (e) { }
     return txt;
 }
 function TermsOfServiceModal(props) {
@@ -16447,7 +16447,7 @@ function MyDocumentsVault() {
     }
 
     function generateShareText() {
-        var lines = ["POTENT Logistics LLC — Documents", "DOT# 9166689", ""];
+        var lines = ["POTENT OPERATIONS LLC — Documents", "DOT# 9166689", ""];
         MY_DOC_TYPES.forEach(function (t) {
             if (selected[t.key] && docs[t.key]) {
                 lines.push(t.label + ": " + docs[t.key]);
@@ -17818,7 +17818,7 @@ function CompanyOnboarding() {
             "<h3>Company / Dispatch Partner</h3><table>" + rowsHtml + "</table>" +
             "<h3>POTENT Carrier Information</h3><table>" + potentRowsHtml + "</table>" +
             docsHtml +
-            "<p style='color:#888;font-size:11px;'>Generated " + new Date().toLocaleDateString() + " \u00b7 POTENT Logistics LLC \u00b7 DOT# 9166689 \u00b7 (912) 914-2166</p>" +
+            "<p style='color:#888;font-size:11px;'>Generated " + new Date().toLocaleDateString() + " \u00b7 POTENT OPERATIONS LLC \u00b7 DOT# 9166689 \u00b7 (912) 914-2166</p>" +
             "</body></html>"
         );
         w.document.close();
@@ -18233,7 +18233,7 @@ function downloadBOL(job) {
         "<div class='sig'>Signature / Date</div></td>" +
         "<td><b>Address:</b> " + (job.destination || "") + "<br><b>Date/Time:</b> " + (job.deliveredAt ? new Date(job.deliveredAt).toLocaleString() : "\u2014") +
         "<div class='sig'>Received By / Date</div></td></tr></table>" +
-        "<p style='font-size:10px;color:#888;margin-top:20px;'>Generated " + new Date().toLocaleString() + " \u00b7 POTENT Logistics LLC \u00b7 DOT# 9166689</p>" +
+        "<p style='font-size:10px;color:#888;margin-top:20px;'>Generated " + new Date().toLocaleString() + " \u00b7 POTENT OPERATIONS LLC \u00b7 DOT# 9166689</p>" +
         "</body></html>"
     );
     w.document.close();
@@ -18353,7 +18353,7 @@ function ClaimsView(props) {
             "<tr><td><b>Opened</b></td><td>" + new Date(claim.created_at).toLocaleDateString() + "</td></tr>" +
             "<tr><td><b>Notes</b></td><td>" + (claim.notes || "\u2014") + "</td></tr></table>" +
             "<h3>Supporting Documents (pulled automatically from job record)</h3><ul>" + (docsHtml || "<li>None on file</li>") + "</ul>" +
-            "<p style='color:#888;font-size:11px;'>Generated " + new Date().toLocaleString() + " \u00b7 POTENT Logistics LLC \u00b7 DOT# 9166689</p>" +
+            "<p style='color:#888;font-size:11px;'>Generated " + new Date().toLocaleString() + " \u00b7 POTENT OPERATIONS LLC \u00b7 DOT# 9166689</p>" +
             "</body></html>"
         );
         w.document.close();
@@ -18855,7 +18855,7 @@ function downloadReceipt(job, amount) {
         "<tr><td>Job ID</td><td>" + job.id + "</td></tr>" +
         "<tr><td>Date</td><td>" + new Date().toLocaleString() + "</td></tr>" +
         "<tr><td>Method</td><td>Card</td></tr></table>" +
-        "<p style='color:#888;font-size:11px;margin-top:30px;'>POTENT Logistics LLC \u00b7 DOT# 9166689 \u00b7 (912) 914-2166</p>" +
+        "<p style='color:#888;font-size:11px;margin-top:30px;'>POTENT OPERATIONS LLC \u00b7 DOT# 9166689 \u00b7 (912) 914-2166</p>" +
         "</body></html>"
     );
     w.document.close();
@@ -18956,11 +18956,11 @@ function downloadDispatchAgreement(load, rate) {
         "<h1>Dispatch / Rate Confirmation Agreement</h1>" +
 
         "<h3>1. Recitals</h3>" +
-        "<p>This agreement is made as of " + new Date().toLocaleDateString() + " by and between <b>POTENT LOGISTICS LLC</b> (DOT# 9166689, EIN 42-2446741, 2089 Christian Cir SE, Conyers, GA 30013) and <b>" + load.company_name + "</b> (\"Dispatch Partner\").</p>" +
-        "<p>Prior to freight being accepted under this agreement, Dispatch Partner has provided: company information, contact details, and a surety bond on file with POTENT Logistics LLC.</p>" +
+        "<p>This agreement is made as of " + new Date().toLocaleDateString() + " by and between <b>POTENT OPERATIONS LLC</b> (DOT# 9166689, EIN 42-2446741, 2089 Christian Cir SE, Conyers, GA 30013) and <b>" + load.company_name + "</b> (\"Dispatch Partner\").</p>" +
+        "<p>Prior to freight being accepted under this agreement, Dispatch Partner has provided: company information, contact details, and a surety bond on file with POTENT OPERATIONS LLC.</p>" +
 
         "<h3>2. Rate \u2014 This Load Only</h3>" +
-        "<p>Dispatch Partner offered, and POTENT Logistics LLC has accepted, a rate of <b>$" + rate + "</b> for the specific load described below. This is a per-load rate confirmation, not a standing commission or percentage-based arrangement. POTENT Logistics LLC retains 100% of the agreed rate.</p>" +
+        "<p>Dispatch Partner offered, and POTENT OPERATIONS LLC has accepted, a rate of <b>$" + rate + "</b> for the specific load described below. This is a per-load rate confirmation, not a standing commission or percentage-based arrangement. POTENT OPERATIONS LLC retains 100% of the agreed rate.</p>" +
         "<table>" +
         "<tr><td><b>Pickup</b></td><td>" + (load.pickup || "\u2014") + "</td></tr>" +
         "<tr><td><b>Delivery</b></td><td>" + (load.delivery || "\u2014") + "</td></tr>" +
@@ -18974,15 +18974,15 @@ function downloadDispatchAgreement(load, rate) {
         "<p>This agreement is effective for the load described above only. A new rate confirmation is required for any future load.</p>" +
 
         "<h3>4. Statement of Work</h3>" +
-        "<p>POTENT Logistics LLC will: pick up the described freight at the agreed time, transport it to the delivery location, provide photo documentation and a signed BOL/POD, and invoice Dispatch Partner at the agreed rate upon completion, due within 7 days.</p>" +
+        "<p>POTENT OPERATIONS LLC will: pick up the described freight at the agreed time, transport it to the delivery location, provide photo documentation and a signed BOL/POD, and invoice Dispatch Partner at the agreed rate upon completion, due within 7 days.</p>" +
         "<p>Dispatch Partner will: ensure the load information provided is accurate, provide accessible pickup and delivery locations, and remit payment per the terms above.</p>" +
 
         "<div class='sig'><table style='border:none;'><tr style='border:none;'>" +
-        "<td style='border:none;'><div class='sigline'>POTENT Logistics LLC \u2014 Authorized Representative</div></td>" +
+        "<td style='border:none;'><div class='sigline'>POTENT OPERATIONS LLC \u2014 Authorized Representative</div></td>" +
         "<td style='border:none;'><div class='sigline'>" + load.company_name + " \u2014 Authorized Representative</div></td>" +
         "</tr></table></div>" +
 
-        "<p style='color:#888;font-size:10px;margin-top:30px;'>Generated " + new Date().toLocaleString() + " \u00b7 POTENT Logistics LLC \u00b7 DOT# 9166689 \u00b7 (912) 914-2166</p>" +
+        "<p style='color:#888;font-size:10px;margin-top:30px;'>Generated " + new Date().toLocaleString() + " \u00b7 POTENT OPERATIONS LLC \u00b7 DOT# 9166689 \u00b7 (912) 914-2166</p>" +
         "</body></html>"
     );
     w.document.close();
@@ -19000,13 +19000,13 @@ function downloadBlankDispatchAgreementTemplate() {
         ".fill{border-bottom:1px solid #333;display:inline-block;min-width:220px;}</style></head><body>" +
         "<h1>Dispatch / Rate Confirmation Agreement \u2014 Template</h1>" +
         "<p>Version " + TOS_VERSION + " \u00b7 Updated " + LEGAL_UPDATED + ". This is the full agreement Dispatch Partner accepts at onboarding. Each load also needs its own signed rate confirmation.</p>" +
-        "<p>Made as of <span class='fill'>&nbsp;</span> between <b>POTENT LOGISTICS LLC</b> (DOT# 9166689, EIN 42-2446741, 2089 Christian Cir SE, Conyers, GA 30013) and <span class='fill'>&nbsp;</span> (\"Dispatch Partner\").</p>" +
+        "<p>Made as of <span class='fill'>&nbsp;</span> between <b>POTENT OPERATIONS LLC</b> (DOT# 9166689, EIN 42-2446741, 2089 Christian Cir SE, Conyers, GA 30013) and <span class='fill'>&nbsp;</span> (\"Dispatch Partner\").</p>" +
         POTENT_LOGISTICS_TOS_SECTIONS.map(function (x) { return "<h3>" + x.num + ". " + x.title + "</h3><p>" + x.body + "</p>"; }).join("") +
         "<div class='sig'><table style='border:none;'><tr style='border:none;'>" +
-        "<td style='border:none;'><div class='sigline'>POTENT Logistics LLC \u2014 Authorized Representative</div></td>" +
+        "<td style='border:none;'><div class='sigline'>POTENT OPERATIONS LLC \u2014 Authorized Representative</div></td>" +
         "<td style='border:none;'><div class='sigline'>Dispatch Partner \u2014 Authorized Representative</div></td>" +
         "</tr></table></div>" +
-        "<p style='color:#888;font-size:10px;margin-top:30px;'>POTENT Logistics LLC \u00b7 DOT# 9166689 \u00b7 (912) 914-2166</p>" +
+        "<p style='color:#888;font-size:10px;margin-top:30px;'>POTENT OPERATIONS LLC \u00b7 DOT# 9166689 \u00b7 (912) 914-2166</p>" +
         "</body></html>"
     );
     w.document.close();
@@ -19983,10 +19983,10 @@ function LoadingSpinner(props) {
 // company's terms page, not a scanned PDF.
 // ═══════════════════════════════════════════════════════════════════
 var ACCOUNT_TOS_SECTIONS = [
-    { num: 1, title: "Payment Responsibility", body: "If this account fails to pay an invoice within the agreed terms (maximum Net 7), the responsible party is liable for the full amount owed, plus any collection costs and legal fees POTENT Logistics LLC incurs recovering payment. Unpaid balances accrue interest at 1.5% per month after the due date." },
-    { num: 2, title: "Limitation of Liability", body: "POTENT Logistics LLC's liability for any loss, damage, or delay to freight is limited to the lesser of $0.50 per pound or $100,000 per shipment, unless a higher value is declared in writing and agreed to before pickup. POTENT is not liable for indirect, incidental, or consequential damages, including lost profits or business opportunity." },
+    { num: 1, title: "Payment Responsibility", body: "If this account fails to pay an invoice within the agreed terms (maximum Net 7), the responsible party is liable for the full amount owed, plus any collection costs and legal fees POTENT OPERATIONS LLC incurs recovering payment. Unpaid balances accrue interest at 1.5% per month after the due date." },
+    { num: 2, title: "Limitation of Liability", body: "POTENT OPERATIONS LLC's liability for any loss, damage, or delay to freight is limited to the lesser of $0.50 per pound or $100,000 per shipment, unless a higher value is declared in writing and agreed to before pickup. POTENT is not liable for indirect, incidental, or consequential damages, including lost profits or business opportunity." },
     { num: 3, title: "Claims", body: "Any claim for loss or damage must be submitted in writing within 48 hours of the delivery date, or the claim is waived." },
-    { num: 4, title: "Indemnification", body: "This account agrees to indemnify and hold POTENT Logistics LLC harmless from claims arising out of inaccurate information provided, breach of this agreement, or the account's own negligence." },
+    { num: 4, title: "Indemnification", body: "This account agrees to indemnify and hold POTENT OPERATIONS LLC harmless from claims arising out of inaccurate information provided, breach of this agreement, or the account's own negligence." },
     { num: 5, title: "Billing Disputes", body: "A billing dispute does not excuse or delay payment of the undisputed portion of any invoice." },
 ];
 
