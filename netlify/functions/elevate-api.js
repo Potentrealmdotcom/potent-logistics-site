@@ -44,7 +44,11 @@ async function chat(k, messages, tz, fetchImpl) {
     try {
       r = await Gem.chat({ model: process.env.ELEVATE_CHAT_MODEL || "gemini-3.8-flash", temperature: 0.4, max_tokens: 2000, messages: msgs, tools: E.asChatTools(), tool_choice: "auto" }, { fetchImpl: f, timeoutMs: 8000 });
     } catch (e) { return { ok: false, error: e && e.name === "TimeoutError" ? "That one took too long. Ask again with a shorter request." : "I could not reach my brain. Try again." }; }
-    if (!r.ok) return { ok: false, error: "I'm busy right now. Try again in a moment." };
+    if (!r.ok) {
+      let why = ""; try { why = (await r.text()).slice(0, 300); } catch (e) { }
+      console.error("elevate chat: Gemini HTTP " + r.status + " " + why.replace(/\s+/g, " "));   // visible in the Netlify function log
+      return { ok: false, error: "I'm busy right now. Try again in a moment. (code " + r.status + ")" };
+    }
     const d = await r.json(); const m = d && d.choices && d.choices[0] && d.choices[0].message;
     if (!m) return { ok: false, error: "No answer. Try again." };
     if (!m.tool_calls || !m.tool_calls.length) return { ok: true, reply: String(m.content || "").slice(0, 4000) || "Done.", did: did };
