@@ -3,7 +3,7 @@
 // saves each batch to ui_translations as it goes, then rebuilds that language's ready-made pack (ui_packs).
 // Only the scheduled function (translate-packs-cron) can start it: it must send the internal key.
 var C = require("./lib/translate-core.js");
-var BATCH_ITEMS = 25, BATCH_CHARS = 5000, PARALLEL = 6;
+var BATCH_ITEMS = 25, BATCH_CHARS = 5000, PARALLEL = 3;     // workers per language; all languages run side by side
 
 function batches(list) {
     var out = [], cur = [], chars = 0;
@@ -41,12 +41,9 @@ exports.handler = async function (event) {
     var r = await fetch(base + "/lang/phrases.json?" + Date.now()); if (!r.ok) { console.log("packs: phrases.json HTTP " + r.status); return { statusCode: 200, body: "no phrases" }; }
     var phrases = await r.json(), only = (event.queryStringParameters && event.queryStringParameters.lang) || "";
     var langs = Object.keys(C.LANGS).filter(function (l) { return !only || l === only; });
-    var deadline = Date.now() + 12 * 60 * 1000, per = Math.floor((deadline - Date.now()) / langs.length);
-    // take the languages one after another, each with its share of the time, so no language is starved
-    var report = [];
-    for (var i = 0; i < langs.length; i++) {
-        try { report.push(await doLang(langs[i], phrases, Math.min(deadline, Date.now() + per * 1.6))); } catch (e) { report.push({ lang: langs[i], error: String(e.message || e) }); }
-    }
+    var deadline = Date.now() + 12 * 60 * 1000;
+    // every language at the same time (the earlier one-after-another order ran out of time before the last languages got a turn)
+    var report = await Promise.all(langs.map(function (l) { return doLang(l, phrases, deadline).catch(function (e) { return { lang: l, error: String(e.message || e) }; }); }));
     console.log("packs: " + JSON.stringify(report));
     return { statusCode: 200, body: "done" };
 };
