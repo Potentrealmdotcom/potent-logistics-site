@@ -76,6 +76,25 @@ input[type=checkbox]{width:auto}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.orb *{animation:none!important;transition:none!important}.orb .core{transform:none!important}}
 body.calm .orb *{animation:none!important;transition:none!important}body.calm .orb .core{transform:none!important}
+
+/* ---------- full-screen voice stage: the orb takes the whole page while voice is on ---------- */
+#vstage{position:fixed;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;gap:2.2vmin;text-align:center;padding:16px;
+  background:radial-gradient(ellipse at 50% 45%,#1b1a05 0,#0a0a02 45%,#000 80%);overflow:hidden}
+#vstage.on{display:flex}
+#vstage::before{content:"";position:absolute;inset:0;background-image:linear-gradient(#F0E00012 1px,transparent 1px),linear-gradient(90deg,#F0E00012 1px,transparent 1px);background-size:44px 44px;
+  -webkit-mask-image:radial-gradient(circle at 50% 45%,#000 0,transparent 70%);mask-image:radial-gradient(circle at 50% 45%,#000 0,transparent 70%);pointer-events:none}
+#vstage .orb{width:min(84vmin,660px);height:min(84vmin,660px);flex:none}
+#vstage .orb i{border-width:3px}
+#vstage .orb .r2{inset:9%}#vstage .orb .core{inset:21%;box-shadow:0 0 calc(40px + var(--amp)*160px) #F0E000aa,0 0 calc(90px + var(--amp)*220px) #F0E00033}
+#vstage .orb .r3{inset:-6%;border:1px dashed #F0E00055;animation:spin 28s linear infinite}
+#vstage .orb b{font-size:min(22vmin,150px)}
+#vstage .orbst{font-size:clamp(14px,3.4vmin,26px);letter-spacing:.34em}
+#vstage .orbnote{font-size:clamp(13px,2.6vmin,20px);max-width:min(92vw,760px);color:#d9d6a0}
+#vstage .cap{max-width:min(92vw,820px);min-height:3.2em;font-size:clamp(14px,2.6vmin,20px);line-height:1.45;color:var(--tx);opacity:.92}
+#vstage .cap .you{color:var(--dim)}
+#vstage .end{background:#1a0000;color:#ff7a7a;border:1px solid #ff7a7a88;border-radius:999px;padding:14px 34px;font-size:15px;font-weight:700;letter-spacing:.12em;cursor:pointer}
+#vstage .type{background:transparent;color:var(--dim);border:0;font-size:13px;text-decoration:underline;cursor:pointer}
+@media(prefers-reduced-motion:reduce){#vstage .orb .r3{animation:none}}
 .orbst{font-weight:700;letter-spacing:.14em;font-size:12px;color:var(--y);text-transform:uppercase}.orbnote{font-size:13px;color:var(--dim);min-height:20px}
 .ctl{display:flex;gap:8px;align-items:center;width:100%}
 .cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
@@ -92,6 +111,9 @@ body.calm .orb *{animation:none!important;transition:none!important}body.calm .o
   <div class="err" id="lerr" role="alert"></div>
   <p class="dim" style="font-size:13px">Only people the owner has added can sign in.</p>
 </div>
+<div id="vstage" role="dialog" aria-label="Voice"><div class="orb" id="sorb" data-state="idle"><i class="r1"></i><i class="r2"></i><i class="r3"></i><i class="core"></i><b>Ə</b></div>
+<div class="orbst" id="sorbst" role="status">Ready</div><div class="orbnote" id="sorbnote"></div><div class="cap" id="scap" aria-live="polite"></div>
+<button class="end" id="send_voice" type="button">END</button><button class="type" id="stype" type="button">Back to typing</button></div>
 <div id="app" class="hide" style="display:flex;flex-direction:column;flex:1;min-height:0">
 <header><span class="mark" aria-hidden="true">Ə</span><span class="logo">ƏLEVATE<small>YOUR WORLD. OFFLINE &amp; ONLINE.</small></span><span class="sp"></span><span class="pill hide" id="syncst" aria-live="polite"></span><span class="pill" id="micst" aria-live="polite">Mic off</span><span class="pill" id="who"></span><button class="alt" id="out">Sign out</button></header>
 <nav id="tabs" aria-label="Sections"></nav>
@@ -146,11 +168,14 @@ document.body.classList.toggle("calm",!!SET.calm);
 var ORBLBL={idle:"Ready",listening:"Listening",thinking:"Thinking",speaking:"Speaking",executing:"Working",approval:"Waiting for your approval",done:"Done",error:"Something went wrong",blocked:"Not connected"};
 var orbState="idle",orbNote="",orbTimer=null,ampNode=null,ampRaf=0,actx=null,ampBuf=null;
 function setOrb(s,note,hold){orbState=s;orbNote=note||"";var o=$("orb");if(o){o.dataset.state=s;$("orbst").textContent=ORBLBL[s]||s;$("orbnote").textContent=orbNote}
+  var so=$("sorb");if(so){so.dataset.state=s;$("sorbst").textContent=ORBLBL[s]||s;$("sorbnote").textContent=orbNote}
   clearTimeout(orbTimer);if(hold)orbTimer=setTimeout(function(){setOrb(pc?"listening":"idle")},hold)}
 function reduced(){return SET.calm||(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)}
 function watchAmp(stream){stopAmp();if(reduced()||!stream)return;try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();var src=actx.createMediaStreamSource(stream);ampNode=actx.createAnalyser();ampNode.fftSize=256;src.connect(ampNode);ampBuf=new Uint8Array(ampNode.fftSize);
-  (function tick(){var o=$("orb");if(!ampNode)return;if(o){ampNode.getByteTimeDomainData(ampBuf);var m=0;for(var i=0;i<ampBuf.length;i++){var v=Math.abs(ampBuf[i]-128)/128;if(v>m)m=v}o.style.setProperty("--amp",(orbState==="speaking"||orbState==="listening")?Math.min(1,m*2.2).toFixed(2):"0")}ampRaf=requestAnimationFrame(tick)})()}catch(e){}}
-function stopAmp(){cancelAnimationFrame(ampRaf);ampNode=null;var o=$("orb");if(o)o.style.setProperty("--amp","0")}
+  (function tick(){var o=$("orb");if(!ampNode)return;if(o){ampNode.getByteTimeDomainData(ampBuf);var m=0;for(var i=0;i<ampBuf.length;i++){var v=Math.abs(ampBuf[i]-128)/128;if(v>m)m=v}var av=(orbState==="speaking"||orbState==="listening")?Math.min(1,m*2.2).toFixed(2):"0";o.style.setProperty("--amp",av);var so=$("sorb");if(so)so.style.setProperty("--amp",av)}ampRaf=requestAnimationFrame(tick)})()}catch(e){}}
+function stopAmp(){cancelAnimationFrame(ampRaf);ampNode=null;var o=$("orb");if(o)o.style.setProperty("--amp","0");var so=$("sorb");if(so)so.style.setProperty("--amp","0")}
+function stage(on){var v=$("vstage");if(v)v.classList.toggle("on",!!on);if(!on){var c=$("scap");if(c)c.textContent=""}}
+function cap(){var c=$("scap");if(!c)return;var u=uBuf.trim(),a=aBuf.trim();c.textContent="";if(u){var y=document.createElement("span");y.className="you";y.textContent=u;c.appendChild(y)}if(a){if(u)c.appendChild(document.createElement("br"));c.appendChild(document.createTextNode(a))}}
 var OFFNOTE="Offline: notes, tasks, memory and places still work and sync later. The assistant and voice need a connection.";
 window.addEventListener("offline",function(){if(orbState!=="speaking")setOrb("blocked",OFFNOTE)});
 window.addEventListener("online",function(){setOrb(pc?"listening":"idle")});
@@ -303,10 +328,10 @@ $("bar").onsubmit=function(e){e.preventDefault();var v=$("msg").value.trim();if(
 var pc=null,dc=null,ms=null,vt=null,audio=null,VREF="",hb=null,vctx=null,vproc=null,octx=null,odest=null,nextT=0,osrcs=[],uBuf="",aBuf="",vready=false;
 function micStat(){var t=ms&&ms.getTracks()[0],p=$("micst");if(!p)return;if(!pc){p.textContent="Mic off";p.className="pill"}else if(t&&!t.enabled){p.textContent="Mic paused";p.className="pill"}else{p.textContent="Mic on";p.className="pill on"}}
 function say(role,text){if(text){chat.push({role:role,content:text});if(tab==="chat")draw()}}
-function flushU(){if(uBuf.trim())say("user",uBuf.trim());uBuf=""}
+function flushU(){if(uBuf.trim())say("user",uBuf.trim());uBuf="";cap()}
 function flushA(){if(aBuf.trim())say("assistant",aBuf.trim());aBuf=""}
 function stopPlay(){osrcs.forEach(function(s){try{s.onended=null;s.stop()}catch(e){}});osrcs=[];nextT=0}
-function stopVoice(){var w=pc;pc=null;vready=false;try{if(w)w.close()}catch(e){}try{if(vproc){vproc.onaudioprocess=null;vproc.disconnect()}}catch(e){}try{if(vctx)vctx.close()}catch(e){}stopPlay();try{if(octx)octx.close()}catch(e){}try{if(ms)ms.getTracks().forEach(function(t){t.stop()})}catch(e){}vproc=vctx=octx=odest=ms=dc=null;clearTimeout(vt);clearInterval(hb);if(VREF){rawApi({action:"voice_end",ref:VREF});VREF=""}uBuf=aBuf="";window._remote=null;stopAmp();$("mic").classList.remove("live");$("mic").textContent="🎙";micStat();if(orbState!=="error")setOrb(navigator.onLine===false?"blocked":"idle");if(tab==="home"&&$("main")&&!$("app").classList.contains("hide"))draw()}
+function stopVoice(){var w=pc;pc=null;vready=false;try{if(w)w.close()}catch(e){}try{if(vproc){vproc.onaudioprocess=null;vproc.disconnect()}}catch(e){}try{if(vctx)vctx.close()}catch(e){}stopPlay();try{if(octx)octx.close()}catch(e){}try{if(ms)ms.getTracks().forEach(function(t){t.stop()})}catch(e){}vproc=vctx=octx=odest=ms=dc=null;clearTimeout(vt);clearInterval(hb);if(VREF){rawApi({action:"voice_end",ref:VREF});VREF=""}uBuf=aBuf="";window._remote=null;stopAmp();stage(false);$("mic").classList.remove("live");$("mic").textContent="🎙";micStat();if(orbState!=="error")setOrb(navigator.onLine===false?"blocked":"idle");if(tab==="home"&&$("main")&&!$("app").classList.contains("hide"))draw()}
 function b64(buf){var b=new Uint8Array(buf),s="";for(var i=0;i<b.length;i+=0x8000)s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(s)}
 function playChunk(d){if(!octx)return;var bin=atob(d),n=bin.length>>1,f=new Float32Array(n);for(var i=0;i<n;i++){var v=bin.charCodeAt(2*i)|(bin.charCodeAt(2*i+1)<<8);if(v>=32768)v-=65536;f[i]=v/32768}
   var buf=octx.createBuffer(1,n,24000);buf.copyToChannel(f,0);var src=octx.createBufferSource();src.buffer=buf;src.connect(octx.destination);if(odest)src.connect(odest);
@@ -317,10 +342,12 @@ function startMic(ws){vctx=new (window.AudioContext||window.webkitAudioContext)(
   vproc.onaudioprocess=function(e){if(!vready||ws.readyState!==1)return;var x=e.inputBuffer.getChannelData(0),n=Math.floor(x.length/ratio),o=new Int16Array(n);for(var i=0;i<n;i++){var a=Math.floor(i*ratio),z=Math.max(a+1,Math.floor((i+1)*ratio)),sum=0;for(var j=a;j<z&&j<x.length;j++)sum+=x[j];var v=Math.max(-1,Math.min(1,sum/(z-a)));o[i]=v<0?v*32768:v*32767}
     ws.send(JSON.stringify({realtimeInput:{audio:{mimeType:"audio/pcm;rate=16000",data:b64(o.buffer)}}}))};
   src.connect(vproc);vproc.connect(g);g.connect(vctx.destination)}
+$("send_voice").onclick=function(){stopVoice()};$("stype").onclick=function(){stopVoice()};
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&pc)stopVoice()});
 $("mic").onclick=async function(){
   if(pc){stopVoice();return}
   if(navigator.onLine===false){setOrb("blocked","Voice needs a connection. Type, or save notes and tasks and they will sync later.",5000);return}
-  $("mic").disabled=true;setOrb("thinking","Connecting voice…");
+  $("mic").disabled=true;stage(true);setOrb("thinking","Connecting voice…");
   try{var s=await api({action:"voice_session",tz:TZ,voice:SET.voice||undefined});if(!s.ok)throw new Error(s.error||"Voice is unavailable.");
     VREF=s.ref||"";clearInterval(hb);hb=setInterval(function(){if(VREF)rawApi({action:"voice_ping",ref:VREF})},60000);
     ms=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
@@ -340,8 +367,8 @@ function onEvt(ws,raw){var e;try{e=JSON.parse(raw)}catch(x){return}if(pc!==ws)re
   var c=e.serverContent;
   if(c){
     if(c.interrupted){stopPlay();setOrb("listening","I hear you.");watchAmp(ms)}
-    if(c.inputTranscription&&c.inputTranscription.text){uBuf+=c.inputTranscription.text;if(orbState!=="speaking")setOrb("listening","I hear you.")}
-    if(c.outputTranscription&&c.outputTranscription.text){flushU();aBuf+=c.outputTranscription.text}
+    if(c.inputTranscription&&c.inputTranscription.text){uBuf+=c.inputTranscription.text;cap();if(orbState!=="speaking")setOrb("listening","I hear you.")}
+    if(c.outputTranscription&&c.outputTranscription.text){flushU();aBuf+=c.outputTranscription.text;cap()}
     if(c.modelTurn&&c.modelTurn.parts)c.modelTurn.parts.forEach(function(p){if(p.inlineData&&p.inlineData.data){flushU();playChunk(p.inlineData.data)}});
     if(c.turnComplete){flushU();flushA()}
   }
