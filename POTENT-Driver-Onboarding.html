@@ -46,14 +46,14 @@ input[type=file]{padding:8px;font-size:11px;}
 
   <div class="card">
     <h2>Your Info</h2>
-    <label>Full Name</label>
+    <label>Full Name <b style="color:#ff7a7a">*</b></label>
     <input id="driverName" placeholder="First Last">
-    <label>Phone</label>
+    <label>Phone <b style="color:#ff7a7a">*</b></label>
     <input id="phone" type="tel" placeholder="(555) 555-5555">
     <label>Email</label>
     <input id="email" type="email" placeholder="you@email.com">
     <input id="hp_website" type="text" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;opacity:0;height:0;width:0;" aria-hidden="true">
-    <label>EIN Number</label>
+    <label>EIN Number <b style="color:#ff7a7a">* required</b></label>
     <input id="ein" placeholder="XX-XXXXXXX">
     <label>Vehicle Class</label>
     <select id="vehicleClass">
@@ -145,6 +145,7 @@ input[type=file]{padding:8px;font-size:11px;}
     </div>
   </div>
 
+<div id="formErr" role="alert" style="display:none;background:#2a0a0a;border:1px solid #ff7a7a;color:#ff9a9a;border-radius:10px;padding:12px;margin:12px 0;font-size:14px;"></div>
 <button class="btn" id="submitBtn" onclick="submitForm()">Submit Onboarding</button>
 
 </div>
@@ -161,6 +162,11 @@ var SUPABASE_URL = "https://ymvsatlrkzgxwzxybwmk.supabase.co";
 var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltdnNhdGxya3pneHd6eHlid21rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4NzgwMTQsImV4cCI6MjEwMzQ1NDAxNH0.KbW0enJr5FOzJmDQnT3Thhr5NJdbI4Ehp1vkhVEyPEg";
 var uploadedUrls = {};
 
+function showErr(msg){
+  var e = document.getElementById('formErr'); e.textContent = msg; e.style.display = 'block';
+  try { e.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (x) {}
+}
+function clearErr(){ var e = document.getElementById('formErr'); if (e) e.style.display = 'none'; }
 function payShow(){
   var m = document.getElementById('paymentMethod').value;
   ['zelle','cashapp','bank'].forEach(function(k){ document.getElementById('pay_' + k).style.display = (m === k) ? '' : 'none'; });
@@ -204,15 +210,16 @@ function extraDocs(){
 }
 function buildPayment(m){
   var v = function(id){ return (document.getElementById(id).value || '').trim(); };
-  if (m === 'zelle') { if (!v('zelleId')) { alert('Enter the phone number or email linked to your Zelle.'); return null; } return 'Zelle: ' + v('zelleId'); }
-  if (m === 'cashapp') { if (!v('cashTag')) { alert('Enter your Cash App $cashtag.'); return null; } return 'Cash App: ' + v('cashTag'); }
-  if (!v('bankHolder') || !v('bankName')) { alert('Enter the name on the account and your bank name.'); return null; }
-  if (!/^\d{9}$/.test(v('bankRouting'))) { alert('The routing number must be exactly 9 digits.'); return null; }
-  if (!/^\d{4,17}$/.test(v('bankAcct'))) { alert('Enter your account number (digits only).'); return null; }
-  if (v('bankAcct') !== v('bankAcct2')) { alert('The two account numbers do not match.'); return null; }
+  if (m === 'zelle') { if (!v('zelleId')) { showErr('Enter the phone number or email linked to your Zelle.'); return null; } return 'Zelle: ' + v('zelleId'); }
+  if (m === 'cashapp') { if (!v('cashTag')) { showErr('Enter your Cash App $cashtag.'); return null; } return 'Cash App: ' + v('cashTag'); }
+  if (!v('bankHolder') || !v('bankName')) { showErr('Enter the name on the account and your bank name.'); return null; }
+  if (!/^\d{9}$/.test(v('bankRouting'))) { showErr('The routing number must be exactly 9 digits.'); return null; }
+  if (!/^\d{4,17}$/.test(v('bankAcct'))) { showErr('Enter your account number (digits only).'); return null; }
+  if (v('bankAcct') !== v('bankAcct2')) { showErr('The two account numbers do not match.'); return null; }
   return 'Bank (ACH) | Holder: ' + v('bankHolder') + ' | Bank: ' + v('bankName') + ' | Routing: ' + v('bankRouting') + ' | Account: ' + v('bankAcct') + ' | Type: ' + v('bankType');
 }
 function submitForm(){
+  clearErr();
   var driverName = document.getElementById('driverName').value.trim();
   var phone = document.getElementById('phone').value.trim();
   var email = document.getElementById('email').value.trim();
@@ -223,11 +230,11 @@ function submitForm(){
   if (paymentDetails === null) return;
 
   if (!driverName || !phone || !ein) {
-    alert('Please fill in your name, phone, and EIN.');
+    showErr('Please fill in: ' + [!driverName && 'your full name', !phone && 'your phone number', !ein && 'your EIN number'].filter(Boolean).join(', ') + '.');
     return;
   }
   if (!uploadedUrls.truck_registration_url || !uploadedUrls.truck_photo_url || !uploadedUrls.license_front_url || !uploadedUrls.license_back_url || !uploadedUrls.medical_card_url || !uploadedUrls.coi_url) {
-    alert('Please upload all required documents (ELD is optional, everything else is required — including your COI).');
+    showErr('Please upload all required documents (ELD is optional, everything else is required — including your COI).');
     return;
   }
 
@@ -258,7 +265,7 @@ function submitForm(){
     document.getElementById('formView').style.display = 'none';
     document.getElementById('successView').style.display = 'block';
   }).catch(function(err){
-    alert('Your application was NOT submitted. ' + (err && err.message && err.message !== 'save failed' ? err.message : 'Please try again or call (470) 453-1616.'));
+    showErr('Your application was NOT submitted. ' + (err && err.message && err.message !== 'save failed' ? err.message : 'Please try again or call (470) 453-1616.'));
     document.getElementById('submitBtn').disabled = false;
     document.getElementById('submitBtn').textContent = 'Submit Onboarding';
   });
