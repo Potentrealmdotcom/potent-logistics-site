@@ -24,9 +24,9 @@ async function memoryFacts(k) {
 }
 
 // The first message the browser sends Gemini Live (the browser holds only a one-use token; the instructions and tool list come from here).
-function liveSetup(model, instructions, voice) {
+function liveSetup(model, instructions, voice, k) {
   return { setup: { model: "models/" + model, generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } } },
-    systemInstruction: { parts: [{ text: instructions }] }, tools: [{ functionDeclarations: E.TOOLS.map(function (t) { return { name: t.name, description: t.description, parameters: t.parameters }; }) }],
+    systemInstruction: { parts: [{ text: instructions }] }, tools: [{ functionDeclarations: (k ? E.toolsFor(k) : E.TOOLS).map(function (t) { return { name: t.name, description: t.description, parameters: t.parameters }; }) }],
     inputAudioTranscription: {}, outputAudioTranscription: {} } };
 }
 exports.liveSetup = liveSetup;
@@ -39,10 +39,11 @@ async function chat(k, messages, tz, fetchImpl) {
   if (!history.length || history[history.length - 1].role !== "user") return { ok: false, error: "Say something first." };
   const msgs = [{ role: "system", content: E.systemPrompt({ memory: await memoryFacts(k), tz: tz, owner: E.isOwnerKey(k) }) }].concat(history);
   const did = [];
-  for (let step = 0; step < MAX_STEPS; step++) {
+  const steps = E.isOwnerKey(k) ? 8 : MAX_STEPS;   // the owner's assistant can work through a longer job: look, act, check, report
+  for (let step = 0; step < steps; step++) {
     let r;
     try {
-      r = await Gem.chat({ model: process.env.ELEVATE_CHAT_MODEL || "gemini-3.5-flash-lite", temperature: 0.4, max_tokens: 2000, messages: msgs, tools: E.asChatTools(), tool_choice: "auto" }, { fetchImpl: f, timeoutMs: 8000 });
+      r = await Gem.chat({ model: process.env.ELEVATE_CHAT_MODEL || "gemini-3.5-flash-lite", temperature: 0.4, max_tokens: 2000, messages: msgs, tools: E.asChatTools(k), tool_choice: "auto" }, { fetchImpl: f, timeoutMs: 8000 });
     } catch (e) { return { ok: false, error: e && e.name === "TimeoutError" ? "That one took too long. Ask again with a shorter request." : "I could not reach my brain. Try again." }; }
     if (!r.ok) {
       let why = ""; try { why = (await r.text()).slice(0, 300); } catch (e) { }
@@ -55,9 +56,9 @@ async function chat(k, messages, tz, fetchImpl) {
     msgs.push({ role: "assistant", content: m.content || null, tool_calls: m.tool_calls });
     for (const tc of m.tool_calls.slice(0, 4)) {
       let args = {}; try { args = JSON.parse(tc.function.arguments || "{}"); } catch (e) { }
-      const known = E.TOOLS.some(function (t) { return t.name === tc.function.name; });
+      const known = E.toolsFor(k).some(function (t) { return t.name === tc.function.name; });
       const out = known ? await E.execute(k, tc.function.name, args, "chat") : { ok: false, error: "Unknown tool." };
-      if (known && out.ok && /^(add_|complete_|remember)/.test(tc.function.name)) did.push({ tool: tc.function.name, item: out.saved || out.completed });
+      if (known && out.ok && /^(add_|complete_|remember|send_email)/.test(tc.function.name)) did.push({ tool: tc.function.name, item: out.saved || out.completed });
       msgs.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(out).slice(0, 6000) });
     }
   }
@@ -161,7 +162,7 @@ exports.handler = async function (event) {
       if (rate("ev:" + k, 6, 3600000)) return J(429, { ok: false, error: "Voice was started a lot this hour. Try again later." });
       const bs = await Bill.start(k, "voice"); if (!bs.ok) return J(bs.status, { ok: false, error: bs.error });
       const model = process.env.ELEVATE_VOICE_MODEL || "gemini-3.8-live";
-      const setup = liveSetup(model, E.systemPrompt({ memory: await memoryFacts(k), tz: E.clip(b.tz, 60), owner: E.isOwnerKey(k) }) + "\nYou are speaking out loud: keep answers to one or two short sentences.", VOICES.indexOf(b.voice) >= 0 ? b.voice : (process.env.ELEVATE_VOICE || "Kore"));
+      const setup = liveSetup(model, E.systemPrompt({ memory: await memoryFacts(k), tz: E.clip(b.tz, 60), owner: E.isOwnerKey(k) }) + "\nYou are speaking out loud: keep answers to one or two short sentences.", VOICES.indexOf(b.voice) >= 0 ? b.voice : (process.env.ELEVATE_VOICE || "Kore"), k);
       let r, d;
       try {
         const now = Date.now();
@@ -175,7 +176,7 @@ exports.handler = async function (event) {
     }
     if (a === "voice_tool") { // the browser relays a tool call the voice model asked for; only the listed tools can run
       if (rate("et:" + k, 120, 3600000)) return J(429, { ok: false, error: "Slow down" });
-      if (!E.TOOLS.some(function (x) { return x.name === b.name; })) return J(400, { ok: false, error: "Unknown tool." });
+      if (!E.toolsFor(k).some(function (x) { return x.name === b.name; })) return J(400, { ok: false, error: "Unknown tool." });
       return J(200, await E.execute(k, b.name, b.args, "voice"));
     }
     return J(404, { ok: false, error: "Unknown action" });

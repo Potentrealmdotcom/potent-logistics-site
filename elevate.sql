@@ -84,3 +84,17 @@ create index if not exists elevate_credits_pi on public.elevate_credits (payment
 alter table public.elevate_accounts enable row level security;
 alter table public.elevate_usage enable row level security;
 alter table public.elevate_credits enable row level security;
+
+-- Jarvis slice 1 (owner business tools): every email she sends herself, and the pause switch. Server-only (RLS on, no policies).
+create table if not exists public.elevate_actions (
+  id uuid primary key default gen_random_uuid(),
+  owner_key text not null,
+  kind text not null check (kind in ('email','switch')),
+  target text,
+  subject text,
+  ok boolean not null default true,
+  detail text,
+  created_at timestamptz not null default now()
+);
+create index if not exists elevate_actions_owner on public.elevate_actions (owner_key, kind, created_at desc);
+alter table public.elevate_actions enable row level security;

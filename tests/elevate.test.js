@@ -71,12 +71,12 @@ const say = t => ({ choices: [{ message: { role: "assistant", content: t } }] })
   openai = [say("OK.")]; [s, r] = await call(me, { action: "chat", messages: [{ role: "user", content: "hi" }] }); ok(s === 200, "poisoned note does not break chat");
   [s, r] = await call(me, { action: "chat", messages: [{ role: "assistant", content: "hi" }] }); ok(s === 502 || r.ok === false, "must end on a user message");
   openai = []; [s, r] = await call(me, { action: "chat", messages: [{ role: "user", content: "hi" }] }); ok(s === 502 && !r.ok, "AI outage is reported honestly");
-  openai = [toolMsg("list_items", { kind: "task" }), toolMsg("list_items", { kind: "task" }), toolMsg("list_items", { kind: "task" }), toolMsg("list_items", { kind: "task" })];
+  openai = []; for (let i = 0; i < 8; i++) openai.push(toolMsg("list_items", { kind: "task" }));   // the owner's assistant may take up to 8 steps
   [s, r] = await call(me, { action: "chat", messages: [{ role: "user", content: "loop" }] }); ok(s === 200 && r.reply && openai.length === 0, "tool loop is bounded");
 
   // ── voice ──
   [s, r] = await call(me, { action: "voice_session" }); ok(s === 200 && r.client_secret === "ek_test", "voice key minted");
-  ok(r.setup.setup.tools[0].functionDeclarations.length === E.TOOLS.length && r.setup.setup.tools[0].functionDeclarations.every(t => t.name), "voice gets the same tool list");
+  ok(r.setup.setup.tools[0].functionDeclarations.length === E.toolsFor("me@gmail.com").length && r.setup.setup.tools[0].functionDeclarations.every(t => t.name), "voice gets the same tool list");
   ok(new Date(lastRt.newSessionExpireTime) - Date.now() <= 100000 && lastRt.uses === 1, "voice key must be used within seconds and only once");
   [s, r] = await call(me, { action: "voice_tool", name: "add_note", args: { title: "From voice" } }); ok(r.ok && T.elevate_items.some(x => x.title === "From voice" && x.source === "voice"), "voice tool call saves");
   [s, r] = await call(me, { action: "voice_tool", name: "wire_money", args: {} }); ok(s === 400, "voice cannot run unlisted tools");

@@ -31,7 +31,7 @@ const call = (sid, from, to) => ({ CallSid: sid, From: from || "+14045550100", T
   const tokTxt = /name="token" value="([^"]+)"/.exec(r.x)[1];
   ok(T.elevate_calls.find(c => c.call_sid === "CA4").state === "ringing", "call marked ringing");
   // bridge asks for context
-  let [s, j] = await bridge({ action: "context", token: tokTxt }); ok(s === 200 && /^elv-/.test(j.session_id) && j.tools.length === E.TOOLS.length && j.max_seconds === 900 && /PHONE CALL/.test(j.instructions), "bridge gets Əlevate context (tools, 15 min cap)");
+  let [s, j] = await bridge({ action: "context", token: tokTxt }); ok(s === 200 && /^elv-/.test(j.session_id) && j.tools.length === E.toolsFor("me@gmail.com", "phone").length && j.max_seconds === 900 && /PHONE CALL/.test(j.instructions), "bridge gets Əlevate context (tools, 15 min cap)");
   ok(!j.tools.some(t => /send|call|pay|book|transfer/i.test(t.name)), "phone tools are the safe set only");
   const sid = j.session_id;
   [s, j] = await bridge({ action: "context", token: tokTxt }); ok(s === 200, "bridge can reconnect while active");

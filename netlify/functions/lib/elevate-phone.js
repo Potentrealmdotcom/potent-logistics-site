@@ -49,7 +49,7 @@ async function context(tok) {
     session_id: ID(c), call_sid: c.call_sid,
     instructions: E.systemPrompt({ memory: facts, owner: E.isOwnerKey(c.owner_key) }) + "\nYou are on a PHONE CALL, speaking out loud: one or two short sentences at a time. The caller was already verified by keypad PIN; do not ask for or accept PINs or passwords. You are not able to transfer calls.",
     greeting: "Hey, my name is Elevate. What can I do for you?", voice: process.env.ELEVATE_VOICE || "marin",
-    tools: E.asRealtimeTools(), max_seconds: maxSeconds(), recording: false } };
+    tools: E.asRealtimeTools(c.owner_key, "phone"), max_seconds: maxSeconds(), recording: false } };
 }
 async function handle(act, b) { // transcript / tool / end / transfer for an Əlevate call
   const id = rowId(b.session_id); const c = id && await byId(id); if (!c) return { status: 404, body: { error: "No such call" } };
@@ -57,7 +57,7 @@ async function handle(act, b) { // transcript / tool / end / transfer for an Əl
     if (c.state !== "active") return { status: 409, body: { ok: false, error: "call_not_active" } };
     const used = Number(c.tool_calls || 0); if (used >= 60) return { status: 429, body: { ok: false, error: "too_many_tool_calls" } };
     await E.sb("elevate_calls?id=eq." + c.id, { method: "PATCH", prefer: "return=minimal", body: { tool_calls: used + 1 } });
-    return { status: 200, body: { result: await E.execute(c.owner_key, String(b.name || ""), b.args, "voice") } };
+    return { status: 200, body: { result: await E.execute(c.owner_key, String(b.name || ""), b.args, "phone") } };
   }
   if (act === "transcript") return { status: 200, body: { ok: true, stored: false } };       // call audio and words are not kept
   if (act === "end") {
