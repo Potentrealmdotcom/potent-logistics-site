@@ -238,7 +238,11 @@ function cleanPricing(c) {
 }
 
 function staffMap() {
-    try { return JSON.parse(process.env.STAFF_PASSWORDS_JSON || "{}"); } catch (e) { return {}; }
+    var m = {};
+    try { m = JSON.parse(process.env.STAFF_PASSWORDS_JSON || "{}") || {}; } catch (e) { m = {}; }
+    // QUILL_PASSWORD (if set) replaces only the quill entry, so it can be rotated without touching anyone else's password.
+    if (process.env.QUILL_PASSWORD) m.quill = { p: String(process.env.QUILL_PASSWORD), r: "owner" };
+    return m;
 }
 
 
