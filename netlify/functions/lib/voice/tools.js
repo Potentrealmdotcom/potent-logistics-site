@@ -133,10 +133,10 @@ const TOOLS = {
     const intake = Object.assign({}, ctx.session.intake || {}), el = intake._elig;
     if (!el || el.status !== "eligible") return { ok: false, error: "not_eligible", say: "Run validate_shipment_eligibility first; only eligible shipments can be quoted." };
     const v = I.validate(intake); if (!v.ok) return { ok: false, missing: v.missing, problems: v.problems };
-    const d = v.data, S0 = await S.pricingSettings(ctx.orgId, ctx.cfg); let miles = null, mins = null;
-    if (!/^savannah/.test(d.service_level)) { const g = intake._geo; const r = await RT.distance(g.pickup, g.delivery); if (r.ok) { miles = r.miles; mins = r.minutes; intake._route = { miles: miles, minutes: mins, source: r.source }; } }
+    const d = v.data, S0 = await S.pricingSettings(ctx.orgId, ctx.cfg); let miles = null, mins = null, routeWhy = null;
+    if (!/^savannah/.test(d.service_level)) { const g = intake._geo; const r = await RT.distance(g.pickup, g.delivery); if (r.ok) { miles = r.miles; mins = r.minutes; intake._route = { miles: miles, minutes: mins, source: r.source }; } else routeWhy = r.reason + (r.detail ? " - " + r.detail : ""); }
     const q = P.quote(d, miles, S0, ctx.cfg.settings && ctx.cfg.settings.quote);
-    if (!q.ok) return { ok: false, review: true, reason: q.reason, say: "You cannot give a price. Offer a callback or a person." };
+    if (!q.ok) return { ok: false, review: true, reason: q.reason + (routeWhy ? " [route: " + routeWhy + "]" : ""), route_failure: routeWhy || undefined, say: "You cannot give a price. Offer a callback or a person." };
     const number = S.ref("Q"), ins = await B.sb("voice_quotes", { method: "POST", prefer: "return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, number: number, input: d, lines: q.lines, total_cents: q.total_cents, miles: miles, miles_source: intake._route ? intake._route.source : (miles == null ? "flat_rate" : null), settings_version: q.settings_version, expires_at: q.expires_at } });
     const row = rows(ins)[0]; if (!row) return { ok: false, error: "save_failed" };
     intake._quote_id = row.id; intake._quote = { id: row.id, number: number, total_cents: q.total_cents, expires_at: q.expires_at, created_at: row.created_at || new Date().toISOString() };
@@ -263,7 +263,7 @@ TOOLS.quote_special_service = async function (ctx, a) {
   } else if (svc === "popup_event" || svc === "recurring_route") {
     if (!clip(a.pickup_address, 5) || !clip(a.delivery_address, 5)) return { ok: false, problems: ["address_missing"], say: "Ask for both addresses." };
     const g1 = await geo(a.pickup_address); if (g1.err) return g1.err; const g2 = await geo(a.delivery_address); if (g2.err) return g2.err;
-    const r = await RT.distance(g1.g, g2.g); if (!r.ok) return review("Route distance could not be verified."); miles = r.miles; srcMiles = r.source;
+    const r = await RT.distance(g1.g, g2.g); if (!r.ok) return review("Route distance could not be verified [route: " + r.reason + (r.detail ? " - " + r.detail : "") + "]."); miles = r.miles; srcMiles = r.source;
     if (svc === "popup_event") { const e = OS.popup(miles); lines.push({ code: "event", label: "Pop-up event, " + Math.round(e.roundTripMiles) + " round-trip miles" + (e.roundTripMiles > OS.EVENT.flatRoundTripMiles ? " (flat price plus $1 per mile past " + OS.EVENT.flatRoundTripMiles + ")" : " (flat price)"), cents: money(e.total) }); input = { service: svc, pickup: g1.g.matched, delivery: g2.g.matched, miles: Math.round(miles * 10) / 10 }; }
     else {
       if (Math.floor(Number(a.days_per_week)) !== 5) return review("Dedicated routes are priced for 5 days a week with no weekends.");

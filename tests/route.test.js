@@ -1,0 +1,27 @@
+// Route distance: the real failure reason is reported, the key is trimmed, one retry on 429/5xx, and nothing is guessed.
+const assert = require("assert");
+process.env.ROUTING_PROVIDER = "ors"; process.env.ORS_API_KEY = "  abc123\n";
+const RT = require("../netlify/functions/lib/voice/route.js");
+const A = { lat: 33.75, lon: -84.39 }, B = { lat: 33.95, lon: -84.55 };
+const resp = (st, body) => ({ ok: st < 300, status: st, text: async () => typeof body === "string" ? body : JSON.stringify(body) });
+(async () => {
+  let calls = [], seq = [];
+  global.fetch = async (u, o) => { calls.push({ u, o }); return seq.shift() || resp(500, "x"); };
+  seq = [resp(200, { routes: [{ summary: { distance: 32187, duration: 1800 } }] })];
+  let r = await RT.distance(A, B);
+  assert.ok(r.ok && Math.abs(r.miles - 20) < 0.01 && r.minutes === 30, "good route returns miles and minutes");
+  assert.strictEqual(calls[0].o.headers.Authorization, "abc123", "key is trimmed of spaces and newlines");
+  assert.deepStrictEqual(JSON.parse(calls[0].o.body).radiuses, [-1, -1], "snaps to the nearest road");
+  calls = []; seq = [resp(403, { error: { message: "Access to this API has been disallowed" } })];
+  r = await RT.distance(A, B); assert.ok(!r.ok && r.reason === "ors_key_rejected" && /403/.test(r.detail) && calls.length === 1, "bad key: reason is reported, no retry");
+  calls = []; seq = [resp(404, { error: { code: 2010, message: "Could not find routable point" } })];
+  r = await RT.distance(A, B); assert.ok(!r.ok && r.reason === "ors_no_road_near_address" && calls.length === 1, "no road near address: reported, no retry");
+  calls = []; seq = [resp(429, { error: "rate" }), resp(200, { routes: [{ summary: { distance: 16093.44, duration: 600 } }] })];
+  r = await RT.distance(A, B); assert.ok(r.ok && Math.round(r.miles) === 10 && calls.length === 2, "429 is retried once and can succeed");
+  calls = []; seq = [resp(500, "boom"), resp(500, "boom")];
+  r = await RT.distance(A, B); assert.ok(!r.ok && r.reason === "ors_http_500" && calls.length === 2, "two failures: reported, never guessed");
+  global.fetch = async () => { const e = new Error("t"); e.name = "TimeoutError"; throw e; };
+  r = await RT.distance(A, B); assert.ok(!r.ok && r.reason === "routing_timeout", "timeout reported");
+  delete process.env.ORS_API_KEY; r = await RT.distance(A, B); assert.ok(!r.ok && r.reason === "routing_not_configured", "no key: not configured");
+  console.log("route ok");
+})().catch(e => { console.error(e); process.exit(1); });

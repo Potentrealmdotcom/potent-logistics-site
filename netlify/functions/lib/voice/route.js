@@ -13,18 +13,33 @@ async function verifyAddress(addr) {
   } catch (e) { return { ok: false, unknown: true, reason: "address_service_unavailable" }; }
 }
 function routingOn() { return !!((process.env.ROUTING_PROVIDER === "ors" && process.env.ORS_API_KEY) || (process.env.ROUTING_PROVIDER === "osrm" && process.env.OSRM_URL)); }
+// Why a route failed is returned (never guessed): routing_not_configured, ors_key_rejected (401/403), ors_rate_limited (429), ors_no_road_near_address (404/2010),
+// ors_http_NNN, routing_timeout, routing_unavailable. "detail" carries the service's own error text (never the key). A price is still never given without a verified distance.
+async function orsOnce(a, b) {
+  const key = String(process.env.ORS_API_KEY || "").replace(/\s+/g, "");          // a pasted key often carries a trailing newline/space, which makes the request fail
+  const r = await fetch("https://api.openrouteservice.org/v2/directions/driving-car", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json", Authorization: key },
+    body: JSON.stringify({ coordinates: [[a.lon, a.lat], [b.lon, b.lat]], radiuses: [-1, -1] }), signal: T(9000) });   // -1 = snap to the nearest road however far (building centers can sit off the road)
+  let d = null, raw = ""; try { raw = await r.text(); d = JSON.parse(raw); } catch (e) { }
+  const s = r.ok && d && d.routes && d.routes[0] && d.routes[0].summary;
+  if (s) return { ok: true, miles: s.distance / 1609.344, minutes: s.duration / 60, source: "openrouteservice" };
+  const st = r.status, code = d && d.error && d.error.code, msg = String((d && d.error && (d.error.message || d.error)) || raw || "").replace(/\s+/g, " ").slice(0, 160);
+  const reason = st === 401 || st === 403 ? "ors_key_rejected" : st === 429 ? "ors_rate_limited" : (st === 404 || code === 2010) ? "ors_no_road_near_address" : "ors_http_" + st;
+  console.error("route: ORS HTTP " + st + " " + msg);   // visible in the Netlify function log
+  return { ok: false, reason: reason, detail: "HTTP " + st + (msg ? ": " + msg : ""), retry: st === 429 || st >= 500 };
+}
 async function distance(a, b) { // a, b: {lat, lon}
   if (!routingOn()) return { ok: false, reason: "routing_not_configured" };
+  const fail = function (e) { return { ok: false, reason: e && e.name === "TimeoutError" ? "routing_timeout" : "routing_unavailable", detail: String(e && e.message || e).slice(0, 160), retry: true }; };
   try {
     if (process.env.ROUTING_PROVIDER === "ors") {
-      const r = await fetch("https://api.openrouteservice.org/v2/directions/driving-car", { method: "POST", headers: { "Content-Type": "application/json", Authorization: process.env.ORS_API_KEY }, body: JSON.stringify({ coordinates: [[a.lon, a.lat], [b.lon, b.lat]] }), signal: T(8000) });
-      const d = await r.json(), s = r.ok && d.routes && d.routes[0] && d.routes[0].summary;
-      return s ? { ok: true, miles: s.distance / 1609.344, minutes: s.duration / 60, source: "openrouteservice" } : { ok: false, reason: "route_not_found" };
+      let r = await orsOnce(a, b).catch(fail);
+      if (!r.ok && r.retry) { await new Promise(function (ok) { setTimeout(ok, 700); }); r = await orsOnce(a, b).catch(fail); }
+      return r;
     }
     const base = String(process.env.OSRM_URL).replace(/\/+$/, "");
     const r = await fetch(base + "/route/v1/driving/" + a.lon + "," + a.lat + ";" + b.lon + "," + b.lat + "?overview=false", { signal: T(8000) });
     const d = await r.json(), rt = r.ok && d.routes && d.routes[0];
     return rt ? { ok: true, miles: rt.distance / 1609.344, minutes: rt.duration / 60, source: "osrm" } : { ok: false, reason: "route_not_found" };
-  } catch (e) { return { ok: false, reason: "routing_unavailable" }; }
+  } catch (e) { return fail(e); }
 }
 module.exports = { verifyAddress, distance, routingOn };
