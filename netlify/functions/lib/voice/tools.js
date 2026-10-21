@@ -4,7 +4,7 @@ const B = require("../beats");
 const S = require("./store"), I = require("./intake"), R = require("./rules"), P = require("./pricing"), RT = require("./route"), AV = require("./availability"), V = require("./billing"), TW = require("./adapters/twilio");
 const rows = S.rows;
 const FEATURE = { lookup_customer: "inbound", create_or_update_lead: "inbound", get_approved_service_information: "inbound", collect_shipment_details: "quotes", validate_shipment_eligibility: "quotes", calculate_quote: "quotes", quote_special_service: "quotes", check_live_availability: "booking",
-  create_pending_booking: "booking", confirm_eligible_booking: "booking", create_callback_task: "callbacks", request_human_handoff: "handoff", send_approved_confirmation: "notifications", look_up_booking_status: "booking", request_reschedule: "booking", request_cancellation: "booking" };
+  create_pending_booking: "booking", confirm_eligible_booking: "booking", create_callback_task: "callbacks", book_demo: "callbacks", request_human_handoff: "handoff", send_approved_confirmation: "notifications", look_up_booking_status: "booking", request_reschedule: "booking", request_cancellation: "booking" };
 const CRITICAL = ["pickup_address", "delivery_address", "service_date", "time_window", "service_level", "total_weight_lb", "piece_count", "pieces", "total_dims", "pickup_dock", "delivery_dock", "needs_liftgate", "needs_pallet_jack", "forklift_pickup", "forklift_delivery", "site_has_pallet_jack", "inside_delivery", "hazmat", "special_handling", "extra_stops", "labor_helpers", "labor_hours", "holding_nights", "expected_wait_minutes", "freight_description"];
 const INTAKE_KEYS = CRITICAL.concat(["customer_name", "company", "callback_phone", "email", "pickup_contact_name", "pickup_contact_phone", "delivery_contact_name", "delivery_contact_phone", "special_instructions", "po_number", "recurring"]);
 const clip = function (v, n) { return String(v == null ? "" : v).trim().slice(0, n); };
@@ -40,6 +40,7 @@ function defs() {
     D("check_live_availability", "Check real availability for the requested date and window. Never promise a time without this."),
     D("create_pending_booking", "After you read the quote and details back and the caller clearly says yes, save the booking request."),
     D("confirm_eligible_booking", "Confirm a saved booking request. Succeeds only if every check still passes.", obj({ booking_id: str("id returned by create_pending_booking") }, ["booking_id"])),
+    D("book_demo", "Book a 30-minute POTENT OS demo with a person. Use only after the prospect agreed to a demo and you have their name and email. Emails them the booking link and alerts the owner.", obj({ name: str(""), company: str(""), trucks: { type: "integer", description: "how many trucks they run" }, phone: str("number to reach them"), email: str("their email, read back and confirmed"), notes: str("their problem and what they pay today, in a sentence") }, ["name", "email"])),
     D("create_callback_task", "Create a callback for a person to follow up.", obj({ name: str(""), phone: str("number to call"), reason: str(""), preferred_time: str("") }, ["reason"])),
     D("request_human_handoff", "Ask to transfer to a person: negotiations, discounts, complaints, safety concerns, anything uncertain, or when the caller asks for one.", obj({ reason: str("why"), summary: str("one or two sentences for the person") }, ["reason"])),
     D("send_approved_confirmation", "Send the approved written confirmation or request-received notice for this call's booking.", obj({ booking_id: str(""), channel: { type: "string", enum: ["email", "sms"] }, email: str("only for email"), sms_consent: { type: "boolean", description: "caller agreed to a text message" } }, ["booking_id", "channel"])),
@@ -195,6 +196,18 @@ const TOOLS = {
     await S.patchSession(ctx.orgId, ctx.session.id, { outcome: "booked" });
     await notifyOwner(ctx.orgId, "Voice booking CONFIRMED " + bk.reference, d.customer_name + " " + d.callback_phone + ": " + d.pickup_address + " to " + d.delivery_address + " on " + d.service_date + " (" + d.time_window + "). Job " + res.job_id + ".");
     return { ok: true, confirmed: true, reference: bk.reference, job_id: res.job_id, duplicate: !!res.duplicate };
+  },
+  async book_demo(ctx, a) {
+    const email = clip(a.email, 120).toLowerCase(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { ok: false, error: "need_valid_email", say: "Ask for their email and read it back letter by letter." };
+    const link = process.env.DEMO_BOOKING_URL || "https://calendly.com/potentrealm-pm/30min";
+    const phone = I.phone(a.phone) || ctx.session.from_number || null;
+    const reason = "OS DEMO REQUESTED: " + clip(a.company, 80) + (a.trucks ? ", " + Math.floor(Number(a.trucks)) + " trucks" : "") + ". " + clip(a.notes, 200) + " Email " + email;
+    const r = await B.sb("voice_callbacks", { method: "POST", prefer: "return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, name: clip(a.name, 80) || null, phone: phone, reason: reason.slice(0, 300), preferred_time: "demo" } });
+    if (!r.ok) return { ok: false, error: "save_failed" };
+    const mail = await require("../mail").send(email, "Your POTENT OS demo: pick a time", "Hi " + (clip(a.name, 60) || "there") + ",\n\nThanks for talking with us. Pick any time that works for a 30-minute POTENT OS demo here:\n" + link + "\n\nWe will show it live on your numbers. Questions: (912) 914-2166.\n\nPOTENT Operations", null);
+    await notifyOwner(ctx.orgId, "OS demo requested: " + clip(a.name, 60) + (a.company ? " (" + clip(a.company, 60) + ")" : ""), reason + (phone ? " Phone " + phone : "") + ". Booking link sent: " + (mail && mail.ok ? "yes" : "NOT SENT, follow up by hand") + ".");
+    await S.patchSession(ctx.orgId, ctx.session.id, { outcome: "callback" });
+    return { ok: true, callback_id: rows(r)[0] && rows(r)[0].id, link_emailed: !!(mail && mail.ok), say: mail && mail.ok ? "Tell them you just emailed the booking link and they can pick any time that works for a 30-minute demo. Do not say a time is booked." : "Tell them honestly the email could not be sent right now, that a person will follow up with a time, and do not say a time is booked." };
   },
   async create_callback_task(ctx, a) {
     const phone = I.phone(a.phone) || ctx.session.from_number; if (!phone) return { ok: false, error: "need_phone_number" };
