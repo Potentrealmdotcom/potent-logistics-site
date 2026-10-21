@@ -32,12 +32,12 @@ function liveSetup(model, instructions, voice, k) {
 exports.liveSetup = liveSetup;
 
 // The text assistant: model proposes tool calls, THIS code runs them (only the tools in the list), up to MAX_STEPS rounds.
-async function chat(k, messages, tz, fetchImpl) {
+async function chat(k, messages, tz, fetchImpl, lang) {
   const f = fetchImpl || fetch;
   const history = (Array.isArray(messages) ? messages : []).slice(-20).filter(function (m) { return m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string"; })
     .map(function (m) { return { role: m.role, content: m.content.slice(0, 4000) }; });
   if (!history.length || history[history.length - 1].role !== "user") return { ok: false, error: "Say something first." };
-  const msgs = [{ role: "system", content: E.systemPrompt({ memory: await memoryFacts(k), tz: tz, owner: E.isOwnerKey(k) }) }].concat(history);
+  const msgs = [{ role: "system", content: E.systemPrompt({ memory: await memoryFacts(k), tz: tz, owner: E.isOwnerKey(k), lang: lang }) }].concat(history);
   const did = [];
   const steps = E.isOwnerKey(k) ? 8 : MAX_STEPS;   // the owner's assistant can work through a longer job: look, act, check, report
   for (let step = 0; step < steps; step++) {
@@ -152,7 +152,7 @@ exports.handler = async function (event) {
       if (!Bill.isOwner(k) && !(await Bill.canSignIn(k))) return J(402, { ok: false, error: "Subscribe or add credits in Settings to use the assistant." });
       if (!process.env.GEMINI_API_KEY) return J(503, { ok: false, error: "The assistant's brain is not connected yet (GEMINI_API_KEY)." });
       if (rate("ec:" + k, 40, 3600000)) return J(429, { ok: false, error: "That's a lot of messages this hour. Take a breather." });
-      const out = await chat(k, b.messages, E.clip(b.tz, 60) || "America/New_York");
+      const out = await chat(k, b.messages, E.clip(b.tz, 60) || "America/New_York", undefined, E.clip(b.lang, 5));
       return J(out.ok ? 200 : 502, out);
     }
 
@@ -162,7 +162,7 @@ exports.handler = async function (event) {
       if (rate("ev:" + k, 6, 3600000)) return J(429, { ok: false, error: "Voice was started a lot this hour. Try again later." });
       const bs = await Bill.start(k, "voice"); if (!bs.ok) return J(bs.status, { ok: false, error: bs.error });
       const model = process.env.ELEVATE_VOICE_MODEL || "gemini-3.8-live";
-      const setup = liveSetup(model, E.systemPrompt({ memory: await memoryFacts(k), tz: E.clip(b.tz, 60), owner: E.isOwnerKey(k) }) + "\nYou are speaking out loud: keep answers to one or two short sentences.", VOICES.indexOf(b.voice) >= 0 ? b.voice : (process.env.ELEVATE_VOICE || "Kore"), k);
+      const setup = liveSetup(model, E.systemPrompt({ memory: await memoryFacts(k), tz: E.clip(b.tz, 60), owner: E.isOwnerKey(k), lang: E.clip(b.lang, 5) }) + "\nYou are speaking out loud: keep answers to one or two short sentences.", VOICES.indexOf(b.voice) >= 0 ? b.voice : (process.env.ELEVATE_VOICE || "Kore"), k);
       let r, d;
       try {
         const now = Date.now();

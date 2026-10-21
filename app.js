@@ -951,17 +951,37 @@ var TX = {
 // The tabs/labels that have hand-written translations still use t(). Everything else is
 // translated as it appears: each phrase is looked up once (server saves it), then reused.
 // Names, addresses, IDs, numbers and emails are left alone. Turn off per element with data-notranslate.
-var PL_TR = { lang: "en", cache: {}, miss: {}, nodes: new Set(), orig: new WeakMap(), done: new WeakMap(), pending: {}, timer: null, obs: null, flushing: false };
+var PL_TR = { lang: "en", cache: {}, miss: {}, nodes: new Set(), orig: new WeakMap(), done: new WeakMap(), pending: {}, timer: null, obs: null, flushing: false, retryN: 0, packBusy: false, packOk: false, stats: { packN: 0, live: 0, failed: 0 } };
 var PL_TR_SKIP_TAGS = { SCRIPT: 1, STYLE: 1, TEXTAREA: 1, CODE: 1, PRE: 1, NOSCRIPT: 1, INPUT: 1, SVG: 1 };
 var PL_TR_ATTRS = ["placeholder", "title", "aria-label"];
 var PL_STREET = /\b(st|street|ave|avenue|rd|road|blvd|dr|drive|ln|lane|hwy|highway|pkwy|ct|way|suite|ste|apt)\b/i;
 function plTrWanted(core) {
-    if (core.length < 2 || core.length > 240) return false;
+    if (core.length < 2 || core.length > 20000) return false;
     if (!/[A-Za-zÀ-ɏ]/.test(core)) return false;
     if (/^[\w.+-]+@[\w-]+\.[\w.-]+$/.test(core) || /^(https?:|www\.)/i.test(core)) return false;
     if (/^[A-Z]{1,4}[-#]?\d{3,}/.test(core)) return false;            // job / load IDs like PL-8842
     if (/^\d{1,6}\s+[A-Za-z]/.test(core) && PL_STREET.test(core)) return false; // street addresses
     return true;
+}
+// Same splitting rule as scripts/extract-phrases.js: text over 1000 characters is looked up sentence by sentence, so no text is skipped for length.
+function plTrPieces(s) {
+    var sent = s.match(/[^.!?]+[.!?]+["')\]]*\s*|[^.!?]+$/g) || [s], out = [];
+    sent.forEach(function (x) { while (x.length > 900) { var k = x.lastIndexOf(" ", 900); if (k < 300) k = 900; out.push(x.slice(0, k)); x = x.slice(k); } out.push(x); });
+    var g = []; out.forEach(function (x) { var l = g[g.length - 1]; if (l !== undefined && (l + x).length <= 900) g[g.length - 1] = l + x; else g.push(x); });
+    return g.map(function (x) { return x.trim(); }).filter(Boolean);
+}
+function plTrKey(core) { return core.replace(/\s+/g, " "); }
+// Finds the translation for a piece of text. Returns the translated text, or undefined if it is not known yet (and queues it).
+function plTrLookup(core) {
+    var key = plTrKey(core);
+    if (key.length > 1000) {
+        var parts = plTrPieces(key), outs = [], ok = true;
+        parts.forEach(function (p) { var h = PL_TR.cache[p]; if (h !== undefined) outs.push(h || p); else { ok = false; if (!PL_TR.miss[p] && plTrWanted(p)) PL_TR.pending[p] = 1; } });
+        return ok ? outs.join(" ") : undefined;
+    }
+    var hit = PL_TR.cache[key];
+    if (hit === undefined && !PL_TR.miss[key]) PL_TR.pending[key] = 1;
+    return hit;
 }
 function plTrBlocked(el) {
     for (var e = el; e && e.nodeType === 1; e = e.parentNode) {
@@ -971,16 +991,15 @@ function plTrBlocked(el) {
     return false;
 }
 function plTrLoadCache(lang) { try { return JSON.parse(localStorage.getItem("pl_tr_" + lang) || "{}") || {}; } catch (e) { return {}; } }
-function plTrSaveCache() { try { var j = JSON.stringify(PL_TR.cache); if (j.length < 1500000) localStorage.setItem("pl_tr_" + PL_TR.lang, j); } catch (e) { } }
+function plTrSaveCache() { try { var j = JSON.stringify(PL_TR.cache); if (j.length < 4500000) localStorage.setItem("pl_tr_" + PL_TR.lang, j); } catch (e) { } }
 function plTrApplyText(node) {
     var text = node.nodeValue;
     if (PL_TR.done.get(node) === text) return;                    // our own translation, leave it
     var core = text.trim();
     if (!plTrWanted(core) || plTrBlocked(node.parentNode)) return;
     PL_TR.orig.set(node, text); PL_TR.nodes.add(node);
-    var hit = PL_TR.cache[core];
-    if (hit !== undefined) { if (hit && hit !== core) { var out = text.replace(core, function () { return hit; }); PL_TR.done.set(node, out); node.nodeValue = out; } }
-    else if (!PL_TR.miss[core]) PL_TR.pending[core] = 1;
+    var hit = plTrLookup(core);
+    if (hit !== undefined) { if (hit && hit !== plTrKey(core)) { var out = text.replace(core, function () { return hit; }); PL_TR.done.set(node, out); node.nodeValue = out; } }
 }
 function plTrApplyAttrs(el) {
     PL_TR_ATTRS.forEach(function (a) {
@@ -988,9 +1007,8 @@ function plTrApplyAttrs(el) {
         if (el.getAttribute("data-pl-t-" + a) === v) return;
         var core = v.trim(); if (!plTrWanted(core) || (el.hasAttribute("data-notranslate") || plTrBlocked(el.parentNode))) return;
         el.setAttribute("data-pl-o-" + a, v); PL_TR.nodes.add(el);
-        var hit = PL_TR.cache[core];
-        if (hit !== undefined) { if (hit && hit !== core) { var out = v.replace(core, function () { return hit; }); el.setAttribute("data-pl-t-" + a, out); el.setAttribute(a, out); } }
-        else if (!PL_TR.miss[core]) PL_TR.pending[core] = 1;
+        var hit = plTrLookup(core);
+        if (hit !== undefined) { if (hit && hit !== plTrKey(core)) { var out = v.replace(core, function () { return hit; }); el.setAttribute("data-pl-t-" + a, out); el.setAttribute(a, out); } }
     });
 }
 function plTrScan(root) {
@@ -1002,29 +1020,60 @@ function plTrScan(root) {
     var w = document.createTreeWalker(root, 4 | 1, null), n;
     while ((n = w.nextNode())) { if (n.nodeType === 3) plTrApplyText(n); else plTrApplyAttrs(n); }
 }
-function plTrSchedule() {
+function plTrSchedule(ms) {
     if (PL_TR.timer) return;
-    PL_TR.timer = setTimeout(function () { PL_TR.timer = null; plTrFlush(); }, 200);
+    PL_TR.timer = setTimeout(function () { PL_TR.timer = null; plTrFlush(); }, ms || 200);
+}
+// Ready-made language pack: one download holds every known phrase for the language (no model involved). It is saved in the browser, so later visits are instant and work offline.
+function plTrLoadPack(lang) {
+    PL_TR.packBusy = true;
+    fetch("/.netlify/functions/lang-pack?lang=" + encodeURIComponent(lang)).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+        if (lang !== PL_TR.lang) return;
+        PL_TR.packBusy = false;
+        if (d && d.t) { var n = 0; Object.keys(d.t).forEach(function (k) { if (PL_TR.cache[k] === undefined) { PL_TR.cache[k] = d.t[k]; n++; } }); PL_TR.stats.packN = d.n || n; PL_TR.packOk = true; plTrSaveCache(); }
+        PL_TR.nodes.forEach(function (n) { if (!n.isConnected) PL_TR.nodes.delete(n); });
+        plTrScan(document.body); plTrSchedule();
+    }).catch(function () { if (lang === PL_TR.lang) { PL_TR.packBusy = false; plTrScan(document.body); plTrSchedule(); } });
 }
 function plTrFlush() {
     var keys = Object.keys(PL_TR.pending);
     if (!keys.length || PL_TR.flushing || PL_TR.lang === "en") return;
-    var lang = PL_TR.lang, batch = keys.slice(0, 60);
+    if (PL_TR.packBusy) return;              // wait for the language pack first: it already holds almost every phrase
+    var lang = PL_TR.lang, batch = [], chars = 0;
+    for (var i = 0; i < keys.length && batch.length < 40; i++) { if (batch.length && chars + keys[i].length > 6000) break; batch.push(keys[i]); chars += keys[i].length; }
     batch.forEach(function (k) { delete PL_TR.pending[k]; });
     PL_TR.flushing = true;
+    function again(wait) {                         // a refused or failed request is never treated as "no translation": the phrases go back in the queue
+        PL_TR.flushing = false; PL_TR.retryN++;
+        if (PL_TR.retryN > 8) { batch.forEach(function (k) { PL_TR.stats.failed++; }); PL_TR.retryN = 0; setTimeout(function () { batch.forEach(function (k) { if (PL_TR.cache[k] === undefined) PL_TR.pending[k] = 1; }); plTrSchedule(); }, 120000); return; }
+        batch.forEach(function (k) { if (PL_TR.cache[k] === undefined) PL_TR.pending[k] = 1; });
+        plTrSchedule(Math.min(60000, wait || 1500 * Math.pow(2, PL_TR.retryN)));
+    }
     fetch("/.netlify/functions/translate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lang: lang, phrases: batch }) })
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (d) {
-            PL_TR.flushing = false;
-            if (lang !== PL_TR.lang) return;
-            var got = d && d.t ? d.t : {};
-            batch.forEach(function (k) { if (typeof got[k] === "string" && got[k]) PL_TR.cache[k] = got[k]; else PL_TR.miss[k] = 1; });
+        .then(function (r) { return r.json().catch(function () { return null; }).then(function (d) { return { st: r.status, d: d }; }); })
+        .then(function (x) {
+            if (lang !== PL_TR.lang) { PL_TR.flushing = false; return; }
+            if (x.st === 429 || x.st >= 500 || !x.d) return again();
+            PL_TR.flushing = false; PL_TR.retryN = 0;
+            var got = x.d.t || {};
+            batch.forEach(function (k) { if (typeof got[k] === "string" && got[k]) { PL_TR.cache[k] = got[k]; PL_TR.stats.live++; } else PL_TR.miss[k] = 1; });
             plTrSaveCache();
             PL_TR.nodes.forEach(function (n) { if (!n.isConnected) PL_TR.nodes.delete(n); });
             plTrScan(document.body);
             if (Object.keys(PL_TR.pending).length) plTrSchedule();
-        }).catch(function () { PL_TR.flushing = false; batch.forEach(function (k) { PL_TR.miss[k] = 1; }); });
+        }).catch(function () { if (lang === PL_TR.lang) again(); else PL_TR.flushing = false; });
 }
+// Self-check: counts the visible text that is still English. Run window.plTrReport() in the console, or open any screen with ?langcheck=1.
+function plTrReport() {
+    var untr = [], total = 0, w = document.createTreeWalker(document.body, 4, null), n;
+    while ((n = w.nextNode())) {
+        var core = (n.nodeValue || "").trim(); if (!plTrWanted(core) || plTrBlocked(n.parentNode)) continue;
+        var pe = n.parentNode; if (!pe || !(pe.offsetWidth || pe.offsetHeight || (pe.getClientRects && pe.getClientRects().length))) continue;   // only text a person can see
+        total++; if (PL_TR.lang !== "en" && PL_TR.done.get(n) !== n.nodeValue) untr.push(core.slice(0, 80));
+    }
+    return { lang: PL_TR.lang, dir: document.documentElement.dir, visibleTexts: total, untranslated: untr.length, pct: total ? Math.round(100 * (total - untr.length) / total) : 100, pending: Object.keys(PL_TR.pending).length, miss: Object.keys(PL_TR.miss).length, stats: PL_TR.stats, samples: untr.slice(0, 25) };
+}
+if (typeof window !== "undefined") window.plTrReport = plTrReport;
 function plTrRestore() {
     PL_TR.nodes.forEach(function (n) {
         if (n.nodeType === 3) { var o = PL_TR.orig.get(n); if (o !== undefined && PL_TR.done.get(n) === n.nodeValue) n.nodeValue = o; }
@@ -1036,7 +1085,7 @@ function plTrStart(lang) {
     if (typeof document === "undefined" || !document.body) return;
     try { document.documentElement.lang = lang; document.documentElement.dir = lang === "ar" ? "rtl" : "ltr"; } catch (e) { }
     // put back English first, so switching language always starts from the original text
-    plTrRestore(); PL_TR.pending = {}; PL_TR.miss = {};
+    plTrRestore(); PL_TR.pending = {}; PL_TR.miss = {}; PL_TR.retryN = 0; PL_TR.packOk = false; PL_TR.stats = { packN: 0, live: 0, failed: 0 };
     PL_TR.lang = lang;
     if (lang === "en") { if (PL_TR.obs) { PL_TR.obs.disconnect(); PL_TR.obs = null; } return; }
     PL_TR.cache = plTrLoadCache(lang);
@@ -1051,7 +1100,9 @@ function plTrStart(lang) {
         });
         PL_TR.obs.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: PL_TR_ATTRS });
     }
-    plTrScan(document.body); plTrSchedule();
+    plTrScan(document.body);                 // what is already saved in this browser shows at once
+    PL_TR.pending = {};
+    plTrLoadPack(lang);                      // then the full pack fills in the rest; live translation only covers what the pack does not have
 }
 var _globalLang = getLang();
 var _langListeners = [];

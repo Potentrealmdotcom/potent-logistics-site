@@ -7,59 +7,25 @@
 // Public on purpose (customers book jobs before they have a login), so it is limited:
 // fixed language list, short phrases, small batches, per-visitor and daily caps.
 //
-// Env: ANTHROPIC_API_KEY or GEMINI_API_KEY (either one), SUPABASE_SERVICE_ROLE_KEY   (optional TRANSLATE_DAILY_MAX, default 4000 new phrases/day; TRANSLATE_MODEL)
+// Env: ANTHROPIC_API_KEY or GEMINI_API_KEY (either one), SUPABASE_SERVICE_ROLE_KEY   (optional TRANSLATE_DAILY_MAX, default 20000 new phrases/day; TRANSLATE_MODEL)
 
-var SB = "https://ymvsatlrkzgxwzxybwmk.supabase.co";
-var LANGS = { es: "Spanish (Latin American)", pt: "Portuguese (Brazilian)", kk: "Kazakh", ru: "Russian", fr: "French", zh: "Simplified Chinese", ko: "Korean", vi: "Vietnamese", ar: "Arabic", hi: "Hindi", ht: "Haitian Creole", pl: "Polish", de: "German" };
-var MAX_BATCH = 60, MAX_LEN = 240;
+var C = require("./lib/translate-core.js");
+var LANGS = C.LANGS, sb = C.sb;
+// Live fallback only: the ready-made packs (lang-pack) carry almost everything. This catches text that is built while the app runs (names, counts, new wording).
+var MAX_BATCH = 40, MAX_LEN = 1200;
 
 function J(status, obj) { return { statusCode: status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" }, body: JSON.stringify(obj) }; }
-function sb(path, opts) {
-    opts = opts || {};
-    var key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    var h = { apikey: key, Authorization: "Bearer " + key, "Content-Type": "application/json" };
-    if (opts.prefer) h.Prefer = opts.prefer;
-    return fetch(SB + "/rest/v1/" + path, { method: opts.method || "GET", headers: h, body: opts.body === undefined ? undefined : JSON.stringify(opts.body) })
-        .then(function (r) { return r.text().then(function (t) { var d = null; try { d = JSON.parse(t); } catch (e) { } return { ok: r.ok, data: d }; }); });
-}
 var ipHits = {}, dayKey = "", dayCount = 0;
 function visitorLimited(ip, n) {
     var now = Date.now(), a = (ipHits[ip] || []).filter(function (x) { return now - x.t < 3600000; });
     var total = a.reduce(function (s, x) { return s + x.n; }, 0);
-    if (total + n > 600) { ipHits[ip] = a; return true; }
+    if (total + n > 3000) { ipHits[ip] = a; return true; }
     a.push({ t: now, n: n }); ipHits[ip] = a; return false;
 }
 function dailyLeft(n) {
     var d = new Date().toISOString().slice(0, 10); if (d !== dayKey) { dayKey = d; dayCount = 0; }
-    var max = Number(process.env.TRANSLATE_DAILY_MAX) || 4000;
+    var max = Number(process.env.TRANSLATE_DAILY_MAX) || 20000;
     if (dayCount + n > max) return false; dayCount += n; return true;
-}
-
-function parseList(txt, list) {
-    if (!txt) return null;
-    var m = String(txt).match(/\[[\s\S]*\]/); if (!m) return null;
-    try { var arr = JSON.parse(m[0]); return Array.isArray(arr) && arr.length === list.length && arr.every(function (x) { return typeof x === "string"; }) ? arr : null; } catch (e) { return null; }
-}
-// Uses Anthropic if ANTHROPIC_API_KEY is set, otherwise Gemini if GEMINI_API_KEY is set.
-async function askModel(lang, list) {
-    var sys = "You translate short user-interface strings of a trucking and freight dispatch app from English into " + LANGS[lang] + ". " +
-                "Return ONLY a JSON array of strings, the same length and order as the input. Keep it short and natural, the way a trucking app would say it. " +
-                "Leave UNCHANGED: brand and company names (POTENT, POTENT OS, Stripe, Samsara, Motive...), person names, street addresses, city names, job and load IDs, emails, phone numbers, URLs, numbers, currency amounts, emoji, and the abbreviations DOT, MC, VIN, CDL, ELD, HOS, COI, IFTA. " +
-                "If a string is already in " + LANGS[lang] + " or is not translatable, return it unchanged. Keep any leading or trailing symbols and spaces.";
-    if (process.env.ANTHROPIC_API_KEY) {
-        var r = await fetch("https://api.anthropic.com/v1/messages", {
-            method: "POST",
-            headers: { "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-            body: JSON.stringify({ model: process.env.TRANSLATE_MODEL || "claude-haiku-5-5", max_tokens: 4096, system: sys, messages: [{ role: "user", content: JSON.stringify(list) }] })
-        });
-        if (!r.ok) return null;
-        var d = await r.json().catch(function () { return null; });
-        return parseList(d && d.content && d.content[0] && d.content[0].text, list);
-    }
-    var o; try { o = await require("./lib/gemini.js").chat({ model: process.env.TRANSLATE_MODEL || "gemini-3.5-flash-lite", temperature: 0, max_tokens: 8000, messages: [{ role: "system", content: sys }, { role: "user", content: JSON.stringify(list) }] }, { timeoutMs: 8500 }); } catch (e) { return null; }
-    if (!o.ok) return null;
-    var od = await o.json().catch(function () { return null; });
-    return parseList(od && od.choices && od.choices[0] && od.choices[0].message && od.choices[0].message.content, list);
 }
 
 exports.handler = async function (event) {
@@ -73,7 +39,7 @@ exports.handler = async function (event) {
     if (!phrases.length) return J(200, { ok: true, t: {} });
     var h = event.headers || {};
     var ip = String(h["x-nf-client-connection-ip"] || h["x-forwarded-for"] || "x").split(",")[0].trim();
-    if (visitorLimited(ip, phrases.length)) return J(429, { ok: false, error: "Slow down" });
+    if (visitorLimited(ip, phrases.length)) return J(429, { ok: false, error: "Slow down", retry: true });
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return J(200, { ok: true, t: {} });
 
     var out = {};
@@ -86,13 +52,16 @@ exports.handler = async function (event) {
     }
     var missing = phrases.filter(function (p) { return out[p] === undefined; });
     // 2) translate only what is new
-    if (missing.length && (process.env.ANTHROPIC_API_KEY || process.env.GEMINI_API_KEY) && dailyLeft(missing.length)) {
-        var tr = null; try { tr = await askModel(lang, missing); } catch (e) { tr = null; }
+    if (missing.length && (process.env.ANTHROPIC_API_KEY || process.env.GEMINI_API_KEY) && !dailyLeft(missing.length)) return J(429, { ok: false, t: out, retry: true });
+    if (missing.length && (process.env.ANTHROPIC_API_KEY || process.env.GEMINI_API_KEY)) {
+        var tr = null; try { tr = await C.translateList(lang, missing, { timeoutMs: 7000, tries: 1, noSplit: true }); } catch (e) { tr = null; }
         if (tr) {
             var rows = [];
-            missing.forEach(function (p, i) { out[p] = tr[i]; rows.push({ lang: lang, src: p, dst: tr[i] }); });
-            await sb("ui_translations?on_conflict=lang,src", { method: "POST", prefer: "resolution=ignore-duplicates,return=minimal", body: rows });
+            missing.forEach(function (p, i) { if (tr[i]) { out[p] = tr[i]; rows.push({ lang: lang, src: p, dst: tr[i] }); } });
+            if (rows.length) await sb("ui_translations?on_conflict=lang,src", { method: "POST", prefer: "resolution=ignore-duplicates,return=minimal", body: rows });
         }
+        // nothing came back (model busy / refused): tell the app to ask again later instead of treating the phrases as untranslatable
+        if (missing.length && missing.every(function (p) { return out[p] === undefined; })) return J(503, { ok: false, t: out, retry: true });
     }
     return J(200, { ok: true, t: out });
 };

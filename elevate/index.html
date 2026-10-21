@@ -122,6 +122,7 @@ body.calm .orb *{animation:none!important;transition:none!important}body.calm .o
 </div>
 <script src="/google-signin.js"></script>
 <script src="/elevate/map.js"></script>
+<script src="/lang-core.js" defer></script>
 <script>
 var API="/.netlify/functions/elevate-api",$=function(i){return document.getElementById(i)},tab="home",chat=[],TOK="",VOICES=["Kore"],ME={};
 var MAPURL="https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json";
@@ -155,6 +156,7 @@ function sync(){if(syncing||!OUT.length||navigator.onLine===false||!TOK)return P
 function syncPill(){var p=$("syncst");if(!p)return;var off=navigator.onLine===false;if(!off&&!OUT.length){p.className="pill hide";return}p.className="pill"+(off?"":" on");p.textContent=(off?"Offline":"Online")+(OUT.length?" · "+OUT.length+" waiting to sync":"")}
 window.addEventListener("online",function(){syncPill();sync()});window.addEventListener("offline",syncPill);setInterval(function(){if(OUT.length)sync()},30000);
 function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
+function PLANG(){try{return localStorage.getItem("potent_lang")||"en"}catch(e){return"en"}}
 var TZ="America/New_York";try{TZ=Intl.DateTimeFormat().resolvedOptions().timeZone||TZ}catch(e){}
 
 /* ---------- per-viewer settings (light conveniences only; kept in this browser) ---------- */
@@ -318,7 +320,7 @@ function paint(){var svg=$("map");if(!svg)return;svg.innerHTML="";var NS="http:/
 
 /* ---------- text chat ---------- */
 function sendText(v){chat.push({role:"user",content:v});setOrb("thinking","Working on it…");if(tab==="chat")draw();$("send").disabled=true;
-  api({action:"chat",tz:TZ,messages:chat.map(function(c){return{role:c.role,content:c.content}})}).then(function(j){$("send").disabled=false;
+  api({action:"chat",tz:TZ,lang:PLANG(),messages:chat.map(function(c){return{role:c.role,content:c.content}})}).then(function(j){$("send").disabled=false;
     chat.push({role:"assistant",content:j.ok?j.reply:(j.error||"Something went wrong."),did:j.ok?j.did:null});
     if(!j.ok)setOrb(navigator.onLine===false?"blocked":"error",j.error||"",5000);else if(j.did&&j.did.length)setOrb("done","Saved "+j.did.length+" item"+(j.did.length>1?"s":""),3000);else setOrb(pc?"listening":"idle");
     if(tab==="chat")draw()})}
@@ -348,7 +350,7 @@ $("mic").onclick=async function(){
   if(pc){stopVoice();return}
   if(navigator.onLine===false){setOrb("blocked","Voice needs a connection. Type, or save notes and tasks and they will sync later.",5000);return}
   $("mic").disabled=true;stage(true);setOrb("thinking","Connecting voice…");
-  try{var s=await api({action:"voice_session",tz:TZ,voice:SET.voice||undefined});if(!s.ok)throw new Error(s.error||"Voice is unavailable.");
+  try{var s=await api({action:"voice_session",tz:TZ,lang:PLANG(),voice:SET.voice||undefined});if(!s.ok)throw new Error(s.error||"Voice is unavailable.");
     VREF=s.ref||"";clearInterval(hb);hb=setInterval(function(){if(VREF)rawApi({action:"voice_ping",ref:VREF})},60000);
     ms=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
     octx=new (window.AudioContext||window.webkitAudioContext)({sampleRate:24000});octx.resume();odest=octx.createMediaStreamDestination();window._remote=odest.stream;nextT=0;
