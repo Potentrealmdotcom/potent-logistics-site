@@ -77,7 +77,7 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
   // max duration (scaled)
   r = rig({ maxSeconds: 1 }); r.start(); await sleep(40); r.ready(); await sleep(1200); ok(r.calls.find(c => c.action === "end") && r.calls.find(c => c.action === "end").reason === "max_duration" && r.tw.readyState === 3, "call is cut at the plan's maximum length");
   // SILENCE WATCHDOG: dead air is impossible
-  r = rig({ env: { VOICE_SILENCE_MS: "100" } }); r.start(); await sleep(40); r.ready(); await sleep(10); r.ai(audio(240));
+  r = rig({ env: { VOICE_SILENCE_MS: "100" } }); r.start(); await sleep(40); r.ready(); await sleep(10); r.ai(audio(240)); r.ai(sc({ turnComplete: true }));
   const loudFrame = () => r.phone({ event: "media", media: { track: "inbound", payload: Buffer.alloc(160, 0x00).toString("base64"), timestamp: "5" } });
   for (let i = 0; i < 12; i++) loudFrame();
   await sleep(1300); ok(JSON.stringify(r.aiSock.sent).includes("The caller is waiting for your answer"), "caller spoke and she is silent: the model is told the caller is waiting");
