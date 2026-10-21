@@ -57,6 +57,8 @@ function create(opts) {
     note: function (text) { return { clientContent: { turns: [{ role: "user", parts: [{ text: "[system notice, not the caller] " + text }] }], turnComplete: true } }; },
     // text heard so far that no event has flushed yet (call ended or garbled before a turn completed): hand it over instead of losing it
     flush: function (idleMs) { if (idleMs && Date.now() - lastTextAt < idleMs) return []; const ev = []; flushCaller(ev); flushAgent(ev); return ev; },
+    // context only: added to the conversation WITHOUT asking the model to answer (turnComplete false), used for the language-lock reminder
+    noteSilent: function (text) { return { clientContent: { turns: [{ role: "user", parts: [{ text: "[system reminder, do not reply to this] " + text }] }], turnComplete: false } }; },
     truncate: null, // Gemini needs no "how much was heard" report after an interruption
     // Gemini -> events
     parse: function (m) {

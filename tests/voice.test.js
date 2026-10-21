@@ -33,7 +33,7 @@ const say = (s, who, text) => S.transcript(s.org_id, s.id, who, text);
 async function toQuote(s, over) { await run(s, "collect_shipment_details", full(over)); const el = await run(s, "validate_shipment_eligibility"); if (el.status !== "eligible") return { el }; const q = await run(s, "calculate_quote"); return { el, q }; }
 (async () => {
   // ── tool list / injection surface ──
-  const defs = TL.defs(); ok(defs.length === 18 && defs.every(d => d.type === "function" && d.parameters), "all 18 required tools are defined");
+  const defs = TL.defs(); ok(defs.length === 19 && defs.every(d => d.type === "function" && d.parameters), "all 19 required tools are defined");
   ok(!JSON.stringify(defs.map(d=>Object.keys((d.parameters&&d.parameters.properties)||{}))).match(/discount|override|price|org_id|session_id|caller_confirmed|authorized_by/i), "no tool lets the model set a price, discount, company, session or its own confirmation");
   // ── 1. successful call ──
   let s = newSes(); let r = await run(s, "lookup_customer"); ok(r.ok && r.known === false, "unknown caller");
@@ -160,7 +160,7 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
   const vt = async (b, auth) => { const r = await VT.handler({ httpMethod: "POST", headers: { authorization: auth === undefined ? "Bearer bridgesecret" : auth }, body: JSON.stringify(b) }); return { s: r.statusCode, j: JSON.parse(r.body) }; };
   ok((await vt({ action: "health" }, "Bearer wrong")).s === 401 && (await vt({ action: "health" }, "")).s === 401, "bridge endpoint needs the shared secret");
   const open = newSes({ provider_call_id: "CA7001", state: "ringing", answered_at: null }); const stok = TW.streamToken("bridgesecret", "CA7001", OA, Date.now() + 60000);
-  let c = await vt({ action: "context", token: stok }); ok(c.s === 200 && c.j.session_id === open.id && /AI/.test(c.j.instructions) && c.j.tools.length === 18 && c.j.max_seconds === 1800 && c.j.recording === false, "bridge gets instructions, the 17 tools, a 30-minute cap for Fleet, recording off");
+  let c = await vt({ action: "context", token: stok }); ok(c.s === 200 && c.j.session_id === open.id && /AI/.test(c.j.instructions) && c.j.tools.length === 19 && c.j.max_seconds === 1800 && c.j.recording === false, "bridge gets instructions, the 17 tools, a 30-minute cap for Fleet, recording off");
   ok(/not being recorded/.test(c.j.instructions) && !/may be recorded/.test(c.j.greeting), "the agent does not claim recording when it is off");
   ok((await vt({ action: "context", token: TW.streamToken("bridgesecret", "CA7001", OA, Date.now() - 1) })).s === 403 && (await vt({ action: "context", token: TW.streamToken("other", "CA7001", OA, Date.now() + 5000) })).s === 403, "expired or forged stream tokens refused");
   T.voice_agent_config[0].recording_enabled = true; T.voice_agent_config[0].recording_consent_confirmed = false; const o2 = newSes({ provider_call_id: "CA7002", state: "ringing" }); c = await vt({ action: "context", token: TW.streamToken("bridgesecret", "CA7002", OA, Date.now() + 60000) }); ok(c.j.recording === false, "recording stays off until consent is confirmed");
