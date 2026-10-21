@@ -68,6 +68,11 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
   r.phone({ event: "stop" }); await sleep(20); ok(r.calls.filter(c => c.action === "end").length === 1, "call still ends once");
   r = rig({ env: { VOICE_AI_RETRIES: "1" } }); r.start(); await sleep(40); r.ready(); r.aiSock.emit("error", new Error("one")); await sleep(15); r.aiSock.emit("error", new Error("two")); await sleep(20);
   ok(r.calls.find(c => c.action === "end").reason === "ai_error" && r.tw.readyState === 3, "after the allowed retries the call ends honestly");
+  // transcripts survive a call that ends (or garbles) before a turn completes
+  r = rig(); r.start(); await sleep(40); r.ready(); r.ai(sc({ inputTranscription: { text: "need a truck to Marietta" } })); r.ai(sc({ outputTranscription: { text: "Sure, where from" } }));
+  r.phone({ event: "stop" }); await sleep(30);
+  ok(r.calls.some(c => c.action === "transcript" && c.role === "caller" && /Marietta/.test(c.text)) && r.calls.some(c => c.action === "transcript" && c.role === "agent" && /where from/.test(c.text)), "hang up mid-sentence: what was said so far is still saved");
+  ok(r.calls.findIndex(c => c.action === "transcript") < r.calls.findIndex(c => c.action === "end"), "the transcript is saved before the call is closed out");
   // max duration (scaled)
   r = rig({ maxSeconds: 1 }); r.start(); await sleep(40); r.ready(); await sleep(1200); ok(r.calls.find(c => c.action === "end") && r.calls.find(c => c.action === "end").reason === "max_duration" && r.tw.readyState === 3, "call is cut at the plan's maximum length");
   console.log("PASS: " + n + " assertions"); process.exit(0);

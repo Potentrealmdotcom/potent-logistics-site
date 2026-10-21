@@ -33,7 +33,7 @@ function declarations(tools) {
 
 function create(opts) {
   opts = opts || {}; const model = opts.model || process.env.VOICE_AI_MODEL || DEFAULT_MODEL;
-  let upPrev = 0, dnRest = [], callerBuf = "", agentBuf = "", n = 0, agentSpoke = false;
+  let lastTextAt = 0, upPrev = 0, dnRest = [], callerBuf = "", agentBuf = "", n = 0, agentSpoke = false;
   const flushCaller = function (ev) { if (callerBuf.trim()) ev.push({ kind: "caller_text", text: callerBuf.trim(), key: "c:" + (++n) }); callerBuf = ""; };
   const flushAgent = function (ev) { if (agentBuf.trim()) ev.push({ kind: "agent_text", text: agentBuf.trim(), key: "a:" + (++n) }); agentBuf = ""; };
   return {
@@ -41,7 +41,7 @@ function create(opts) {
     setup: function (o) {
       const voice = VOICES.indexOf(o.voice) >= 0 ? o.voice : (process.env.VOICE_NAME && VOICES.indexOf(process.env.VOICE_NAME) >= 0 ? process.env.VOICE_NAME : DEFAULT_VOICE);
       const decl = declarations(o.tools);
-      return [{ setup: { model: "models/" + model, generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } } },
+      return [{ setup: { model: "models/" + model, generationConfig: { responseModalities: ["AUDIO"], speechConfig: Object.assign({ voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } }, process.env.VOICE_LANGUAGE_CODE ? { languageCode: process.env.VOICE_LANGUAGE_CODE } : {}) },
         systemInstruction: { parts: [{ text: o.instructions || "" }] }, tools: decl.length ? [{ functionDeclarations: decl }] : [],
         realtimeInputConfig: { automaticActivityDetection: { prefixPaddingMs: 300, silenceDurationMs: o.silence_ms || 600 } },
         inputAudioTranscription: {}, outputAudioTranscription: {} } }];
@@ -55,6 +55,8 @@ function create(opts) {
     toolResult: function (callId, name, out) { return [{ toolResponse: { functionResponses: [{ id: callId, name: name, response: { output: out } }] } }]; },
     say: function (text) { return { clientContent: { turns: [{ role: "user", parts: [{ text: "Say exactly this to the caller, then wait: " + text }] }], turnComplete: true } }; },
     note: function (text) { return { clientContent: { turns: [{ role: "user", parts: [{ text: "[system notice, not the caller] " + text }] }], turnComplete: true } }; },
+    // text heard so far that no event has flushed yet (call ended or garbled before a turn completed): hand it over instead of losing it
+    flush: function (idleMs) { if (idleMs && Date.now() - lastTextAt < idleMs) return []; const ev = []; flushCaller(ev); flushAgent(ev); return ev; },
     truncate: null, // Gemini needs no "how much was heard" report after an interruption
     // Gemini -> events
     parse: function (m) {
@@ -63,8 +65,8 @@ function create(opts) {
       const c = m.serverContent;
       if (c) {
         if (c.interrupted) { flushAgent(ev); ev.push({ kind: "interrupted" }); }
-        if (c.inputTranscription && c.inputTranscription.text) callerBuf += c.inputTranscription.text;
-        if (c.outputTranscription && c.outputTranscription.text) { flushCaller(ev); agentBuf += c.outputTranscription.text; }
+        if (c.inputTranscription && c.inputTranscription.text) { callerBuf += c.inputTranscription.text; lastTextAt = Date.now(); }
+        if (c.outputTranscription && c.outputTranscription.text) { flushCaller(ev); agentBuf += c.outputTranscription.text; lastTextAt = Date.now(); }
         if (c.modelTurn && c.modelTurn.parts) c.modelTurn.parts.forEach(function (p) {
           if (!(p.inlineData && p.inlineData.data)) return;
           flushCaller(ev); agentSpoke = true;

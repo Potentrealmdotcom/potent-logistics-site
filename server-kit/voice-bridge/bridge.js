@@ -14,7 +14,7 @@ function createBridge(deps) {
   const sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
 
   function handle(tw) {
-    let retries = 0, reconnecting = false, timersSet = false, hist = [], streamSid = null, ctx = null, ai = null, prov = null, connectTimerRef = null, spokeSinceTool = false, toolAt = 0, done = false, aiReady = false, buffered = [], lastItem = null, assistStart = null, mediaTs = 0, marks = 0, markQ = [], transferPending = false, transferred = false, startedAt = Date.now(), timers = [], nm = 0;
+    let flushTimer = null, retries = 0, reconnecting = false, timersSet = false, hist = [], streamSid = null, ctx = null, ai = null, prov = null, connectTimerRef = null, spokeSinceTool = false, toolAt = 0, done = false, aiReady = false, buffered = [], lastItem = null, assistStart = null, mediaTs = 0, marks = 0, markQ = [], transferPending = false, transferred = false, startedAt = Date.now(), timers = [], nm = 0;
     const timer = function (fn, ms) { const t = setTimeout(fn, ms); timers.push(t); return t; };
     const twSend = function (o) { if (tw.readyState === 1) tw.send(JSON.stringify(o)); };
     const aiSend = function (o) { if (o && ai && ai.readyState === 1) ai.send(JSON.stringify(o)); };
@@ -22,8 +22,9 @@ function createBridge(deps) {
     const sysNote = function (text) { aiSend(prov.note(text)); };
 
     async function finish(reason, closeTwilio) {
-      if (done) return; done = true; timers.forEach(clearTimeout);
+      if (done) return; done = true; timers.forEach(clearTimeout); if (flushTimer) clearInterval(flushTimer);
       const secs = Math.round((Date.now() - startedAt) / 1000);
+      if (ctx && prov && prov.flush) await Promise.all(prov.flush().map(function (e) { return api({ action: "transcript", session_id: ctx.session_id, role: e.kind === "caller_text" ? "caller" : "agent", text: e.text, key: e.key }, 6000); }));   // keep what was said even if the call ended mid-sentence
       if (ctx) await api({ action: "end", session_id: ctx.session_id, reason: reason, seconds: secs }, 8000);
       else if (reason !== "caller_hangup") await api({ action: "health", provider: "bridge", kind: "call_setup_failed", ok: false, detail: reason }, 5000);
       try { if (ai) ai.close(); } catch (e) { /* ignore */ }
@@ -43,6 +44,7 @@ function createBridge(deps) {
       clearTimeout(connectTimerRef);
       connectTimerRef = timer(function () { aiDown("ai_connect_timeout", "no setup reply in 8s"); }, 8000);
       prov = AI.create({ model: env.VOICE_AI_MODEL });
+      if (!flushTimer) flushTimer = setInterval(function () { if (prov && prov.flush) prov.flush(5000).forEach(function (e) { onAi(e); }); }, 3000);
       const sock = new W(AI.URL(env.VOICE_AI_MODEL), { headers: AI.headers(env) }); ai = sock;
       sock.on("open", function () { if (ai === sock) prov.setup({ instructions: ctx.instructions, tools: ctx.tools, voice: ctx.voice }).forEach(aiSend); });
       sock.on("message", function (raw) { if (ai !== sock) return; let m; try { m = JSON.parse(raw.toString()); } catch (e) { return; } prov.parse(m).forEach(onAi); });

@@ -48,7 +48,13 @@ exports.handler = async function (event) {
       return xmlR(TW.twimlStream(bridgeUrl(), { token: tok, session: ses.id }, base() + "?a=fallback&s=" + ses.id));
     }
     if (a === "fallback") { // the audio bridge could not be reached or dropped: be honest and offer a person
-      const ses = rows(await B.sb("voice_sessions?provider_call_id=eq." + encodeURIComponent(callSid) + "&id=eq." + encodeURIComponent(String(q.s || "")) + "&select=*&limit=1"))[0];
+      const readSes = async function () { return rows(await B.sb("voice_sessions?provider_call_id=eq." + encodeURIComponent(callSid) + "&id=eq." + encodeURIComponent(String(q.s || "")) + "&select=*&limit=1"))[0]; };
+      // Twilio calls this the moment the audio stream ends, for ANY reason, including the caller simply hanging up (CallStatus is then "completed"). That is a normal end, not a drop.
+      const cs = String(params.CallStatus || "").toLowerCase();
+      if (cs && cs !== "in-progress" && cs !== "ringing") return xmlR("<Response/>");
+      // The call is still up but the stream ended: give the bridge a moment to report its own end before calling it a drop (it reports a few hundred ms after the stream closes).
+      await new Promise(function (ok) { setTimeout(ok, Number(process.env.VOICE_FALLBACK_GRACE_MS != null ? process.env.VOICE_FALLBACK_GRACE_MS : 1500)); });
+      const ses = await readSes();
       if (!ses) return xmlR(TW.twimlSay("We are having trouble. Please call back shortly."));
       const cfg = await S.cfgOf(ses.org_id);
       if ((ses.state === "active" || ses.state === "ringing") && !ses.ended_at) { await S.patchSession(ses.org_id, ses.id, { state: "failed", end_reason: "bridge_dropped" }); await health(ses.org_id, "bridge_dropped", false, ses.id); await missed(ses.org_id, ses.id, ses.from_number, "Call dropped (assistant connection lost)"); }
