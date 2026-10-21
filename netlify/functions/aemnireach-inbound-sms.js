@@ -27,18 +27,14 @@ async function findOwner(toNumber) {
 async function aiReply(text) {
     if (!AI_KEY) return null;
     try {
-        const r = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
-            method: "POST",
-            headers: { "Authorization": "Bearer " + AI_KEY, "Content-Type": "application/json" },
-            body: JSON.stringify({
+        const r = await require("./lib/gemini.js").chat({
                 model: "gemini-3.8-flash",
                 messages: [
                     { role: "system", content: "You are the SMS auto-reply for POTENT OS, a logistics + business software company. Keep replies under 160 characters, friendly, professional. If they want a human, say someone will call them shortly." },
                     { role: "user", content: text }
                 ],
                 max_tokens: 600
-            })
-        });
+        }, { timeoutMs: 8000 });
         const j = await r.json();
         return j.choices && j.choices[0] ? j.choices[0].message.content.trim() : null;
     } catch (e) { return null; }

@@ -2,6 +2,7 @@
 // Sign-in: Google (only emails listed in ELEVATE_OWNER_EMAILS) or the POTENT OS owner login.
 // Env: AUTH_SECRET, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY, GOOGLE_CLIENT_ID (optional), ELEVATE_OWNER_EMAILS,
 //      GEMINI_API_KEY, ELEVATE_CHAT_MODEL (default gemini-3.8-flash), ELEVATE_VOICE_MODEL (default gemini-3.8-live), ELEVATE_VOICE (default Kore)
+const Gem = require("./lib/gemini.js");
 const E = require("./lib/elevate");
 const G = require("./lib/google");
 const Bill = require("./lib/elevate-billing");
@@ -41,9 +42,8 @@ async function chat(k, messages, tz, fetchImpl) {
   for (let step = 0; step < MAX_STEPS; step++) {
     let r;
     try {
-      r = await f("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", { method: "POST", headers: { Authorization: "Bearer " + process.env.GEMINI_API_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: process.env.ELEVATE_CHAT_MODEL || "gemini-3.8-flash", temperature: 0.4, max_tokens: 2000, messages: msgs, tools: E.asChatTools(), tool_choice: "auto" }) });
-    } catch (e) { return { ok: false, error: "I could not reach my brain. Try again." }; }
+      r = await Gem.chat({ model: process.env.ELEVATE_CHAT_MODEL || "gemini-3.8-flash", temperature: 0.4, max_tokens: 2000, messages: msgs, tools: E.asChatTools(), tool_choice: "auto" }, { fetchImpl: f, timeoutMs: 8000 });
+    } catch (e) { return { ok: false, error: e && e.name === "TimeoutError" ? "That one took too long. Ask again with a shorter request." : "I could not reach my brain. Try again." }; }
     if (!r.ok) return { ok: false, error: "I'm busy right now. Try again in a moment." };
     const d = await r.json(); const m = d && d.choices && d.choices[0] && d.choices[0].message;
     if (!m) return { ok: false, error: "No answer. Try again." };

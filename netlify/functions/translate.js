@@ -56,11 +56,7 @@ async function askModel(lang, list) {
         var d = await r.json().catch(function () { return null; });
         return parseList(d && d.content && d.content[0] && d.content[0].text, list);
     }
-    var o = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
-        method: "POST",
-        headers: { Authorization: "Bearer " + process.env.GEMINI_API_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: process.env.TRANSLATE_MODEL || "gemini-3.8-flash", temperature: 0, max_tokens: 8000, messages: [{ role: "system", content: sys }, { role: "user", content: JSON.stringify(list) }] })
-    });
+    var o; try { o = await require("./lib/gemini.js").chat({ model: process.env.TRANSLATE_MODEL || "gemini-3.8-flash", temperature: 0, max_tokens: 8000, messages: [{ role: "system", content: sys }, { role: "user", content: JSON.stringify(list) }] }, { timeoutMs: 8500 }); } catch (e) { return null; }
     if (!o.ok) return null;
     var od = await o.json().catch(function () { return null; });
     return parseList(od && od.choices && od.choices[0] && od.choices[0].message && od.choices[0].message.content, list);
