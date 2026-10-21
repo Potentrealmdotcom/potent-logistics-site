@@ -37,7 +37,7 @@ async function chat(k, messages, tz, fetchImpl) {
   const history = (Array.isArray(messages) ? messages : []).slice(-20).filter(function (m) { return m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string"; })
     .map(function (m) { return { role: m.role, content: m.content.slice(0, 4000) }; });
   if (!history.length || history[history.length - 1].role !== "user") return { ok: false, error: "Say something first." };
-  const msgs = [{ role: "system", content: E.systemPrompt({ memory: await memoryFacts(k), tz: tz }) }].concat(history);
+  const msgs = [{ role: "system", content: E.systemPrompt({ memory: await memoryFacts(k), tz: tz, owner: E.isOwnerKey(k) }) }].concat(history);
   const did = [];
   for (let step = 0; step < MAX_STEPS; step++) {
     let r;
@@ -161,7 +161,7 @@ exports.handler = async function (event) {
       if (rate("ev:" + k, 6, 3600000)) return J(429, { ok: false, error: "Voice was started a lot this hour. Try again later." });
       const bs = await Bill.start(k, "voice"); if (!bs.ok) return J(bs.status, { ok: false, error: bs.error });
       const model = process.env.ELEVATE_VOICE_MODEL || "gemini-3.8-live";
-      const setup = liveSetup(model, E.systemPrompt({ memory: await memoryFacts(k), tz: E.clip(b.tz, 60) }) + "\nYou are speaking out loud: keep answers to one or two short sentences.", VOICES.indexOf(b.voice) >= 0 ? b.voice : (process.env.ELEVATE_VOICE || "Kore"));
+      const setup = liveSetup(model, E.systemPrompt({ memory: await memoryFacts(k), tz: E.clip(b.tz, 60), owner: E.isOwnerKey(k) }) + "\nYou are speaking out loud: keep answers to one or two short sentences.", VOICES.indexOf(b.voice) >= 0 ? b.voice : (process.env.ELEVATE_VOICE || "Kore"));
       let r, d;
       try {
         const now = Date.now();
