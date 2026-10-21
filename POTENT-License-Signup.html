@@ -161,7 +161,7 @@ select{color-scheme:dark;}
   <div class="tier custom" data-tier="Custom" data-price="0" data-fleet="300+ trucks" onclick="pickTier(this)">
     <div class="tier-top"><div class="tier-name">Custom — 300+ Trucks</div><div class="tier-price" style="color:#666;font-size:15px;">Custom Pricing</div></div>
     <div class="tier-sub">300+ trucks · Custom scope · White label available</div>
-    <div class="tier-save">Contact Anthony: (470) 453-1616</div>
+    <div class="tier-save">Contact Anthony: (912) 914-2166</div>
   </div>
 </div>
 <button class="btn" onclick="go(2)">Continue →</button>
@@ -290,7 +290,7 @@ select{color-scheme:dark;}
   <div class="enterprise-box">
     <div style="font-size:14px;font-weight:800;color:#F0E000;margin-bottom:6px;">Custom Enterprise Pricing</div>
     <div style="font-size:12px;color:#777;margin-bottom:14px;">Call or text Anthony to finalize your enterprise license and pricing.</div>
-    <a href="tel:4704531616" style="display:inline-block;background:#F0E000;color:#000;text-decoration:none;border-radius:8px;padding:12px 28px;font-weight:800;font-size:14px;">(470) 453-1616</a>
+    <a href="tel:9129142166" style="display:inline-block;background:#F0E000;color:#000;text-decoration:none;border-radius:8px;padding:12px 28px;font-weight:800;font-size:14px;">(912) 914-2166</a>
   </div>
 </div>
 
@@ -406,7 +406,7 @@ select{color-scheme:dark;}
         </div>
       </div>
       <button class="btn" style="max-width:320px;margin:0 auto 8px;display:block;" onclick="dlSigned()">📄 Download Signed License PDF</button>
-      <div style="font-size:12px;color:#444;margin-top:10px;">Questions? <a href="tel:4704531616" style="color:#F0E000;">(470) 453-1616</a> · <a href="mailto:potentlogistics@proton.me" style="color:#F0E000;">potentlogistics@proton.me</a></div>
+      <div style="font-size:12px;color:#444;margin-top:10px;">Questions? <a href="tel:9129142166" style="color:#F0E000;">(912) 914-2166</a> · <a href="mailto:potentlogistics@proton.me" style="color:#F0E000;">potentlogistics@proton.me</a></div>
     </div>
   </div>
 
@@ -680,7 +680,7 @@ async function startBankVerify(){
   } catch(e){
     document.getElementById('bankBtn').textContent='🔗 Connect Bank Account via Plaid';
     document.getElementById('bankBtn').disabled=false;
-    showErr('payErr','Bank connection failed: '+e.message+'. Please use card or call (470) 453-1616.');
+    showErr('payErr','Bank connection failed: '+e.message+'. Please use card or call (912) 914-2166.');
   }
 }
 
@@ -758,7 +758,7 @@ async function submitPay(){
     go(5);
 
   } catch(e){
-    showErr('payErr','Payment failed: '+e.message+'. Call (470) 453-1616.');
+    showErr('payErr','Payment failed: '+e.message+'. Call (912) 914-2166.');
     resetPayBtn();
   }
 }
@@ -800,7 +800,7 @@ async function createRealAccount(){
     var rj = await res.json().catch(function(){ return {}; });
     if(!res.ok || !rj.ok){
       msgEl.style.color = '#E53E3E';
-      msgEl.textContent = rj.error || 'Something went wrong. Call (470) 453-1616 and we\'ll set it up directly.';
+      msgEl.textContent = rj.error || 'Something went wrong. Call (912) 914-2166 and we\'ll set it up directly.';
       document.getElementById('createAcctBtn').disabled = false;
       document.getElementById('createAcctBtn').textContent = 'Create Account';
       return;
@@ -815,7 +815,7 @@ async function createRealAccount(){
     }
   } catch(e){
     msgEl.style.color = '#E53E3E';
-    msgEl.textContent = 'Something went wrong. Call (470) 453-1616 and we\'ll set it up directly.';
+    msgEl.textContent = 'Something went wrong. Call (912) 914-2166 and we\'ll set it up directly.';
     document.getElementById('createAcctBtn').disabled = false;
     document.getElementById('createAcctBtn').textContent = 'Create Account';
   }

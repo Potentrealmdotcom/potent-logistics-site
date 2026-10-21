@@ -323,9 +323,9 @@ exports.handler = async function (event) {
             var lem = String(body.email || "").trim().toLowerCase(), lun = String(body.username || "").trim().slice(0, 60), lpw = String(body.password || "");
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(lem) || !lun || lpw.length < 6 || lpw.length > 200) return J(400, { ok: false, error: "Enter a username and a password of at least 6 characters." });
             var lr = await sb("os_licenses?email=eq." + encodeURIComponent(lem) + "&status=eq.active&select=email&limit=1");
-            if (!(lr.ok && Array.isArray(lr.data) && lr.data.length)) return J(404, { ok: false, error: "We have not seen the payment for that email yet. Wait a minute and try again, or call (470) 453-1616." });
+            if (!(lr.ok && Array.isArray(lr.data) && lr.data.length)) return J(404, { ok: false, error: "We have not seen the payment for that email yet. Wait a minute and try again, or call (912) 914-2166." });
             var lu = await sb("os_licenses?email=eq." + encodeURIComponent(lem), { method: "PATCH", prefer: "return=minimal", body: { account_username: lun, account_password: hashPw(lpw) } });
-            return lu.ok ? J(200, { ok: true }) : J(500, { ok: false, error: "Could not save. Call (470) 453-1616 and we will set it up directly." });
+            return lu.ok ? J(200, { ok: true }) : J(500, { ok: false, error: "Could not save. Call (912) 914-2166 and we will set it up directly." });
         }
 
         // ── POTENT team: email me a sign-in code (no password to remember) ──

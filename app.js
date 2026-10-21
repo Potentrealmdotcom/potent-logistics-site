@@ -527,10 +527,11 @@ function plNotifyEmail() {
     try { var u = loadCurrentUser(); if (u && u.orgId) return (u.branding && u.branding.email) || (PL_BRAND && PL_BRAND.email) || ""; } catch (e) { }
     return BUSINESS_EMAIL;
 }
-var DISPATCH_PHONE_DISPLAY = "(470) 453-1616"; // Dispatch & Sales — customer-facing
+var DISPATCH_PHONE_DISPLAY = "(912) 914-2166"; // Dispatch & Sales — customer-facing
 var DISPATCH_EMAIL = "logisticspotent@gmail.com"; // Dispatch & Sales — customer-facing
-var PHONE_NUMBER = "+14704531616";
-var PHONE_DISPLAY = "(470) 453-1616";
+var PHONE_NUMBER = "+19129142166";
+var TEXT_NUMBER = "+14704531616"; // the 912 main line is voice only (no texting set up), so text links still go to the old number
+var PHONE_DISPLAY = "(912) 914-2166";
 // ═══════════════════════════════════════════════════════════════════
 // 🚨 DRIVER SAFETY SYSTEM
 // ═══════════════════════════════════════════════════════════════════
@@ -1407,7 +1408,7 @@ var TOS_SECTIONS = [
  {
   "num": 16,
   "title": "Claims",
-  "body": "Report any damage, loss or complaint to potentlogistics@" + "proton.me or (470) 453-1616 in writing within 48 hours of delivery for freight, or 7 days of completion for other services, with photos and a description. Claims reported later may be declined to the extent the delay prejudiced our ability to investigate. We will acknowledge a claim within two business days and respond after our review."
+  "body": "Report any damage, loss or complaint to potentlogistics@" + "proton.me or (912) 914-2166 in writing within 48 hours of delivery for freight, or 7 days of completion for other services, with photos and a description. Claims reported later may be declined to the extent the delay prejudiced our ability to investigate. We will acknowledge a claim within two business days and respond after our review."
  },
  {
   "num": 17,
@@ -1462,7 +1463,7 @@ var TOS_SECTIONS = [
  {
   "num": 27,
   "title": "Contact",
-  "body": "POTENT LOGISTICS LLC, 2089 Christian Cir SE, Conyers, GA 30013. Email potentlogistics@" + "proton.me. Phone (470) 453-1616."
+  "body": "POTENT LOGISTICS LLC, 2089 Christian Cir SE, Conyers, GA 30013. Email potentlogistics@" + "proton.me. Phone (912) 914-2166."
  }
 ];
 var POTENT_LOGISTICS_TOS_SECTIONS = [
@@ -1823,7 +1824,7 @@ var POTENT_PRIVACY_SECTIONS = [
  {
   "num": 17,
   "title": "Contact",
-  "body": "POTENT LOGISTICS LLC, 2089 Christian Cir SE, Conyers, GA 30013, potentlogistics@" + "proton.me, (470) 453-1616."
+  "body": "POTENT LOGISTICS LLC, 2089 Christian Cir SE, Conyers, GA 30013, potentlogistics@" + "proton.me, (912) 914-2166."
  }
 ];
 var LEGAL_UPDATED = "October 8, 2026";
@@ -4261,7 +4262,7 @@ function PartnerApplicationModal(props) {
             notes: "Company: " + f.companyName + " | Type: " + f.businessType + " | Volume: " + f.monthlyVolume + " | Services: " + f.services.join(", ") + " | Billing Email: " + f.billingEmail + " | Notes: " + f.notes + " | Email: " + f.email + " | Surety Bond Photo: " + bondPhotoUrl + " | Applicant Photo: " + applicantPhotoUrl
         }).then(function (res) {
             setSubmitting(false);
-            if (!res.ok) { alert("Submission failed to send (server error). Please try again or call (470) 453-1616."); return; }
+            if (!res.ok) { alert("Submission failed to send (server error). Please try again or call (912) 914-2166."); return; }
             setSent(true);
         }).catch(function () {
             setSubmitting(false);
@@ -4369,7 +4370,7 @@ function CustomQuoteModal(props) {
             notes: "Email: " + f.email + " | Type: " + f.jobType + " | Details: " + f.description })
         .then(function (res) {
             setSubmitting(false);
-            if (!res.ok) { alert("Submission failed to send (server error). Please try again or call (470) 453-1616."); return; }
+            if (!res.ok) { alert("Submission failed to send (server error). Please try again or call (912) 914-2166."); return; }
             setSent(true);
         }).catch(function () {
             setSubmitting(false);
@@ -8591,7 +8592,7 @@ h2{color:#1a1a1a;margin-top:30px;}
 </ul>
 
 <div class="footer">
-<strong>POTENT OS</strong> · potentoperations.netlify.app/apply · (470) 453-1616 · potentlogistics@" + "proton.me<br>
+<strong>POTENT OS</strong> · potentoperations.netlify.app/apply · (912) 914-2166 · potentlogistics@" + "proton.me<br>
 © 2026 ANTHONY EMMANUEL FIGUEROA MENDES® · POTENT PRÄDƏKT® · Private access only
 </div>
 </body></html>`;
@@ -8747,7 +8748,7 @@ ${swCost > laborCost ? '<p>Your biggest cost is <strong>software subscriptions</
 <p>3 slots available this month. Private access only. We review every application personally.</p>
 
 <div class="footer">
-<strong>POTENT OS</strong> · potentoperations.netlify.app · (470) 453-1616 · potentlogistics@" + "proton.me<br>
+<strong>POTENT OS</strong> · potentoperations.netlify.app · (912) 914-2166 · potentlogistics@" + "proton.me<br>
 © 2026 ANTHONY EMMANUEL FIGUEROA MENDES® · POTENT PRÄDƏKT® · Actual savings may vary.
 </div>
 </body></html>`;
@@ -9175,12 +9176,12 @@ function WaitlistPage() {
                     React.createElement("div", { style: { marginBottom: 16 } },
                         React.createElement("div", { style: { fontSize: 10, color: C2.dim, fontWeight: 700, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8 } }, "Tell us about your operation (optional)"),
                         React.createElement("textarea", { value: f.notes, onChange: function (e) { set("notes", e.target.value); }, placeholder: "What challenges are you trying to solve? What software are you using now? What would make this a 10/10 decision?", rows: 3, style: { background: C2.surface, border: "1px solid " + C2.border, borderRadius: 8, color: C2.white, padding: "10px 12px", fontSize: 13, width: "100%", outline: "none", fontFamily: ff, boxSizing: "border-box", resize: "vertical" } })),
-                    err && React.createElement("div", { style: { background: C2.red + "12", border: "1px solid " + C2.red + "33", borderRadius: 8, padding: "10px 14px", marginBottom: 12, fontSize: 12, color: C2.red } }, "Something went wrong. Please try again or call (470) 453-1616."),
+                    err && React.createElement("div", { style: { background: C2.red + "12", border: "1px solid " + C2.red + "33", borderRadius: 8, padding: "10px 14px", marginBottom: 12, fontSize: 12, color: C2.red } }, "Something went wrong. Please try again or call (912) 914-2166."),
                     React.createElement("button", { onClick: submit, disabled: !f.company_name || !f.contact_name || !f.email || loading, style: { background: C2.orange, color: "#000", border: "none", borderRadius: 9, padding: "14px", fontSize: 15, fontWeight: 900, cursor: (!f.company_name || !f.contact_name || !f.email || loading) ? "not-allowed" : "pointer", fontFamily: ff, width: "100%", opacity: (!f.company_name || !f.contact_name || !f.email || loading) ? 0.5 : 1 } }, loading ? "Submitting..." : "Submit Application 🚀"),
                     React.createElement("div", { style: { fontSize: 10, color: C2.faint, textAlign: "center", marginTop: 10, lineHeight: 1.6 } }, "We review all applications within 1-2 business days. Not all applicants will be accepted. 3 slots available this month.")),
                 React.createElement("div", { style: { textAlign: "center", marginTop: 24, fontSize: 12, color: C2.dim } },
                     "Questions? Call ",
-                    React.createElement("a", { href: "tel:+14704531616", style: { color: C2.orange, textDecoration: "none" } }, "(470) 453-1616"),
+                    React.createElement("a", { href: "tel:+19129142166", style: { color: C2.orange, textDecoration: "none" } }, "(912) 914-2166"),
                     " \u00B7 ",
                     React.createElement("a", { href: "mailto:" + PROTON_EMAIL, style: { color: C2.orange, textDecoration: "none" } }, PROTON_EMAIL)))));
 }
@@ -9857,12 +9858,12 @@ function DataTools(props) {
                 React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.white, marginBottom: 4 } }, "Rather not do it yourself?"),
                 React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 8, lineHeight: 1.5 } }, "We will move your data over for you. Tell us what you are coming from and send us your files."),
                 !ask.open ? React.createElement(Btn, { variant: "ghost", onClick: function () { setAsk(Object.assign({}, ask, { open: true })); } }, "Do it for me")
-                : ask.sent === "done" ? React.createElement("div", { style: { fontSize: 12, color: C.green } }, "Sent. We will reach out shortly. You can also call (470) 453-1616.")
+                : ask.sent === "done" ? React.createElement("div", { style: { fontSize: 12, color: C.green } }, "Sent. We will reach out shortly. You can also call (912) 914-2166.")
                 : React.createElement("div", null,
                     React.createElement(TxtIn, { value: ask.platform, onChange: function (v) { setAsk(Object.assign({}, ask, { platform: v })); }, placeholder: "What are you moving from? (e.g. TruckLogics, Excel)" }),
                     React.createElement(TxtIn, { value: ask.contact, onChange: function (v) { setAsk(Object.assign({}, ask, { contact: v })); }, placeholder: "Best phone or email" }),
                     React.createElement(TxtIn, { rows: 3, value: ask.notes, onChange: function (v) { setAsk(Object.assign({}, ask, { notes: v })); }, placeholder: "How many trucks, drivers and years of loads?" }),
-                    ask.sent === "fail" && React.createElement("div", { style: { fontSize: 11, color: "#E53E3E", marginBottom: 6 } }, "Could not send. Call (470) 453-1616."),
+                    ask.sent === "fail" && React.createElement("div", { style: { fontSize: 11, color: "#E53E3E", marginBottom: 6 } }, "Could not send. Call (912) 914-2166."),
                     React.createElement(Btn, { onClick: sendHelp, disabled: !ask.contact.trim() || ask.sent === "sending" }, ask.sent === "sending" ? "Sending..." : "Send request")))));
 }
 function MyCompany(props) {
@@ -9920,7 +9921,7 @@ function MyCompany(props) {
     function field(label, key, ph) { return React.createElement("div", null, React.createElement(Lbl, null, label), React.createElement("input", { value: b[key] || "", placeholder: ph || "", onChange: function (e) { var o = {}; o[key] = e.target.value; setB(Object.assign({}, b, o)); }, style: inp })); }
     var locked = function (what) { return React.createElement(Card, { style: { marginBottom: 14, opacity: 0.85 } },
         React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white, marginBottom: 4 } }, "🔒 " + what),
-        React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.6 } }, "Included with a paid POTENT OS license. Contact POTENT to activate it: (470) 453-1616.")); };
+        React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.6 } }, "Included with a paid POTENT OS license. Contact POTENT to activate it: (912) 914-2166.")); };
     function colorRow(label, key) {
         var val = /^#[0-9a-fA-F]{6}$/.test(b[key] || "") ? b[key] : (key === "primaryColor" ? "#F0E000" : "#C8962A");
         return React.createElement("div", { style: { flex: 1 } },
@@ -9938,7 +9939,7 @@ function MyCompany(props) {
             bill && React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 } },
                 licBadge(bill.plan.toUpperCase(), C.orange), licBadge(statusLine[0], licColor(bill.license_status)), licBadge(statusLine[1], licColor(bill.support_status)),
                 bill.flex_total > 0 && licBadge("Flex Pay " + licMoney(bill.flex_paid) + " of " + licMoney(bill.flex_total), licColor(bill.flex_status))),
-            bill && bill.support_status !== "active" && React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.6, marginBottom: 8 } }, "Monthly Support (" + licMoney(bill.support_price) + "/month) adds 24/7 support, setup and customization help, and ongoing assistance. Call POTENT to add it: (470) 453-1616."),
+            bill && bill.support_status !== "active" && React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.6, marginBottom: 8 } }, "Monthly Support (" + licMoney(bill.support_price) + "/month) adds 24/7 support, setup and customization help, and ongoing assistance. Call POTENT to add it: (912) 914-2166."),
             invoices.length === 0 ? React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "No invoices on file yet.") :
                 invoices.slice(0, 12).map(function (r) {
                     return React.createElement("div", { key: r.id, style: { display: "flex", justifyContent: "space-between", fontSize: 12, padding: "6px 0", borderTop: "1px solid " + C.border } },
@@ -11233,7 +11234,7 @@ function CustomerPortal(props) {
                     React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8 } },
                         React.createElement("a", { href: "tel:" + PHONE_NUMBER, style: { textDecoration: "none", flex: 1 } },
                             React.createElement(Btn, { variant: "ghost", style: { width: "100%", padding: "7px", fontSize: 11 } }, "\uD83D\uDCDE Call Us")),
-                        React.createElement("a", { href: "sms:" + PHONE_NUMBER, style: { textDecoration: "none", flex: 1 } },
+                        React.createElement("a", { href: "sms:" + TEXT_NUMBER, style: { textDecoration: "none", flex: 1 } },
                             React.createElement(Btn, { variant: "ghost", style: { width: "100%", padding: "7px", fontSize: 11 } }, "\uD83D\uDCAC Text Us")),
                         React.createElement("a", { href: "?upload-bol", style: { textDecoration: "none", flex: 1 } },
                             React.createElement(Btn, { variant: "ghost", style: { width: "100%", padding: "7px", fontSize: 11 } }, "\uD83D\uDCCB Upload BOL")),
@@ -14098,17 +14099,17 @@ var STAGES = {
     nurture: { label: "Nurture", color: "#555", next: null },
 };
 var EMAIL_TEMPLATES = {
-    C_cold_1: { subject: "Your per-truck GPS cost", body: "Hi [First Name],\n\nWhat are you currently paying per truck per month for GPS and dispatch?\n\nYou're running [Fleet] trucks — at $250-$400/truck/month, that's roughly $[X]/year just to track your fleet.\n\nThe one thing no competitor has: OFFLINE MODE. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns. Installs like a real app on any iPhone or Android — no app store.\n\nFor a [Fleet]-truck fleet, the one-time license is $4,995-$9,995 depending on your real fleet size. Compared to your current GPS bill, this pays for itself in a matter of months.\n\nQuick question: What are you currently paying per truck per month?\n\nReply with a number. I'll send you a 1-page analysis.\n\nBest,\n[Your Name]\n(470) 453-1616" },
-    C_warm_2: { subject: "Your migration slot", body: "Hi [First Name],\n\nWe only take on 3 new migrations per month. Based on your fleet size, here's what the numbers look like:\n\nCurrent GPS cost: $[X]/year\nPOTENT OS one-time: $4,995-$9,995\nPayback period: under 6 months\nAfter that: $0/year forever\n\nThe one feature no competitor has — Offline Mode. Your dispatchers book jobs with zero internet. Yellow icon on their home screen. Works in dead zones, warehouses, anywhere.\n\nI'd like to show you the full system on a quick Zoom. 20 minutes.\n\nWhat day works best this week?\n\nBest,\n[Your Name]\n(470) 453-1616" },
-    B_cold_1: { subject: "Motive's API change — question for you", body: "Hi [First Name],\n\nWhat are you currently paying per truck per month for GPS and dispatch?\n\nFleets your size (50-150 trucks) typically spend $30k-$60k/year on that alone.\n\nThe one feature no competitor has: OFFLINE MODE. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns. Installs like a real app on any iPhone or Android — no app store.\n\nFor a 100-truck fleet, the one-time license is $19,995. Compared to your current GPS bill, this pays for itself in a few months. Over 5 years, you save several hundred thousand dollars.\n\nQuick question: How many trucks are you running on Motive or Samsara?\n\nReply with a number. I'll send the exact savings analysis for your fleet.\n\nBest,\n[Your Name]\n(470) 453-1616" },
-    B_warm_2: { subject: "Your migration slot", body: "Hi [First Name],\n\nWe only take on a few new onboardings per month, so I wanted to follow up directly.\n\nThe numbers for your fleet:\n\nCurrent GPS cost: $30k-$60k/year\nPOTENT OS one-time: $19,995\nPayback period: under 6 months\n5-year savings: $130k-$280k\n\nNo per-truck fees. No API ransoms. You own it forever.\n\nThe one feature no competitor has — Offline Mode. Dispatchers book jobs with zero internet. Installs like an app on any phone.\n\nI'd like to show you the full system on a quick Zoom. 20 minutes.\n\nWhat day works best this week?\n\nBest,\n[Your Name]\n(470) 453-1616" },
-    A_cold_1: { subject: "Question about Motive's API move", body: "Hi [First Name],\n\nWhat are you currently paying per truck per month for GPS and dispatch?\n\nFleets your size (150-300 trucks) typically spend $80k-$120k/year on that alone.\n\nThe one feature no competitor has: OFFLINE MODE. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns. Installs like a real app on any iPhone or Android — no app store.\n\nFor a 200-truck fleet, the one-time license is $34,995. Compared to your current Motive bill of ~$80k/year, this pays for itself in about 5 months. Over 5 years, you save roughly $465k-$965k.\n\nQuick question: How many trucks are you running on Motive or Samsara?\n\nReply with a number. I'll send you a 1-page migration analysis.\n\nBest,\n[Your Name]\n(470) 453-1616" },
-    A_warm_2: { subject: "Your migration slot", body: "Hi [First Name],\n\nWe only take on a few new enterprise onboardings per month for white-glove setup, so I wanted to follow up directly.\n\nThe numbers for your fleet:\n\nCurrent GPS cost: $80k-$120k/year\nPOTENT OS one-time: $34,995\nPayback period: under 6 months on GPS alone\n5-year savings: $465k-$965k\n\nNo per-truck fees. No API ransoms. You own it forever.\n\nThe one feature no competitor has — Offline Mode. Dispatchers book jobs with zero internet. Installs like an app on any phone.\n\nI'd like to show you the full system on a quick Zoom. 20 minutes.\n\nWhat day works best this week?\n\nBest,\n[Your Name]\n(470) 453-1616" },
-    hot_3: { subject: "Zoom confirmed — one question before we talk", body: "Hi [First Name],\n\nLooking forward to the call.\n\nOne thing before we meet:\n\nIs there anyone else on your team who should be on this call? The person who signs off on fleet expenses, or your operations manager?\n\nIf yes, please forward them this email or CC them on the reply. It'll speed things up.\n\nSee you soon.\n\nBest,\n[Your Name]\n(470) 453-1616" },
-    followup_1: { subject: "One question", body: "Hi [First Name],\n\nOn a scale of 1-10, how much of a priority is reducing your per-truck GPS fees right now?\n\nReply with a number. That's all I need.\n\nBest,\n[Your Name]\n(470) 453-1616" },
-    followup_2: { subject: "Motive's next move", body: "Hi [First Name],\n\nPOTENT OS is a one-time license — you own it forever, with no recurring per-truck fees.\n\nThe one thing no competitor has: true offline mode. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns.\n\nWhat's your fleet size? I'll send the exact numbers for your operation.\n\nBest,\n[Your Name]\n(470) 453-1616" },
-    followup_3: { subject: "Should I close the loop?", body: "Hi [First Name],\n\nI don't want to keep bothering you.\n\nShould I close the loop for now, or would it make sense to stay connected as a resource if Motive changes their terms again?\n\nJust let me know either way.\n\nBest,\n[Your Name]\n(470) 453-1616" },
-    followup_4: { subject: "Last note", body: "Hi [First Name],\n\nI know you're busy.\n\nThe only reason I've stayed in touch is because POTENT OS could genuinely save your fleet significant money.\n\nOne-time license. No per-truck fees. You own it forever. Works 100% offline.\n\nIf that ever becomes a priority, I'm here.\n\nBest,\n[Your Name]\n(470) 453-1616" },
+    C_cold_1: { subject: "Your per-truck GPS cost", body: "Hi [First Name],\n\nWhat are you currently paying per truck per month for GPS and dispatch?\n\nYou're running [Fleet] trucks — at $250-$400/truck/month, that's roughly $[X]/year just to track your fleet.\n\nThe one thing no competitor has: OFFLINE MODE. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns. Installs like a real app on any iPhone or Android — no app store.\n\nFor a [Fleet]-truck fleet, the one-time license is $4,995-$9,995 depending on your real fleet size. Compared to your current GPS bill, this pays for itself in a matter of months.\n\nQuick question: What are you currently paying per truck per month?\n\nReply with a number. I'll send you a 1-page analysis.\n\nBest,\n[Your Name]\n(912) 914-2166" },
+    C_warm_2: { subject: "Your migration slot", body: "Hi [First Name],\n\nWe only take on 3 new migrations per month. Based on your fleet size, here's what the numbers look like:\n\nCurrent GPS cost: $[X]/year\nPOTENT OS one-time: $4,995-$9,995\nPayback period: under 6 months\nAfter that: $0/year forever\n\nThe one feature no competitor has — Offline Mode. Your dispatchers book jobs with zero internet. Yellow icon on their home screen. Works in dead zones, warehouses, anywhere.\n\nI'd like to show you the full system on a quick Zoom. 20 minutes.\n\nWhat day works best this week?\n\nBest,\n[Your Name]\n(912) 914-2166" },
+    B_cold_1: { subject: "Motive's API change — question for you", body: "Hi [First Name],\n\nWhat are you currently paying per truck per month for GPS and dispatch?\n\nFleets your size (50-150 trucks) typically spend $30k-$60k/year on that alone.\n\nThe one feature no competitor has: OFFLINE MODE. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns. Installs like a real app on any iPhone or Android — no app store.\n\nFor a 100-truck fleet, the one-time license is $19,995. Compared to your current GPS bill, this pays for itself in a few months. Over 5 years, you save several hundred thousand dollars.\n\nQuick question: How many trucks are you running on Motive or Samsara?\n\nReply with a number. I'll send the exact savings analysis for your fleet.\n\nBest,\n[Your Name]\n(912) 914-2166" },
+    B_warm_2: { subject: "Your migration slot", body: "Hi [First Name],\n\nWe only take on a few new onboardings per month, so I wanted to follow up directly.\n\nThe numbers for your fleet:\n\nCurrent GPS cost: $30k-$60k/year\nPOTENT OS one-time: $19,995\nPayback period: under 6 months\n5-year savings: $130k-$280k\n\nNo per-truck fees. No API ransoms. You own it forever.\n\nThe one feature no competitor has — Offline Mode. Dispatchers book jobs with zero internet. Installs like an app on any phone.\n\nI'd like to show you the full system on a quick Zoom. 20 minutes.\n\nWhat day works best this week?\n\nBest,\n[Your Name]\n(912) 914-2166" },
+    A_cold_1: { subject: "Question about Motive's API move", body: "Hi [First Name],\n\nWhat are you currently paying per truck per month for GPS and dispatch?\n\nFleets your size (150-300 trucks) typically spend $80k-$120k/year on that alone.\n\nThe one feature no competitor has: OFFLINE MODE. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns. Installs like a real app on any iPhone or Android — no app store.\n\nFor a 200-truck fleet, the one-time license is $34,995. Compared to your current Motive bill of ~$80k/year, this pays for itself in about 5 months. Over 5 years, you save roughly $465k-$965k.\n\nQuick question: How many trucks are you running on Motive or Samsara?\n\nReply with a number. I'll send you a 1-page migration analysis.\n\nBest,\n[Your Name]\n(912) 914-2166" },
+    A_warm_2: { subject: "Your migration slot", body: "Hi [First Name],\n\nWe only take on a few new enterprise onboardings per month for white-glove setup, so I wanted to follow up directly.\n\nThe numbers for your fleet:\n\nCurrent GPS cost: $80k-$120k/year\nPOTENT OS one-time: $34,995\nPayback period: under 6 months on GPS alone\n5-year savings: $465k-$965k\n\nNo per-truck fees. No API ransoms. You own it forever.\n\nThe one feature no competitor has — Offline Mode. Dispatchers book jobs with zero internet. Installs like an app on any phone.\n\nI'd like to show you the full system on a quick Zoom. 20 minutes.\n\nWhat day works best this week?\n\nBest,\n[Your Name]\n(912) 914-2166" },
+    hot_3: { subject: "Zoom confirmed — one question before we talk", body: "Hi [First Name],\n\nLooking forward to the call.\n\nOne thing before we meet:\n\nIs there anyone else on your team who should be on this call? The person who signs off on fleet expenses, or your operations manager?\n\nIf yes, please forward them this email or CC them on the reply. It'll speed things up.\n\nSee you soon.\n\nBest,\n[Your Name]\n(912) 914-2166" },
+    followup_1: { subject: "One question", body: "Hi [First Name],\n\nOn a scale of 1-10, how much of a priority is reducing your per-truck GPS fees right now?\n\nReply with a number. That's all I need.\n\nBest,\n[Your Name]\n(912) 914-2166" },
+    followup_2: { subject: "Motive's next move", body: "Hi [First Name],\n\nPOTENT OS is a one-time license — you own it forever, with no recurring per-truck fees.\n\nThe one thing no competitor has: true offline mode. Your dispatchers can book jobs with zero internet. Jobs sync automatically when connection returns.\n\nWhat's your fleet size? I'll send the exact numbers for your operation.\n\nBest,\n[Your Name]\n(912) 914-2166" },
+    followup_3: { subject: "Should I close the loop?", body: "Hi [First Name],\n\nI don't want to keep bothering you.\n\nShould I close the loop for now, or would it make sense to stay connected as a resource if Motive changes their terms again?\n\nJust let me know either way.\n\nBest,\n[Your Name]\n(912) 914-2166" },
+    followup_4: { subject: "Last note", body: "Hi [First Name],\n\nI know you're busy.\n\nThe only reason I've stayed in touch is because POTENT OS could genuinely save your fleet significant money.\n\nOne-time license. No per-truck fees. You own it forever. Works 100% offline.\n\nIf that ever becomes a priority, I'm here.\n\nBest,\n[Your Name]\n(912) 914-2166" },
 };
 function getVersion(fs) { if (!fs || fs < 1)
     return null; if (fs <= 49)
@@ -16966,7 +16967,7 @@ function PublicRecurringRequest() {
             });
             setCheckingCapacity(false);
             if (overCapacityDay) {
-                setCapacityError("The truck is already fully booked on " + overCapacityDay + "s at that load size. Try a smaller load, a different day, or call us directly at (470) 453-1616 to check other options.");
+                setCapacityError("The truck is already fully booked on " + overCapacityDay + "s at that load size. Try a smaller load, a different day, or call us directly at (912) 914-2166 to check other options.");
                 return;
             }
             submit();
@@ -16990,7 +16991,7 @@ function PublicRecurringRequest() {
         }).then(function (res) {
             if (!res.ok) {
                 return res.text().then(function (errText) {
-                    alert("Booking failed \u2014 nothing was saved (server error). Please try again or call (470) 453-1616. Details: " + errText);
+                    alert("Booking failed \u2014 nothing was saved (server error). Please try again or call (912) 914-2166. Details: " + errText);
                     setSaving(false);
                     throw new Error("failed");
                 });
@@ -17351,7 +17352,7 @@ function CompanyLoadsIntake() {
             setSaving(false);
             if (!res.ok) {
                 return res.text().then(function (errText) {
-                    alert("Submission failed \u2014 nothing was saved (status " + res.status + "). Please try again or call (470) 453-1616. Details: " + errText);
+                    alert("Submission failed \u2014 nothing was saved (status " + res.status + "). Please try again or call (912) 914-2166. Details: " + errText);
                     throw new Error("failed");
                 });
             }
@@ -17535,7 +17536,7 @@ function CustomerBOLUpload() {
         }).then(function (r) { return r.json(); }).then(function (data) {
             setChecking(false);
             if (Array.isArray(data) && data.length > 0) { setVerified(true); }
-            else { setErr("We couldn't find that Job ID. Double check it and try again, or call (470) 453-1616."); }
+            else { setErr("We couldn't find that Job ID. Double check it and try again, or call (912) 914-2166."); }
         }).catch(function () { setChecking(false); setErr("Something went wrong. Please try again."); });
     }
 
@@ -17617,7 +17618,7 @@ var POTENT_CARRIER_INFO = {
     capacity: "4,500 lbs max, 190\"L x 95\"W x 80\"H interior",
     equipment: "Ramp, E-tracks, moving blankets, load bars — NO liftgate",
     serviceArea: "Georgia statewide, Atlanta metro primary",
-    contact: "(470) 453-1616 \u00b7 potentlogistics@" + "proton.me"
+    contact: "(912) 914-2166 \u00b7 potentlogistics@" + "proton.me"
     // Bank details intentionally NOT stored in the app. Send a bank letter directly when asked.
 };
 
@@ -17761,7 +17762,7 @@ function CompanyOnboarding() {
             setSubmitting(false);
             if (!res.ok) {
                 return res.text().then(function (errText) {
-                    alert("Submission failed \u2014 the server rejected it (status " + res.status + "). Nothing was saved. Details: " + errText + "\n\nPlease try again or call (470) 453-1616.");
+                    alert("Submission failed \u2014 the server rejected it (status " + res.status + "). Nothing was saved. Details: " + errText + "\n\nPlease try again or call (912) 914-2166.");
                     throw new Error("Submit failed: " + res.status);
                 });
             }
@@ -17778,7 +17779,7 @@ function CompanyOnboarding() {
         }).catch(function (err) {
             setSubmitting(false);
             if (!err.message || err.message.indexOf("Submit failed") === -1) {
-                alert("Something went wrong submitting \u2014 network error, nothing was saved. Please check your connection and try again, or call (470) 453-1616.");
+                alert("Something went wrong submitting \u2014 network error, nothing was saved. Please check your connection and try again, or call (912) 914-2166.");
             }
         });
     }
@@ -17817,7 +17818,7 @@ function CompanyOnboarding() {
             "<h3>Company / Dispatch Partner</h3><table>" + rowsHtml + "</table>" +
             "<h3>POTENT Carrier Information</h3><table>" + potentRowsHtml + "</table>" +
             docsHtml +
-            "<p style='color:#888;font-size:11px;'>Generated " + new Date().toLocaleDateString() + " \u00b7 POTENT Logistics LLC \u00b7 DOT# 9166689 \u00b7 (470) 453-1616</p>" +
+            "<p style='color:#888;font-size:11px;'>Generated " + new Date().toLocaleDateString() + " \u00b7 POTENT Logistics LLC \u00b7 DOT# 9166689 \u00b7 (912) 914-2166</p>" +
             "</body></html>"
         );
         w.document.close();
@@ -18169,7 +18170,7 @@ function PartnerLogin() {
                             React.createElement("span", { style: { color: "#888" } }, "Outstanding"), React.createElement("span", { style: { color: "#fff" } }, "$" + outstanding)),
                         React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 12, padding: "4px 0", fontWeight: 800 } },
                             React.createElement("span", { style: { color: "#888" } }, "Available"), React.createElement("span", { style: { color: available > 0 ? "#1DB954" : "#E53E3E" } }, "$" + available)),
-                        onHold && React.createElement("div", { style: { marginTop: 10, fontSize: 11, color: "#E53E3E" } }, "\u26A0 New credit work is on hold. Contact POTENT at (470) 453-1616 to resolve."));
+                        onHold && React.createElement("div", { style: { marginTop: 10, fontSize: 11, color: "#E53E3E" } }, "\u26A0 New credit work is on hold. Contact POTENT at (912) 914-2166 to resolve."));
                 })(),
                 React.createElement(MyRecurringServicesPanel, { phone: profile.phone_number }),
                 React.createElement("div", { style: { background: "#1a1400", border: "1px solid #F0E00044", borderRadius: 10, padding: "16px", textAlign: "center" } },
@@ -18217,7 +18218,7 @@ function downloadBOL(job) {
         ".box{border:1px solid #333;padding:8px 12px;} .boxhead{background:#111;color:#fff;padding:4px 10px;font-weight:700;font-size:11px;} " +
         "table{width:100%;border-collapse:collapse;margin-bottom:14px;} td,th{border:1px solid #333;padding:6px 10px;font-size:11px;text-align:left;} " +
         ".red{color:#c00;font-size:10px;} .sig{border-top:1px solid #333;margin-top:30px;padding-top:4px;font-size:10px;}</style></head><body>" +
-        "<div class='hdr'><div><h2 style='margin:0;'>POTENT LOGISTICS</h2><div style='font-size:11px;'>(470) 453-1616<br>2089 Christian Cir SE, Conyers, GA 30013<br>DOT# 9166689</div></div>" +
+        "<div class='hdr'><div><h2 style='margin:0;'>POTENT LOGISTICS</h2><div style='font-size:11px;'>(912) 914-2166<br>2089 Christian Cir SE, Conyers, GA 30013<br>DOT# 9166689</div></div>" +
         "<div style='text-align:right;font-size:10px;color:#888;'>THIS IS NOT AN INVOICE</div></div>" +
         "<h1 style='margin-bottom:4px;'>Bill of Lading</h1>" +
         "<div style='font-size:11px;margin-bottom:8px;'>Please read the following carefully and verify for accuracy and correctness. If you have questions or concerns, please contact us.</div>" +
@@ -18252,7 +18253,7 @@ function downloadInvoice(job) {
         "<style>body{font-family:Arial,sans-serif;padding:30px;color:#111;font-size:12px;} " +
         "table{width:100%;border-collapse:collapse;margin-bottom:14px;} td,th{border:1px solid #333;padding:8px 10px;font-size:11px;text-align:left;} " +
         ".total{font-size:16px;font-weight:700;} .remit{background:#f5f5f5;padding:12px;margin-top:20px;font-size:11px;}</style></head><body>" +
-        "<div style='display:flex;justify-content:space-between;'><div><h2 style='margin:0;'>POTENT LOGISTICS</h2><div style='font-size:10px;'>a DBA of Potent Operations LLC<br>1820 GA Hwy 20 SE Ste 114 #440, Conyers, GA 30013<br>470-453-1616</div></div>" +
+        "<div style='display:flex;justify-content:space-between;'><div><h2 style='margin:0;'>POTENT LOGISTICS</h2><div style='font-size:10px;'>a DBA of Potent Operations LLC<br>1820 GA Hwy 20 SE Ste 114 #440, Conyers, GA 30013<br>912-914-2166</div></div>" +
         "<div style='text-align:right;'><h2 style='margin:0;'>INVOICE</h2><div style='font-size:11px;'>Date: " + new Date().toLocaleDateString() + "<br>Invoice #: " + invNum + "</div></div></div>" +
         "<table><tr><th>Bill To</th><th>Origin</th><th>Destination</th></tr>" +
         "<tr><td>" + (job.customer || "") + "</td><td>" + (job.origin || "") + "</td><td>" + (job.destination || "") + "</td></tr></table>" +
@@ -18266,7 +18267,7 @@ function downloadInvoice(job) {
             "<tr><td>Final Amount</td><td>$" + job.finalPrice + "</td></tr>" +
             "<tr><td>Reason for Change</td><td>" + (job.priceChangeReason || "\u2014") + "</td></tr></table>" : "") +
         "<div style='display:flex;justify-content:space-between;'><div style='font-size:11px;'>Pay Terms: NET 7 Days (Maximum)</div><div class='total'>TOTAL AMOUNT DUE: $" + (job.finalPrice || 0) + "</div></div>" +
-        "<div class='remit'><b>REMIT PAYMENT TO</b><br>Business Name: POTENT OPERATIONS LLC (DBA Potent Logistics)<br>Payment instructions: contact (470) 453-1616 for current remittance details.<br>Business Address: 2089 Christian Cir SE, Conyers, GA 30013</div>" +
+        "<div class='remit'><b>REMIT PAYMENT TO</b><br>Business Name: POTENT OPERATIONS LLC (DBA Potent Logistics)<br>Payment instructions: contact (912) 914-2166 for current remittance details.<br>Business Address: 2089 Christian Cir SE, Conyers, GA 30013</div>" +
         "<p style='font-size:10px;color:#888;margin-top:16px;'>Thank you for your business. Please contact us with any questions regarding this invoice.</p>" +
         "</body></html>"
     );
@@ -18854,7 +18855,7 @@ function downloadReceipt(job, amount) {
         "<tr><td>Job ID</td><td>" + job.id + "</td></tr>" +
         "<tr><td>Date</td><td>" + new Date().toLocaleString() + "</td></tr>" +
         "<tr><td>Method</td><td>Card</td></tr></table>" +
-        "<p style='color:#888;font-size:11px;margin-top:30px;'>POTENT Logistics LLC \u00b7 DOT# 9166689 \u00b7 (470) 453-1616</p>" +
+        "<p style='color:#888;font-size:11px;margin-top:30px;'>POTENT Logistics LLC \u00b7 DOT# 9166689 \u00b7 (912) 914-2166</p>" +
         "</body></html>"
     );
     w.document.close();
@@ -18981,7 +18982,7 @@ function downloadDispatchAgreement(load, rate) {
         "<td style='border:none;'><div class='sigline'>" + load.company_name + " \u2014 Authorized Representative</div></td>" +
         "</tr></table></div>" +
 
-        "<p style='color:#888;font-size:10px;margin-top:30px;'>Generated " + new Date().toLocaleString() + " \u00b7 POTENT Logistics LLC \u00b7 DOT# 9166689 \u00b7 (470) 453-1616</p>" +
+        "<p style='color:#888;font-size:10px;margin-top:30px;'>Generated " + new Date().toLocaleString() + " \u00b7 POTENT Logistics LLC \u00b7 DOT# 9166689 \u00b7 (912) 914-2166</p>" +
         "</body></html>"
     );
     w.document.close();
@@ -19005,7 +19006,7 @@ function downloadBlankDispatchAgreementTemplate() {
         "<td style='border:none;'><div class='sigline'>POTENT Logistics LLC \u2014 Authorized Representative</div></td>" +
         "<td style='border:none;'><div class='sigline'>Dispatch Partner \u2014 Authorized Representative</div></td>" +
         "</tr></table></div>" +
-        "<p style='color:#888;font-size:10px;margin-top:30px;'>POTENT Logistics LLC \u00b7 DOT# 9166689 \u00b7 (470) 453-1616</p>" +
+        "<p style='color:#888;font-size:10px;margin-top:30px;'>POTENT Logistics LLC \u00b7 DOT# 9166689 \u00b7 (912) 914-2166</p>" +
         "</body></html>"
     );
     w.document.close();
@@ -20143,7 +20144,7 @@ function DriverHelpTab(props) {
             React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: 16, marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" } },
                 React.createElement("div", { style: { fontSize: 13, color: C.white, fontWeight: 700 } }, "\uD83D\uDCDE Call Dispatch"),
                 React.createElement("div", { style: { fontSize: 11, color: C.orange } }, PHONE_DISPLAY))),
-        React.createElement("a", { href: "sms:" + PHONE_NUMBER, style: { textDecoration: "none" } },
+        React.createElement("a", { href: "sms:" + TEXT_NUMBER, style: { textDecoration: "none" } },
             React.createElement("div", { style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: 16, display: "flex", justifyContent: "space-between", alignItems: "center" } },
                 React.createElement("div", { style: { fontSize: 13, color: C.white, fontWeight: 700 } }, "\uD83D\uDCAC Text Dispatch"),
                 React.createElement("div", { style: { fontSize: 11, color: C.orange } }, "\u2192"))));
@@ -22910,7 +22911,7 @@ function EasyModeDashboard(props) {
                 onClick: function () { props.setTab && props.setTab("driverapp"); },
                 style: { background: C.card, color: C.white, border: "1px solid " + C.border, borderRadius: 12, padding: "16px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }
             }, "🚐 Driver App"),
-            React.createElement("a", { href: "tel:4704531616", style: { textDecoration: "none" } },
+            React.createElement("a", { href: "tel:9129142166", style: { textDecoration: "none" } },
                 React.createElement("button", { style: { width: "100%", background: C.card, color: C.white, border: "1px solid " + C.border, borderRadius: 12, padding: "16px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "📞 Call Tony")));
 }
 

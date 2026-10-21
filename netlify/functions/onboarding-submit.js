@@ -62,7 +62,7 @@ exports.handler = async (event) => {
     let r = await sb("driver_onboarding", { method: "POST", body: extraCount ? Object.assign({}, row, { extra_docs: extra }) : row });
     if (!r.ok && extraCount && r.status !== 409) r = await sb("driver_onboarding", { method: "POST", body: row });   // table has no extra_docs column yet: save without it; the links still go in the owner's email
     if (r.ok && Array.isArray(r.data) && r.data[0]) saved = r.data[0];
-    else if (r.status !== 409) return J(502, { ok: false, error: "Could not save your application. Nothing was submitted. Please try again or call (470) 453-1616." });
+    else if (r.status !== 409) return J(502, { ok: false, error: "Could not save your application. Nothing was submitted. Please try again or call (912) 914-2166." });
   }
   if (!saved) return J(502, { ok: false, error: "Could not save your application. Please try again." });
 
@@ -72,7 +72,7 @@ exports.handler = async (event) => {
     "\nPayment: " + row.payment_method + "\n\nDocuments:\n" + links + "\n\nStatus: pending review.", "", FROM());
   let a = { skipped: true };
   if (row.email) a = await mail.send(row.email, "We received your onboarding — " + ref,
-    "Hi " + row.driver_name.split(" ")[0] + ",\n\nPOTENT Logistics received your onboarding application and all required documents.\nYour reference number is " + ref + ".\n\nWe review applications and will contact you at " + row.phone + ". Questions: (470) 453-1616.\n\nPlease keep this reference number.", "", FROM());
+    "Hi " + row.driver_name.split(" ")[0] + ",\n\nPOTENT Logistics received your onboarding application and all required documents.\nYour reference number is " + ref + ".\n\nWe review applications and will contact you at " + row.phone + ". Questions: (912) 914-2166.\n\nPlease keep this reference number.", "", FROM());
   const patch = {}; if (o && o.ok) patch.owner_notified_at = now; if (a && a.ok) patch.applicant_notified_at = now;
   if (Object.keys(patch).length) await sb("driver_onboarding?id=eq." + encodeURIComponent(saved.id), { method: "PATCH", prefer: "return=minimal", body: patch });
 
