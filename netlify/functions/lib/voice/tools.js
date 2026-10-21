@@ -55,7 +55,12 @@ async function invalidate(ctx, intake) { // a changed fact voids everything vali
   if (had) await B.sb("voice_quotes?org_id=eq." + ctx.orgId + "&id=eq." + had + "&status=eq.offered", { method: "PATCH", prefer: "return=minimal", body: { status: "expired" } });
   ctx.session.quote = null; await S.patchSession(ctx.orgId, ctx.session.id, { quote: null, confirmed_by_caller: false });
 }
-const cleanArgs = function (a) { const o = {}; INTAKE_KEYS.forEach(function (k) { if (a && a[k] !== undefined && a[k] !== null && a[k] !== "") o[k] = a[k]; }); return o; };
+const cleanArgs = function (a) {
+  const o = {}; INTAKE_KEYS.forEach(function (k) { if (a && a[k] !== undefined && a[k] !== null && a[k] !== "") o[k] = a[k]; });
+  // Only whitelisted facts are kept, but a plain "dimensions" statement (text, list, or length/width/height) is the overall size of the load.
+  if (a && !o.total_dims && !(Array.isArray(o.pieces) && o.pieces.length)) { const ld = I.looseDims(a); if (ld && ld.l > 0 && ld.w > 0 && ld.h > 0) o.total_dims = { l: Number(ld.l), w: Number(ld.w), h: Number(ld.h) }; }
+  return o;
+};
 const vOf = function (ctx) { return I.validate(ctx.session.intake || {}); };
 // Caller consent is read from the stored transcript after the quote was given, not from a flag the model sets.
 async function callerConfirmed(ctx) {

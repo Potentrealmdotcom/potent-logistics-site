@@ -66,4 +66,4 @@ function validate(raw, now) {
   d.special_handling = clip(raw.special_handling, 300); d.special_instructions = clip(raw.special_instructions, 400); d.po_number = clip(raw.po_number, 60);
   return { ok: !miss.length && !prob.length, missing: miss, problems: prob, data: d };
 }
-module.exports = { validate, phone, stateOf, cityOf, addressCheck, WINDOWS, LEVELS };
+module.exports = { looseDims, validate, phone, stateOf, cityOf, addressCheck, WINDOWS, LEVELS };

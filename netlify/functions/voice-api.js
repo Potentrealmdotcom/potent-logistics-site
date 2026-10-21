@@ -133,7 +133,7 @@ exports.handler = async function (event) {
     if (act === "callbacks") return B.J(200, { callbacks: rows(await B.sb("voice_callbacks?org_id=eq." + orgId + "&select=*&order=created_at.desc&limit=100")) });
     if (act === "knowledge") return B.J(200, { docs: rows(await B.sb("voice_knowledge_documents?org_id=eq." + orgId + "&select=*&order=created_at.desc&limit=200")) });
     if (act === "config") { const c = await S.cfgOf(orgId); return B.J(200, { config: c, standing: { tier: st.tier, active: st.active, entitlements: st.entitlements } }); }
-    if (act === "profiles") return B.J(200, { profiles: rows(await B.sb("voice_vehicle_profiles?org_id=eq." + orgId + "&select=*&order=created_at.asc")), defaults: R.DEFAULT_PROFILE });
+    if (act === "profiles") return B.J(200, { profiles: rows(await B.sb("voice_vehicle_profiles?org_id=eq." + orgId + "&select=*&order=updated_at.asc")), defaults: R.DEFAULT_PROFILE });
     if (act === "suppressions") return B.J(200, { suppressions: rows(await B.sb("voice_suppression_records?org_id=eq." + orgId + "&select=*&order=created_at.desc&limit=300")), consent: rows(await B.sb("voice_consent_records?org_id=eq." + orgId + "&select=*&order=created_at.desc&limit=100")) });
     if (act === "campaigns") return B.J(200, { campaigns: rows(await B.sb("voice_campaigns?org_id=eq." + orgId + "&select=*&order=created_at.desc&limit=100")) });
     if (act === "audit") { const r = await B.sb("voice_audit_logs?org_id=eq." + orgId + "&select=*&order=created_at.desc&limit=100"); return B.J(200, { logs: rows(r) }); }
