@@ -3,7 +3,7 @@
 // saves each batch to ui_translations as it goes, then rebuilds that language's ready-made pack (ui_packs).
 // Only the scheduled function (translate-packs-cron) can start it: it must send the internal key.
 var C = require("./lib/translate-core.js");
-var BATCH_ITEMS = 25, BATCH_CHARS = 5000, PARALLEL = 2;     // workers per language; all languages run side by side
+var BATCH_ITEMS = 25, BATCH_CHARS = 5000, PARALLEL = 1;     // workers per language; all languages run side by side
 
 function batches(list) {
     var out = [], cur = [], chars = 0;
@@ -50,7 +50,11 @@ exports.handler = async function (event) {
     var langs = Object.keys(C.LANGS).filter(function (l) { return !only || l === only; });
     var deadline = Date.now() + 9 * 60 * 1000;
     // every language at the same time (the earlier one-after-another order ran out of time before the last languages got a turn)
-    var report = await Promise.all(langs.map(function (l) { return doLang(l, phrases, deadline).catch(function (e) { return { lang: l, error: String(e.message || e) }; }); }));
+    var report = [], LANES = 2; // two languages at a time, one worker each: the provider was refusing 13 at once with 429
+    for (var gi = 0; gi < langs.length && Date.now() < deadline; gi += LANES) {
+      var grp = langs.slice(gi, gi + LANES);
+      report = report.concat(await Promise.all(grp.map(function (l) { return doLang(l, phrases, deadline).catch(function (e) { return { lang: l, error: String(e.message || e) }; }); })));
+    }
     await logRow(null, "run_end", JSON.stringify(report).slice(0, 800));
     console.log("packs: " + JSON.stringify(report));
     return { statusCode: 200, body: "done" };

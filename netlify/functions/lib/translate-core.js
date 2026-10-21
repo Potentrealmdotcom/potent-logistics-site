@@ -31,7 +31,7 @@ async function callModel(lang, list, opts) {
                 headers: { "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
                 body: JSON.stringify({ model: process.env.TRANSLATE_MODEL || "claude-haiku-5-5", max_tokens: 8192, system: sys(lang), messages: [{ role: "user", content: JSON.stringify(list) }] })
             });
-            if (r.status === 429 || r.status >= 500 || r.status === 529) return { retry: true, status: r.status, wait: Number(r.headers.get("retry-after")) * 1000 || 0 };
+            if (r.status === 429 || r.status >= 500 || r.status === 529) return { retry: true, status: r.status, wait: (Number(r.headers.get("retry-after")) * 1000) || 20000 };
             if (!r.ok) return { fail: true, status: r.status, msg: (await r.text().catch(function () { return ""; })).slice(0, 200) };
             var d = await r.json().catch(function () { return null; });
             var out = parseList(d && d.content && d.content[0] && d.content[0].text, list);
@@ -39,7 +39,7 @@ async function callModel(lang, list, opts) {
         }
         if (process.env.GEMINI_API_KEY) {
             var o = await require("./gemini.js").chat({ model: process.env.TRANSLATE_MODEL || "gemini-3.5-flash-lite", temperature: 0, max_tokens: 16000, messages: [{ role: "system", content: sys(lang) }, { role: "user", content: JSON.stringify(list) }] }, { timeoutMs: ms });
-            if (o.status === 429 || o.status >= 500) return { retry: true, status: o.status, wait: 0 };
+            if (o.status === 429 || o.status >= 500) return { retry: true, status: o.status, wait: 20000 };
             if (!o.ok) return { fail: true, status: o.status, msg: (await o.text().catch(function () { return ""; })).slice(0, 200) };
             var od = await o.json().catch(function () { return null; });
             var out2 = parseList(od && od.choices && od.choices[0] && od.choices[0].message && od.choices[0].message.content, list);
