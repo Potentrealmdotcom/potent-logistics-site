@@ -4,7 +4,7 @@ process.env.ROUTING_PROVIDER = "ors"; process.env.ORS_API_KEY = "  abc123\n";
 const RT = require("../netlify/functions/lib/voice/route.js");
 const A = { lat: 33.75, lon: -84.39 }, B = { lat: 33.95, lon: -84.55 };
 const resp = (st, body) => ({ ok: st < 300, status: st, text: async () => typeof body === "string" ? body : JSON.stringify(body) });
-(async () => {
+const first = (async () => {
   let calls = [], seq = [];
   global.fetch = async (u, o) => { calls.push({ u, o }); return seq.shift() || resp(500, "x"); };
   seq = [resp(200, { routes: [{ summary: { distance: 32187, duration: 1800 } }] })];
@@ -26,11 +26,11 @@ const resp = (st, body) => ({ ok: st < 300, status: st, text: async () => typeof
   delete process.env.ORS_API_KEY; r = await RT.distance(A, B); assert.ok(!r.ok && r.reason === "routing_not_configured", "no key: not configured");
   console.log("route ok");
 })().catch(e => { console.error(e); process.exit(1); });
-// host fallback
-(async () => {
+// host fallback (runs after the first block so the two do not share fetch at the same time)
+first.then(async () => {
   process.env.ORS_API_KEY = "k"; const urls = [];
   global.fetch = async (u) => { urls.push(String(u)); return /heigit/.test(u) ? { ok: false, status: 404, text: async () => "{}" } : { ok: true, status: 200, text: async () => JSON.stringify({ routes: [{ summary: { distance: 1609.344, duration: 60 } }] }) }; };
   const r = await require("../netlify/functions/lib/voice/route.js").distance({ lat: 1, lon: 1 }, { lat: 2, lon: 2 });
   assert.ok(r.ok && urls.length === 2 && /heigit/.test(urls[0]) && /openrouteservice\.org/.test(urls[1]), "falls back to the old host only if the new one 404s");
   console.log("route host ok");
-})().catch(e => { console.error(e); process.exit(1); });
+}).catch(e => { console.error(e); process.exit(1); });
