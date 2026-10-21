@@ -39,7 +39,7 @@ function create(opts) {
   return {
     name: "gemini-live", version: "2026-10-21b",
     setup: function (o) {
-      const voice = VOICES.indexOf(o.voice) >= 0 ? o.voice : (process.env.VOICE_NAME && VOICES.indexOf(process.env.VOICE_NAME) >= 0 ? process.env.VOICE_NAME : DEFAULT_VOICE);
+      const voice = DEFAULT_VOICE; // LOCKED: Elevate is always the same female voice (Kore), on every call and every reconnect. No config, env or caller can change it.
       const decl = declarations(o.tools);
       return [{ setup: { model: "models/" + model, generationConfig: { responseModalities: ["AUDIO"], ...(Number.isFinite(Number(process.env.VOICE_THINKING_BUDGET)) && process.env.VOICE_THINKING_BUDGET !== undefined && process.env.VOICE_THINKING_BUDGET !== "" ? { thinkingConfig: { thinkingBudget: Number(process.env.VOICE_THINKING_BUDGET) } } : {}), speechConfig: Object.assign({ voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } }, process.env.VOICE_LANGUAGE_CODE ? { languageCode: process.env.VOICE_LANGUAGE_CODE } : {}) },
         systemInstruction: { parts: [{ text: o.instructions || "" }] }, tools: decl.length ? [{ functionDeclarations: decl }] : [],
