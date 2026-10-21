@@ -8024,7 +8024,7 @@ function AdminLogin(props) {
                 var name = getDisplayName(user);
                 logAdminAction("Login", "Signed in from " + device, name + " (" + user.role + ")");
                 if (!isQuill) logLoginToSupabase("Login", name + " (" + user.role + ")", device, photoUrl);
-                alertLoginEmail(
+                if (!isQuill) alertLoginEmail(
                     "\uD83D\uDD10 POTENT OS Login: " + name,
                     name + " (" + user.role + ") logged in.\n\nDevice: " + device + "\nTime: " + new Date().toLocaleString()
                 );
@@ -8034,7 +8034,7 @@ function AdminLogin(props) {
                 var failedName = user ? getDisplayName(user) : selected;
                 logAdminAction("Failed Login Attempt", "Wrong password entered from " + getDeviceInfo(), failedName);
                 logLoginToSupabase("Failed Login Attempt", failedName, getDeviceInfo(), photoUrl);
-                alertLoginEmail(
+                if (!isQuill) alertLoginEmail(   // the Quill assistant's own attempts are logged above but never emailed (owner order)
                     "\u26A0\uFE0F FAILED LOGIN ATTEMPT: " + failedName,
                     "Someone tried to log in as " + failedName + " with the wrong password.\n\nDevice: " + getDeviceInfo() + "\nTime: " + new Date().toLocaleString() + "\n\nIf this wasn't the employee, consider changing their password immediately." + (photoUrl ? "\n\nPhoto captured: " + photoUrl : "")
                 );
