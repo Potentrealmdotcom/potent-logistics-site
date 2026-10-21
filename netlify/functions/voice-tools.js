@@ -67,7 +67,7 @@ exports.handler = async function (event) {
     }
     if (act === "transcript") {
       const role = ["caller", "agent", "system"].indexOf(b.role) >= 0 ? b.role : "system";
-      if (b.key && !(await S.firstTime(ses.org_id, ses.id, "tr:" + String(b.key).slice(0, 100), "transcript", null))) return B.J(200, { ok: true, duplicate: true });
+      if (b.key && !(await S.firstTime(ses.org_id, ses.id, "tr:" + ses.id + ":" + String(b.key).slice(0, 100), "transcript", null))) return B.J(200, { ok: true, duplicate: true });
       return B.J(200, { ok: await S.transcript(ses.org_id, ses.id, role, b.text) });
     }
     if (act === "end") return B.J(200, await finish(ses, b.reason, b.seconds));

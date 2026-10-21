@@ -11,9 +11,14 @@ function createBridge(deps) {
       return { status: r.status, data: await r.json().catch(function () { return {}; }) };
     } catch (e) { return { status: 0, data: {}, error: e && e.message }; }
   }
+  // Is this 20 ms phone frame (base64 mu-law) someone talking? Average decoded amplitude above a small floor.
+  function loud(b64) {
+    try { const b = Buffer.from(b64, "base64"); if (!b.length) return false; let sum = 0; for (let i = 0; i < b.length; i++) { const u = ~b[i] & 0xff, e = (u >> 4) & 7, m = u & 15; sum += (((m << 3) + 0x84) << e) - 0x84; } return sum / b.length > 700; } catch (e) { return false; }
+  }
   const sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
 
   function handle(tw) {
+    let lastCallerAt = 0, lastAgentAt = 0, toolDoneAt = 0, toolBusy = 0, nudges = 0, burst = 0, readyAt = 0, wdTimer = null;
     let lang = "English", langTimer = null, flushTimer = null, retries = 0, reconnecting = false, timersSet = false, hist = [], streamSid = null, ctx = null, ai = null, prov = null, connectTimerRef = null, spokeSinceTool = false, toolAt = 0, done = false, aiReady = false, buffered = [], lastItem = null, assistStart = null, mediaTs = 0, marks = 0, markQ = [], transferPending = false, transferred = false, startedAt = Date.now(), timers = [], nm = 0;
     const timer = function (fn, ms) { const t = setTimeout(fn, ms); timers.push(t); return t; };
     const twSend = function (o) { if (tw.readyState === 1) tw.send(JSON.stringify(o)); };
@@ -23,12 +28,12 @@ function createBridge(deps) {
     const sysNote = function (text) { aiSend(prov.note(text)); };
 
     async function finish(reason, closeTwilio) {
-      if (done) return; done = true; timers.forEach(clearTimeout); if (flushTimer) clearInterval(flushTimer); if (langTimer) clearInterval(langTimer);
+      if (done) return; done = true; timers.forEach(clearTimeout); if (flushTimer) clearInterval(flushTimer); if (langTimer) clearInterval(langTimer); if (wdTimer) clearInterval(wdTimer);
       const secs = Math.round((Date.now() - startedAt) / 1000);
       if (ctx && prov && prov.flush) await Promise.all(prov.flush().map(function (e) { return api({ action: "transcript", session_id: ctx.session_id, role: e.kind === "caller_text" ? "caller" : "agent", text: e.text, key: e.key }, 6000); }));   // keep what was said even if the call ended mid-sentence
       if (ctx) {   // proof for the graders: did the AI produce transcripts, and which message types did it send
         const d = prov && prov.diag ? prov.diag() : {}, got = (kinds.caller_text || 0) + (kinds.agent_text || 0);
-        await api({ action: "health", provider: "bridge", kind: got || secs < 15 ? "call_summary" : "no_transcripts", ok: !!got || secs < 15, detail: JSON.stringify({ secs: secs, events: kinds, gemini: d, lang: lang }).slice(0, 900) }, 5000);
+        await api({ action: "health", provider: "bridge", kind: got || secs < 15 ? "call_summary" : "no_transcripts", ok: !!got || secs < 15, detail: JSON.stringify({ secs: secs, events: kinds, gemini: d, lang: lang, adapter: (prov && prov.version) || "old" }).slice(0, 900) }, 5000);
       }
       if (ctx) await api({ action: "end", session_id: ctx.session_id, reason: reason, seconds: secs }, 8000);
       else if (reason !== "caller_hangup") await api({ action: "health", provider: "bridge", kind: "call_setup_failed", ok: false, detail: reason }, 5000);
@@ -50,6 +55,7 @@ function createBridge(deps) {
       connectTimerRef = timer(function () { aiDown("ai_connect_timeout", "no setup reply in 8s"); }, 8000);
       prov = AI.create({ model: env.VOICE_AI_MODEL });
       if (!langTimer) langTimer = setInterval(lockReminder, 40000);
+      if (!wdTimer) wdTimer = setInterval(watchdog, 1000);
       if (!flushTimer) flushTimer = setInterval(function () { if (prov && prov.flush) prov.flush(5000).forEach(function (e) { onAi(e); }); }, 3000);
       const sock = new W(AI.URL(env.VOICE_AI_MODEL), { headers: AI.headers(env) }); ai = sock;
       sock.on("open", function () { if (ai === sock) prov.setup({ instructions: ctx.instructions, tools: ctx.tools, voice: ctx.voice }).forEach(aiSend); });
@@ -70,7 +76,7 @@ function createBridge(deps) {
 
     function onReady() { // the AI accepted its setup: start the conversation (or resume it after a reconnect)
       clearTimeout(connectTimerRef);
-      aiReady = true; buffered.forEach(function (b) { aiSend(prov.audioIn(b)); }); buffered = [];
+      aiReady = true; readyAt = Date.now(); nudges = 0; lastCallerAt = 0; toolDoneAt = 0; buffered.forEach(function (b) { aiSend(prov.audioIn(b)); }); buffered = [];
       if (reconnecting) {
         reconnecting = false;
         const recap = hist.slice(-24).map(function (h) { return (h.role === "caller" ? "Caller: " : "You: ") + h.text; }).join("\n");
@@ -84,6 +90,7 @@ function createBridge(deps) {
       if (t === "ready") onReady();
       else if (t === "audio") {
         if (!streamSid || !e.payload) return;
+        lastAgentAt = Date.now(); nudges = 0;
         if (toolAt) spokeSinceTool = true;
         twSend({ event: "media", streamSid: streamSid, media: { payload: e.payload } });
         const name = "m" + (++marks); markQ.push(name); twSend({ event: "mark", streamSid: streamSid, mark: { name: name } });
@@ -98,12 +105,29 @@ function createBridge(deps) {
     }
 
     async function runTool(m) {
-      let result;
+      let result; toolBusy++;
       const r = await api({ action: "tool", session_id: ctx.session_id, name: m.name, args: m.args, call_key: m.id }, 15000);
       result = (r.data && r.data.result) || { ok: false, error: "tool_unreachable", say: "The system did not answer. Offer a callback; do not guess." };
       if (m.name === "request_human_handoff" && result.transfer_possible) { transferPending = true; spokeSinceTool = false; toolAt = Date.now(); timer(function () { if (transferPending) { transferPending = false; doTransfer(); } }, 20000); }
       if (result && result.language_name && result.ok) lang = String(result.language_name).slice(0, 40);   // the model reported the caller's language: remember it for the lock
       prov.toolResult(m.id, m.name, result).forEach(aiSend);
+      toolBusy = Math.max(0, toolBusy - 1); toolDoneAt = Date.now();
+    }
+    // SILENCE WATCHDOG. Dead air must be impossible: if the caller (or a finished tool) is waiting on her and she has said nothing for ~4 s,
+    // 1st: tell the model the caller is waiting; 2nd: make her say "Still here, one second"; 3rd: drop and rebuild the AI link (the reconnect path with the conversation recap).
+    // Also covers a greeting that never played. VOICE_SILENCE_MS changes the 4 s.
+    function watchdog() {
+      if (done || !aiReady || toolBusy || transferPending || !ctx) return;
+      const now = Date.now(), th = Number(env.VOICE_SILENCE_MS) || 4000;
+      const owed = Math.max(lastCallerAt, toolDoneAt) > lastAgentAt, noGreeting = !lastAgentAt && !reconnecting && readyAt && now - readyAt > 2 * th;
+      if (!owed && !noGreeting) return;
+      const since = noGreeting ? readyAt : Math.max(lastCallerAt, toolDoneAt), waited = now - since;
+      if (waited < th * (nudges + 1) + (noGreeting ? th : 0)) return;
+      nudges++; kinds.silence_nudge = (kinds.silence_nudge || 0) + 1;
+      api({ action: "health", provider: "bridge", kind: "silence_nudge", ok: false, detail: ("step " + nudges + " after " + Math.round(waited / 1000) + "s" + (noGreeting ? " (greeting never played)" : "")).slice(0, 120) }, 4000);
+      if (nudges === 1) { if (noGreeting) aiSend(prov.say(ctx.greeting)); else sysNote("The caller is waiting for your answer. Answer now in one short sentence."); }
+      else if (nudges === 2) aiSend(prov.say("Still here, one second."));
+      else { nudges = 0; lastCallerAt = 0; toolDoneAt = 0; aiDown("silence_watchdog", "no speech for " + Math.round(waited / 1000) + "s"); }
     }
     // Language lock: every 40 s the model is quietly reminded which language this call is in, so it cannot drift into one the caller is not speaking.
     function lockReminder() { if (aiReady && prov && prov.noteSilent) aiSend(prov.noteSilent("Language lock: this call is in " + lang + ". Speak ONLY " + lang + ". Never switch to another language unless the caller clearly speaks one to you.")); }
@@ -117,7 +141,7 @@ function createBridge(deps) {
     tw.on("message", function (raw) {
       let m; try { m = JSON.parse(raw.toString()); } catch (e) { return; }
       if (m.event === "start") { streamSid = m.start && m.start.streamSid; const tok = m.start && m.start.customParameters && m.start.customParameters.token; if (!tok) return finish("no_token", true); begin(tok); }
-      else if (m.event === "media" && m.media && (!m.media.track || m.media.track === "inbound")) { mediaTs = Number(m.media.timestamp) || mediaTs; if (aiReady) aiSend(prov.audioIn(m.media.payload)); else if (buffered.length < 200) buffered.push(m.media.payload); }
+      else if (m.event === "media" && m.media && (!m.media.track || m.media.track === "inbound")) { mediaTs = Number(m.media.timestamp) || mediaTs; if (loud(m.media.payload)) { if (++burst >= 8) lastCallerAt = Date.now(); } else burst = Math.max(0, burst - 1); if (aiReady) aiSend(prov.audioIn(m.media.payload)); else if (buffered.length < 200) buffered.push(m.media.payload); }
       else if (m.event === "mark") markQ.shift();
       else if (m.event === "stop") finish(transferred ? "transferred" : "caller_hangup", false);
     });

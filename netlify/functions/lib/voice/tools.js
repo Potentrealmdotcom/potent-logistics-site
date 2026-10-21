@@ -52,7 +52,7 @@ function defs() {
     D("look_up_booking_status", "Look up a booking. Needs the booking reference and the last 4 digits of the phone number on the booking.", obj({ reference: str(""), phone_last4: str("") }, ["reference", "phone_last4"])),
     D("request_reschedule", "Record a reschedule request (a person completes it).", obj({ reference: str(""), phone_last4: str(""), requested_date: str(""), note: str("") }, ["reference", "phone_last4"])),
     D("request_cancellation", "Record a cancellation request (a person completes it).", obj({ reference: str(""), phone_last4: str(""), note: str("") }, ["reference", "phone_last4"]))
-  ];
+  ].filter(function (d) { return d.name !== "get_playbook" || require("./prompt.js").on("playbook"); });   // VOICE_LAYERS can switch the playbook tool off (bisecting a bad call)
 }
 
 async function setIntake(ctx, intake, extra) { ctx.session.intake = intake; return S.patchSession(ctx.orgId, ctx.session.id, Object.assign({ intake: intake }, extra || {})); }

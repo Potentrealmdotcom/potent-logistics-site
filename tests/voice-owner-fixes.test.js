@@ -8,7 +8,8 @@ ok(/ELL-eh-VATE/.test(b) && /Should we use the number you're calling from\?/.tes
 ok(/Hey, this is Ell-eh-vate, powered by POTENT/.test(b), "sales opener uses the respelled name");
 delete process.env.VOICE_THINKING_BUDGET;
 let s = A.create({}).setup({ tools: [], instructions: "x" })[0].setup;
-ok(s.realtimeInputConfig.automaticActivityDetection.silenceDurationMs === 350 && s.realtimeInputConfig.automaticActivityDetection.endOfSpeechSensitivity === "END_SENSITIVITY_HIGH" && !s.generationConfig.thinkingConfig, "faster turn-taking by default; thinking budget only when set");
+ok(s.realtimeInputConfig.automaticActivityDetection.silenceDurationMs === 600 && !s.generationConfig.thinkingConfig, "original turn-taking by default; thinking budget only when set");
+process.env.VOICE_FAST_TURNS = "on"; ok(A.create({}).setup({ tools: [], instructions: "x" })[0].setup.realtimeInputConfig.automaticActivityDetection.silenceDurationMs === 350, "fast turns only when switched on"); delete process.env.VOICE_FAST_TURNS;
 process.env.VOICE_THINKING_BUDGET = "0"; s = A.create({}).setup({ tools: [], instructions: "x" })[0].setup; ok(s.generationConfig.thinkingConfig.thinkingBudget === 0, "thinking budget applied when configured"); delete process.env.VOICE_THINKING_BUDGET;
 const ad = A.create({}); ad.parse({ serverContent: { inputTranscription: { text: "hi" } } }); ad.parse({ usageMetadata: {} });
 const d = ad.diag(); ok(d.sc.inputTranscription === 1 && d.top.usageMetadata === 1, "adapter reports which message types Gemini sent");
@@ -20,4 +21,7 @@ ok(!/\$\s?\d/.test(JSON.stringify(PB.TOPICS)), "playbook scripts contain no doll
 ok(/get_playbook/.test(JSON.stringify(T.defs())) && /price_pushback/.test(JSON.stringify(T.defs())), "get_playbook tool is offered with the topic list");
 ok(/YOUR VOICE IS THE CLOSER'S PLAYBOOK/.test(b) && /Problems before products/.test(b) && /Never argue/.test(b) && /Out of curiosity/.test(b), "she talks like the Closer's Playbook on every call");
 ok(/LIKE FAMILY/.test(b) && /NEVER GUESS/.test(b) && /yes ma'am/.test(b), "Southern, family, never guess");
+process.env.VOICE_LAYERS = "base"; const bb = P.build({ agent_name: "Elevate" }, { name: "X" }); ok(!/YOUR NAME|CALLBACK NUMBER|SELL EVERY CALL|PLAYBOOK:|LIKE FAMILY|CLOSER'S PLAYBOOK|SPEED:/.test(bb) && /STEP 1 OPEN/.test(bb) && !T.defs().some(d => d.name === "get_playbook"), "VOICE_LAYERS=base: every new layer and the playbook tool are off (the 7:08 configuration)");
+process.env.VOICE_LAYERS = "name,callerid"; const b2 = P.build({ agent_name: "Elevate" }, { name: "X" }); ok(/YOUR NAME/.test(b2) && /CALLBACK NUMBER/.test(b2) && !/SELL EVERY CALL/.test(b2) && !T.defs().some(d => d.name === "get_playbook"), "layers can be added one at a time");
+process.env.VOICE_LAYERS = "name,playbook"; ok(T.defs().some(d => d.name === "get_playbook") && /PLAYBOOK:/.test(P.build({ agent_name: "Elevate" }, { name: "X" })), "the playbook layer brings its tool back"); delete process.env.VOICE_LAYERS;
 console.log("voice owner fixes: " + n + " assertions PASS");

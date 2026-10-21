@@ -75,5 +75,20 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
   ok(r.calls.findIndex(c => c.action === "transcript") < r.calls.findIndex(c => c.action === "end"), "the transcript is saved before the call is closed out");
   // max duration (scaled)
   r = rig({ maxSeconds: 1 }); r.start(); await sleep(40); r.ready(); await sleep(1200); ok(r.calls.find(c => c.action === "end") && r.calls.find(c => c.action === "end").reason === "max_duration" && r.tw.readyState === 3, "call is cut at the plan's maximum length");
+  // SILENCE WATCHDOG: dead air is impossible
+  r = rig({ env: { VOICE_SILENCE_MS: "100" } }); r.start(); await sleep(40); r.ready(); await sleep(10); r.ai(audio(240));
+  const loudFrame = () => r.phone({ event: "media", media: { track: "inbound", payload: Buffer.alloc(160, 0x00).toString("base64"), timestamp: "5" } });
+  for (let i = 0; i < 12; i++) loudFrame();
+  await sleep(1300); ok(JSON.stringify(r.aiSock.sent).includes("The caller is waiting for your answer"), "caller spoke and she is silent: the model is told the caller is waiting");
+  ok(r.calls.some(c => c.action === "health" && c.kind === "silence_nudge"), "each nudge is recorded in the health log");
+  await sleep(1000); ok(JSON.stringify(r.aiSock.sent).includes("Still here, one second."), "still silent: she is made to say \"Still here, one second\"");
+  const stuck = r.aiSock; await sleep(1000); ok(r.aiSock !== stuck && r.tw.readyState === 1, "still silent after that: the AI link is rebuilt and the phone call stays up");
+  r.phone({ event: "stop" }); await sleep(20);
+  r = rig({ env: { VOICE_SILENCE_MS: "100" } }); r.start(); await sleep(40); r.ready(); await sleep(1500);
+  ok(r.aiSock.sent.filter(m => m.clientContent && JSON.stringify(m).includes("Hello")).length >= 2, "greeting never played: it is said again");
+  r.phone({ event: "stop" }); await sleep(20);
+  r = rig({ env: { VOICE_SILENCE_MS: "100" } }); r.start(); await sleep(40); r.ready(); r.ai(audio(240)); await sleep(1500);
+  ok(!JSON.stringify(r.aiSock.sent).includes("The caller is waiting"), "caller is simply listening: no nudge");
+  r.phone({ event: "stop" }); await sleep(20);
   console.log("PASS: " + n + " assertions"); process.exit(0);
 })().catch(e => { console.error(e); process.exit(1); });
