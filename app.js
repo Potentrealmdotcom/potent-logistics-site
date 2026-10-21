@@ -22664,6 +22664,7 @@ function TeamWalletPanel(props) {
     var myEmail = (me && (me.email || me.id) || "").toLowerCase();
 
     var ws = React.useState([]); var wallets = ws[0], setWallets = ws[1];
+    var les = React.useState(""); var loadErr = les[0], setLoadErr = les[1];
     var ss = React.useState(null); var sel = ss[0], setSel = ss[1];
     var ts = React.useState([]); var txns = ts[0], setTxns = ts[1];
     var ps = React.useState([]); var payouts = ps[0], setPayouts = ps[1];
@@ -22685,8 +22686,8 @@ function TeamWalletPanel(props) {
 
     function load() {
         plTw("list").then(function (r) {
-            if (r && r.ok) { setWallets(r.wallets || []); setPayouts(r.payouts || []); }
-            else setMsg((r && r.error) || "Could not load wallets.");
+            if (r && r.ok) { setWallets(r.wallets || []); setPayouts(r.payouts || []); setLoadErr(""); }
+            else setLoadErr("Could not load wallets: " + ((r && r.error) || "no answer from the server") + ". Your money is safe. Tap Retry.");
         });
     }
     function loadTx(w) {
@@ -22804,6 +22805,7 @@ function TeamWalletPanel(props) {
     return React.createElement("div", { style: { maxWidth: 680, margin: "0 auto" } },
         React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "💳 Team Wallets"),
         React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 12 } }, "Commissions for drivers & team. Holding $" + totalHeld.toFixed(2) + " · Paid out $" + totalPaid.toFixed(2) + ". Bank = free · Debit = 1.5% · Same-day = $10."),
+        loadErr && React.createElement("div", { style: { fontSize: 12, color: "#ff6b6b", marginBottom: 8 } }, loadErr, " ", React.createElement("button", { onClick: load, style: { marginLeft: 6, background: "transparent", color: "#ff6b6b", border: "1px solid #ff6b6b", borderRadius: 6, padding: "2px 8px", fontSize: 11, cursor: "pointer" } }, "Retry")),
         msg && React.createElement("div", { style: { fontSize: 12, color: C.green, marginBottom: 8 } }, msg),
         pendingPayouts.length > 0 && React.createElement("div", { style: { background: "#1a1400", border: "1px solid " + C.orange, borderRadius: 12, padding: 14, marginBottom: 14 } },
             React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.orange, marginBottom: 10 } }, "⏳ " + pendingPayouts.length + " Payout(s) Waiting"),
