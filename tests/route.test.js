@@ -34,3 +34,20 @@ first.then(async () => {
   assert.ok(r.ok && urls.length === 2 && /heigit/.test(urls[0]) && /openrouteservice\.org/.test(urls[1]), "falls back to the old host only if the new one 404s");
   console.log("route host ok");
 }).catch(e => { console.error(e); process.exit(1); });
+
+// backup
+(async () => {
+  await new Promise(r => setTimeout(r, 300));
+  const RT = require("../netlify/functions/lib/voice/route.js"); process.env.ORS_API_KEY = "k"; delete process.env.ROUTE_BACKUP;
+  const urls = [];
+  global.fetch = async (u) => { urls.push(String(u)); return /osrm/.test(u) ? { ok: true, status: 200, json: async () => ({ code: "Ok", routes: [{ distance: 16093.44, duration: 900 }] }) } : { ok: false, status: 403, text: async () => JSON.stringify({ error: "Access to this API has been disallowed" }) }; };
+  let r = await RT.distance({ lat: 1, lon: 1 }, { lat: 2, lon: 2 });
+  assert.ok(r.ok && r.source === "osrm_public_backup" && Math.round(r.miles) === 10 && /ors_key_rejected/.test(r.primary_failure), "main service refuses: backup measures it and is labelled");
+  assert.ok(urls.some(u => /router\.project-osrm\.org\/route\/v1\/driving\/1,1;2,2/.test(u)), "backup uses lon,lat order");
+  process.env.ROUTE_BACKUP = "off"; r = await RT.distance({ lat: 1, lon: 1 }, { lat: 2, lon: 2 });
+  assert.ok(!r.ok && r.reason === "ors_key_rejected", "backup can be switched off; real reason still shown");
+  delete process.env.ROUTE_BACKUP;
+  global.fetch = async (u) => /osrm/.test(u) ? { ok: false, status: 500, json: async () => ({}) } : { ok: false, status: 403, text: async () => "{}" };
+  r = await RT.distance({ lat: 1, lon: 1 }, { lat: 2, lon: 2 }); assert.ok(!r.ok, "both fail: no price is guessed");
+  console.log("route backup ok");
+})().catch(e => { console.error(e); process.exit(1); });

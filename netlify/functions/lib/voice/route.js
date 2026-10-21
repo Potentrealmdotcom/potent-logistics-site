@@ -29,7 +29,26 @@ async function orsOnce(a, b, base) {
   console.error("route: ORS " + base + " HTTP " + st + " " + msg);   // visible in the Netlify function log
   return { ok: false, reason: reason, detail: "HTTP " + st + (msg ? ": " + msg : ""), retry: st === 429 || st >= 500 };
 }
-async function distance(a, b) { // a, b: {lat, lon}
+// Backup (owner approved Oct 21, 2026): the public OSRM server, used ONLY when the main service cannot give a distance. Labelled "osrm_public_backup" on every quote.
+// It is a shared demo server meant for light use: set ROUTE_BACKUP=off to turn it off, or OSRM_BACKUP_URL to point at your own server.
+async function osrmBackup(a, b) {
+  if (String(process.env.ROUTE_BACKUP || "").toLowerCase() === "off") return null;
+  const base = String(process.env.OSRM_BACKUP_URL || "https://router.project-osrm.org").replace(/\/+$/, "");
+  try {
+    const r = await fetch(base + "/route/v1/driving/" + a.lon + "," + a.lat + ";" + b.lon + "," + b.lat + "?overview=false", { signal: T(9000), headers: { Accept: "application/json", "User-Agent": "POTENT-Voice/1.0 (potentlogistics@proton.me)" } });
+    const d = await r.json(), rt = r.ok && d && d.code === "Ok" && d.routes && d.routes[0];
+    if (rt && rt.distance > 0) return { ok: true, miles: rt.distance / 1609.344, minutes: rt.duration / 60, source: "osrm_public_backup" };
+    console.error("route: backup OSRM HTTP " + r.status + " " + String(d && d.code || "").slice(0, 60));
+  } catch (e) { console.error("route: backup OSRM failed " + String(e && e.message || e).slice(0, 80)); }
+  return null;
+}
+async function distance(a, b) {
+  const main = await mainDistance(a, b);
+  if (main.ok) return main;
+  const bk = await osrmBackup(a, b);
+  return bk ? Object.assign(bk, { primary_failure: main.reason + (main.detail ? " - " + main.detail : "") }) : main;
+}
+async function mainDistance(a, b) { // a, b: {lat, lon}
   if (!routingOn()) return { ok: false, reason: "routing_not_configured" };
   const fail = function (e) { return { ok: false, reason: e && e.name === "TimeoutError" ? "routing_timeout" : "routing_unavailable", detail: String(e && e.message || e).slice(0, 160), retry: true }; };
   try {
