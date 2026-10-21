@@ -78,6 +78,7 @@ function create(opts) {
         if (c.turnComplete) { flushCaller(ev); flushAgent(ev); ev.push({ kind: "turn_done", spoke: agentSpoke }); agentSpoke = false; }
       }
       if (m.toolCall && m.toolCall.functionCalls) { flushCaller(ev); m.toolCall.functionCalls.forEach(function (f) { ev.push({ kind: "tool", id: f.id, name: f.name, args: f.args || {} }); }); }
+      if (m.goAway) ev.push({ kind: "go_away", left: m.goAway.timeLeft });
       if (m.error) ev.push({ kind: "error", message: m.error.message || "error" });
       return ev;
     }

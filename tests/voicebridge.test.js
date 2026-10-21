@@ -12,7 +12,7 @@ function rig(opts) {
     if (b.action === "tool") data = { result: opts.toolResult || { ok: true } }; if (b.action === "transfer") data = opts.transferFail ? { ok: false, error: "no_one_available" } : { ok: true, requested: true };
     return { status, json: async () => data }; };
   class W extends Sock { constructor(url, o) { super(); aiSock = this; this.url = url; this.headers = o.headers; if (!opts.aiNeverOpens) setTimeout(() => this.emit("open"), 5); } }
-  const b = createBridge({ env: { SITE_URL: "https://site.test/", VOICE_BRIDGE_SECRET: "sec", GEMINI_API_KEY: "gk-x" }, WebSocket: W, fetch, log() {} });
+  const b = createBridge({ env: Object.assign({ SITE_URL: "https://site.test/", VOICE_BRIDGE_SECRET: "sec", GEMINI_API_KEY: "gk-x" }, opts.env || {}), WebSocket: W, fetch, log() {} });
   const tw = new Sock(); b.handle(tw); const phone = o => tw.emit("message", JSON.stringify(o)); const ai = o => aiSock.emit("message", JSON.stringify(o));
   return { tw, phone, ai, calls, get aiSock() { return aiSock; }, start: () => phone({ event: "start", start: { streamSid: "MZ1", customParameters: { token: "tok" } } }), ready: () => ai({ setupComplete: {} }) };
 }
@@ -56,7 +56,18 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
   r = rig({ apiDown: true }); r.start(); await sleep(30); ok(r.tw.readyState === 3 && !r.aiSock, "site unreachable: the call is closed cleanly (the phone company then plays its fallback)");
   r = rig(); r.phone({ event: "start", start: { streamSid: "M", customParameters: {} } }); await sleep(10); ok(r.tw.readyState === 3, "no token: refused");
   // AI drop mid-call
-  r = rig(); r.start(); await sleep(40); r.aiSock.emit("error", new Error("boom")); await sleep(20); ok(r.calls.find(c => c.action === "end").reason === "ai_error" && r.tw.readyState === 3, "AI provider fails mid-call: call ends and is recorded");
+  r = rig({ env: { VOICE_AI_RETRIES: "0" } }); r.start(); await sleep(40); r.aiSock.emit("error", new Error("boom")); await sleep(20); ok(r.calls.find(c => c.action === "end").reason === "ai_error" && r.tw.readyState === 3, "AI provider fails mid-call (no retries left): call ends and is recorded");
+  ok(r.calls.some(c => c.action === "health" && c.kind === "ai_drop" && /boom/.test(c.detail)), "the real reason the AI dropped is recorded");
+  // AI drop with a retry: the caller is not dropped, the new session gets the conversation so far, no second greeting
+  r = rig(); r.start(); await sleep(40); r.ready(); await sleep(10); r.ai(sc({ inputTranscription: { text: "I need a truck to Marietta" } })); r.ai(sc({ turnComplete: true })); await sleep(10);
+  const first = r.aiSock; first.readyState = 3; first.emit("close", 1011, Buffer.from("internal error")); await sleep(20);
+  ok(r.aiSock !== first && !r.calls.some(c => c.action === "end") && r.tw.readyState === 1, "AI drops mid-call: a new AI session opens and the phone call stays up");
+  ok(r.calls.some(c => c.action === "health" && c.kind === "ai_drop" && /code=1011/.test(c.detail) && /internal error/.test(c.detail)), "close code and reason are recorded");
+  r.ready(); await sleep(10); const resumed = JSON.stringify(r.aiSock.sent);
+  ok(/I need a truck to Marietta/.test(resumed) && /Do NOT greet again/.test(resumed) && !/Hello/.test(resumed), "new session is told the conversation so far and does not greet again");
+  r.phone({ event: "stop" }); await sleep(20); ok(r.calls.filter(c => c.action === "end").length === 1, "call still ends once");
+  r = rig({ env: { VOICE_AI_RETRIES: "1" } }); r.start(); await sleep(40); r.ready(); r.aiSock.emit("error", new Error("one")); await sleep(15); r.aiSock.emit("error", new Error("two")); await sleep(20);
+  ok(r.calls.find(c => c.action === "end").reason === "ai_error" && r.tw.readyState === 3, "after the allowed retries the call ends honestly");
   // max duration (scaled)
   r = rig({ maxSeconds: 1 }); r.start(); await sleep(40); r.ready(); await sleep(1200); ok(r.calls.find(c => c.action === "end") && r.calls.find(c => c.action === "end").reason === "max_duration" && r.tw.readyState === 3, "call is cut at the plan's maximum length");
   console.log("PASS: " + n + " assertions"); process.exit(0);

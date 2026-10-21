@@ -14,7 +14,7 @@ function createBridge(deps) {
   const sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
 
   function handle(tw) {
-    let streamSid = null, ctx = null, ai = null, prov = null, connectTimerRef = null, spokeSinceTool = false, toolAt = 0, done = false, aiReady = false, buffered = [], lastItem = null, assistStart = null, mediaTs = 0, marks = 0, markQ = [], transferPending = false, transferred = false, startedAt = Date.now(), timers = [], nm = 0;
+    let retries = 0, reconnecting = false, timersSet = false, hist = [], streamSid = null, ctx = null, ai = null, prov = null, connectTimerRef = null, spokeSinceTool = false, toolAt = 0, done = false, aiReady = false, buffered = [], lastItem = null, assistStart = null, mediaTs = 0, marks = 0, markQ = [], transferPending = false, transferred = false, startedAt = Date.now(), timers = [], nm = 0;
     const timer = function (fn, ms) { const t = setTimeout(fn, ms); timers.push(t); return t; };
     const twSend = function (o) { if (tw.readyState === 1) tw.send(JSON.stringify(o)); };
     const aiSend = function (o) { if (o && ai && ai.readyState === 1) ai.send(JSON.stringify(o)); };
@@ -36,22 +36,39 @@ function createBridge(deps) {
       const c = await api({ action: "context", token: token }, 10000);
       if (c.status !== 200 || !c.data.session_id) { log("context refused", c.status, c.data && c.data.error); return finish("context_" + (c.status || "unreachable"), true); }
       ctx = c.data; clearTimeout(startTimeout);
-      const connectTimer = timer(function () { finish("ai_connect_timeout", true); }, 8000);
+      startAi();
+    }
+    // One AI session. If it drops mid-call we reconnect (up to AI_RETRIES times) and hand the new session the conversation so far, instead of dropping the caller.
+    function startAi() {
+      clearTimeout(connectTimerRef);
+      connectTimerRef = timer(function () { aiDown("ai_connect_timeout", "no setup reply in 8s"); }, 8000);
       prov = AI.create({ model: env.VOICE_AI_MODEL });
-      ai = new W(AI.URL(env.VOICE_AI_MODEL), { headers: AI.headers(env) });
-      ai.on("open", function () { aiSend0(prov.setup({ instructions: ctx.instructions, tools: ctx.tools, voice: ctx.voice })); });
-      ai.on("message", function (raw) { let m; try { m = JSON.parse(raw.toString()); } catch (e) { return; } prov.parse(m).forEach(onAi); });
-      ai.on("error", function (e) { log("ai error", e && e.message); finish("ai_error", true); });
-      ai.on("close", function () { if (!done) finish("ai_closed", true); });
-      function aiSend0(list) { list.forEach(aiSend); }
-      connectTimerRef = connectTimer;
+      const sock = new W(AI.URL(env.VOICE_AI_MODEL), { headers: AI.headers(env) }); ai = sock;
+      sock.on("open", function () { if (ai === sock) prov.setup({ instructions: ctx.instructions, tools: ctx.tools, voice: ctx.voice }).forEach(aiSend); });
+      sock.on("message", function (raw) { if (ai !== sock) return; let m; try { m = JSON.parse(raw.toString()); } catch (e) { return; } prov.parse(m).forEach(onAi); });
+      sock.on("error", function (e) { if (ai === sock) aiDown("ai_error", e && e.message); });
+      sock.on("close", function (code, reason) { if (ai === sock) aiDown("ai_closed", "code=" + code + (reason && reason.length ? " reason=" + String(reason).slice(0, 160) : "")); });
+    }
+    function aiDown(reason, detail) {
+      if (done) return;
+      const max = env.VOICE_AI_RETRIES != null ? Number(env.VOICE_AI_RETRIES) : 2;
+      log("ai down", reason, detail, "retry", retries + 1, "of", max);
+      api({ action: "health", provider: "bridge", kind: "ai_drop", ok: false, detail: (reason + " " + (detail || "") + " after " + Math.round((Date.now() - startedAt) / 1000) + "s, retry " + (retries + 1) + "/" + max).slice(0, 240) }, 5000);
+      const old = ai; ai = null; aiReady = false; markQ = [];
+      try { if (old) old.close(); } catch (e) { /* ignore */ }
+      if (retries < max && ctx && tw.readyState === 1) { retries++; reconnecting = true; startAi(); return; }
+      finish(reason, true);
     }
 
-    function onReady() { // the AI accepted its setup: start the conversation
+    function onReady() { // the AI accepted its setup: start the conversation (or resume it after a reconnect)
       clearTimeout(connectTimerRef);
       aiReady = true; buffered.forEach(function (b) { aiSend(prov.audioIn(b)); }); buffered = [];
-      aiSend(prov.say(ctx.greeting));
-      if (ctx.max_seconds) { timer(function () { sysNote("The maximum call time is almost reached. Wrap up politely within twenty seconds and offer a callback if anything is unfinished."); }, Math.max(1000, (ctx.max_seconds - 30) * 1000)); timer(function () { finish("max_duration", true); }, ctx.max_seconds * 1000); }
+      if (reconnecting) {
+        reconnecting = false;
+        const recap = hist.slice(-24).map(function (h) { return (h.role === "caller" ? "Caller: " : "You: ") + h.text; }).join("\n");
+        sysNote("The connection dropped for a moment and is back. Do NOT greet again and do not restart. Say one short sentence like 'Sorry, I lost you for a second,' then continue exactly where you left off. Speak English. The conversation so far:\n" + (recap || "(nothing said yet)"));
+      } else aiSend(prov.say(ctx.greeting));
+      if (ctx.max_seconds && !timersSet) { timersSet = true; timer(function () { sysNote("The maximum call time is almost reached. Wrap up politely within twenty seconds and offer a callback if anything is unfinished."); }, Math.max(1000, (ctx.max_seconds - 30) * 1000)); timer(function () { finish("max_duration", true); }, ctx.max_seconds * 1000); }
     }
 
     function onAi(e) {
@@ -64,8 +81,9 @@ function createBridge(deps) {
         const name = "m" + (++marks); markQ.push(name); twSend({ event: "mark", streamSid: streamSid, mark: { name: name } });
       } else if (t === "interrupted") { // the caller talked over the assistant: stop its audio on the phone
         if (markQ.length) { twSend({ event: "clear", streamSid: streamSid }); markQ = []; }
-      } else if (t === "caller_text") note("caller", e.text, e.key);
-      else if (t === "agent_text") note("agent", e.text, e.key);
+      } else if (t === "caller_text") { hist.push({ role: "caller", text: String(e.text).slice(0, 400) }); note("caller", e.text, e.key); }
+      else if (t === "agent_text") { hist.push({ role: "agent", text: String(e.text).slice(0, 400) }); note("agent", e.text, e.key); }
+      else if (t === "go_away") { log("ai says it will close soon", e.left); }
       else if (t === "tool") runTool(e);
       else if (t === "turn_done") { if (transferPending && (spokeSinceTool || e.spoke)) { transferPending = false; doTransfer(); } }
       else if (t === "error") { log("ai reported error", e.message); }
