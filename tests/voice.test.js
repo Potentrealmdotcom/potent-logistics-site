@@ -28,7 +28,8 @@ const DATE = days(5);
 const full = (o) => Object.assign({ customer_name: "Pat Lee", callback_phone: "4045550142", pickup_address: "100 Peachtree St NE, Atlanta, GA 30303", delivery_address: "55 Roswell Rd, Marietta, GA 30060", service_date: DATE, time_window: "morning", service_level: "standard", freight_description: "boxed tile", piece_count: 4, total_weight_lb: 3000,
   pieces: [{ l: 48, w: 40, h: 50, qty: 4, weight_lb: 750 }], pickup_dock: true, delivery_dock: true, email: "pat@example.com" }, o || {});
 let sn = 0; const newSes = (org, o) => { if (org && typeof org === "object") { o = org; org = null; } const s = Object.assign({ id: "5e5e5e5e-0000-4000-8000-" + String(++sn).padStart(12, "0"), org_id: org || OA, provider: "twilio", provider_call_id: "CA" + sn, direction: "inbound", from_number: "+14045550142", to_number: "+14045550100", state: "active", intake: {}, test_mode: false, started_at: new Date().toISOString(), answered_at: new Date().toISOString(), confirmed_by_caller: false }, o || {}); T.voice_sessions.push(s); return s; };
-const run = async (s, name, args, key) => TL.execute({ orgId: s.org_id, session: T.voice_sessions.find(x => x.id === s.id), cfg: await S.cfgOf(s.org_id) }, name, args, key || ("k" + (++sn)));
+const runRaw = async (s, name, args, key) => TL.execute({ orgId: s.org_id, session: T.voice_sessions.find(x => x.id === s.id), cfg: await S.cfgOf(s.org_id) }, name, args, key || ("k" + (++sn)));
+const run = async (s, name, args, key) => { let r = await runRaw(s, name, args, key); if (r && r.error === "read_back_required" && !(args && args.__raw)) r = await runRaw(s, name, Object.assign({}, args, { email_confirmed: true }), key ? key + "b" : undefined); return r; };
 const say = (s, who, text) => S.transcript(s.org_id, s.id, who, text);
 async function toQuote(s, over) { await run(s, "collect_shipment_details", full(over)); const el = await run(s, "validate_shipment_eligibility"); if (el.status !== "eligible") return { el }; const q = await run(s, "calculate_quote"); return { el, q }; }
 (async () => {
@@ -62,6 +63,8 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
   await say(s, "caller", "yes, go ahead and book it"); r = await run(s, "create_pending_booking"); ok(r.ok && r.ready_to_confirm && r.reference.startsWith("PV-"), "after a clear yes the request is saved"); const BID = r.booking_id;
   const r2 = await run(s, "create_pending_booking"); ok(r2.ok && r2.booking_id === BID && T.voice_bookings.length === 1, "duplicate submission returns the same booking (no duplicate)");
   ok(T.voice_bookings[0].status === "pending_review" && T.jobs.length === 0, "still only a request: no job, no hold yet");
+  EXT.mail.length = 0; r = await runRaw(s, "send_approved_confirmation", { booking_id: BID, channel: "email", email: "pat@example.com" }); ok(!r.ok && r.error === "read_back_required" && /letter by letter/.test(r.say) && EXT.mail.length === 0, "email gate: first call only asks for a spelled read-back, nothing is sent");
+  r = await runRaw(s, "send_approved_confirmation", { booking_id: BID, channel: "email", email: "other@example.com", email_confirmed: true }); ok(!r.ok && r.error === "read_back_required" && EXT.mail.length === 0, "email gate: a confirmed flag for a different address than the one read back is refused");
   EXT.mail.length = 0; r = await run(s, "send_approved_confirmation", { booking_id: BID, channel: "email", email: "pat@example.com" }); ok(r.sent && r.kind === "request_received_not_confirmed" && /NOT yet confirmed/.test(EXT.mail[0].text), "a pending request gets a 'not yet confirmed' notice, never a confirmation");
   r = await run(s, "confirm_eligible_booking", { booking_id: BID }); ok(r.ok && r.confirmed && r.job_id && T.jobs.length === 1 && T.jobs[0].status === "Confirmed" && T.jobs[0].org_id === OA && T.voice_capacity_holds.length === 1, "all checks pass -> confirmed, job + capacity hold created");
   ok(T.jobs[0].final_price === 400 && /Booked by POTENT VOICE/.test(T.jobs[0].notes) && T.jobs[0].date === DATE, "the job carries the quoted price, date and a voice-booking note");
@@ -266,3 +269,4 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
     q1 = await run(sp, "quote_special_service", { service: "mystery" }); ok(!q1.ok, "unknown service refused"); }
   console.log("PASS: " + n + " assertions");
 })().catch(e => { console.error(e); process.exit(1); });
+

@@ -47,8 +47,8 @@ function defs() {
     D("request_human_handoff", "Ask to transfer to a person: negotiations, discounts, complaints, safety concerns, anything uncertain, or when the caller asks for one.", obj({ reason: str("why"), summary: str("one or two sentences for the person") }, ["reason"])),
     D("set_call_language", "Lock the language of this call to the caller's language. Call it as soon as the caller speaks a language other than English. Then speak ONLY that language for the whole call.", obj({ language: { type: "string", enum: Object.keys(CALL_LANGS), description: "language code of what the caller is speaking" } }, ["language"])),
     D("get_playbook", "Get the POTENT playbook script for the situation you are in: objections, junk removal, cleanouts, freight, pop-up events, recurring accounts and the wallet, closing, tracking and accounts. Call it when the caller pushes back, hesitates, or you are starting a service you need the questions for. It has no prices; prices only come from the quote tools.", obj({ topic: { type: "string", enum: PLAYBOOK.NAMES } }, ["topic"])),
-    D("send_payment_link", "After a booking is CONFIRMED and the caller wants to pay by card, email them a secure Stripe payment link for the exact quoted total. The caller pays on Stripe's page; you never take or repeat card numbers. Needs the confirmed booking_id and an email read back and confirmed.", obj({ booking_id: str(""), email: str("their email, read back and confirmed") }, ["booking_id", "email"])),
-    D("send_approved_confirmation", "Send the approved written confirmation or request-received notice for this call's booking.", obj({ booking_id: str(""), channel: { type: "string", enum: ["email", "sms"] }, email: str("only for email"), sms_consent: { type: "boolean", description: "caller agreed to a text message" } }, ["booking_id", "channel"])),
+    D("send_payment_link", "After a booking is CONFIRMED and the caller wants to pay by card, email them a secure Stripe payment link for the exact quoted total. The caller pays on Stripe's page; you never take or repeat card numbers. Needs the confirmed booking_id and an email read back and confirmed.", obj({ booking_id: str(""), email: str("their email exactly as the caller said it"), email_confirmed: { type: "boolean", description: "true only after you spelled it back and the caller said yes" } }, ["booking_id", "email"])),
+    D("send_approved_confirmation", "Send the approved written confirmation or request-received notice for this call's booking.", obj({ booking_id: str(""), channel: { type: "string", enum: ["email", "sms"] }, email: str("only for email: exactly what the caller said"), email_confirmed: { type: "boolean", description: "true only after you spelled it back and the caller said yes" }, sms_consent: { type: "boolean", description: "caller agreed to a text message" } }, ["booking_id", "channel"])),
     D("look_up_booking_status", "Look up a booking. Needs the booking reference and the last 4 digits of the phone number on the booking.", obj({ reference: str(""), phone_last4: str("") }, ["reference", "phone_last4"])),
     D("request_reschedule", "Record a reschedule request (a person completes it).", obj({ reference: str(""), phone_last4: str(""), requested_date: str(""), note: str("") }, ["reference", "phone_last4"])),
     D("request_cancellation", "Record a cancellation request (a person completes it).", obj({ reference: str(""), phone_last4: str(""), note: str("") }, ["reference", "phone_last4"]))
@@ -77,6 +77,15 @@ async function callerConfirmed(ctx) {
 async function suppressed(orgId, phone) { return rows(await B.sb("voice_suppression_records?org_id=eq." + orgId + "&phone=eq." + encodeURIComponent(phone || "x") + "&select=id&limit=1")).length > 0; }
 async function notifyOwner(orgId, subject, text) { try { const o = rows(await B.sb("organizations?id=eq." + orgId + "&select=owner_email&limit=1"))[0]; if (o && o.owner_email) await require("../mail").send(o.owner_email, subject, text, "/voice/"); } catch (e) { /* best effort */ } }
 
+// Email read-back gate: the first call with an address only stores it and tells the model to spell it back; sending needs a second call with email_confirmed:true for the SAME address, so an address the caller never confirmed can never be used.
+async function emailGate(ctx, a, email) {
+  const it = ctx.session.intake || {}, pend = it._email_pending;
+  if (a.email_confirmed === true && pend === email) { it._email_ok = email; return null; }
+  it._email_pending = email; ctx.session.intake = it;
+  await S.patchSession(ctx.orgId, ctx.session.id, { intake: it });
+  const spelled = email.replace(/@/, " at ").replace(/\./g, " dot ").split("").join(" ");
+  return { ok: false, error: "read_back_required", email: email, say: "NOT SENT YET. Say: \"Let me read that back: " + spelled + ". Is that right?\" Spell it letter by letter, wait for a clear yes. If they correct it, use the corrected address. Then call this tool again with the same email and email_confirmed true. If the caller did not clearly say an address, ask for it; never guess or reuse one from memory." };
+}
 const TOOLS = {
   async lookup_customer(ctx) {
     const n = last4(ctx.session.from_number); if (!ctx.session.from_number || !n) return { ok: true, known: false };
@@ -185,7 +194,8 @@ const TOOLS = {
     const fail = async function (why, say) { await B.sb("voice_bookings?id=eq." + bk.id, { method: "PATCH", prefer: "return=minimal", body: { review_reason: why } }); return { ok: true, confirmed: false, reference: bk.reference, pending: true, reason: why, say: say || "Not confirmed. It stays a request for a person to review. Say so honestly." }; };
     if (!q || q.status !== "offered" || new Date(q.expires_at) < new Date()) return fail("Quote expired or changed");
     const prof = await S.profileOf(ctx.orgId, bk.vehicle_profile_id); if (!prof) return fail("Vehicle no longer authorized");
-    const e = R.evaluate(snap.intake, prof); if (e.status !== "eligible") return fail("Eligibility changed: " + e.blocks.concat(e.reviews).map(function (x) { return x.code; }).join(","));
+    const gz = (ctx.session.intake && ctx.session.intake._geo) || {}, di = Object.assign({}, snap.intake); di.pickup_state = di.pickup_state || (gz.pickup && gz.pickup.state) || null; di.delivery_state = di.delivery_state || (gz.delivery && gz.delivery.state) || null;
+    const e = R.evaluate(di, prof); if (e.status !== "eligible") return fail("Eligibility changed: " + e.blocks.concat(e.reviews).map(function (x) { return x.code; }).join(","));
     const av = await AV.check(ctx.orgId, prof.id, { start: new Date(bk.window_start), end: new Date(bk.window_end) }, ctx.cfg);
     if (!av.verified) return fail("Availability could not be verified: " + av.reasons.join(","));
     if (!av.available) return fail("Time no longer available", "That time was just taken. Not booked. Offer another time or a callback.");
@@ -204,6 +214,7 @@ const TOOLS = {
   },
   async book_demo(ctx, a) {
     const email = clip(a.email, 120).toLowerCase(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { ok: false, error: "need_valid_email", say: "Ask for their email and read it back letter by letter." };
+    { const g = await emailGate(ctx, a, email); if (g) return g; }
     const link = process.env.DEMO_BOOKING_URL || "https://calendly.com/potentrealm-pm/30min";
     const phone = I.phone(a.phone) || ctx.session.from_number || null;
     const reason = "OS DEMO REQUESTED: " + clip(a.company, 80) + (a.trucks ? ", " + Math.floor(Number(a.trucks)) + " trucks" : "") + ". " + clip(a.notes, 200) + " Email " + email;
@@ -223,6 +234,7 @@ const TOOLS = {
   async send_payment_link(ctx, a) {
     if (!S.UUID.test(String(a.booking_id || ""))) return { ok: false, error: "bad_booking" };
     const email = clip(a.email, 120).toLowerCase(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { ok: false, error: "need_valid_email", say: "Ask for their email and read it back letter by letter." };
+    { const g = await emailGate(ctx, a, email); if (g) return g; }
     const bk = rows(await B.sb("voice_bookings?org_id=eq." + ctx.orgId + "&id=eq." + a.booking_id + "&session_id=eq." + ctx.session.id + "&select=*&limit=1"))[0];
     if (!bk) return { ok: false, error: "booking_not_found" };
     if (bk.status !== "confirmed" || !bk.job_id) return { ok: false, error: "not_confirmed", say: "The booking is not confirmed yet, so there is nothing to pay. Do not send a payment link. Tell the caller a person will confirm it first." };
@@ -251,7 +263,8 @@ const TOOLS = {
     if (!bk || !S.UUID.test(String(a.booking_id))) return { ok: false, error: "booking_not_found" };
     const channel = a.channel === "sms" ? "sms" : "email", snap = bk.snapshot, d = snap.intake, conf = bk.status === "confirmed", total = P.money(snap.quote.total_cents);
     const to = channel === "email" ? clip(a.email, 120).toLowerCase() || bk.customer_email : bk.customer_phone;
-    if (channel === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(to || ""))) return { ok: false, error: "need_valid_email" };
+    if (channel === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(to || ""))) return { ok: false, error: "need_valid_email", say: "Ask the caller for their email and read it back." };
+    if (channel === "email") { const g = await emailGate(ctx, a, to); if (g) return g; }
     if (channel === "sms") { if (a.sms_consent !== true) return { ok: false, error: "need_sms_consent" }; if (await suppressed(ctx.orgId, to)) return { ok: false, error: "number_opted_out" }; }
     const text = (conf ? "Your POTENT booking is CONFIRMED. Reference " + bk.reference + ".\n" : "We received your request. It is NOT yet confirmed. Reference " + bk.reference + ". A dispatcher will confirm with you.\n") + "Pickup: " + d.pickup_address + "\nDelivery: " + d.delivery_address + "\nDate: " + d.service_date + " (" + d.time_window + ")\nQuoted price: " + total + " (" + (snap.quote.payment_text || "payment instructions will follow") + ")\nTo reschedule or cancel, call us back and give this reference.";
     const claim = await B.sb("voice_notifications_sent", { method: "POST", prefer: "resolution=ignore-duplicates,return=representation", body: { org_id: ctx.orgId, booking_id: bk.id, channel: channel, kind: conf ? "confirmation" : "request", to_addr: to, status: "sending" } });
@@ -259,7 +272,7 @@ const TOOLS = {
     const res = channel === "email" ? await require("../mail").send(to, (conf ? "Booking confirmed " : "Request received ") + bk.reference, text) : await TW.sms(to, text);
     const sent = !!(res && (res.ok || res.data)), skipped = res && res.skipped;
     await B.sb("voice_notifications_sent?booking_id=eq." + bk.id + "&channel=eq." + channel + "&kind=eq." + (conf ? "confirmation" : "request"), { method: "PATCH", prefer: "return=minimal", body: { status: sent ? "sent" : "failed", error: sent ? null : (skipped ? "email_not_configured" : (res && res.reason) || "send_failed") } });
-    if (sent) { if (conf) await B.sb("voice_bookings?id=eq." + bk.id, { method: "PATCH", prefer: "return=minimal", body: { confirmation_sent_at: new Date().toISOString() } }); return { ok: true, sent: true, kind: conf ? "confirmation" : "request_received_not_confirmed" }; }
+    if (sent) { await B.sb("voice_bookings?id=eq." + bk.id, { method: "PATCH", prefer: "return=minimal", body: Object.assign(channel === "email" ? { customer_email: to } : {}, conf ? { confirmation_sent_at: new Date().toISOString() } : {}) }); return { ok: true, sent: true, kind: conf ? "confirmation" : "request_received_not_confirmed" }; }
     await B.sb("voice_callbacks", { method: "POST", prefer: "return=minimal", body: { org_id: ctx.orgId, session_id: ctx.session.id, name: d.customer_name, phone: bk.customer_phone, reason: "Send " + (conf ? "confirmation" : "request notice") + " for " + bk.reference + " manually (" + channel + " failed)" } });
     return { ok: true, sent: false, say: "The message could not be sent. The booking is kept and a person will follow up. Do not say it was sent." };
   }
