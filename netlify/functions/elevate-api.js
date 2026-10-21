@@ -103,10 +103,19 @@ exports.handler = async function (event) {
     if (/^o_/.test(a)) { // the owner only: add people, give free minutes
       if (!Bill.isOwner(k)) return J(403, { ok: false, error: "Owner only." });
       const em = E.clip(b.email, 200).toLowerCase();
-      if (a === "o_overview") { const r = await E.sb("elevate_accounts?order=created_at.desc&limit=200"); return J(200, { ok: true, accounts: Array.isArray(r.data) ? r.data : [] }); }
+      if (a === "o_overview") { // everyone with an account row OR free minutes, so a grant always shows up
+        const r = await E.sb("elevate_accounts?order=created_at.desc&limit=200");
+        if (!r.ok) return J(502, { ok: false, error: "Could not load people." });
+        const c = await E.sb("elevate_credits?select=owner_key,seconds,expires_at&expires_at=gt." + encodeURIComponent(new Date().toISOString()) + "&limit=1000");
+        const mins = {}; (Array.isArray(c.data) ? c.data : []).forEach(function (x) { mins[x.owner_key] = (mins[x.owner_key] || 0) + Math.floor((Number(x.seconds) || 0) / 60); });
+        const acc = Array.isArray(r.data) ? r.data : [], seen = {};
+        const out = acc.map(function (x) { seen[x.owner_key] = 1; return Object.assign({}, x, { free_minutes: mins[x.owner_key] || 0 }); });
+        Object.keys(mins).forEach(function (k2) { if (!seen[k2]) out.push({ owner_key: k2, mode: "free", sub_status: null, free_minutes: mins[k2] }); });
+        return J(200, { ok: true, accounts: out });
+      }
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return J(400, { ok: false, error: "Enter an email." });
-      if (a === "o_account_set") { if (["free", "comped"].indexOf(b.mode) < 0) return J(400, { ok: false, error: "Mode is free or comped." }); await Bill.setAccount(em, { mode: b.mode }); return J(200, { ok: true }); }
-      if (a === "o_credit_grant") { const min = Math.floor(Number(b.minutes)); if (!(min >= 1 && min <= 600)) return J(400, { ok: false, error: "1 to 600 minutes." }); const r = await Bill.addCredit(em, min * 60, "grant:" + Date.now() + ":" + Math.random().toString(36).slice(2, 8), "grant"); return J(r.ok ? 200 : 500, { ok: r.ok }); }
+      if (a === "o_account_set") { if (["free", "comped"].indexOf(b.mode) < 0) return J(400, { ok: false, error: "Mode is free or comped." }); const sa = await Bill.setAccount(em, { mode: b.mode }); return sa.ok ? J(200, { ok: true }) : J(500, { ok: false, error: "Could not save that. Nothing changed." }); }
+      if (a === "o_credit_grant") { const min = Math.floor(Number(b.minutes)); if (!(min >= 1 && min <= 600)) return J(400, { ok: false, error: "1 to 600 minutes." }); const r = await Bill.addCredit(em, min * 60, "grant:" + Date.now() + ":" + Math.random().toString(36).slice(2, 8), "grant"); if (r.ok) await E.sb("elevate_accounts?on_conflict=owner_key", { method: "POST", prefer: "resolution=ignore-duplicates,return=minimal", body: { owner_key: em } }); return r.ok ? J(200, { ok: true }) : J(500, { ok: false, error: "Could not save that. Nothing changed." }); }
     }
 
     if (a === "items") {
