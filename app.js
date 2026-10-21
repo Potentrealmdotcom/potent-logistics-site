@@ -2253,23 +2253,13 @@ var PRICE_TIERS = [
     },
     {
         id: "family",
-        label: "👨‍👩‍👧 Family / Loyalty",
-        sub: "15% off — repeat customers & referrals",
+        label: "👨‍👩‍👧 Referral / Family",
+        sub: "Flat 10% off — referral code, family or returning customers only",
         color: "#4299E1",
-        discountPct: 0.15,
-        oosStandard: null, // 15% off mileage charge
-        oosSameDay: null, // 15% off mileage charge
-        badge: "15% OFF",
-    },
-    {
-        id: "lowest",
-        label: "🤝 Lowest",
-        sub: "20% off — absolute floor, no further negotiation",
-        color: "#1DB954",
-        discountPct: 0.20,
-        oosStandard: 4.50,
-        oosSameDay: 6.50,
-        badge: "FLOOR PRICE",
+        discountPct: 0.10,
+        oosStandard: null, // 10% off mileage charge
+        oosSameDay: null, // 10% off mileage charge
+        badge: "10% OFF",
     },
 ];
 // Major US city coordinates for distance estimation
@@ -8691,8 +8681,7 @@ tr:nth-child(even){background:#f9f9f9;}
 <h2>PRICING TIERS (SET FIRST ON EVERY CALL)</h2>
 <table><tr><th>Tier</th><th>Discount</th><th>When to Apply</th></tr>
 <tr><td>💛 Standard</td><td>Full rate</td><td>New customers, one-time jobs</td></tr>
-<tr><td>👨‍👩‍👧 Family/Loyalty</td><td>15% off</td><td>Returning customers, referrals</td></tr>
-<tr><td>🤝 Lowest Floor</td><td class="red">20% off</td><td class="red">ONLY when needed to close. Never lead with this.</td></tr></table>
+<tr><td>👨‍👩‍👧 Referral/Family</td><td>10% off</td><td>Referral code, family or returning customers only. The only discount.</td></tr></table>
 
 <h2>ADD-ONS QUICK REFERENCE</h2>
 <table><tr><th>Add-On</th><th>Fee</th></tr>
