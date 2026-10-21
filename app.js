@@ -8432,8 +8432,8 @@ function PublicApp(props) {
                     React.createElement("div", { style: { fontSize: 13, color: "rgba(255,255,255,0.75)", maxWidth: 560, margin: "0 auto 18px", lineHeight: 1.7, fontStyle: "italic" } }, "Most companies make you request a quote and wait. We break our pricing down right here, transparently \u2014 so you know exactly what you'll pay before you ever call."),
                     React.createElement("div", { style: { fontSize: 13, color: "rgba(255,255,255,0.7)", maxWidth: 500, margin: "0 auto 24px", lineHeight: 1.6 } }, "Same crew, same trucks, same-day service \u2014 for less than anyone else in your area."),
                     React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 10, marginBottom: 20 } }, [
-                        ["Single Item Pickup", "$149"],
-                        ["Full Truckload", "$699"],
+                        ["Single Item Pickup", "$179"],
+                        ["Full Truckload", "$750–$850"],
                         ["Studio/1BR Cleanout", "$499"],
                         ["3BR Cleanout", "$1,299"],
                     ].map(function (row) {
@@ -16362,13 +16362,13 @@ var REBUTTAL_CARDS = [
     { id: "C2", group: "Close", trigger: "Get their number", lines: ["What number gets this covered today?"]},
     { id: "C3", group: "Close", trigger: "Close it", lines: ["Perfect. Send the rate confirmation."]},
     { id: "JUNK1", group: "Pushback", trigger: "\"That's too much for junk removal.\"", lines: [
-        "I hear you. Our $149 single-item and $699 full-load are the best price in the city, guaranteed.",
+        "I hear you. Our $179 single-item and $750–$850 full-load are the best pricing in the city.",
         "What are you comparing it to? Most companies won't even give you a price until they see it.",
-        "We show up same-day, haul from inside your home, and include disposal fees. That's the full price.",
+        "We show up same-day and the price is up front. Heavy items like mattresses and tires carry a disposal fee, and we confirm it before we start.",
     ]},
     { id: "JUNK2", group: "Pushback", trigger: "\"I'll just do it myself.\"", lines: [
         "Totally fair. Just so you know, a dump run costs $50-80 in fees plus your truck, gas, and 3 hours.",
-        "We do it for $149 and you're done in 20 minutes. Worth it?",
+        "We do it for $179 and up and you're done in 20 minutes. Worth it?",
     ]},
     { id: "SEC1", group: "They Ask First", trigger: "\"Why is armed security so expensive?\"", lines: [
         "You're paying for a licensed armed detail, not just a driver. $185/hour with a 4-hour minimum.",
