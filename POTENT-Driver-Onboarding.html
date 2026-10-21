@@ -226,8 +226,6 @@ function submitForm(){
   var ein = document.getElementById('ein').value.trim();
   var vehicleClass = document.getElementById('vehicleClass').value;
   var paymentMethod = document.getElementById('paymentMethod').value;
-  var paymentDetails = buildPayment(paymentMethod);
-  if (paymentDetails === null) return;
 
   if (!driverName || !phone || !ein) {
     showErr('Please fill in: ' + [!driverName && 'your full name', !phone && 'your phone number', !ein && 'your EIN number'].filter(Boolean).join(', ') + '.');
@@ -237,6 +235,9 @@ function submitForm(){
     showErr('Please upload all required documents (ELD is optional, everything else is required — including your COI).');
     return;
   }
+
+  var paymentDetails = buildPayment(paymentMethod);
+  if (paymentDetails === null) return;
 
   document.getElementById('submitBtn').disabled = true;
   document.getElementById('submitBtn').textContent = 'Submitting...';
