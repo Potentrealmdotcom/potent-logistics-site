@@ -17574,7 +17574,7 @@ function CustomerBOLUpload() {
 // exact fields as specified: their info, POTENT's info (auto-filled,
 // real), business role classification, and per-load documentation.
 // ═══════════════════════════════════════════════════════════════════
-var FMCSA_WEBKEY = "532f079d64d86d65a5f71d3f97ee0c5967ad86e4";
+// FMCSA lookups now run on the server (auth.js carrierlookup); no key lives in the browser.
 
 // POTENT's own real, confirmed carrier info — same for every company,
 // shown automatically, never re-typed.
@@ -17630,11 +17630,11 @@ function CompanyOnboarding() {
     function verifyCarrier() {
         if (!verifyInput.trim()) { setDotLookupError("Enter a " + (verifyMode === "dot" ? "DOT" : "MC") + " number first."); return; }
         setLookingUp(true); setDotLookupError("");
-        var url = verifyMode === "dot"
-            ? "https://mobile.fmcsa.dot.gov/qc/services/carriers/" + verifyInput.trim() + "?webKey=" + FMCSA_WEBKEY
-            : "https://mobile.fmcsa.dot.gov/qc/services/carriers/docket-number/" + verifyInput.trim() + "?webKey=" + FMCSA_WEBKEY;
-        fetch(url)
-            .then(function (r) { return r.json(); })
+        plApi("carrierlookup", { mode: verifyMode, number: verifyInput.trim() })
+            .then(function (res) {
+                if (!res || res.ok === false) { throw new Error(res && res.error ? res.error : "unreachable"); }
+                return { content: res.found && res.carrier ? { carrier: res.carrier } : null };
+            })
             .then(function (data) {
                 setLookingUp(false);
                 // DOT endpoint returns data.content.carrier (single object).
@@ -17661,7 +17661,7 @@ function CompanyOnboarding() {
                     authorityStatus: c.allowedToOperate === "Y" ? "Active" : "Not Active"
                 }); });
                 setStep(1.5);
-            }).catch(function () { setLookingUp(false); setDotLookupError("Couldn't reach FMCSA right now. Check your connection and try again."); });
+            }).catch(function (e) { setLookingUp(false); setDotLookupError((e && e.message && e.message !== "unreachable") ? e.message : "Couldn't reach FMCSA right now. Check your connection and try again."); });
     }
 
     function uploadDoc(docKey, file) {

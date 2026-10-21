@@ -354,6 +354,16 @@ exports.handler = async function (event) {
         }
 
 
+        // ── Public FMCSA lookup for the carrier intake (server-side, rate limited per IP) ──
+        if (action === "carrierlookup") {
+            var lip = String((event.headers && (event.headers["x-nf-client-connection-ip"] || event.headers["x-forwarded-for"])) || "x").split(",")[0].trim();
+            var lk2 = "cl:" + lip;
+            if (tooMany(lk2)) return J(429, { ok: false, error: "Too many lookups. Wait a few minutes and try again." });
+            noteFail(lk2);
+            var lr = await V.fmcsaRaw({ mode: body.mode, number: body.number });
+            return J(lr.ok ? 200 : 502, lr);
+        }
+
         // ── Partner (carrier) accounts: passwords are hashed, never readable with the public key ──
         if (action === "partnersignup") {
             var ip = String((event.headers && (event.headers["x-nf-client-connection-ip"] || event.headers["x-forwarded-for"])) || "x").split(",")[0].trim();

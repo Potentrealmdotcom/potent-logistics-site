@@ -1,0 +1,20 @@
+const V = require("../netlify/functions/lib/vetting.js"); let f = 0;
+const ok = (c, m) => { if (!c) { f++; console.log("FAIL", m); } };
+(async () => {
+  process.env.FMCSA_WEBKEY = "k";
+  const mk = (st, body) => async () => ({ ok: st === 200, status: st, json: async () => body });
+  let r = await V.fmcsaRaw({ mode: "dot", number: "123" }, mk(200, { content: { carrier: { legalName: "A" } } }));
+  ok(r.ok && r.found && r.carrier.legalName === "A", "dot object");
+  r = await V.fmcsaRaw({ mode: "mc", number: "MC-55" }, mk(200, { content: [{ carrier: { legalName: "B" } }] }));
+  ok(r.found && r.carrier.legalName === "B", "mc array");
+  r = await V.fmcsaRaw({ mode: "mc", number: "55" }, mk(200, { content: [] }));
+  ok(r.ok && r.found === false, "not found");
+  r = await V.fmcsaRaw({ mode: "dot", number: "abc" }, mk(200, {}));
+  ok(!r.ok, "bad number");
+  r = await V.fmcsaRaw({ mode: "dot", number: "1" }, mk(503, {}));
+  ok(!r.ok, "upstream error");
+  delete process.env.FMCSA_WEBKEY;
+  r = await V.fmcsaRaw({ mode: "dot", number: "1" }, mk(200, {}));
+  ok(!r.ok, "no key");
+  console.log(f ? "fail=" + f : "carrierlookup ok"); process.exit(f ? 1 : 0);
+})();

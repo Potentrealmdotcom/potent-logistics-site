@@ -84,6 +84,22 @@ async function fmcsaLookup(opts, fetchImpl) {
     } catch (e) { return { checked: false, error: "FMCSA unreachable" }; }
 }
 
+// Raw carrier record for the intake form's "look me up" step (runs on the server so datacenter or blocked client networks do not matter).
+async function fmcsaRaw(opts, fetchImpl) {
+    var f = fetchImpl || fetch, key = process.env.FMCSA_WEBKEY, num = digits(opts && opts.number), mode = opts && opts.mode === "mc" ? "mc" : "dot";
+    if (!key) return { ok: false, error: "FMCSA lookup is not configured." };
+    if (!num || num.length > 10) return { ok: false, error: "Enter a valid " + (mode === "mc" ? "MC" : "DOT") + " number." };
+    var url = mode === "dot" ? "https://mobile.fmcsa.dot.gov/qc/services/carriers/" + num + "?webKey=" + encodeURIComponent(key)
+                             : "https://mobile.fmcsa.dot.gov/qc/services/carriers/docket-number/" + num + "?webKey=" + encodeURIComponent(key);
+    try {
+        var r = await f(url); if (!r.ok) return { ok: false, error: "FMCSA is not answering right now (" + r.status + "). Try again in a minute." };
+        var d = await r.json(), c = d && d.content;
+        if (Array.isArray(c)) c = c[0] && (c[0].carrier || c[0]); else if (c && c.carrier) c = c.carrier;
+        if (!c || typeof c !== "object") return { ok: true, found: false };
+        return { ok: true, found: true, carrier: c };
+    } catch (e) { return { ok: false, error: "FMCSA is not answering right now. Try again in a minute." }; }
+}
+
 // ── Twilio Lookup v2 line type ──
 async function phoneLookup(phone, fetchImpl) {
     var f = fetchImpl || fetch, sid = process.env.TWILIO_ACCOUNT_SID, tok = process.env.TWILIO_AUTH_TOKEN, e164 = toE164(phone);
@@ -98,4 +114,4 @@ async function phoneLookup(phone, fetchImpl) {
     } catch (e) { return { checked: false, error: "Twilio unreachable" }; }
 }
 
-module.exports = { evaluate: evaluate, fmcsaLookup: fmcsaLookup, phoneLookup: phoneLookup, toE164: toE164, STATUS: STATUS };
+module.exports = { evaluate: evaluate, fmcsaLookup: fmcsaLookup, fmcsaRaw: fmcsaRaw, phoneLookup: phoneLookup, toE164: toE164, STATUS: STATUS };
