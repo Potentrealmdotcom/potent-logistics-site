@@ -9,7 +9,7 @@
 set -euo pipefail
 EMAIL="${1:-}"; [ -n "$EMAIL" ] || { echo "Usage: sudo bash install-voice-only.sh you@email.com"; exit 1; }
 [ "$(id -u)" = 0 ] || { echo "Run as root (sudo)."; exit 1; }
-DOMAIN="${DOMAIN:-potentworld.ink}"; SITE="${SITE_URL:-https://potentoperations.netlify.app}"
+DOMAIN="${DOMAIN:-potentworld.online}"; SITE="${SITE_URL:-https://potentoperations.netlify.app}"
 KIT="$(cd "$(dirname "$0")" && pwd)"; V=/opt/potent-voice
 PUBIP="$(curl -4 -fsS https://api.ipify.org)"
 getent ahostsv4 "voice.$DOMAIN" | awk '{print $1}' | grep -qx "$PUBIP" || { echo "STOP: voice.$DOMAIN does not point to this server ($PUBIP). Add the A record in Namecheap, wait a few minutes, run again."; exit 1; }

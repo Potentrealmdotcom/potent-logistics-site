@@ -1,4 +1,4 @@
-# POTENT media server kit (potentworld.ink)
+# POTENT media server kit (potentworld.online)
 
 Runs on one rented server. Gives POTENT: live video/voice rooms (Jitsi), OBS broadcasts (MediaMTX) and large video storage (MinIO). The website and database stay on Netlify and Supabase.
 
@@ -6,7 +6,7 @@ Runs on one rented server. Gives POTENT: live video/voice rooms (Jitsi), OBS bro
 
 ## 1. Server (about 15 minutes)
 1. hetzner.com/cloud → new server: location Ashburn (VA), image Ubuntu 24.04, type 4 vCPU / 8 GB (e.g. CPX31 / CCX13), add your SSH key. Note the IPv4 address.
-2. Namecheap → Domain List → potentworld.ink → Manage → **Advanced DNS** → Add New Record, three times:
+2. Namecheap → Domain List → potentworld.online → Manage → **Advanced DNS** → Add New Record, three times:
    - Type `A Record`, Host `meet`, Value `<server IP>`, TTL Automatic
    - Type `A Record`, Host `live`, Value `<server IP>`
    - Type `A Record`, Host `files`, Value `<server IP>`
@@ -25,12 +25,12 @@ If it says a name doesn't point to the server yet, wait and run it again (it's s
 At the end it writes `/root/netlify-env.txt` with 9 settings. Copy each line into Netlify → Site configuration → Environment variables, then trigger a redeploy. Don't paste the file into chat/email. Afterwards: `shred -u /root/netlify-env.txt`.
 
 ## 3. Checks (report anything that fails)
-1. `https://meet.potentworld.ink` loads a Jitsi page (it will refuse a plain visit because logins are required; that is correct).
-2. `https://files.potentworld.ink/minio/health/live` shows a blank page with status 200.
-3. `https://live.potentworld.ink/` loads (a 404 page is fine).
+1. `https://meet.potentworld.online` loads a Jitsi page (it will refuse a plain visit because logins are required; that is correct).
+2. `https://files.potentworld.online/minio/health/live` shows a blank page with status 200.
+3. `https://live.potentworld.online/` loads (a 404 page is fine).
 4. In POTENT Live: host a public session → Start → press **Join the video & voice room** on two devices. Video/voice should connect. Cameras/mics start muted.
 5. Host presses **Broadcast with OBS**, enters the server/username/password in OBS (Settings → Stream → Custom, "Use authentication"), starts streaming. The viewer link should play within ~10–20 seconds.
-6. Studio → add a video → upload a file over 50 MB. It should upload and play from `files.potentworld.ink`.
+6. Studio → add a video → upload a file over 50 MB. It should upload and play from `files.potentworld.online`.
 
 ## What it will cost / what you must maintain
 - Server about $15–25/month. Bandwidth is the real cost if many people watch video; Hetzner includes a lot.

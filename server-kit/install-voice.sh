@@ -6,7 +6,7 @@
 # Not tested on a real server by the person who wrote it. Run the checks at the end.
 set -euo pipefail
 [ "$(id -u)" = 0 ] || { echo "Run as root (sudo)."; exit 1; }
-DOMAIN="${DOMAIN:-potentworld.ink}"; SITE="${SITE_URL:-https://potentoperations.netlify.app}"
+DOMAIN="${DOMAIN:-potentworld.online}"; SITE="${SITE_URL:-https://potentoperations.netlify.app}"
 KIT="$(cd "$(dirname "$0")" && pwd)"; OUT=/opt/potent-media; V=/opt/potent-voice
 [ -f "$OUT/Caddyfile" ] || { echo "STOP: run install.sh first (it sets up Caddy)."; exit 1; }
 PUBIP="$(curl -4 -fsS https://api.ipify.org)"

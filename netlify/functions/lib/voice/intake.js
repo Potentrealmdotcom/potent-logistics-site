@@ -19,6 +19,18 @@ function addressCheck(a) {
 }
 function dims(d) { if (!d || typeof d !== "object") return null; const l = num(d.l), w = num(d.w), h = num(d.h); return l > 0 && w > 0 && h > 0 && l <= 1000 && w <= 1000 && h <= 1000 ? { l: l, w: w, h: h, qty: Math.max(1, Math.floor(num(d.qty) || 1)), weight_lb: num(d.weight_lb) > 0 ? num(d.weight_lb) : null } : null; }
 
+// Callers (and test simulators) often state dimensions as "190 x 94 x 80 in", [190,94,80], or {length,width,height}. Accept those as the
+// overall size of the load; anything that does not give exactly three positive numbers is still reported as missing, never guessed.
+function looseDims(raw) {
+  const v = raw.total_dims || raw.dimensions || raw.freight_dimensions || raw.dims || raw.size || null;
+  const fromObj = function (o) { return { l: o.l != null ? o.l : o.length != null ? o.length : o.length_in, w: o.w != null ? o.w : o.width != null ? o.width : o.width_in, h: o.h != null ? o.h : o.height != null ? o.height : o.height_in }; };
+  if (Array.isArray(v) && v.length === 3) return { l: num(v[0]), w: num(v[1]), h: num(v[2]) };
+  if (typeof v === "string") { const m = v.match(/\d+(?:\.\d+)?/g); return m && m.length === 3 && !/\b(ft|feet|foot|cm|mm|m)\b/i.test(v.replace(/\bin(?:ch(?:es)?)?\b/ig, "")) ? { l: Number(m[0]), w: Number(m[1]), h: Number(m[2]) } : null; }
+  if (v && typeof v === "object" && !Array.isArray(v)) return fromObj(v);
+  if (raw.length != null || raw.width != null || raw.height != null) return fromObj(raw);
+  return null;
+}
+
 // validate(raw, now) -> { ok, missing[], problems[], data }.  `data` is the normalized record even when not ok, so the agent can ask for exactly what is missing.
 function validate(raw, now) {
   raw = raw || {}; const miss = [], prob = [], d = {};
@@ -43,7 +55,7 @@ function validate(raw, now) {
   const pc = num(raw.piece_count); d.piece_count = Number.isInteger(pc) && pc > 0 && pc <= 500 ? pc : 0; if (!d.piece_count) miss.push("piece_count");
   const tw = num(raw.total_weight_lb); d.total_weight_lb = tw > 0 && tw <= 100000 ? tw : 0; if (!d.total_weight_lb) miss.push("total_weight_lb");
   d.pieces = (Array.isArray(raw.pieces) ? raw.pieces : []).map(dims).filter(Boolean).slice(0, 100);
-  d.total_dims = dims(raw.total_dims);
+  d.total_dims = dims(raw.total_dims) || dims(looseDims(raw));
   if (!d.pieces.length && !d.total_dims) miss.push("dimensions");
   if (Array.isArray(raw.pieces) && raw.pieces.length && raw.pieces.map(dims).some(function (x) { return !x; })) prob.push("a_piece_has_bad_dimensions");
   const listed = d.pieces.reduce(function (a, p) { return a + p.qty; }, 0); if (d.pieces.length && d.piece_count && listed !== d.piece_count && d.pieces.every(function (p) { return p.qty >= 1; }) && listed > d.piece_count) prob.push("piece_dimensions_exceed_piece_count");

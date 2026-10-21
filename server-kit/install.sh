@@ -7,7 +7,7 @@
 set -euo pipefail
 EMAIL="${1:-}"; [ -n "$EMAIL" ] || { echo "Usage: sudo bash install.sh you@email.com"; exit 1; }
 [ "$(id -u)" = 0 ] || { echo "Run as root (sudo)."; exit 1; }
-DOMAIN="${DOMAIN:-potentworld.ink}"
+DOMAIN="${DOMAIN:-potentworld.online}"
 SITE="${SITE_URL:-https://potentoperations.netlify.app}"
 KIT="$(cd "$(dirname "$0")" && pwd)"
 OUT=/opt/potent-media; JDIR=/opt/jitsi
