@@ -7846,9 +7846,7 @@ function AdminLogin(props) {
     var [editValue, setEditValue] = useState("");
     var [revokedErr, setRevokedErr] = useState(false);
     var [srvErr, setSrvErr] = useState("");
-    var [camConsent, setCamConsent] = useState(function () {
-        try { return localStorage.getItem("pl_cam_consent") === "yes"; } catch (e) { return false; }
-    });
+    var [camConsent, setCamConsent] = useState(false); // sign-in never opens the camera (owner decision)
     var [camStream, setCamStream] = useState(null);
     var [camError, setCamError] = useState(false);
     var videoRef = React.useRef(null);
@@ -8115,15 +8113,11 @@ function AdminLogin(props) {
                     React.createElement(Btn, {
                         onClick: function () {
                             var qu = USERS.find(function (u) { return u.id === selected; });
-                            if (qu && qu.noPhoto) { go(); return; } // Quill assistant: no camera needed
-                            if (!camConsent) { grantCamera(); return; } // wait for real permission result, do not proceed yet
-                            if (camError) { grantCamera(); return; } // camera was denied — try again, still cannot proceed without it
-                            go();
+                            go(); // owner decision: no camera gate at sign-in
                         },
                         disabled: !pw, style: { width: "100%" }
-                    }, !camConsent ? "Allow Camera To Continue" : camError ? "\u26A0 Camera Needed \u2014 Try Again" : "Sign In \u2192"),
-                    camError && React.createElement("div", { style: { color: C.red, fontSize: 11, marginTop: 8, textAlign: "center" } }, "Camera access is needed for documents, BOL uploads, and photo verification inside the app. Please allow it in your browser and try again."),
-                    codeStage === "sent" && React.createElement("div", { style: { marginTop: 14 } },
+                    }, "Sign In \u2192"),
+                                        codeStage === "sent" && React.createElement("div", { style: { marginTop: 14 } },
                         React.createElement(TxtIn, { label: "6-digit code from your email", value: codeVal, onChange: function (v) { setCodeVal(String(v).replace(/\D/g, "").slice(0, 6)); }, placeholder: "123456" }),
                         React.createElement(Btn, { onClick: codeGo, disabled: codeBusy || codeVal.length !== 6, style: { width: "100%" } }, codeBusy ? "Checking\u2026" : "Sign in with code \u2192")),
                     codeMsg && React.createElement("div", { style: { color: codeStage === "sent" ? C.dim : C.red, fontSize: 12, marginTop: 8, textAlign: "center" } }, codeMsg),
