@@ -1,6 +1,6 @@
 // Route distance: the real failure reason is reported, the key is trimmed, one retry on 429/5xx, and nothing is guessed.
 const assert = require("assert");
-process.env.ROUTING_PROVIDER = "ors"; process.env.ORS_API_KEY = "  abc123\n";
+process.env.ROUTE_BACKUP = "off"; process.env.ROUTING_PROVIDER = "ors"; process.env.ORS_API_KEY = "  abc123\n";
 const RT = require("../netlify/functions/lib/voice/route.js");
 const A = { lat: 33.75, lon: -84.39 }, B = { lat: 33.95, lon: -84.55 };
 const resp = (st, body) => ({ ok: st < 300, status: st, text: async () => typeof body === "string" ? body : JSON.stringify(body) });
@@ -27,7 +27,7 @@ const first = (async () => {
   console.log("route ok");
 })().catch(e => { console.error(e); process.exit(1); });
 // host fallback (runs after the first block so the two do not share fetch at the same time)
-first.then(async () => {
+const second = first.then(async () => {
   process.env.ORS_API_KEY = "k"; const urls = [];
   global.fetch = async (u) => { urls.push(String(u)); return /heigit/.test(u) ? { ok: false, status: 404, text: async () => "{}" } : { ok: true, status: 200, text: async () => JSON.stringify({ routes: [{ summary: { distance: 1609.344, duration: 60 } }] }) }; };
   const r = await require("../netlify/functions/lib/voice/route.js").distance({ lat: 1, lon: 1 }, { lat: 2, lon: 2 });
@@ -37,7 +37,7 @@ first.then(async () => {
 
 // backup
 (async () => {
-  await new Promise(r => setTimeout(r, 300));
+  await second;
   const RT = require("../netlify/functions/lib/voice/route.js"); process.env.ORS_API_KEY = "k"; delete process.env.ROUTE_BACKUP;
   const urls = [];
   global.fetch = async (u) => { urls.push(String(u)); return /osrm/.test(u) ? { ok: true, status: 200, json: async () => ({ code: "Ok", routes: [{ distance: 16093.44, duration: 900 }] }) } : { ok: false, status: 403, text: async () => JSON.stringify({ error: "Access to this API has been disallowed" }) }; };
