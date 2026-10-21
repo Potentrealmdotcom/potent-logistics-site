@@ -1,9 +1,9 @@
 const assert = require("assert"); let n = 0; const ok = (c, m) => { assert.ok(c, m); n++; };
 const P = require("../netlify/functions/lib/voice/prompt.js"), A = require("../netlify/functions/lib/voice/adapters/gemini-live.js"), T = require("../netlify/functions/lib/voice/tools.js");
-const g = P.greeting({ agent_name: "Elevate" }, { name: "POTENT Logistics" });
+const g = P.greeting({ agent_name: "Elevate" }, { name: "POTENT Logistics", slug: "potent-logistics" });
 ok(/I'm Ell-eh-vate, powered by POTENT/.test(g) && !/Elevate/.test(g), "greeting uses the phonetic name and the new intro");
 ok(P.greeting({ greeting: "This is Əlevate calling" }, {}).includes("Ell-eh-vate"), "custom greeting is respelled too");
-const b = P.build({ agent_name: "Elevate" }, { name: "POTENT Logistics" });
+const b = P.build({ agent_name: "Elevate" }, { name: "POTENT Logistics", slug: "potent-logistics" });
 ok(/ELL-eh-VATE/.test(b) && /Should we use the number you're calling from\?/.test(b) && /prepaid wallet/.test(b) && /recurring account/.test(b) && /one-time pop-up event, a junk removal/.test(b) && /best pricing/.test(b) && /never promise to beat or match/.test(b) && /get_playbook/.test(b) && /track their driver/.test(b) && /wants to drive for POTENT/.test(b), "prompt: name, caller-ID question, recurring/wallet, cross-sell, playbook pointer, tracking/account/driver join");
 ok(/Hey, this is Ell-eh-vate, powered by POTENT/.test(b), "sales opener uses the respelled name");
 delete process.env.VOICE_THINKING_BUDGET;
@@ -21,7 +21,7 @@ ok(!/\$\s?\d/.test(JSON.stringify(PB.TOPICS)), "playbook scripts contain no doll
 ok(/get_playbook/.test(JSON.stringify(T.defs())) && /price_pushback/.test(JSON.stringify(T.defs())), "get_playbook tool is offered with the topic list");
 ok(/YOUR VOICE IS THE CLOSER'S PLAYBOOK/.test(b) && /Problems before products/.test(b) && /Never argue/.test(b) && /Out of curiosity/.test(b), "she talks like the Closer's Playbook on every call");
 ok(/LIKE FAMILY/.test(b) && /NEVER GUESS/.test(b) && /yes ma'am/.test(b), "Southern, family, never guess");
-process.env.VOICE_LAYERS = "base"; const bb = P.build({ agent_name: "Elevate" }, { name: "X" }); ok(!/YOUR NAME|CALLBACK NUMBER|SELL EVERY CALL|PLAYBOOK:|LIKE FAMILY|CLOSER'S PLAYBOOK|SPEED:/.test(bb) && /STEP 1 OPEN/.test(bb) && !T.defs().some(d => d.name === "get_playbook"), "VOICE_LAYERS=base: every new layer and the playbook tool are off (the 7:08 configuration)");
-process.env.VOICE_LAYERS = "name,callerid"; const b2 = P.build({ agent_name: "Elevate" }, { name: "X" }); ok(/YOUR NAME/.test(b2) && /CALLBACK NUMBER/.test(b2) && !/SELL EVERY CALL/.test(b2) && !T.defs().some(d => d.name === "get_playbook"), "layers can be added one at a time");
-process.env.VOICE_LAYERS = "name,playbook"; ok(T.defs().some(d => d.name === "get_playbook") && /PLAYBOOK:/.test(P.build({ agent_name: "Elevate" }, { name: "X" })), "the playbook layer brings its tool back"); delete process.env.VOICE_LAYERS;
+process.env.VOICE_LAYERS = "base"; const bb = P.build({ agent_name: "Elevate" }, { name: "X", slug: "potent-logistics" }); ok(!/YOUR NAME|CALLBACK NUMBER|SELL EVERY CALL|PLAYBOOK:|LIKE FAMILY|CLOSER'S PLAYBOOK|SPEED:/.test(bb) && /STEP 1 OPEN/.test(bb) && !T.defs().some(d => d.name === "get_playbook"), "VOICE_LAYERS=base: every new layer and the playbook tool are off (the 7:08 configuration)");
+process.env.VOICE_LAYERS = "name,callerid"; const b2 = P.build({ agent_name: "Elevate" }, { name: "X", slug: "potent-logistics" }); ok(/YOUR NAME/.test(b2) && /CALLBACK NUMBER/.test(b2) && !/SELL EVERY CALL/.test(b2) && !T.defs().some(d => d.name === "get_playbook"), "layers can be added one at a time");
+process.env.VOICE_LAYERS = "name,playbook"; ok(T.defs().some(d => d.name === "get_playbook") && /PLAYBOOK:/.test(P.build({ agent_name: "Elevate" }, { name: "X", slug: "potent-logistics" })), "the playbook layer brings its tool back"); delete process.env.VOICE_LAYERS;
 console.log("voice owner fixes: " + n + " assertions PASS");

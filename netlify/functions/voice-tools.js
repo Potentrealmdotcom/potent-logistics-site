@@ -54,7 +54,7 @@ exports.handler = async function (event) {
       if (first && rec) await TW.startRecording(ses.provider_call_id);
       const allowed = T.defs().filter(function (d) { return st.entitlements[T.FEATURE[d.name]] === true; });
       const cap = Math.min(st.plan.max_call_minutes, cfg.max_call_minutes || 1e9) * 60;
-      const org = { name: st.org.name };
+      const org = { name: st.org.name, slug: st.org.slug };
       return B.J(200, { session_id: ses.id, org_id: ses.org_id, call_sid: ses.provider_call_id, instructions: P.build(cfg, org), greeting: P.greeting(cfg, org), voice: cfg.voice || "marin", tools: allowed, max_seconds: cap, recording: rec });
     }
     const ses = await sessionById(b.session_id); if (!ses) return B.J(404, { error: "No such call" });

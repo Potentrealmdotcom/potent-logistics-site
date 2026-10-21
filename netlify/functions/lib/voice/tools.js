@@ -326,6 +326,9 @@ const changeReq = function (kind) { return async function (ctx, a) {
 TOOLS.request_reschedule = changeReq("Reschedule"); TOOLS.request_cancellation = changeReq("Cancellation");
 
 // Run one tool call for a session. Never throws.
+// POTENT's own selling material, junk/pop-up price list, playbook and Stripe account belong to POTENT's line only; other companies never get them.
+const isPotentOrg = async function (ctx) { if (ctx._isP !== undefined) return ctx._isP; const o = rows(await B.sb("organizations?id=eq." + ctx.orgId + "&select=slug&limit=1"))[0]; return (ctx._isP = !!(o && o.slug === (process.env.POTENT_ORG_SLUG || "potent-logistics"))); };
+const POTENT_ONLY = { quote_special_service: 1, get_playbook: 1, send_payment_link: 1 };
 async function execute(ctx, name, args, callKey) {
   const t0 = Date.now(); let out;
   try {
@@ -335,6 +338,7 @@ async function execute(ctx, name, args, callKey) {
     if (prior) return Object.assign({}, prior.result, { duplicate: true });
     if (!ctx.session || ["ended", "failed", "rejected"].indexOf(ctx.session.state) >= 0) out = { ok: false, error: "call_not_active" };
     else if (ctx.cfg.emergency_stop || ctx.cfg.ai_enabled === false) out = { ok: false, error: "ai_disabled", say: "The assistant is switched off. Offer a callback." };
+    else if (POTENT_ONLY[name] && !(await isPotentOrg(ctx))) out = { ok: false, error: "not_available", say: "That is not set up for this company. Take a callback so the owner can follow up. Do not guess." };
     else { const al = await V.allow(ctx.orgId, FEATURE[name]); out = !al.allowed ? { ok: false, error: "not_in_plan", say: al.reason } : await TOOLS[name](ctx, args && typeof args === "object" ? args : {}); }
   } catch (e) { console.error("voice tool", name, e && e.message); out = { ok: false, error: "tool_failed", say: "Something went wrong. Offer a callback or a person; do not guess." }; }
   try { await B.sb("voice_tool_executions", { method: "POST", prefer: "resolution=ignore-duplicates,return=minimal", body: { org_id: ctx.orgId, session_id: ctx.session && ctx.session.id, tool: name, call_key: String(callKey).slice(0, 120), args: JSON.parse(S.redact(JSON.stringify(args || {}))), result: out, ok: !!out.ok, error: out.error || null, ms: Date.now() - t0 } }); } catch (e) { /* logging must not fail the call */ }
