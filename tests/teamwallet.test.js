@@ -1,0 +1,32 @@
+// Run: node tests/teamwallet.test.js  (team commission wallets: money moves on the server only, with identity, balance and fee checks)
+process.env.AUTH_SECRET = "t"; process.env.SUPABASE_SERVICE_ROLE_KEY = "k";
+const assert = require("assert"); let n = 0; const ok = (c, m) => { assert(c, m); n++; };
+const T = { team_wallets: [], team_wallet_txns: [], payout_requests: [], organizations: [{ id: "o1", slug: "potent-logistics" }] };
+require("./_mock.js")(T, {});
+const D = require("../netlify/functions/data-api.js"), cr = require("crypto");
+const b64u = b => Buffer.from(b).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const tok = (uid, role, extra) => { const p = b64u(JSON.stringify(Object.assign({ uid: uid, role: role, exp: Date.now() + 1e6 }, extra || {}))); return p + "." + b64u(cr.createHmac("sha256", "t").update(p).digest()); };
+const call = async (a, body, t) => { const r = await D.handler({ httpMethod: "POST", headers: { authorization: "Bearer " + t }, queryStringParameters: { tw: a }, body: JSON.stringify(body || {}) }); return { s: r.statusCode, j: JSON.parse(r.body) }; };
+const OWN = tok("potent", "owner"), D1 = tok("dispatch1", "dispatch"), DR = tok("driver1", "driver");
+(async () => {
+  let r = await call("list", {}, "bad"); ok(r.s === 401, "no valid login: refused");
+  r = await call("credit", { email: "driver1", amount: 100 }, DR); ok(r.s === 403, "a driver cannot credit money");
+  r = await call("credit", { email: "driver1", amount: 100 }, D1); ok(r.s === 403, "dispatch cannot credit money either (owner only, as in the screen)");
+  r = await call("credit", { email: "driver1", amount: -5 }, OWN); ok(r.s === 400, "negative or zero amounts refused");
+  r = await call("credit", { email: "driver1", amount: 100.456 }, OWN); ok(r.s === 200 && T.team_wallets.length === 1 && Number(T.team_wallets[0].available_balance) === 100.46 && T.team_wallet_txns[0].amount === 100.46, "owner credits $100.46: wallet created, balance and ledger agree");
+  r = await call("list", {}, DR); ok(r.s === 200 && r.j.wallets.length === 1 && r.j.wallets[0].member_email === "driver1", "a member sees only their own wallet");
+  await call("ensure", { email: "dispatch1" }, D1); r = await call("list", {}, DR); ok(r.j.wallets.length === 1, "other people's wallets stay hidden from a member");
+  r = await call("list", {}, D1); ok(r.j.wallets.length === 2, "dispatch sees all wallets");
+  const w1 = T.team_wallets.find(w => w.member_email === "driver1");
+  r = await call("txns", { wallet_id: w1.id }, tok("dispatch1", "driver")); ok(r.s === 403, "a member cannot read someone else's ledger");
+  r = await call("cashout", { method: "debit_card", speed: "sameday", handle: "" }, DR); ok(r.s === 400, "cashout needs a destination");
+  r = await call("cashout", { method: "debit_card", speed: "sameday", handle: "zelle@x.com", amount: 99999 }, DR);
+  ok(r.s === 200 && r.j.fee === 11.51 && r.j.net === 88.95 && Number(w1.available_balance) === 0 && T.payout_requests.length === 1 && T.payout_requests[0].status === "pending", "cashout: server works out the fee (1.5% + $10), zeroes the balance, files one pending request; a client-sent amount is ignored");
+  r = await call("cashout", { method: "bank", handle: "z" }, DR); ok(r.s === 400, "second cashout with nothing left is refused");
+  r = await call("markpaid", { id: T.payout_requests[0].id }, DR); ok(r.s === 403, "a member cannot mark a payout paid");
+  r = await call("markpaid", { id: T.payout_requests[0].id }, D1); ok(r.s === 403, "dispatch cannot mark paid either");
+  r = await call("markpaid", { id: T.payout_requests[0].id }, OWN); ok(r.s === 200 && T.payout_requests[0].status === "paid", "owner marks it paid");
+  r = await call("markpaid", { id: T.payout_requests[0].id }, OWN); ok(r.s === 409, "cannot be paid twice");
+  r = await call("list", {}, tok("x", "owner", { orgId: "o9" })); ok(r.s === 403, "a customer company's login cannot touch POTENT's team wallets");
+  console.log("PASS: " + n + " assertions");
+})().catch(e => { console.error("FAIL", e); process.exit(1); });

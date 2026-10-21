@@ -22650,6 +22650,11 @@ function plWalletAutoCharge(job) {
 // Fee structure: Bank (standard) = FREE | Debit card instant = 1.5% | Same-day rush = $10 flat
 var TEAM_WALLET_DEBIT_FEE_PCT = 1.5;
 var TEAM_WALLET_SAMEDAY_FEE = 10;
+// Team wallet money moves on the server only (data-api ?tw=...). The server checks who you are, your balance and the fee.
+function plTw(action, body) {
+    return fetch("/.netlify/functions/data-api?tw=" + encodeURIComponent(action), { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + plTokenGet() }, body: JSON.stringify(body || {}) })
+        .then(function (r) { return r.json().catch(function () { return { error: "Server error" }; }); }).catch(function () { return { error: "No connection" }; });
+}
 
 function TeamWalletPanel(props) {
     var role = plOpsRole();
@@ -22679,19 +22684,14 @@ function TeamWalletPanel(props) {
     }
 
     function load() {
-        plOps("team_wallets", "GET", "select=*&order=updated_at.desc&limit=300").then(function (r) {
-            if (r.ok && Array.isArray(r.data)) setWallets(r.data);
-            else setMsg(r.error || "Could not load wallets.");
-        });
-        plOps("payout_requests", "GET", "select=*,team_wallets(member_name,member_email)&order=created_at.desc&limit=100").then(function (r) {
-            if (r.ok && Array.isArray(r.data)) setPayouts(r.data);
+        plTw("list").then(function (r) {
+            if (r && r.ok) { setWallets(r.wallets || []); setPayouts(r.payouts || []); }
+            else setMsg((r && r.error) || "Could not load wallets.");
         });
     }
     function loadTx(w) {
         setSel(w);
-        plOps("team_wallet_txns", "GET", "wallet_id=eq." + w.id + "&select=*&order=created_at.desc&limit=50").then(function (r) {
-            setTxns(r.ok && Array.isArray(r.data) ? r.data : []);
-        });
+        plTw("txns", { wallet_id: w.id }).then(function (r) { setTxns(r && r.ok && Array.isArray(r.txns) ? r.txns : []); });
     }
     React.useEffect(function () { load(); }, []);
 
@@ -22701,8 +22701,8 @@ function TeamWalletPanel(props) {
     function ensureWallet(email, name, roleName) {
         var existing = wallets.filter(function (w) { return String(w.member_email).toLowerCase() === String(email).toLowerCase(); })[0];
         if (existing) return Promise.resolve(existing);
-        return plOps("team_wallets", "POST", "", { member_email: String(email).toLowerCase(), member_name: name || email, role: roleName || "driver" }).then(function (r) {
-            if (r.ok && r.data && r.data[0]) { load(); return r.data[0]; }
+        return plTw("ensure", { email: String(email).toLowerCase(), name: name || email, role: roleName || "driver" }).then(function (r) {
+            if (r && r.ok && r.wallet) { load(); return r.wallet; }
             return null;
         });
     }
@@ -22711,22 +22711,11 @@ function TeamWalletPanel(props) {
         var amt = Number(cf.amount);
         if (!cf.email.trim() || !(amt > 0)) { setMsg("Enter member email and amount."); return; }
         var email = cf.email.trim().toLowerCase();
-        ensureWallet(email, email, "driver").then(function (w) {
-            if (!w) { setMsg("Could not find or create wallet."); return; }
-            return plOps("team_wallets", "PATCH", "id=eq." + w.id, {
-                available_balance: Number(w.available_balance || 0) + amt,
-                total_earned: Number(w.total_earned || 0) + amt,
-                updated_at: new Date().toISOString()
-            }).then(function () {
-                return plOps("team_wallet_txns", "POST", "", {
-                    wallet_id: w.id, type: "commission", amount: amt,
-                    note: cf.note || "Commission credit", actor: myEmail
-                });
-            }).then(function () {
-                setMsg("Credited $" + amt.toFixed(2) + " to " + email + ".");
-                setCf({ email: "", amount: "", note: "" });
-                load(); if (sel && sel.id === w.id) loadTx(w);
-            });
+        plTw("credit", { email: email, amount: amt, note: cf.note || "Commission credit" }).then(function (r) {
+            if (!r || !r.ok) { setMsg((r && r.error) || "Could not credit the wallet."); return; }
+            setMsg("Credited $" + amt.toFixed(2) + " to " + email + ".");
+            setCf({ email: "", amount: "", note: "" });
+            load(); if (sel && r.wallet && sel.id === r.wallet.id) loadTx(r.wallet);
         });
     }
 
@@ -22745,34 +22734,16 @@ function TeamWalletPanel(props) {
         var fee = calcFee(amt, coForm.method, coForm.speed);
         var net = Math.round((amt - fee) * 100) / 100;
         if (net <= 0) { setMsg("Fee exceeds balance."); return; }
-        // Debit the wallet
-        plOps("team_wallets", "PATCH", "id=eq." + myWallet.id, {
-            available_balance: 0,
-            total_cashed_out: Number(myWallet.total_cashed_out || 0) + amt,
-            payout_method: coForm.method,
-            payout_handle: coForm.handle.trim(),
-            updated_at: new Date().toISOString()
-        }).then(function () {
-            return plOps("team_wallet_txns", "POST", "", {
-                wallet_id: myWallet.id, type: "cashout", amount: -amt,
-                note: "Cashout request (" + coForm.method + "/" + coForm.speed + ") fee $" + fee.toFixed(2), actor: myEmail
-            });
-        }).then(function () {
-            return plOps("payout_requests", "POST", "", {
-                wallet_id: myWallet.id, amount: amt, fee: fee, net_amount: net,
-                method: coForm.method, payout_handle: coForm.handle.trim(), status: "pending"
-            });
-        }).then(function () {
-            setMsg("Cashout requested: $" + net.toFixed(2) + " via " + coForm.method + ". Tony will send it shortly.");
+        plTw("cashout", { method: coForm.method, speed: coForm.speed, handle: coForm.handle.trim() }).then(function (r) {
+            if (!r || !r.ok) { setMsg((r && r.error) || "Could not request the cashout."); load(); return; }
+            setMsg("Cashout requested: $" + Number(r.net).toFixed(2) + " via " + coForm.method + ". Tony will send it shortly.");
             setShowCashout(false); setCoForm({ method: "bank", speed: "standard", handle: "" });
             load();
         });
     }
 
     function markPaid(p) {
-        plOps("payout_requests", "PATCH", "id=eq." + p.id, {
-            status: "paid", paid_at: new Date().toISOString(), paid_by: myEmail
-        }).then(function () { setMsg("Marked paid."); load(); });
+        plTw("markpaid", { id: p.id }).then(function (r) { setMsg(r && r.ok ? "Marked paid." : ((r && r.error) || "Could not mark paid.")); load(); });
     }
 
     var inp = { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "8px 10px", fontSize: 12, fontFamily: "inherit", boxSizing: "border-box" };
@@ -22894,8 +22865,9 @@ function EasyModeDashboard(props) {
 
     React.useEffect(function () {
         if (myEmail) {
-            plOps("team_wallets", "GET", "member_email=eq." + encodeURIComponent(myEmail) + "&select=*&limit=1").then(function (r) {
-                if (r.ok && r.data && r.data[0]) setWallet(r.data[0]);
+            plTw("list").then(function (r) {
+                var mine = r && r.ok && (r.wallets || []).filter(function (w) { return String(w.member_email).toLowerCase() === String(myEmail).toLowerCase(); })[0];
+                if (mine) setWallet(mine);
             });
         }
         var myJobs = (props.jobs || []).filter(function (j) { return j.status !== "Completed"; }).slice(0, 5);

@@ -461,6 +461,76 @@ exports.handler = async function (event) {
         return J(400, { error: "Unknown payout action" });
     }
 
+    // ── team commission wallets and cashouts (?tw=...). Balances move ONLY here, never by a direct database write from the browser. ──
+    if (qs.tw) {
+        if (event.httpMethod !== "POST") return J(405, { error: "POST only" });
+        if (tok.orgId) return J(403, { error: "Not available for your company." });   // POTENT's own team only
+        var twb = parse(event.body || "null") || {};
+        var twMe = String(tok.uid || "").trim().toLowerCase(); if (!twMe) return J(400, { error: "Sign in again" });
+        var twMgr = ["owner", "dispatch", "dispatcher"].indexOf(tok.role) >= 0, twOwner = tok.role === "owner";
+        var twNum = function (v) { var n = Math.round(Number(v) * 100) / 100; return isFinite(n) ? n : NaN; };
+        var twEmail = function (v) { return String(v || "").trim().toLowerCase().slice(0, 160); };
+        var twGet = async function (filter) { var r = await sb("team_wallets?" + filter + "&select=*&limit=1"); var d = r.ok ? parse(r.text) : null; return Array.isArray(d) && d[0] ? d[0] : null; };
+        var twAll = qs.tw;
+        if (twAll === "list") {
+            var wq = twMgr ? "team_wallets?select=*&order=updated_at.desc&limit=300" : "team_wallets?member_email=eq." + encodeURIComponent(twMe) + "&select=*&limit=1";
+            var wr = await sb(wq); if (!wr.ok) return J(500, { error: "Could not load wallets." });
+            var wl = parse(wr.text) || [];
+            var pq = twMgr ? "payout_requests?select=*,team_wallets(member_name,member_email)&order=created_at.desc&limit=100"
+                           : (wl[0] ? "payout_requests?wallet_id=eq." + encodeURIComponent(wl[0].id) + "&select=*,team_wallets(member_name,member_email)&order=created_at.desc&limit=100" : null);
+            var pl = []; if (pq) { var pr = await sb(pq); pl = pr.ok ? (parse(pr.text) || []) : []; }
+            return J(200, { ok: true, wallets: wl, payouts: pl });
+        }
+        if (twAll === "txns") {
+            var tw1 = await twGet("id=eq." + encodeURIComponent(String(twb.wallet_id || "")));
+            if (!tw1) return J(404, { error: "Wallet not found" });
+            if (!twMgr && String(tw1.member_email).toLowerCase() !== twMe) return J(403, { error: "Not your wallet" });
+            var tr = await sb("team_wallet_txns?wallet_id=eq." + encodeURIComponent(tw1.id) + "&select=*&order=created_at.desc&limit=50");
+            return J(200, { ok: true, txns: tr.ok ? (parse(tr.text) || []) : [] });
+        }
+        if (twAll === "ensure") {
+            if (!twMgr) return J(403, { error: "Only the owner or dispatch can set up wallets." });
+            var em = twEmail(twb.email); if (!em) return J(400, { error: "Enter an email or user id." });
+            var ex = await twGet("member_email=eq." + encodeURIComponent(em)); if (ex) return J(200, { ok: true, wallet: ex });
+            var cr = await sb("team_wallets", { method: "POST", prefer: "return=representation", body: JSON.stringify({ member_email: em, member_name: String(twb.name || em).slice(0, 120), role: String(twb.role || "driver").slice(0, 40) }) });
+            var cd = cr.ok ? parse(cr.text) : null; return cd && cd[0] ? J(200, { ok: true, wallet: cd[0] }) : J(500, { error: "Could not create the wallet." });
+        }
+        if (twAll === "credit") {
+            if (!twOwner) return J(403, { error: "Only the owner can credit commissions." });
+            var amt = twNum(twb.amount); if (!(amt > 0) || amt > 100000) return J(400, { error: "Enter an amount between $0.01 and $100,000." });
+            var cem = twEmail(twb.email); if (!cem) return J(400, { error: "Enter member email." });
+            var w = await twGet("member_email=eq." + encodeURIComponent(cem));
+            if (!w) { var cc = await sb("team_wallets", { method: "POST", prefer: "return=representation", body: JSON.stringify({ member_email: cem, member_name: cem, role: "driver" }) }); var ccd = cc.ok ? parse(cc.text) : null; w = ccd && ccd[0]; }
+            if (!w) return J(500, { error: "Could not find or create the wallet." });
+            var up = await sb("team_wallets?id=eq." + encodeURIComponent(w.id) + "&available_balance=eq." + encodeURIComponent(w.available_balance), { method: "PATCH", prefer: "return=representation",
+                body: JSON.stringify({ available_balance: twNum(Number(w.available_balance || 0) + amt), total_earned: twNum(Number(w.total_earned || 0) + amt), updated_at: new Date().toISOString() }) });
+            var upd = up.ok ? parse(up.text) : null; if (!upd || !upd[0]) return J(409, { error: "The balance changed while saving. Try again." });
+            await sb("team_wallet_txns", { method: "POST", prefer: "return=minimal", body: JSON.stringify({ wallet_id: w.id, type: "commission", amount: amt, note: String(twb.note || "Commission credit").slice(0, 200), actor: twMe }) });
+            return J(200, { ok: true, wallet: upd[0], credited: amt });
+        }
+        if (twAll === "cashout") { // a member cashes out THEIR OWN whole balance; the fee is worked out here
+            var mine = await twGet("member_email=eq." + encodeURIComponent(twMe)); if (!mine) return J(404, { error: "No wallet found. Ask the owner to set one up." });
+            var bal = twNum(mine.available_balance); if (!(bal > 0)) return J(400, { error: "Nothing to cash out yet." });
+            var method = ["bank", "debit_card"].indexOf(String(twb.method)) >= 0 ? String(twb.method) : "bank", speed = String(twb.speed) === "sameday" ? "sameday" : "standard";
+            var handle = String(twb.handle || "").trim().slice(0, 120); if (!handle) return J(400, { error: "Enter where to send the money (Zelle phone/email or CashApp tag)." });
+            var fee = twNum((method === "debit_card" ? bal * 0.015 : 0) + (speed === "sameday" ? 10 : 0)), net = twNum(bal - fee);
+            if (!(net > 0)) return J(400, { error: "Fee exceeds balance." });
+            var dp = await sb("team_wallets?id=eq." + encodeURIComponent(mine.id) + "&available_balance=eq." + encodeURIComponent(mine.available_balance), { method: "PATCH", prefer: "return=representation",
+                body: JSON.stringify({ available_balance: 0, total_cashed_out: twNum(Number(mine.total_cashed_out || 0) + bal), payout_method: method, payout_handle: handle, updated_at: new Date().toISOString() }) });
+            var dpd = dp.ok ? parse(dp.text) : null; if (!dpd || !dpd[0]) return J(409, { error: "The balance changed while saving. Try again." });
+            await sb("team_wallet_txns", { method: "POST", prefer: "return=minimal", body: JSON.stringify({ wallet_id: mine.id, type: "cashout", amount: -bal, note: "Cashout request (" + method + "/" + speed + ") fee $" + fee.toFixed(2), actor: twMe }) });
+            var pq2 = await sb("payout_requests", { method: "POST", prefer: "return=minimal", body: JSON.stringify({ wallet_id: mine.id, amount: bal, fee: fee, net_amount: net, method: method, payout_handle: handle, status: "pending" }) });
+            if (!pq2.ok) return J(500, { error: "Your balance was moved but the request was not saved. Tell the owner now." });
+            return J(200, { ok: true, net: net, fee: fee, method: method });
+        }
+        if (twAll === "markpaid") {
+            if (!twOwner) return J(403, { error: "Only the owner can mark a payout paid." });
+            var mp = await sb("payout_requests?id=eq." + encodeURIComponent(String(twb.id || "")) + "&status=eq.pending", { method: "PATCH", prefer: "return=representation", body: JSON.stringify({ status: "paid", paid_at: new Date().toISOString(), paid_by: twMe }) });
+            var mpd = mp.ok ? parse(mp.text) : null; return mpd && mpd[0] ? J(200, { ok: true }) : J(409, { error: "That payout is not pending (already paid or not found)." });
+        }
+        return J(400, { error: "Unknown wallet request" });
+    }
+
     // ── staff wallet actions: charge a wallet (dispatch/owner), add money received outside the app (owner), auto-charge a finished job ──
     if (qs.wallet) {
         if (tok.role === "driver") return J(403, { error: "Only the owner or dispatch can use wallets." });
