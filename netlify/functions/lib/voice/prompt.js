@@ -18,6 +18,7 @@ function build(cfg, org) {
 function greeting(cfg, org) {
   if (cfg.greeting) return String(cfg.greeting).slice(0, 400);
   const rec = cfg.recording_enabled && cfg.recording_consent_confirmed;
-  return "Thanks for calling " + ((org && org.name) || "us") + ". I'm an AI assistant." + (rec ? " This call may be recorded." : "") + " How can I help you today?";
+  const who = cfg.agent_name && cfg.agent_name !== "POTENT AI Assistant" ? cfg.agent_name : "Elevate";
+  return "Hey, my name is " + who + ". Thanks for calling " + ((org && org.name) || "us") + ". I'm an AI assistant." + (rec ? " This call may be recorded." : "") + " How can I help you today?";
 }
 module.exports = { build, greeting };

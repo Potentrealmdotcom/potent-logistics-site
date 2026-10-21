@@ -2,7 +2,7 @@
 const B = require("../beats");
 const rows = function (r) { return r.ok && Array.isArray(r.data) ? r.data : []; };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const DEFAULT_CFG = { agent_name: "POTENT AI Assistant", greeting: null, disclosure: null, voice: "marin", business_hours: {}, transfer_number: null, human_available: false, recording_enabled: false, recording_consent_confirmed: false,
+const DEFAULT_CFG = { agent_name: "Elevate", greeting: null, disclosure: null, voice: "marin", business_hours: {}, transfer_number: null, human_available: false, recording_enabled: false, recording_consent_confirmed: false,
   outbound_enabled: false, outbound_compliance_confirmed: false, emergency_stop: false, ai_enabled: true, max_call_minutes: null, retention_days: 30, spend_alert_cents: null, service_area: { states: ["GA"] }, settings: {} };
 async function cfgOf(orgId) { const c = rows(await B.sb("voice_agent_config?org_id=eq." + orgId + "&select=*&limit=1"))[0]; return c ? Object.assign({}, DEFAULT_CFG, c) : Object.assign({}, DEFAULT_CFG, { org_id: orgId, _default: true }); }
 async function profileOf(orgId, id) { const q = "voice_vehicle_profiles?org_id=eq." + orgId + "&active=eq.true&authorized=eq.true" + (id ? "&id=eq." + id : "") + "&select=*&order=updated_at.asc&limit=1"; return rows(await B.sb(q))[0] || null; }

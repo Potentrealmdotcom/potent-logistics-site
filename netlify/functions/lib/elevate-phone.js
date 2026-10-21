@@ -48,7 +48,7 @@ async function context(tok) {
   return { status: 200, body: {
     session_id: ID(c), call_sid: c.call_sid,
     instructions: E.systemPrompt({ memory: facts }) + "\nYou are on a PHONE CALL, speaking out loud: one or two short sentences at a time. The caller was already verified by keypad PIN; do not ask for or accept PINs or passwords. You are not able to transfer calls.",
-    greeting: "Hi, it's Əlevate. What can I do for you?", voice: process.env.ELEVATE_VOICE || "marin",
+    greeting: "Hey, my name is Elevate. What can I do for you?", voice: process.env.ELEVATE_VOICE || "marin",
     tools: E.asRealtimeTools(), max_seconds: maxSeconds(), recording: false } };
 }
 async function handle(act, b) { // transcript / tool / end / transfer for an Əlevate call
