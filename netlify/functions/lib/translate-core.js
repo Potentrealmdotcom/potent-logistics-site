@@ -31,22 +31,22 @@ async function callModel(lang, list, opts) {
                 headers: { "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
                 body: JSON.stringify({ model: process.env.TRANSLATE_MODEL || "claude-haiku-5-5", max_tokens: 8192, system: sys(lang), messages: [{ role: "user", content: JSON.stringify(list) }] })
             });
-            if (r.status === 429 || r.status >= 500 || r.status === 529) return { retry: true, wait: Number(r.headers.get("retry-after")) * 1000 || 0 };
-            if (!r.ok) return { fail: true };
+            if (r.status === 429 || r.status >= 500 || r.status === 529) return { retry: true, status: r.status, wait: Number(r.headers.get("retry-after")) * 1000 || 0 };
+            if (!r.ok) return { fail: true, status: r.status, msg: (await r.text().catch(function () { return ""; })).slice(0, 200) };
             var d = await r.json().catch(function () { return null; });
             var out = parseList(d && d.content && d.content[0] && d.content[0].text, list);
-            return out ? { list: out } : { fail: true };
+            return out ? { list: out } : { fail: true, msg: "unparseable_or_wrong_length" };
         }
         if (process.env.GEMINI_API_KEY) {
             var o = await require("./gemini.js").chat({ model: process.env.TRANSLATE_MODEL || "gemini-3.5-flash-lite", temperature: 0, max_tokens: 16000, messages: [{ role: "system", content: sys(lang) }, { role: "user", content: JSON.stringify(list) }] }, { timeoutMs: ms });
-            if (o.status === 429 || o.status >= 500) return { retry: true, wait: 0 };
-            if (!o.ok) return { fail: true };
+            if (o.status === 429 || o.status >= 500) return { retry: true, status: o.status, wait: 0 };
+            if (!o.ok) return { fail: true, status: o.status, msg: (await o.text().catch(function () { return ""; })).slice(0, 200) };
             var od = await o.json().catch(function () { return null; });
             var out2 = parseList(od && od.choices && od.choices[0] && od.choices[0].message && od.choices[0].message.content, list);
-            return out2 ? { list: out2 } : { fail: true };
+            return out2 ? { list: out2 } : { fail: true, msg: "unparseable_or_wrong_length" };
         }
-    } catch (e) { return { retry: true, wait: 0 }; }
-    return { fail: true, nokey: true };
+    } catch (e) { return { retry: true, wait: 0, msg: String(e && e.message || e).slice(0, 120) }; }
+    return { fail: true, nokey: true, msg: "no ANTHROPIC_API_KEY or GEMINI_API_KEY" };
 }
 // Translate a list with retries. Returns an array the same length: a string where it worked, null where it did not.
 // Wrong-length answers are split in halves and tried again; refused/slow calls are retried with a pause, never given up on at the first miss.
@@ -56,6 +56,7 @@ async function translateList(lang, list, opts) {
     var r = null;
     for (var a = 0; a < tries; a++) {
         r = await callModel(lang, list, opts);
+        if (!r.list && opts.onNote) opts.onNote((r.retry ? "retry " : "fail ") + (r.status || "") + " " + (r.msg || ""));
         if (r.list || r.fail) break;
         await wait(Math.min(30000, Math.max(r.wait || 0, 1500 * Math.pow(2, a))));
     }
