@@ -25,6 +25,10 @@ const call = b => handler({ httpMethod: "POST", body: JSON.stringify(b) }).then(
   b = good(); b.email = "nope"; r = await call(b); ok(r.s === 400, "bad email rejected");
   b = good(); b.website = "spam"; const before = rows.length; r = await call(b); ok(r.b.ok && rows.length === before, "honeypot: bots silently dropped, nothing saved");
   b = good(); delete b.email; sent.length = 0; r = await call(b); ok(r.b.ok && r.b.owner_notified && !r.b.confirmation_emailed && sent.length === 1, "no email given: owner still notified");
+  b = good(); b.extra_docs = { truck_photo_url: [P + "t2.jpg", P + "t3.jpg"] }; sent.length = 0; r = await call(b);
+  ok(r.b.ok && rows[rows.length - 1].extra_docs && rows[rows.length - 1].extra_docs.truck_photo_url.length === 2, "several truck pictures are kept");
+  ok(sent.some(m => /t3\.jpg/.test(m.text || "")), "owner alert lists the extra pictures");
+  b = good(); b.extra_docs = { truck_photo_url: ["https://evil.example/x.jpg"] }; r = await call(b); ok(r.s === 400, "extra pictures outside our bucket are rejected");
   conflicts = 2; r = await call(good()); ok(r.b.ok, "reference collision is retried");
   failInsert = true; r = await call(good()); ok(r.s === 502 && r.b.ok === false, "save failure is reported, never shown as success");
   console.log("onboarding-submit: " + n + " assertions PASS");

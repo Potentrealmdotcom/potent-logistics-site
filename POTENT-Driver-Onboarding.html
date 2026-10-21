@@ -71,44 +71,44 @@ input[type=file]{padding:8px;font-size:11px;}
   <div class="card">
     <h2>1. Truck Registration</h2>
     <div class="sub">Photo of your current truck registration</div>
-    <input type="file" accept="image/*" data-field="truck_registration_url" class="docUpload">
+    <input type="file" accept="image/*" data-field="truck_registration_url" class="docUpload" multiple>
     <div class="upload-status" id="status_truck_registration_url"></div>
   </div>
 
   <div class="card">
     <h2>2. Truck / Trailer Picture</h2>
-    <div class="sub">A clear photo of your truck (and trailer if applicable)</div>
-    <input type="file" accept="image/*" data-field="truck_photo_url" class="docUpload">
+    <div class="sub">Photos of your truck (and trailer if applicable). You can pick several at once — front, back, sides.</div>
+    <input type="file" accept="image/*" data-field="truck_photo_url" class="docUpload" multiple>
     <div class="upload-status" id="status_truck_photo_url"></div>
   </div>
 
   <div class="card">
     <h2>3. License — Front</h2>
-    <input type="file" accept="image/*" data-field="license_front_url" class="docUpload">
+    <input type="file" accept="image/*" data-field="license_front_url" class="docUpload" multiple>
     <div class="upload-status" id="status_license_front_url"></div>
     <h2 style="margin-top:16px;">License — Back</h2>
-    <input type="file" accept="image/*" data-field="license_back_url" class="docUpload">
+    <input type="file" accept="image/*" data-field="license_back_url" class="docUpload" multiple>
     <div class="upload-status" id="status_license_back_url"></div>
   </div>
 
   <div class="card">
     <h2>4. ELD (If You Have One)</h2>
     <div class="sub">Optional — skip if you don't use an ELD</div>
-    <input type="file" accept="image/*" data-field="eld_photo_url" class="docUpload">
+    <input type="file" accept="image/*" data-field="eld_photo_url" class="docUpload" multiple>
     <div class="upload-status" id="status_eld_photo_url"></div>
   </div>
 
   <div class="card">
     <h2>5. Medical Card</h2>
     <div class="sub">Your current DOT medical certificate</div>
-    <input type="file" accept="image/*" data-field="medical_card_url" class="docUpload">
+    <input type="file" accept="image/*" data-field="medical_card_url" class="docUpload" multiple>
     <div class="upload-status" id="status_medical_card_url"></div>
   </div>
 
   <div class="card" style="border:2px solid #F0E000;">
     <h2>6. Certificate of Insurance (COI) — REQUIRED</h2>
     <div class="sub">Your truck's insurance certificate. It MUST show:<br>• <b style="color:#F0E000;">POTENT OPERATIONS LLC</b> listed as <b>Additional Insured</b><br>• • Cargo coverage included<br><br>Ask your insurance agent to add these — it usually takes them 5 minutes. We cannot send you loads until this is on file.</div>
-    <input type="file" accept="image/*,.pdf" data-field="coi_url" class="docUpload">
+    <input type="file" accept="image/*,.pdf" data-field="coi_url" class="docUpload" multiple>
     <div class="upload-status" id="status_coi_url"></div>
   </div>
 
@@ -116,13 +116,33 @@ input[type=file]{padding:8px;font-size:11px;}
     <h2>7. Payment Details</h2>
     <div class="sub">Where we send your money</div>
     <label>Payment Method</label>
-    <select id="paymentMethod">
+    <select id="paymentMethod" onchange="payShow()">
       <option value="zelle">Zelle</option>
       <option value="cashapp">Cash App</option>
       <option value="bank">Bank Transfer (ACH)</option>
     </select>
-    <label>Details (Zelle number/email, , or Bank Account/Routing #)</label>
-    <input id="paymentDetails" placeholder="Enter your payment info">
+    <div id="pay_zelle">
+      <label>Zelle phone number or email</label>
+      <input id="zelleId" placeholder="Phone or email linked to your Zelle" autocomplete="off">
+    </div>
+    <div id="pay_cashapp" style="display:none;">
+      <label>Cash App $cashtag</label>
+      <input id="cashTag" placeholder="$yourtag" autocomplete="off">
+    </div>
+    <div id="pay_bank" style="display:none;">
+      <label>Name on the bank account</label>
+      <input id="bankHolder" placeholder="Account holder name" autocomplete="off">
+      <label>Bank name</label>
+      <input id="bankName" placeholder="e.g. Chase" autocomplete="off">
+      <label>Routing number (9 digits)</label>
+      <input id="bankRouting" inputmode="numeric" maxlength="9" placeholder="9-digit routing number" autocomplete="off">
+      <label>Account number</label>
+      <input id="bankAcct" inputmode="numeric" maxlength="17" placeholder="Account number" autocomplete="off">
+      <label>Confirm account number</label>
+      <input id="bankAcct2" inputmode="numeric" maxlength="17" placeholder="Type the account number again" autocomplete="off">
+      <label>Account type</label>
+      <select id="bankType"><option value="checking">Checking</option><option value="savings">Savings</option></select>
+    </div>
   </div>
 
 <button class="btn" id="submitBtn" onclick="submitForm()">Submit Onboarding</button>
@@ -141,37 +161,57 @@ var SUPABASE_URL = "https://ymvsatlrkzgxwzxybwmk.supabase.co";
 var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltdnNhdGxya3pneHd6eHlid21rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4NzgwMTQsImV4cCI6MjEwMzQ1NDAxNH0.KbW0enJr5FOzJmDQnT3Thhr5NJdbI4Ehp1vkhVEyPEg";
 var uploadedUrls = {};
 
+function payShow(){
+  var m = document.getElementById('paymentMethod').value;
+  ['zelle','cashapp','bank'].forEach(function(k){ document.getElementById('pay_' + k).style.display = (m === k) ? '' : 'none'; });
+}
+function uploadOne(file){
+  var fileName = Date.now() + '-' + Math.random().toString(36).slice(2) + '-' + file.name;
+  return fetch(SUPABASE_URL + '/storage/v1/object/driver-documents/' + fileName, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': file.type || 'image/jpeg' },
+    body: file
+  }).then(function(res){ return res.ok ? res.json() : null; })
+    .then(function(data){ return (data && data.Key) ? SUPABASE_URL + '/storage/v1/object/public/driver-documents/' + data.Key.split('/').slice(1).join('/') : null; })
+    .catch(function(){ return null; });
+}
 document.querySelectorAll('.docUpload').forEach(function(input){
   input.addEventListener('change', function(e){
-    var file = e.target.files[0];
-    if (!file) return;
+    var files = Array.prototype.slice.call(e.target.files || []);
+    if (!files.length) return;
     var field = input.getAttribute('data-field');
     var statusEl = document.getElementById('status_' + field);
-    statusEl.textContent = 'Uploading...';
+    statusEl.textContent = 'Uploading ' + files.length + (files.length > 1 ? ' files...' : ' file...');
     statusEl.className = 'upload-status pending';
-
-    var fileName = Date.now() + '-' + Math.random().toString(36).slice(2) + '-' + file.name;
-    fetch(SUPABASE_URL + '/storage/v1/object/driver-documents/' + fileName, {
-      method: 'POST',
-      headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': file.type || 'image/jpeg' },
-      body: file
-    }).then(function(res){ return res.ok ? res.json() : null; })
-      .then(function(data){
-        if (data && data.Key) {
-          uploadedUrls[field] = SUPABASE_URL + '/storage/v1/object/public/driver-documents/' + data.Key.split('/').slice(1).join('/');
-          statusEl.textContent = '✅ Uploaded';
-          statusEl.className = 'upload-status done';
-        } else {
-          statusEl.textContent = 'Upload failed — try again';
-          statusEl.className = 'upload-status pending';
-        }
-      }).catch(function(){
+    Promise.all(files.map(uploadOne)).then(function(urls){
+      var ok = urls.filter(Boolean);
+      if (ok.length) {
+        uploadedUrls[field] = ok;
+        statusEl.textContent = '\u2705 Uploaded ' + ok.length + (ok.length > 1 ? ' files' : ' file') + (ok.length < files.length ? ' (' + (files.length - ok.length) + ' failed — pick them again)' : '');
+        statusEl.className = 'upload-status done';
+      } else {
+        delete uploadedUrls[field];
         statusEl.textContent = 'Upload failed — try again';
         statusEl.className = 'upload-status pending';
-      });
+      }
+    });
   });
 });
 
+function extraDocs(){
+  var o = {}; Object.keys(uploadedUrls).forEach(function(k){ if (uploadedUrls[k].length > 1) o[k] = uploadedUrls[k].slice(1); });
+  return o;
+}
+function buildPayment(m){
+  var v = function(id){ return (document.getElementById(id).value || '').trim(); };
+  if (m === 'zelle') { if (!v('zelleId')) { alert('Enter the phone number or email linked to your Zelle.'); return null; } return 'Zelle: ' + v('zelleId'); }
+  if (m === 'cashapp') { if (!v('cashTag')) { alert('Enter your Cash App $cashtag.'); return null; } return 'Cash App: ' + v('cashTag'); }
+  if (!v('bankHolder') || !v('bankName')) { alert('Enter the name on the account and your bank name.'); return null; }
+  if (!/^\d{9}$/.test(v('bankRouting'))) { alert('The routing number must be exactly 9 digits.'); return null; }
+  if (!/^\d{4,17}$/.test(v('bankAcct'))) { alert('Enter your account number (digits only).'); return null; }
+  if (v('bankAcct') !== v('bankAcct2')) { alert('The two account numbers do not match.'); return null; }
+  return 'Bank (ACH) | Holder: ' + v('bankHolder') + ' | Bank: ' + v('bankName') + ' | Routing: ' + v('bankRouting') + ' | Account: ' + v('bankAcct') + ' | Type: ' + v('bankType');
+}
 function submitForm(){
   var driverName = document.getElementById('driverName').value.trim();
   var phone = document.getElementById('phone').value.trim();
@@ -179,10 +219,11 @@ function submitForm(){
   var ein = document.getElementById('ein').value.trim();
   var vehicleClass = document.getElementById('vehicleClass').value;
   var paymentMethod = document.getElementById('paymentMethod').value;
-  var paymentDetails = document.getElementById('paymentDetails').value.trim();
+  var paymentDetails = buildPayment(paymentMethod);
+  if (paymentDetails === null) return;
 
-  if (!driverName || !phone || !ein || !paymentDetails) {
-    alert('Please fill in your name, phone, EIN, and payment details.');
+  if (!driverName || !phone || !ein) {
+    alert('Please fill in your name, phone, and EIN.');
     return;
   }
   if (!uploadedUrls.truck_registration_url || !uploadedUrls.truck_photo_url || !uploadedUrls.license_front_url || !uploadedUrls.license_back_url || !uploadedUrls.medical_card_url || !uploadedUrls.coi_url) {
@@ -200,13 +241,14 @@ function submitForm(){
       driver_name: driverName, phone: phone, email: email, ein: ein, vehicle_class: vehicleClass,
       payment_method: paymentMethod, payment_details: paymentDetails,
       website: (document.getElementById('hp_website') || {}).value || '',
-      truck_registration_url: uploadedUrls.truck_registration_url,
-      truck_photo_url: uploadedUrls.truck_photo_url,
-      license_front_url: uploadedUrls.license_front_url,
-      license_back_url: uploadedUrls.license_back_url,
-      eld_photo_url: uploadedUrls.eld_photo_url || null,
-      medical_card_url: uploadedUrls.medical_card_url,
-      coi_url: uploadedUrls.coi_url
+      truck_registration_url: (uploadedUrls.truck_registration_url || [])[0] || '',
+      truck_photo_url: (uploadedUrls.truck_photo_url || [])[0] || '',
+      license_front_url: (uploadedUrls.license_front_url || [])[0] || '',
+      license_back_url: (uploadedUrls.license_back_url || [])[0] || '',
+      eld_photo_url: (uploadedUrls.eld_photo_url || [])[0] || null,
+      medical_card_url: (uploadedUrls.medical_card_url || [])[0] || '',
+      coi_url: (uploadedUrls.coi_url || [])[0] || '',
+      extra_docs: extraDocs()
     })
   }).then(function(res){ return res.json().catch(function(){ return { ok: false }; }).then(function(d){ d.httpOk = res.ok; return d; }); })
   .then(function(d){

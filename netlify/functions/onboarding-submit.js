@@ -44,18 +44,29 @@ exports.handler = async (event) => {
     if (u.indexOf(DOC_PREFIX()) !== 0) return J(400, { ok: false, error: "Invalid document link." });
     row[f] = u;
   }
+  // extra pictures per field (a driver can send several truck photos, both sides of a card, a multi-page COI)
+  const extra = {}; let extraCount = 0;
+  if (b.extra_docs && typeof b.extra_docs === "object") {
+    for (const f of REQUIRED_DOCS.concat(OPTIONAL_DOCS)) {
+      const arr = Array.isArray(b.extra_docs[f]) ? b.extra_docs[f].slice(0, 12) : [];
+      const ok = arr.map(u => str(u, 600)).filter(u => u);
+      if (ok.some(u => u.indexOf(DOC_PREFIX()) !== 0)) return J(400, { ok: false, error: "Invalid document link." });
+      if (ok.length) { extra[f] = ok; extraCount += ok.length; }
+    }
+  }
   row.status = "pending";
 
   let ref = null, saved = null;
   for (let i = 0; i < 4 && !saved; i++) {
     ref = makeRef(); row.reference = ref;
-    const r = await sb("driver_onboarding", { method: "POST", body: row });
+    let r = await sb("driver_onboarding", { method: "POST", body: extraCount ? Object.assign({}, row, { extra_docs: extra }) : row });
+    if (!r.ok && extraCount && r.status !== 409) r = await sb("driver_onboarding", { method: "POST", body: row });   // table has no extra_docs column yet: save without it; the links still go in the owner's email
     if (r.ok && Array.isArray(r.data) && r.data[0]) saved = r.data[0];
     else if (r.status !== 409) return J(502, { ok: false, error: "Could not save your application. Nothing was submitted. Please try again or call (470) 453-1616." });
   }
   if (!saved) return J(502, { ok: false, error: "Could not save your application. Please try again." });
 
-  const now = new Date().toISOString(), links = REQUIRED_DOCS.concat(OPTIONAL_DOCS).filter(f => row[f]).map(f => "  " + f.replace(/_url$/, "").replace(/_/g, " ") + ": " + row[f]).join("\n");
+  const now = new Date().toISOString(), links = REQUIRED_DOCS.concat(OPTIONAL_DOCS).filter(f => row[f]).map(f => "  " + f.replace(/_url$/, "").replace(/_/g, " ") + ": " + row[f]).join("\n") + Object.keys(extra).map(f => "\n  more " + f.replace(/_url$/, "").replace(/_/g, " ") + ":\n    " + extra[f].join("\n    ")).join("");
   const o = await mail.send(ownerEmail(), "New driver onboarding " + ref + " — " + row.driver_name,
     "Reference: " + ref + "\nName: " + row.driver_name + "\nPhone: " + row.phone + "\nEmail: " + (row.email || "(none)") + "\nEIN: " + row.ein + "\nVehicle: " + row.vehicle_class +
     "\nPayment: " + row.payment_method + "\n\nDocuments:\n" + links + "\n\nStatus: pending review.", "", FROM());
