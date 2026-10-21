@@ -21079,10 +21079,14 @@ function AvailabilityCalendar(props) {
     React.useEffect(load, []);
 
     function setStatus(name, status) {
-        fetch(SUPABASE_URL + "/rest/v1/" + table, {
-            method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates" },
-            body: JSON.stringify([Object.assign({}, { status: status, updated_at: new Date().toISOString() }, isDriver ? { driver_name: name } : { vehicle_name: name })])
-        }).then(load).catch(function () {});
+        // A name that already has a row is UPDATED (the table allows one row per name); a new name is added.
+        var existing = (entries || []).find(function (x) { return x[nameField] === name; });
+        var hdr = { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json" };
+        var patch = { status: status, updated_at: new Date().toISOString() };
+        var req = existing && existing.id != null
+            ? fetch(SUPABASE_URL + "/rest/v1/" + table + "?id=eq." + encodeURIComponent(existing.id), { method: "PATCH", headers: hdr, body: JSON.stringify(patch) })
+            : fetch(SUPABASE_URL + "/rest/v1/" + table, { method: "POST", headers: hdr, body: JSON.stringify([Object.assign({}, patch, isDriver ? { driver_name: name } : { vehicle_name: name })]) });
+        req.then(load).catch(function () {});
     }
     function statusFor(name) {
         var e = (entries || []).find(function (x) { return x[nameField] === name; });
