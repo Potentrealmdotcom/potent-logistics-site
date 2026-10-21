@@ -28,7 +28,7 @@ async function aiReply(text) {
     if (!AI_KEY) return null;
     try {
         const r = await require("./lib/gemini.js").chat({
-                model: "gemini-3.8-flash",
+                model: "gemini-3.5-flash-lite",
                 messages: [
                     { role: "system", content: "You are the SMS auto-reply for POTENT OS, a logistics + business software company. Keep replies under 160 characters, friendly, professional. If they want a human, say someone will call them shortly." },
                     { role: "user", content: text }

@@ -1,7 +1,7 @@
 // netlify/functions/elevate-api.js — Əlevate: the private assistant (text + voice).
 // Sign-in: Google (only emails listed in ELEVATE_OWNER_EMAILS) or the POTENT OS owner login.
 // Env: AUTH_SECRET, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY, GOOGLE_CLIENT_ID (optional), ELEVATE_OWNER_EMAILS,
-//      GEMINI_API_KEY, ELEVATE_CHAT_MODEL (default gemini-3.8-flash), ELEVATE_VOICE_MODEL (default gemini-3.8-live), ELEVATE_VOICE (default Kore)
+//      GEMINI_API_KEY, ELEVATE_CHAT_MODEL (default gemini-3.5-flash-lite), ELEVATE_VOICE_MODEL (default gemini-3.8-live), ELEVATE_VOICE (default Kore)
 const Gem = require("./lib/gemini.js");
 const E = require("./lib/elevate");
 const G = require("./lib/google");
@@ -42,7 +42,7 @@ async function chat(k, messages, tz, fetchImpl) {
   for (let step = 0; step < MAX_STEPS; step++) {
     let r;
     try {
-      r = await Gem.chat({ model: process.env.ELEVATE_CHAT_MODEL || "gemini-3.8-flash", temperature: 0.4, max_tokens: 2000, messages: msgs, tools: E.asChatTools(), tool_choice: "auto" }, { fetchImpl: f, timeoutMs: 8000 });
+      r = await Gem.chat({ model: process.env.ELEVATE_CHAT_MODEL || "gemini-3.5-flash-lite", temperature: 0.4, max_tokens: 2000, messages: msgs, tools: E.asChatTools(), tool_choice: "auto" }, { fetchImpl: f, timeoutMs: 8000 });
     } catch (e) { return { ok: false, error: e && e.name === "TimeoutError" ? "That one took too long. Ask again with a shorter request." : "I could not reach my brain. Try again." }; }
     if (!r.ok) {
       let why = ""; try { why = (await r.text()).slice(0, 300); } catch (e) { }

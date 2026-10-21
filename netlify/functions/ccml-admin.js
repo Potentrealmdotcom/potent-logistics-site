@@ -75,7 +75,7 @@ exports.handler = async function (event) {
     try {
       const r = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", { method: "POST",
         headers: { Authorization: "Bearer " + process.env.GEMINI_API_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: process.env.CCML_AI_MODEL || "gemini-3.8-flash", temperature: 0.3, max_tokens: 4000, messages: [
+        body: JSON.stringify({ model: process.env.CCML_AI_MODEL || "gemini-3.5-flash-lite", temperature: 0.3, max_tokens: 4000, messages: [
           { role: "system", content: "You draft an internal working plan for a credit coach's staff. Be concrete, flag risks and anything needing a human or attorney, promise no outcomes." },
           { role: "user", content: "Draft a step-by-step funding readiness plan for this client:\n" + facts }] }) });
       if (!r.ok) return C.J(502, { error: "AI is busy. Try again." });

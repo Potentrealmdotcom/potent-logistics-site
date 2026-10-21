@@ -85,7 +85,7 @@ const response = await fetch("https://generativelanguage.googleapis.com/v1beta/o
     "Content-Type": "application/json"
   },
   body: JSON.stringify({
-    model: "gemini-3.8-flash",
+    model: "gemini-3.5-flash-lite",
     max_tokens: 4000,
     messages: [{
       role: "user",

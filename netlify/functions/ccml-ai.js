@@ -19,7 +19,7 @@ exports.handler = async function (event) {
     const r = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
       headers: { Authorization: "Bearer " + process.env.GEMINI_API_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: process.env.CCML_AI_MODEL || "gemini-3.8-flash", temperature: 0.2, max_tokens: 4000, messages: [
+      body: JSON.stringify({ model: process.env.CCML_AI_MODEL || "gemini-3.5-flash-lite", temperature: 0.2, max_tokens: 4000, messages: [
         { role: "system", content: "You help a person organize a credit dispute. This is educational information, not legal advice, and no outcome is guaranteed. Be concise and specific." },
         { role: "user", content: "Analyze this credit report and identify: 1) Each negative item, 2) Best letter type (FCRA Fraudulent Removal, Payment History, Trademark Infringement, MOV Demand, Secondary Notice), 3) Priority order and why. Be concise and specific.\n\nReport:\n" + report }
       ] })

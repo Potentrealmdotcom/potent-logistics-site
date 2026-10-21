@@ -21,7 +21,7 @@ Those come later and will each need your tap to approve.
 | `ELEVATE_OWNER_PHONES` | your cell number(s), like +14045550100 (phone line) |
 | `ELEVATE_PHONE_NUMBERS` | the Twilio number bought for Əlevate (not the logistics one) |
 | `ELEVATE_PIN_HASH` | output of `node server-kit/elevate-pin.js` |
-| `ELEVATE_CHAT_MODEL` | optional, default `gemini-3.8-flash` |
+| `ELEVATE_CHAT_MODEL` | optional, default `gemini-3.5-flash-lite` |
 | `ELEVATE_VOICE_MODEL` / `ELEVATE_VOICE` | optional, default `gemini-3.8-live` / `Kore` |
 
 Database: `elevate.sql` (already applied to the live POTENT project; table `elevate_items`, RLS on, server-only).
