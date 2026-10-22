@@ -507,7 +507,28 @@ PB_COURSE.modules = [
         "<strong>catwalk.ai</strong> (app) \u2014 AI model videos"
       ]},
       { t: "callout", title: "Deluxe visual collection", html: "Your Deluxe edition includes the <strong>AI campaign visual collection</strong> \u2014 11 campaign stills plus the cinematic video prompts, so you can generate your own versions. Study a frame, then make it yours." },
-        
+        { t: "h", text: "The campaign films \u2014 press play" },
+        { t: "p", html: "These are my actual campaign films. Every one made with <strong>free AI</strong> \u2014 no paid tools, no photoshoot, no crew. Study the lighting, the styling, the consistency. Then make yours with the prompts in this Deluxe." },
+        { t: "video", src: "assets/films/film-07.mp4", poster: "assets/films/film-07.jpg", cap: "The guy with glasses \u2014 the 'Potent's Mercy' set: garage walk, wall pose, close-up." },
+        { t: "video", src: "assets/films/film-10.mp4", poster: "assets/films/film-10.jpg", cap: "Rule Breakers \u2014 the reflective tracksuit on the Brooklyn Bridge court at dusk." },
+        { t: "video", src: "assets/films/film-02.mp4", poster: "assets/films/film-02.jpg", cap: "'Honoring the Trappers of America' \u2014 the PRDKT crest tee." },
+        { t: "video", src: "assets/films/film-01.mp4", poster: "assets/films/film-01.jpg", cap: "Bodega front \u2014 the maroon jersey and the crest tee." },
+        { t: "video", src: "assets/films/film-03.mp4", poster: "assets/films/film-03.jpg", cap: "The black-and-gold coupe \u2014 campaign B-roll." },
+        { t: "video", src: "assets/films/film-09.mp4", poster: "assets/films/film-09.jpg", cap: "The pink graphic hoodie \u2014 subway reveal." },
+        { t: "video", src: "assets/films/film-05.mp4", poster: "assets/films/film-05.jpg", cap: "Denim overalls + POTENT cap \u2014 studio portrait." },
+        { t: "video", src: "assets/films/film-06.mp4", poster: "assets/films/film-06.jpg", cap: "The panther tee \u2014 studio, full POTENT wordmark." },
+        { t: "video", src: "assets/films/film-04.mp4", poster: "assets/films/film-04.jpg", cap: "The forest set \u2014 candles, night, atmosphere." },
+        { t: "video", src: "assets/films/film-08.mp4", poster: "assets/films/film-08.jpg", cap: "The dark runway \u2014 near-black, blue light, mood." },
+        { t: "video", src: "assets/films/film-11.mp4", poster: "assets/films/film-11.jpg", cap: "Private jet \u2014 Potent Couture tote, cash on the table." },
+        { t: "video", src: "assets/films/film-12.mp4", poster: "assets/films/film-12.jpg", cap: "Ring light \u2014 the POTENT athletic set, walk-in." },
+        { t: "video", src: "assets/films/film-13.mp4", poster: "assets/films/film-13.jpg", cap: "Red carpet \u2014 premiere night, cameras flashing." },
+        { t: "video", src: "assets/films/film-14.mp4", poster: "assets/films/film-14.jpg", cap: "Canyon slackline \u2014 pink camo over the desert at dusk." },
+        { t: "video", src: "assets/films/film-15.mp4", poster: "assets/films/film-15.jpg", cap: "The POTENT WORLD newspaper dress \u2014 caf\u00e9 stop." },
+        { t: "video", src: "assets/films/film-16.mp4", poster: "assets/films/film-16.jpg", cap: "Lady Liberty in the PRDKT hoodie \u2014 New York." },
+        { t: "video", src: "assets/films/film-17.mp4", poster: "assets/films/film-17.jpg", cap: "Caf\u00e9 editorial \u2014 the VELOUR cover." },
+        { t: "video", src: "assets/films/film-18.mp4", poster: "assets/films/film-18.jpg", cap: "The POTENT WORLD opener \u2014 every campaign starts here." },
+        { t: "video", src: "assets/films/film-19.mp4", poster: "assets/films/film-19.jpg", cap: "Potent Speedway \u2014 race day editorial." },
+        { t: "video", src: "assets/films/film-20.mp4", poster: "assets/films/film-20.jpg", cap: "REALITY CHECK: a messed-up take, left in on purpose. The face warps, the text is wrong \u2014 this is the 90% you throw away. Not all of it comes out 100%. You mess around with it until it does." }
       ]
   }
 ];
