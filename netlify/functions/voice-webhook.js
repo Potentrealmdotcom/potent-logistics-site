@@ -80,7 +80,7 @@ exports.handler = async function (event) {
       const JP = require("./lib/voice/jobpay"), TL = require("./lib/voice/tools");
       const ses = rows(await B.sb("voice_sessions?provider_call_id=eq." + encodeURIComponent(callSid) + "&select=*&limit=1"))[0];
       const bk = ses && ses.id === q.s ? rows(await B.sb("voice_bookings?org_id=eq." + ses.org_id + "&id=eq." + encodeURIComponent(String(q.b || "")) + "&session_id=eq." + ses.id + "&select=*&limit=1"))[0] : null;
-      const cents = bk && bk.status === "confirmed" && bk.job_id ? JP.payableCents(bk) : 0;
+      const plan = bk && bk.status === "confirmed" && bk.job_id ? JP.chargePlan(bk, ses.from_number) : { cents: 0 }, cents = plan.cents;
       const back = function (r) { return xmlR(TW.twimlStream(bridgeUrl(), { token: TW.streamToken(secret(), callSid, ses.org_id, Date.now() + 120000, { r: r }), session: ses.id }, base() + "?a=fallback&s=" + ses.id)); };
       if (!ses || !cents || !bridgeUrl() || !secret()) return xmlR(TW.twimlSay("Sorry, we could not take the payment on this call. We will call you back."));
       if (a === "pay") {
@@ -93,6 +93,12 @@ exports.handler = async function (event) {
       if (res === "caller-hung-up") { await flag("PAYMENT NOT COMPLETED (caller hung up during keypad)", "Booking " + ref + ", total " + money + ". Call them back to take payment."); return xmlR("<Response/>"); }
       if (res === "success") {
         const v = await JP.verifyCharge(code, cents);
+        if (v.ok && plan.test) {   // owner's small test charge: Stripe confirmed the test amount, but the job was NOT paid in full, so it is not marked paid
+          await B.audit("system", "voicejob_keypad_test_payment", bk.id, { cents: cents, quote_cents: plan.quote, stripe: v.id });
+          await S.transcript(ses.org_id, ses.id, "system", "[Keypad TEST payment confirmed by Stripe: " + money + " for " + ref + "; job NOT marked paid]"); await health(ses.org_id, "keypad_pay_test_paid", true, ref);
+          await flag("KEYPAD TEST PAYMENT OK (" + money + ")", "Stripe confirmed the " + money + " test charge (" + v.id + ") for booking " + ref + ". The job was NOT marked paid (the quote is $" + (plan.quote / 100).toFixed(2) + "). Refund the test charge in Stripe if you want it back, and remove VOICE_PAY_TEST_AMOUNT_CENTS.");
+          return back("paidtest:" + money);
+        }
         if (v.ok) {
           const m = await JP.markPaid(bk, cents, v.pi, "keypad");
           if (m && m.ok) { await S.transcript(ses.org_id, ses.id, "system", "[Keypad payment confirmed by Stripe: " + money + " for " + ref + "]"); await health(ses.org_id, "keypad_pay_paid", true, ref); return back("paid:" + money); }

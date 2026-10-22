@@ -250,7 +250,8 @@ const TOOLS = {
     if (process.env.VOICE_PAY !== "on" || !process.env.VOICE_PAY_CONNECTOR || !TW.configured() || !process.env.STRIPE_SECRET_KEY) { await flag("keypad payment is not switched on"); return { ok: false, error: "keypad_not_live", flagged: true, say: fail }; }
     const tries = rows(await B.sb("voice_tool_executions?session_id=eq." + ctx.session.id + "&tool=eq.take_card_payment&select=id&limit=10")).length;
     if (tries > 3) { await flag("too many keypad attempts"); return { ok: false, error: "too_many_attempts", flagged: true, say: fail }; }
-    return { ok: true, pay_handoff: true, booking_id: bk.id, amount: P.money(cents), say: "Say ONE short sentence in your own voice: you are taking the card now for " + P.money(cents) + ", they will hear a short automated prompt, and they should type the card number on their phone keypad. Mention you cannot hear the keys. Then STOP talking completely. Say nothing else until you are told the result. Never say it is paid until told." };
+    const plan = JP.chargePlan(bk, ctx.session.from_number);
+    return { ok: true, pay_handoff: true, booking_id: bk.id, amount: P.money(plan.cents), say: "Say ONE short sentence in your own voice: you are taking the card now for " + P.money(plan.cents) + ", they will hear a short automated prompt, and they should type the card number on their phone keypad. Mention you cannot hear the keys. Then STOP talking completely. Say nothing else until you are told the result. Never say it is paid until told." };
   },
   async send_payment_link(ctx, a) {
     if (process.env.VOICE_PAYMENT_LINK !== "on") return { ok: false, error: "link_retired", say: "We do not send payment links. Use take_card_payment to take the card on the call by keypad." };

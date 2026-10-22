@@ -114,6 +114,9 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
   r = rig({ resume: { code: "failed:too-many-failed-attempts", recap: "You: ok" } }); r.start(); await sleep(40); r.ready(); await sleep(10);
   { const sent = JSON.stringify(r.aiSock.sent); ok(!sent.includes("Hello") && /did NOT go through/.test(sent) && /never send or offer a payment link/i.test(sent) && !/CONFIRMED the payment/.test(sent), "keypad: coming back failed, she stays kind, offers no link and never calls it paid"); }
   r.phone({ event: "stop" }); await sleep(20);
+  r = rig({ resume: { code: "paidtest:$0.50", recap: "x" } }); r.start(); await sleep(40); r.ready(); await sleep(10);
+  { const sent = JSON.stringify(r.aiSock.sent); ok(/TEST charge of \$0.50/.test(sent) && /full booking payment has not been taken/.test(sent) && !sent.includes("Hello"), "keypad: a test charge is described as a test, not as the booking being paid"); }
+  r.phone({ event: "stop" }); await sleep(20);
   r = rig({ resume: { code: "unverified:$250.00", recap: "x" } }); r.start(); await sleep(40); r.ready(); await sleep(10);
   { const sent = JSON.stringify(r.aiSock.sent); ok(/could NOT be confirmed/.test(sent) && /do NOT say it is paid/i.test(sent), "keypad: an unconfirmed payment is never called paid and never called failed"); }
   r.phone({ event: "stop" }); await sleep(20);

@@ -52,6 +52,16 @@ async function markPaid(bk, expect, pi, how) {
 // The amount to charge on the phone: the confirmed quote's total from OUR database, in cents. The model never supplies it.
 function payableCents(bk) { const c = Number(bk && bk.snapshot && bk.snapshot.quote && bk.snapshot.quote.total_cents); return c >= 100 && c <= 5000000 ? c : 0; }
 
+// What the keypad charges. Normally the quote. TEST OVERRIDE: while VOICE_PAY_TEST_AMOUNT_CENTS is set (50-500 only) AND the caller's number is the owner's, the keypad charges that small amount instead,
+// and the job is NOT marked paid (it was not paid in full). Every other caller, or an unset/out-of-range variable, charges exactly the quote.
+function chargePlan(bk, fromNumber) {
+  const quote = payableCents(bk); if (!quote) return { cents: 0, test: false, quote: 0 };
+  const t = Number(process.env.VOICE_PAY_TEST_AMOUNT_CENTS), tail = function (x) { return String(x || "").replace(/\D/g, "").slice(-10); };
+  const owner = tail(process.env.VOICE_OWNER_PHONE || "4704531616"), from = tail(fromNumber);
+  if (Number.isInteger(t) && t >= 50 && t <= 500 && from.length === 10 && from === owner) return { cents: t, test: true, quote: quote };
+  return { cents: quote, test: false, quote: quote };
+}
+
 // After a keypad charge, ask Stripe itself (not Twilio's word) whether the money moved, and for exactly the expected amount.
 // Twilio gives the Stripe id of the charge in PaymentConfirmationCode (a pi_ or ch_ id). Returns {ok, id, cents} or {ok:false, error, cents?}.
 async function verifyCharge(id, expectCents) {
@@ -68,4 +78,4 @@ async function verifyCharge(id, expectCents) {
   if (cents !== Number(expectCents) || String(d.currency || "usd") !== "usd") return { ok: false, error: "amount_mismatch", cents: cents };
   return { ok: true, id: id, cents: cents, pi: id.indexOf("pi_") === 0 ? id : (typeof d.payment_intent === "string" ? d.payment_intent : id) };
 }
-module.exports = { createLink, onCheckout, markPaid, payableCents, verifyCharge };
+module.exports = { createLink, onCheckout, markPaid, payableCents, chargePlan, verifyCharge };
