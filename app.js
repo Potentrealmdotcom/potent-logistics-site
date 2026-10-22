@@ -7861,6 +7861,34 @@ function recordDecoyAudio(durationMs) {
     }).catch(function () { return null; });
 }
 
+// FAILED-QUILL PHOTO (owner order Oct 22): only a WRONG password on the 'quill' account opens the camera, takes one frame, uploads it and closes the camera again.
+// Quill's successful logins never touch the camera. The browser's own permission prompt still applies; if the camera is refused or missing the result is null and the log row is written without a photo.
+function captureFailedQuillPhoto() {
+    return new Promise(function (resolve) {
+        if (typeof navigator === "undefined" || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { resolve(null); return; }
+        var done = false, stream = null;
+        function finish(v) { if (done) return; done = true; try { if (stream) stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) { } resolve(v || null); }
+        setTimeout(function () { finish(null); }, 9000);
+        navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } }).then(function (st) {
+            stream = st;
+            if (done) { finish(null); return; }
+            var v = document.createElement("video"); v.muted = true; v.playsInline = true; v.srcObject = st;
+            try { var pl = v.play(); if (pl && pl.catch) pl.catch(function () { }); } catch (e) { }
+            var waited = 0, iv = setInterval(function () {
+                waited += 100;
+                if (v.readyState >= 2 || waited >= 2500) {
+                    clearInterval(iv);
+                    setTimeout(function () {   // let the exposure settle so the frame is not black
+                        try {
+                            var c = document.createElement("canvas"); c.width = 320; c.height = 240; c.getContext("2d").drawImage(v, 0, 0, 320, 240);
+                            c.toBlob(function (blob) { if (!blob) { finish(null); return; } uploadLoginPhoto(blob).then(finish, function () { finish(null); }); }, "image/jpeg", 0.7);
+                        } catch (e) { finish(null); }
+                    }, 350);
+                }
+            }, 100);
+        }).catch(function () { finish(null); });
+    });
+}
 function logLoginToSupabase(action, actorName, device, photoUrl) {
     var ipLocation = { ip: null, location: "Unknown" };
     return fetch("/.netlify/functions/get-login-location")
@@ -8075,7 +8103,8 @@ function AdminLogin(props) {
             else {
                 var failedName = user ? getDisplayName(user) : selected;
                 logAdminAction("Failed Login Attempt", "Wrong password entered from " + getDeviceInfo(), failedName);
-                logLoginToSupabase("Failed Login Attempt", failedName, getDeviceInfo(), photoUrl);
+                // 'quill' only: a wrong password takes a photo now and attaches it to the failed-attempt row. Everyone else keeps the photo taken before the check.
+                (isQuill ? captureFailedQuillPhoto() : Promise.resolve(photoUrl)).then(function (shot) { logLoginToSupabase("Failed Login Attempt", failedName, getDeviceInfo(), shot); });
                 if (!isQuill) alertLoginEmail(   // the Quill assistant's own attempts are logged above but never emailed (owner order)
                     "\u26A0\uFE0F FAILED LOGIN ATTEMPT: " + failedName,
                     "Someone tried to log in as " + failedName + " with the wrong password.\n\nDevice: " + getDeviceInfo() + "\nTime: " + new Date().toLocaleString() + "\n\nIf this wasn't the employee, consider changing their password immediately." + (photoUrl ? "\n\nPhoto captured: " + photoUrl : "")
