@@ -100,6 +100,17 @@ function sb(path, opts) {
 
 // brute-force brake (per warm instance)
 var fails = {};
+// Sign-in attempts that never touch the browser's own logger (email-code and company sign-ins) are recorded here, on the server, with the
+// real connection IP, so a failed attempt always shows who and where in the Login Log. Never blocks or fails a sign-in.
+async function logAuthAttempt(event, action, actor) {
+  try {
+    const h = (event && event.headers) || {}, ip = String(h["x-nf-client-connection-ip"] || h["x-forwarded-for"] || "").split(",")[0].trim() || null;
+    let loc = ip ? "Unknown (lookup failed)" : "Unknown (no IP detected)";
+    if (ip) { try { const g = await (await fetch("http://ip-api.com/json/" + encodeURIComponent(ip) + "?fields=status,country,regionName,city,isp", { signal: AbortSignal.timeout(2500) })).json(); if (g && g.status === "success") loc = g.city + ", " + g.regionName + ", " + g.country + " \u2014 ISP: " + g.isp; } catch (e) { } }
+    const ua = String(h["user-agent"] || ""), dev = (/Mobile|Android|iPhone|iPad/i.test(ua) ? "Mobile" : "Desktop") + " \u00b7 " + (/Android/i.test(ua) ? "Android" : /iPhone|iPad|iOS/i.test(ua) ? "iOS" : /Windows/i.test(ua) ? "Windows" : /Mac/i.test(ua) ? "Mac" : "Unknown") + " \u00b7 " + (/Edg/i.test(ua) ? "Edge" : /Chrome/i.test(ua) ? "Chrome" : /Safari/i.test(ua) ? "Safari" : /Firefox/i.test(ua) ? "Firefox" : "Unknown");
+    await sb("login_log", { method: "POST", prefer: "return=minimal", body: { action: action, actor_name: String(actor || "unknown").slice(0, 120), device_info: dev, ip_address: ip, location: loc } });
+  } catch (e) { }
+}
 function tooMany(key) {
     var now = Date.now();
     var f = (fails[key] || []).filter(function (t) { return now - t < 15 * 60 * 1000; });
@@ -357,11 +368,13 @@ exports.handler = async function (event) {
             var okCode = !!(srow && srow.code_hash && srow.code_exp && new Date(srow.code_exp).getTime() > Date.now() && (srow.tries || 0) < 5 && /^\d{6}$/.test(String(body.code || "")) && eq(hashCode(body.code), srow.code_hash));
             if (!okCode) {
                 noteFail(ck1); noteFail(ck2);
+                await logAuthAttempt(event, "Failed Login Attempt", cuid + " (wrong email code)");
                 if (srow) await sb("staff_logins?user_id=eq." + encodeURIComponent(cuid), { method: "PATCH", prefer: "return=minimal", body: { tries: (srow.tries || 0) + 1 } });
                 return J(401, { ok: false, error: "That code is wrong or expired. Ask for a new one." });
             }
             await sb("staff_logins?user_id=eq." + encodeURIComponent(cuid), { method: "PATCH", prefer: "return=minimal", body: { code_hash: null, code_exp: null, tries: 0 } }); // one use
             var crole = crec.r || "dispatch";
+            await logAuthAttempt(event, "Login", cuid + " (" + crole + ", email code)");
             return J(200, { ok: true, token: sign({ uid: cuid, role: crole, orgId: null, exp: Date.now() + TOKEN_TTL_MS }), role: crole });
         }
 
@@ -374,7 +387,7 @@ exports.handler = async function (event) {
             var row = u.ok && Array.isArray(u.data) ? u.data.find(function (r) {
                 return (!r.status || r.status === "active") && String(r.email || "").toLowerCase() === email && checkPw(r.password_hash, body.password);
             }) : null;
-            if (!row) { noteFail(limitKey2); return J(401, { ok: false, error: "Wrong email or password." }); }
+            if (!row) { noteFail(limitKey2); await logAuthAttempt(event, "Failed Login Attempt", email + " (company sign-in)"); return J(401, { ok: false, error: "Wrong email or password." }); }
             return await companySession(row, email);
         }
 
