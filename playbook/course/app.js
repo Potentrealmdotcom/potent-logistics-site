@@ -174,6 +174,15 @@
       switch (b.t) {
         case "lead": return '<div class="block lead">' + b.html + "</div>";
         case "p": return '<div class="block"><p>' + b.html + "</p></div>";
+        case "video": {
+          var cap = b.cap ? '<p class="vidcap" style="margin-top:8px;font-size:13px;opacity:.75">' + esc(b.cap) + "</p>" : "";
+          if (b.yt) {
+            var yid = String(b.yt).replace(/[^A-Za-z0-9_-]/g, "");
+            var ar = b.ar || "56.25%";
+            return '<div class="block"><div style="position:relative;padding-top:' + ar + ';border-radius:12px;overflow:hidden;background:#000"><iframe src="https://www.youtube-nocookie.com/embed/' + yid + '" style="position:absolute;inset:0;width:100%;height:100%;border:0" loading="lazy" allow="accelerometer; autoplay; encrypted-media; picture-in-picture" allowfullscreen title="Playbook video"></iframe></div>' + cap + "</div>";
+          }
+          return '<div class="block"><video controls playsinline preload="metadata" src="' + esc(b.src) + '"' + (b.poster ? ' poster="' + esc(b.poster) + '"' : "") + ' style="width:100%;border-radius:12px;background:#000"></video>' + cap + "</div>";
+        }
         case "h": return '<div class="block"><h3>' + esc(b.text) + "</h3></div>";
         case "quote": return '<div class="block"><div class="pullquote">\u201c' + esc(b.text) + "\u201d</div></div>";
         case "list": return '<div class="block"><ul class="blist">' + b.items.map(function (i) { return "<li>" + i + "</li>"; }).join("") + "</ul></div>";

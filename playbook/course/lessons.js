@@ -1,6 +1,6 @@
 /* The Potent Playbook — Course content
  * Block types: lead, p, h, quote, list, steps, action, callout,
- * links, gallery, templates, prompts, aidisc, flow, timeline, checklist
+ * links, gallery, templates, prompts, aidisc, flow, timeline, checklist, video
  */
 const AI_DISCLAIMER = "AI doesn't come out 100% accurate \u2014 you have to edit it, mess around with it, play around with it to get what you want.";
 
@@ -30,7 +30,16 @@ const PB_COURSE = {
         { t: "h", text: "The industry is gatekept on purpose" },
         { t: "p", html: "They want you stuck ordering samples from Alibaba, waiting on shipping, then paying $10K for a mentorship to learn what a tech pack is. Confusion is the business model. <strong>This course is the gatekeeping killer.</strong>" },
         { t: "callout", title: "The shift", html: "Stop believing you need money or a degree. You need the right suppliers and the right system." },
-        { t: "action", html: "Write down the one gatekeeper belief that's been stopping you \u2014 then cross it out. You're past it now." }
+        { t: "action", html: "Write down the one gatekeeper belief that's been stopping you \u2014 then cross it out. You're past it now." },
+        { t: "h", text: "The 7-Year Lesson \u2014 where I actually started" },
+        { t: "p", html: "I didn't fail because of design. I failed because I didn't have the right system. I started with a <strong>laptop, a background remover, a Cricut machine, and HTV</strong> (heat transfer vinyl). Here's what that really looked like:" },
+        { t: "list", items: [
+          "Peeling prints",
+          "No full-size prints \u2014 a 12\u2033\u00d724\u2033 cut limit",
+          "Cheap finish, no multi-color designs, no durability",
+          "Bad mockups \u2014 and no way to scale"
+        ]},
+        { t: "p", html: "I wasted years there. And here's the part nobody believes: <strong>I used Supima cotton. It still looked cheap \u2014 because the process was wrong.</strong> The material was never the problem. The system was." }
       ]
     },
     {
@@ -89,7 +98,8 @@ const PB_COURSE = {
           { t: "Refine once. Ship it.", d: "One revision round. Then it goes live. Perfection is procrastination." }
         ]},
         { t: "callout", title: "Remember", html: "The campaign shots in this course? AI. The videos? AI. Nobody can tell \u2014 that's the point. But you still have to art-direct: edit it, mess with it, play with it until it's yours." },
-        { t: "action", html: "Collect your 20 reference images today. Generate your first 5 concepts in ChatGPT tonight." }
+        { t: "action", html: "Collect your 20 reference images today. Generate your first 5 concepts in ChatGPT tonight." },
+        { t: "video", yt: "pQLb6oqPERk", cap: "Watch: PhotoRoom Tutorial \u2014 the exact mockup and virtual-model workflow from this lesson, step by step." }
       ]
     },
     {
@@ -119,8 +129,19 @@ const PB_COURSE = {
         { t: "p", html: "<strong>irs.gov</strong> \u2014 free Employer Identification Number. Takes minutes. You need it to open business accounts and file taxes properly." },
         { t: "h", text: "Step 4 \u2014 LLC" },
         { t: "p", html: "Register through your state's business site. Walkthrough video: <strong>EIN &amp; LLC filing video</strong> (YouTube @learnwithpotent). Separates you from the business \u2014 liability protection from day one." },
+        { t: "video", yt: "JQCJLma8g1U", cap: "Watch: EIN & LLC Filing Tutorial (free to file) \u2014 the full walkthrough, start to finish." },
         { t: "h", text: "Step 5 \u2014 Reseller certificate" },
         { t: "p", html: "Via your state's Department of Revenue. Unlocks wholesale pricing as you scale. Optional at first \u2014 grab it when you're ordering blanks in volume." },
+        { t: "h", text: "Fixing denials \u2014 registered agent issues" },
+        { t: "p", html: "When applications get denied, hear this first: <strong>denials are normal. They are not failure.</strong> The common reasons:" },
+        { t: "list", items: [
+          "Incorrect registered agent",
+          "Entity mismatch \u2014 the name on the filing doesn't match the business",
+          "Wrong trademark class",
+          "Missing documentation"
+        ]},
+        { t: "p", html: "The fix is a process, not a panic: <strong>read the denial carefully \u2192 correct the filing \u2192 re-submit properly \u2192 track the status.</strong> Every brand you admire has a denial letter somewhere in its past." },
+        { t: "video", yt: "JJ70453NSFQ", cap: "Watch: USPTO Application Help Walkthrough \u2014 see the application done right, field by field." },
         { t: "action", html: "USPTO search + EIN this week. Both free. File the trademark before your first drop." }
       ]
     },
@@ -132,6 +153,11 @@ const PB_COURSE = {
         { t: "lead", html: "Nobody ever picked up a shirt and said \u201cwow, nice logo.\u201d They feel the <strong>weight, the hand-feel, the drape</strong> \u2014 and decide in three seconds if it's premium." },
         { t: "h", text: "Supima cotton \u2014 the luxury standard" },
         { t: "p", html: "<strong>Supima cotton</strong>: extra-long staple, American-grown \u2014 what Gucci, Fendi, and Prada build on. My no-minimum source: <strong>OriginalFavorites.com</strong>. Tapstitch's <strong>Mulberry cotton</strong> is the premium print-on-demand alternative." },
+        { t: "p", html: "The truth about luxury fabric: people think luxury comes from Italy, France, designer labels, high prices. That's not where quality starts. <strong>All Supima is Pima. Not all Pima is Supima.</strong> Real Supima is grown exclusively in the US and held to a standard most cotton never meets \u2014 that's why Ralph Lauren, Brooks Brothers, Stone Island, and Gucci build on it." },
+        { t: "p", html: "<strong>Verified sourcing:</strong> Supima cotton includes fiber verification through <strong>Oritain</strong> \u2014 forensic science that confirms origin and authenticity. You're not guessing materials. You're using the same level of materials they do." },
+        { t: "h", text: "Why your hoodie feels cheap \u2014 the GOTS test" },
+        { t: "p", html: "Put a thin hoodie next to a <strong>GOTS hoodie \u2014 done right</strong> \u2014 and you feel it immediately: <strong>weight, structure, quality.</strong> Cheap hoodies run thin French terry that goes limp in your hands. The real one holds its shape and its drape. That difference is the whole game at the fabric level." },
+        { t: "p", html: "And know the other fiber the houses build on: <strong>Merino wool</strong> \u2014 fine-gauge, temperature-regulating, no itch when it's done right. When a luxury knit feels expensive, this is the standard it's measured against." },
         { t: "h", text: "The weight specs" },
         { t: "list", items: [
           "<strong>Tees:</strong> 280 GSM and up. Anything lighter feels like a giveaway shirt.",
@@ -175,7 +201,11 @@ const PB_COURSE = {
         { t: "p", html: "The campaign shots in this course? AI. The videos? AI. Nobody can tell \u2014 that's the point. But remember: <strong>edit it, mess around with it, play around with it</strong> until the lighting, the fit, and the energy match your brand exactly." },
         { t: "h", text: "Deluxe members get more" },
         { t: "p", html: "The Deluxe tier unlocks <strong>10 PhotoRoom prompts</strong>, <strong>10 Kive.ai prompts</strong>, and the full <strong>AI campaign video gallery</strong> with cinematic video prompts \u2014 the exact shots and scripts behind the campaigns." },
-        { t: "action", html: "Add a neck label to one product today. Generate 3 AI visuals for it tonight." }
+        { t: "action", html: "Add a neck label to one product today. Generate 3 AI visuals for it tonight." },
+        { t: "h", text: "The Alibaba Trap" },
+        { t: "p", html: "The factories will smile at you and then do this: big <strong>minimum order quantities</strong> before you've sold a single piece, sample fees, mold fees \u2014 money out of your pocket while your design sits unproven. That's the trap. They get paid whether your drop works or not. You carry all the risk." },
+        { t: "quote", text: "MOQ = RISK. NO MOQ = CONTROL + PROFIT." },
+        { t: "p", html: "The system in this course is the way around it: print-on-demand means you launch instantly, test the design on real buyers, and only spend when the market already said yes. <strong>No design risk. No inventory risk.</strong> Scale what sells \u2014 kill what doesn't." }
       ]
     },
     {
@@ -193,7 +223,18 @@ const PB_COURSE = {
           "<strong>Simple description</strong> \u2014 short, confident. If it feels forced, it's wrong."
         ]},
         { t: "quote", text: "If it feels forced, it's wrong." },
-        { t: "action", html: "Rewrite one product description today: three images, fabric spec, five confident lines." }
+        { t: "action", html: "Rewrite one product description today: three images, fabric spec, five confident lines." },
+        { t: "h", text: "Premium details \u2014 order one sample each" },
+        { t: "list", items: [
+          "Branded mylar bags",
+          "Hangtags",
+          "PodPartner branded bags",
+          "Sewn-in neck labels",
+          "NinjaPrint Permastickers",
+          "ULINE magnetic boxes",
+          "PVC patches"
+        ]},
+        { t: "p", html: "These are the touches that make a $30 shirt feel like a $100 brand. Sample every one of them. Keep the ones that fit your world." }
       ]
     },
     {
@@ -203,10 +244,12 @@ const PB_COURSE = {
       blocks: [
         { t: "lead", html: "This is the whole machine on one page. <strong>Trademark filing \u2192 brand setup \u2192 design \u2192 production \u2192 marketing \u2192 selling live</strong> \u2014 online AND in person. Follow the chart top to bottom and you cannot get lost." },
         { t: "chart" },
+        { t: "p", html: "The system runs on <strong>push and pull</strong>. <strong>Push:</strong> you drive the drop at them \u2014 teasing, countdown, SMS pressure. <strong>Pull:</strong> curiosity drags them in \u2014 they ask, they guess, they watch. Push without pull is spam. Pull without push never closes. Run both. (Exact steps from the video \u2014 follow along on the channel.)" },
         { t: "h", text: "The drop countdown" },
         { t: "timeline", items: [
           { t: "T-48h", title: "Tease", d: "Fabric close-up. A sleeve. The tag. Never the full product." },
           { t: "T-24h", title: "Hype", d: "Build energy everywhere. Let them ask \u201cwhat? when?\u201d" },
+          { t: "T-12h", title: "Curiosity", d: "A detail only \u2014 a corner of the design, the back print, the texture. Answer nothing. Let them guess." },
           { t: "T-1h", title: "Pressure", d: "SMS: \u201cDrop live in 1 hour. 50 pieces only.\u201d" },
           { t: "T-0", title: "Launch", d: "\u201cLIVE NOW\u201d everywhere at once \u2014 site, SMS, social, in person." },
           { t: "T+24h", title: "Sell out", d: "No restocks. Post \u201cSOLD OUT.\u201d Scarcity is the brand." }
@@ -233,7 +276,14 @@ const PB_COURSE = {
           "Pre-drop SMS: \u201cDrop live in 1 hour. 50 pieces only.\u201d"
         ]},
         { t: "callout", title: "Email vs SMS", html: "Email builds trust. SMS creates urgency. You need both \u2014 but SMS is what sells out the drop." },
-        { t: "action", html: "Install the SMS pop-up on your store today. Get your first 25 subscribers this week." }
+        { t: "action", html: "Install the SMS pop-up on your store today. Get your first 25 subscribers this week." },
+        { t: "h", text: "Or build it instantly \u2014 the two list suppliers I use" },
+        { t: "p", html: "Organic building works \u2014 but it's slow. When I need a list <strong>today</strong>, I buy targeted subscribers: real people interested in streetwear and luxury brands, ready-made SMS + email lists. Not random numbers \u2014 people who actually buy from drops." },
+        { t: "links", items: [
+          { label: "Ecom Needs Jungle", url: "https://ecomneedsjungle.com/products/targeted-subscriber-lead-1", note: "Choose your country, select the number of premium leads, and get a ready-made SMS + email list." },
+          { label: "Grovolyfy", url: "https://grovolyfy.com/collections/marketing-advertisement/products/united-states-email-list", note: "Pick the countries and list size you want. Delivered instantly." }
+        ]},
+        { t: "p", html: "How many you need: <strong>200\u2013500 subscribers</strong> sells out a 50-piece drop. <strong>1,000+</strong> is $5K-day territory. Then work the list exactly like the drop system teaches \u2014 tease, pressure, launch, sell out." }
       ]
     },
     {
@@ -275,6 +325,22 @@ const PB_COURSE = {
         { t: "quote", text: "Start before you're ready. Sell before you're perfect." },
         { t: "action", html: "Pick your drop date right now. Work backwards through this checklist." }
       ]
+    },
+    {
+      id: "l15", num: "15", part: "Closing", tier: "regular",
+      title: "Now Go Build", est: "4 min",
+      intro: "This isn't where the story ends. It's where yours begins.",
+      blocks: [
+        { t: "lead", html: "For years I looked for a guide that cut through the noise \u2014 one that didn't just preach \u201cbrand building\u201d but showed the actual systems, suppliers, and steps used by brands that last. I never found it. So I built it myself." },
+        { t: "p", html: "You now have everything I spent 7 years testing, failing with, and perfecting: the same blanks luxury brands use, the same print partners, the same legal frameworks, the same creative tools that make you look established on day one." },
+        { t: "h", text: "No more gatekeeping" },
+        { t: "p", html: "Over half a decade, I've learned the hard way that most streetwear brands and \u201cindustry insiders\u201d keep the real knowledge locked away. Gatekeepers are out \u2014 <strong>you're in.</strong>" },
+        { t: "quote", text: "Knowledge without action is just entertainment. This isn't theory \u2014 it's a toolkit. Use it." },
+        { t: "p", html: "Start before you're ready. Sell before you're perfect. Protect your brand before it's big. \u2014 <strong>Anthony Emmanuel Figueroa (The Griffin), Founder, POTENT\u00ae</strong>" },
+        { t: "links", items: [
+          { label: "Founder WhatsApp", url: "https://wa.me/message/FGSHNADCOQIYJ1", note: "Stuck? Message me \u2014 this isn't a one-way book, it's an open door." }
+        ]}
+      ]
     }
   ],
   modules: []
@@ -287,6 +353,7 @@ PB_COURSE.modules = [
     intro: "My personal, tested suppliers. I could charge $297 for this list alone.",
     blocks: [
       { t: "lead", html: "Every contact below is <strong>tested and trusted</strong> \u2014 the same level of blanks and materials used by luxury houses, with no minimums." },
+        { t: "p", html: "<strong>LUXURY / HIGH-GRADE BLANKS \u2014 USED BY MONCLER \u00b7 PRADA \u00b7 YSL \u00b7 FENDI \u00b7 LV.</strong>" },
       { t: "h", text: "Luxury blanks" },
       { t: "links", items: [
         { label: "Original Favorites", url: "https://originalfavorites.com", note: "USA Supima blanks, zero minimums \u2014 used by high-fashion & streetwear brands." },
@@ -319,7 +386,7 @@ PB_COURSE.modules = [
       ]},
       { t: "h", text: "China / Alibaba" },
       { t: "links", items: [
-        { label: "VASHAP SPR 8769 (Alibaba)", url: "https://www.alibaba.com", note: "Original logo designer hoodie. Search the supplier name on Alibaba." }
+        { label: "VASHAP SPR 8769 (Alibaba)", url: "https://www.alibaba.com/product-detail/VASHAP-SPR-8769-Original-LOGO-Designer_1601430456152.html", note: "Original logo designer hoodie \u2014 direct product link." }
       ]},
       { t: "callout", title: "Rules", html: "Always order samples first. Combine US + Chinese suppliers for speed and quality control. Keep every invoice for taxes." }
     ]
@@ -439,8 +506,9 @@ PB_COURSE.modules = [
         "<strong>CreativeFabrica Studio</strong> \u2014 iPhone-style TikTok shots",
         "<strong>catwalk.ai</strong> (app) \u2014 AI model videos"
       ]},
-      { t: "callout", title: "Deluxe visual collection", html: "Your Deluxe edition includes the <strong>AI campaign visual collection</strong> \u2014 11 campaign stills plus the cinematic video prompts, so you can generate your own versions. Study a frame, then make it yours." }
-    ]
+      { t: "callout", title: "Deluxe visual collection", html: "Your Deluxe edition includes the <strong>AI campaign visual collection</strong> \u2014 11 campaign stills plus the cinematic video prompts, so you can generate your own versions. Study a frame, then make it yours." },
+        
+      ]
   }
 ];
 
@@ -490,8 +558,22 @@ PB_COURSE.modules.push(
       { t: "callout", title: "Free mockup first", html: "Kive gives a free mockup \u2014 upgrade only when you're ready to go full campaign." },
       { t: "links", items: [
         { label: "Kive.ai", url: "https://kive.ai", note: "Paste product URL \u2192 paste prompt \u2192 generate." }
-      ]}
-    ]
+      ]},
+        { t: "p", html: "<strong>The Kive rule:</strong> Kive = Presentation. Campaign visuals. Brand elevation. Luxury perception. The flow never changes: <strong>start with PhotoRoom, then enhance with Kive.</strong>" },
+        { t: "h", text: "Quality control \u2014 check every image" },
+        { t: "checklist", items: [
+          "Hands \u2014 fingers right, nothing extra",
+          "Garment shape \u2014 fit and drape hold up",
+          "Shoes \u2014 correct, no warping",
+          "Print placement \u2014 exactly where the design file puts it",
+          "Logos \u2014 spelled right, not mirrored",
+          "Product color \u2014 true to the real piece",
+          "Text \u2014 no gibberish letters",
+          "Face \u2014 no distortion",
+          "Accessories \u2014 belong in the scene",
+          "Background \u2014 no errors hiding in it"
+        ]}
+      ]
   },
   {
     id: "m-videoprompts", num: "D9", part: "Deluxe Exclusive", tier: "deluxe", ai: true,
@@ -579,7 +661,7 @@ PB_COURSE.modules.push(
       { t: "links", items: [
         { label: "Privy", url: "https://privy.com", note: "Pop-ups + SMS." },
         { label: "Omnisend", url: "https://omnisend.com", note: "Pop-ups + SMS." },
-        { label: "Ecom Needs Jungle", url: "https://ecomneeds.com", note: "Targeted SMS lists." },
+        { label: "Ecom Needs Jungle", url: "https://ecomneedsjungle.com/products/targeted-subscriber-lead-1", note: "Targeted subscriber leads \u2014 ready-made SMS + email lists." },
         { label: "Postscript", url: "https://postscript.io", note: "SMS for Shopify." },
         { label: "Mailchimp", url: "https://mailchimp.com", note: "Email." }
       ]},
@@ -596,9 +678,52 @@ PB_COURSE.modules.push(
         { label: "StickerMule", url: "https://stickermule.com", note: "Keychains, pins, labels." }
       ]},
       { t: "h", text: "Support" },
-      { t: "p", html: "<strong>Founder WhatsApp</strong> \u2014 24/7 direct line (Deluxe members). <strong>YouTube @learnwithpotent</strong> \u2014 follow-along videos." }
-    ]
-  }
+      { t: "p", html: "<strong>Founder WhatsApp</strong> \u2014 24/7 direct line (Deluxe members). <strong>YouTube @learnwithpotent</strong> \u2014 follow-along videos." },
+        { t: "h", text: "Follow along \u2014 video" },
+        { t: "links", items: [
+          { label: "YouTube \u2014 @learnwithpotent", url: "https://youtube.com/@Potentgriffin", note: "Follow-along videos: 'How I Built A Clothing Brand With No Money' \u00b7 'How to Start a Clothing Brand With $0 (No Inventory)'." },
+          { label: "PhotoRoom Tutorial", url: "https://youtu.be/pQLb6oqPERk", note: "The mockup workflow, on video." },
+          { label: "EIN & LLC Filing Tutorial", url: "https://youtu.be/JQCJLma8g1U", note: "Free to file \u2014 full walkthrough." },
+          { label: "USPTO Application Help Walkthrough", url: "https://youtu.be/JJ70453NSFQ", note: "The trademark application, field by field." }
+        ]},
+        { t: "h", text: "Support" },
+        { t: "links", items: [
+          { label: "Founder WhatsApp", url: "https://wa.me/message/FGSHNADCOQIYJ1", note: "24/7 direct line \u2014 message me. This isn't a one-way book, it's an open door." }
+        ]}
+      ]
+  },
+    {
+      id: "m-business", num: "D13", part: "Deluxe Exclusive", tier: "deluxe",
+      title: "Run The Business", est: "6 min",
+      intro: "The tool stack behind the brand \u2014 operations, finance, and distribution.",
+      blocks: [
+        { t: "lead", html: "A brand is a business. These are the tools that run mine \u2014 most of them free to start." },
+        { t: "h", text: "Operations" },
+        { t: "list", items: [
+          "<strong>Trello / Asana</strong> \u2014 track every task and drop",
+          "<strong>Slack + WhatsApp</strong> \u2014 team and community comms",
+          "<strong>Google Drive</strong> \u2014 every file, design, and invoice",
+          "<strong>Todoist</strong> \u2014 time tracking and daily priorities",
+          "<strong>LastPass</strong> \u2014 every password, one vault"
+        ]},
+        { t: "h", text: "Finance" },
+        { t: "list", items: [
+          "<strong>QuickBooks Online</strong> \u2014 the books, done right",
+          "<strong>HelloSign</strong> \u2014 contracts and agreements signed",
+          "<strong>Stripe + Square</strong> \u2014 get paid anywhere",
+          "<strong>Experian Business Credit</strong> \u2014 build the business credit file from day one"
+        ]},
+        { t: "h", text: "Content \u2014 community & distribution" },
+        { t: "p", html: "Attention is a system. I don't chase algorithms \u2014 <strong>I build pipelines.</strong>" },
+        { t: "list", items: [
+          "<strong>Vista Social</strong> \u2014 schedule everything from one place",
+          "<strong>Discord</strong> \u2014 artists & creators",
+          "<strong>WhatsApp</strong> \u2014 VIP buyers, direct line",
+          "<strong>Mailchimp</strong> \u2014 email. Email builds trust.",
+          "<strong>SimpleTexting</strong> \u2014 SMS drops. SMS creates urgency."
+        ]}
+      ]
+    }
 );
 
 PB_COURSE.tools = [
