@@ -13,12 +13,12 @@ function createBridge(deps) {
   }
   // Is this 20 ms phone frame (base64 mu-law) someone talking? Average decoded amplitude above a small floor.
   function loud(b64) {
-    try { const b = Buffer.from(b64, "base64"); if (!b.length) return false; let sum = 0; for (let i = 0; i < b.length; i++) { const u = ~b[i] & 0xff, e = (u >> 4) & 7, m = u & 15; sum += (((m << 3) + 0x84) << e) - 0x84; } return sum / b.length > 700; } catch (e) { return false; }
+    try { const b = Buffer.from(b64, "base64"); if (!b.length) return false; let sum = 0; for (let i = 0; i < b.length; i++) { const u = ~b[i] & 0xff, e = (u >> 4) & 7, m = u & 15; sum += (((m << 3) + 0x84) << e) - 0x84; } return sum / b.length > 320; } catch (e) { return false; }
   }
   const sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
 
   function handle(tw) {
-    let closingAt = 0, closeNudges = 0, greetHold = true, greetT = null, lastCallerAt = 0, lastAgentAt = 0, toolDoneAt = 0, toolBusy = 0, nudges = 0, burst = 0, readyAt = 0, wdTimer = null;
+    let idleAt = 0, closingAt = 0, closeNudges = 0, greetHold = true, greetT = null, lastCallerAt = 0, lastAgentAt = 0, toolDoneAt = 0, toolBusy = 0, nudges = 0, burst = 0, readyAt = 0, wdTimer = null;
     let lang = "English", langTimer = null, flushTimer = null, retries = 0, reconnecting = false, timersSet = false, hist = [], streamSid = null, ctx = null, ai = null, prov = null, connectTimerRef = null, spokeSinceTool = false, toolAt = 0, done = false, aiReady = false, buffered = [], lastItem = null, assistStart = null, mediaTs = 0, marks = 0, markQ = [], transferPending = false, transferred = false, startedAt = Date.now(), timers = [], nm = 0;
     const timer = function (fn, ms) { const t = setTimeout(fn, ms); timers.push(t); return t; };
     const twSend = function (o) { if (tw.readyState === 1) tw.send(JSON.stringify(o)); };
@@ -33,7 +33,7 @@ function createBridge(deps) {
       if (ctx && prov && prov.flush) await Promise.all(prov.flush().map(function (e) { return api({ action: "transcript", session_id: ctx.session_id, role: e.kind === "caller_text" ? "caller" : "agent", text: e.text, key: e.key }, 6000); }));   // keep what was said even if the call ended mid-sentence
       if (ctx) {   // proof for the graders: did the AI produce transcripts, and which message types did it send
         const d = prov && prov.diag ? prov.diag() : {}, got = (kinds.caller_text || 0) + (kinds.agent_text || 0);
-        await api({ action: "health", provider: "bridge", kind: got || secs < 15 ? "call_summary" : "no_transcripts", ok: !!got || secs < 15, detail: JSON.stringify({ secs: secs, events: kinds, gemini: d, lang: lang, adapter: (prov && prov.version) || "old" }).slice(0, 900) }, 5000);
+        await api({ action: "health", provider: "bridge", kind: got || secs < 15 ? "call_summary" : "no_transcripts", ok: !!got || secs < 15, detail: JSON.stringify({ secs: secs, adapter: (prov && prov.version) || "old", ev: kinds, ago: { agent: lastAgentAt ? Math.round((Date.now() - lastAgentAt) / 1000) : null, caller: lastCallerAt ? Math.round((Date.now() - lastCallerAt) / 1000) : null, tool: toolDoneAt ? Math.round((Date.now() - toolDoneAt) / 1000) : null }, toolBusy: toolBusy, lang: lang, gemini: d }).slice(0, 1800) }, 5000);
       }
       if (ctx) await api({ action: "end", session_id: ctx.session_id, reason: reason, seconds: secs }, 8000);
       else if (reason !== "caller_hangup") await api({ action: "health", provider: "bridge", kind: "call_setup_failed", ok: false, detail: reason }, 5000);
@@ -126,6 +126,11 @@ function createBridge(deps) {
         sysNote(closeNudges === 1 ? "The booking is done and the caller is quiet. Ask warmly: \"Is there anything else I can help you with?\"" : "The caller is still quiet. Thank them by name, give the job reference, and say a warm goodbye.");
         return;
       }
+      if (!owed && !noGreeting && !closingAt && readyAt && lastAgentAt && now - lastAgentAt > th * 3 && now - Math.max(lastCallerAt, 0) > th * 3 && now - Math.max(idleAt, 0) > th * 3) { // dead-air backstop: whatever the cause, nobody has spoken for ~12s, so she checks in
+        idleAt = now; kinds.idle_checkin = (kinds.idle_checkin || 0) + 1; api({ action: "health", provider: "bridge", kind: "silence_nudge", ok: false, detail: ("idle " + Math.round((now - lastAgentAt) / 1000) + "s").slice(0, 120) }, 4000);
+        if (kinds.idle_checkin % 3 === 0) aiDown("silence_watchdog", "idle for " + Math.round((now - lastAgentAt) / 1000) + "s"); else if (kinds.idle_checkin % 2 === 1) sysNote("It has been quiet. Say warmly: \"Are you still there? Take your time. If you do not have that handy, we can go ahead without it.\""); else aiSend(prov.say("I'm still right here with you. If it is easier, I can take this down without that and have someone follow up."));
+        return;
+      }
       if (!owed && !noGreeting) return;
       const since = noGreeting ? readyAt : Math.max(lastCallerAt, toolDoneAt), waited = now - since;
       if (waited < th * (nudges + 1) + (noGreeting ? th : 0)) return;
@@ -147,7 +152,7 @@ function createBridge(deps) {
     tw.on("message", function (raw) {
       let m; try { m = JSON.parse(raw.toString()); } catch (e) { return; }
       if (m.event === "start") { streamSid = m.start && m.start.streamSid; const tok = m.start && m.start.customParameters && m.start.customParameters.token; if (!tok) return finish("no_token", true); begin(tok); }
-      else if (m.event === "media" && m.media && (!m.media.track || m.media.track === "inbound")) { mediaTs = Number(m.media.timestamp) || mediaTs; if (!greetHold && loud(m.media.payload)) { if (++burst >= 8) lastCallerAt = Date.now(); } else burst = Math.max(0, burst - 1); if (aiReady && !greetHold) aiSend(prov.audioIn(m.media.payload)); }
+      else if (m.event === "media" && m.media && (!m.media.track || m.media.track === "inbound")) { mediaTs = Number(m.media.timestamp) || mediaTs; if (!greetHold && loud(m.media.payload)) { if (++burst >= 6) lastCallerAt = Date.now(); } else burst = Math.max(0, burst - 1); if (aiReady && !greetHold) aiSend(prov.audioIn(m.media.payload)); }
       else if (m.event === "mark") markQ.shift();
       else if (m.event === "stop") finish(transferred ? "transferred" : "caller_hangup", false);
     });

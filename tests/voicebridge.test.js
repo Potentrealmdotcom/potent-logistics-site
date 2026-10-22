@@ -21,7 +21,7 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
   let r = rig(); r.start(); await sleep(40);
   ok(r.calls[0].action === "context" && r.calls[0].token === "tok", "bridge asks the site for the call context using the stream token");
   ok(r.aiSock.headers["x-goog-api-key"] === "gk-x" && /^wss:\/\//.test(r.aiSock.url), "AI key stays on the bridge and is sent only to the AI provider");
-  const setup = r.aiSock.sent.find(m => m.setup); ok(setup && setup.setup.model === "models/gemini-3.8-live" && setup.setup.systemInstruction.parts[0].text === "be nice" && setup.setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName === "Kore", "AI session configured (model, instructions, valid voice)");
+  const setup = r.aiSock.sent.find(m => m.setup); ok(setup && setup.setup.model === "models/gemini-3.8-live" && setup.setup.systemInstruction.parts[0].text === "be nice" && setup.setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName === "Aoede", "AI session configured (model, instructions, valid voice)");
   const fd = setup.setup.tools[0].functionDeclarations[0]; ok(fd.name === "t" && fd.behavior === "BLOCKING" && fd.parameters.type === "OBJECT" && !("additionalProperties" in fd.parameters), "tools converted to the Gemini schema");
   ok(!r.aiSock.sent.some(m => m.clientContent), "nothing is said before the AI confirms its setup");
   r.phone({ event: "media", media: { track: "inbound", payload: Buffer.alloc(160, 0xff).toString("base64"), timestamp: "10" } }); r.ready(); await sleep(10);
@@ -90,6 +90,7 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
   r.phone({ event: "stop" }); await sleep(20);
   r = rig({ env: { VOICE_SILENCE_MS: "100" } }); r.start(); await sleep(40); r.ready(); r.ai(audio(240)); await sleep(1500);
   ok(!JSON.stringify(r.aiSock.sent).includes("The caller is waiting"), "caller is simply listening: no nudge");
+  ok(JSON.stringify(r.aiSock.sent).includes("It has been quiet"), "dead-air backstop: nobody has spoken for a while, so she checks in whatever the cause");
   r.phone({ event: "stop" }); await sleep(20);
   r = rig({ env: { VOICE_SILENCE_MS: "100" }, toolResult: { ok: true, emailed: true } }); r.start(); await sleep(40); r.ready(); await sleep(10); r.ai(audio(240)); r.ai(sc({ turnComplete: true }));
   r.ai({ toolCall: { functionCalls: [{ id: "pl1", name: "send_payment_link", args: {} }] } }); await sleep(30); r.ai(audio(240)); r.ai(sc({ turnComplete: true })); await sleep(1500);
