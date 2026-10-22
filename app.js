@@ -7861,9 +7861,9 @@ function recordDecoyAudio(durationMs) {
     }).catch(function () { return null; });
 }
 
-// FAILED-QUILL PHOTO (owner order Oct 22): only a WRONG password on the 'quill' account opens the camera, takes one frame, uploads it and closes the camera again.
-// Quill's successful logins never touch the camera. The browser's own permission prompt still applies; if the camera is refused or missing the result is null and the log row is written without a photo.
-function captureFailedQuillPhoto() {
+// FAILED-LOGIN PHOTO (owner orders Oct 22): a WRONG password at the staff login (any account) opens the camera, takes one frame, uploads it and closes the camera again.
+// Successful logins are unchanged (Quill's never touch the camera). The browser's own permission prompt still applies; if the camera is refused or missing the result is null and the log row is written without a photo.
+function captureFailedLoginPhoto() {
     return new Promise(function (resolve) {
         if (typeof navigator === "undefined" || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { resolve(null); return; }
         var done = false, stream = null;
@@ -8103,8 +8103,8 @@ function AdminLogin(props) {
             else {
                 var failedName = user ? getDisplayName(user) : selected;
                 logAdminAction("Failed Login Attempt", "Wrong password entered from " + getDeviceInfo(), failedName);
-                // 'quill' only: a wrong password takes a photo now and attaches it to the failed-attempt row. Everyone else keeps the photo taken before the check.
-                (isQuill ? captureFailedQuillPhoto() : Promise.resolve(photoUrl)).then(function (shot) { logLoginToSupabase("Failed Login Attempt", failedName, getDeviceInfo(), shot); });
+                // any account: a wrong password takes a photo now and attaches it to the failed-attempt row (falls back to the pre-check photo if there is one).
+                captureFailedLoginPhoto().then(function (shot) { logLoginToSupabase("Failed Login Attempt", failedName, getDeviceInfo(), shot || photoUrl); });
                 if (!isQuill) alertLoginEmail(   // the Quill assistant's own attempts are logged above but never emailed (owner order)
                     "\u26A0\uFE0F FAILED LOGIN ATTEMPT: " + failedName,
                     "Someone tried to log in as " + failedName + " with the wrong password.\n\nDevice: " + getDeviceInfo() + "\nTime: " + new Date().toLocaleString() + "\n\nIf this wasn't the employee, consider changing their password immediately." + (photoUrl ? "\n\nPhoto captured: " + photoUrl : "")
