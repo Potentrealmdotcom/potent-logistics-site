@@ -34,7 +34,7 @@ const say = (s, who, text) => S.transcript(s.org_id, s.id, who, text);
 async function toQuote(s, over) { await run(s, "collect_shipment_details", full(over)); const el = await run(s, "validate_shipment_eligibility"); if (el.status !== "eligible") return { el }; const q = await run(s, "calculate_quote"); return { el, q }; }
 (async () => {
   // ── tool list / injection surface ──
-  const defs = TL.defs(); ok(defs.length === 20 && defs.every(d => d.type === "function" && d.parameters), "all 20 required tools are defined");
+  const defs = TL.defs(); ok(defs.length === 21 && defs.every(d => d.type === "function" && d.parameters), "all 21 required tools are defined");
   ok(!JSON.stringify(defs.map(d=>Object.keys((d.parameters&&d.parameters.properties)||{}))).match(/discount|override|price|org_id|session_id|caller_confirmed|authorized_by/i), "no tool lets the model set a price, discount, company, session or its own confirmation");
   // ── 1. successful call ──
   let s = newSes(); let r = await run(s, "lookup_customer"); ok(r.ok && r.known === false, "unknown caller");
@@ -163,11 +163,11 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
   const vt = async (b, auth) => { const r = await VT.handler({ httpMethod: "POST", headers: { authorization: auth === undefined ? "Bearer bridgesecret" : auth }, body: JSON.stringify(b) }); return { s: r.statusCode, j: JSON.parse(r.body) }; };
   ok((await vt({ action: "health" }, "Bearer wrong")).s === 401 && (await vt({ action: "health" }, "")).s === 401, "bridge endpoint needs the shared secret");
   const open = newSes({ provider_call_id: "CA7001", state: "ringing", answered_at: null }); const stok = TW.streamToken("bridgesecret", "CA7001", OA, Date.now() + 60000);
-  let c = await vt({ action: "context", token: stok }); ok(c.s === 200 && c.j.session_id === open.id && /AI/.test(c.j.instructions) && c.j.tools.length === 20 && c.j.max_seconds === 1800 && c.j.recording === false, "bridge gets instructions, the 17 tools, a 30-minute cap for Fleet, recording off");
+  let c = await vt({ action: "context", token: stok }); ok(c.s === 200 && c.j.session_id === open.id && /AI/.test(c.j.instructions) && c.j.tools.length === 21 && c.j.max_seconds === 1800 && c.j.recording === false, "bridge gets instructions, the 17 tools, a 30-minute cap for Fleet, recording off");
   ok(/not being recorded/.test(c.j.instructions) && !/may be recorded/.test(c.j.greeting), "the agent does not claim recording when it is off");
   ok((await vt({ action: "context", token: TW.streamToken("bridgesecret", "CA7001", OA, Date.now() - 1) })).s === 403 && (await vt({ action: "context", token: TW.streamToken("other", "CA7001", OA, Date.now() + 5000) })).s === 403, "expired or forged stream tokens refused");
   T.voice_agent_config[0].recording_enabled = true; T.voice_agent_config[0].recording_consent_confirmed = false; const o2 = newSes({ provider_call_id: "CA7002", state: "ringing" }); c = await vt({ action: "context", token: TW.streamToken("bridgesecret", "CA7002", OA, Date.now() + 60000) }); ok(c.j.recording === false, "recording stays off until consent is confirmed");
-  EXT.twilio.length = 0; T.voice_agent_config[0].recording_consent_confirmed = true; const o3 = newSes({ provider_call_id: "CA7003", state: "ringing" }); c = await vt({ action: "context", token: TW.streamToken("bridgesecret", "CA7003", OA, Date.now() + 60000) }); ok(c.j.recording === true && /may be recorded/.test(c.j.greeting) && EXT.twilio.some(t => /Recordings\.json/.test(t.url)), "recording only with plan + setting + consent; the caller is told");
+  EXT.twilio.length = 0; T.voice_agent_config[0].recording_consent_confirmed = true; const o3 = newSes({ provider_call_id: "CA7003", state: "ringing", from_number: "+12125550100" }); c = await vt({ action: "context", token: TW.streamToken("bridgesecret", "CA7003", OA, Date.now() + 60000) }); ok(c.j.recording === true && /may be recorded/.test(c.j.greeting) && EXT.twilio.some(t => /Recordings\.json/.test(t.url)), "recording only with plan + setting + consent; the caller is told");
   T.voice_agent_config[0].recording_enabled = false; T.voice_agent_config[0].recording_consent_confirmed = false;
   T.voice_agent_config[0].emergency_stop = true; const o4 = newSes({ provider_call_id: "CA7004", state: "ringing" }); c = await vt({ action: "context", token: TW.streamToken("bridgesecret", "CA7004", OA, Date.now() + 60000) }); T.voice_agent_config[0].emergency_stop = false; ok(c.s === 423, "emergency stop also refuses to open a call that was already ringing");
   let t = await vt({ action: "tool", session_id: open.id, name: "lookup_customer", args: {}, call_key: "bridge-1" }); ok(t.s === 200 && t.j.result.ok, "bridge can run a tool"); t = await vt({ action: "tool", session_id: open.id, name: "lookup_customer", args: {}, call_key: "bridge-1" }); ok(t.j.result.duplicate, "bridge retry of the same call id is idempotent");
@@ -322,6 +322,20 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
     // the card digits can never be saved in a transcript
     ok(S.redact("my card is 4242 4242 4242 4242") .indexOf("4242 4242 4242 4242") < 0, "card numbers are scrubbed from any stored text");
     delete process.env.VOICE_PAY; delete process.env.VOICE_PAY_CONNECTOR; global.fetch = realFetch; }
+
+  { const P1 = require("../netlify/functions/lib/voice/prompt.js"), rc = { recording_enabled: true, recording_consent_confirmed: true, agent_name: "Elevate" }, org = { name: "POTENT Logistics", slug: "potent-logistics" };
+    ok(!/recorded/.test(P1.greeting(rc, org, "+14045550142")) && !/recorded/.test(P1.greeting(rc, org, "7705550100")) && !/recorded/.test(P1.greeting(rc, org, "(678) 555-0100")), "Georgia numbers (404/770/678...) hear no recording notice");
+    ok(/may be recorded/.test(P1.greeting(rc, org, "+12125550100")) && /may be recorded/.test(P1.greeting(rc, org, "")) && /may be recorded/.test(P1.greeting(rc, org)), "other states and unknown numbers still hear the short notice (two-party-consent states)");
+    ok(/Do not announce that calls are recorded/.test(P1.build(rc, org)) && !/Tell the caller this call may be recorded/.test(P1.build(rc, org)), "the prompt no longer tells her to announce recording");
+    ok(/may be recorded/.test(P1.greeting(rc, { name: "Acme", slug: "acme" }, "+14045550142")), "tenants keep their notice (the Georgia rule is stated for POTENT only)");
+    const pb = P1.build(rc, org); ok(/Not sure who you think you're talking to/.test(pb) && /sassy but always very professional/.test(pb) && /use the end_call tool/.test(pb) && !/Certainly!\\\"/.test("x") && /REGULAR COMPANY, REGULAR PERSON/.test(pb), "regular-person realism + the professional-sass disrespect boundary are in her instructions");
+    ok(!/DISRESPECT|REGULAR COMPANY/.test(P1.build({ agent_name: "X" }, { name: "Acme", slug: "acme" })), "tenants do not inherit POTENT's attitude lines");
+    // end_call: logs, tells the owner, and the hangup action only works after it ran
+    const ab = newSes({ provider_call_id: "CAEND1", state: "active" }); EXT.mail.length = 0; EXT.twilio.length = 0;
+    let hu = await vt({ action: "hangup", session_id: ab.id }); ok(hu.j.ok === false && !EXT.twilio.length, "hangup refused unless the agent used end_call");
+    r = await runRaw(ab, "end_call", { reason: "cursed at her twice after a warning" }); ok(r.ok && r.end_call && T.voice_sessions.find(x => x.id === ab.id).outcome === "ended_abuse" && EXT.mail.some(m => /Call ended by Elevate/.test(JSON.stringify(m))), "end_call: logged as ended_abuse and the owner is told");
+    hu = await vt({ action: "hangup", session_id: ab.id }); ok(hu.j.ok === true && EXT.twilio.some(t => /CAEND1/.test(t.url) && /Completed/i.test(t.body)), "hangup: the phone company is told to end the call");
+  }
   console.log("PASS: " + n + " assertions");
 })().catch(e => { console.error(e); process.exit(1); });
 

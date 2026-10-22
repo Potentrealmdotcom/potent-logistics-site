@@ -9,7 +9,7 @@ function rig(opts) {
   opts = opts || {}; const calls = []; let aiSock = null;
   const fetch = async (url, o) => { const b = JSON.parse(o.body); calls.push(b); if (opts.apiDown) throw new Error("down"); let data = {}, status = 200;
     if (b.action === "context") { if (opts.ctxStatus) { status = opts.ctxStatus; data = { error: "x" }; } else data = { session_id: "S1", instructions: "be nice", tools: [{ type: "function", name: "t", description: "d", parameters: { type: "object", properties: { a: { type: "string" } }, additionalProperties: false } }], voice: "alloy", greeting: "Hello", max_seconds: opts.maxSeconds || 1800, resume: opts.resume || null }; }
-    if (b.action === "tool") data = { result: opts.toolResult || { ok: true } }; if (b.action === "pay") data = opts.payFail ? { ok: false, error: "keypad_not_live" } : { ok: true }; if (b.action === "transfer") data = opts.transferFail ? { ok: false, error: "no_one_available" } : { ok: true, requested: true };
+    if (b.action === "tool") data = { result: opts.toolResult || { ok: true } }; if (b.action === "hangup") data = { ok: true }; if (b.action === "pay") data = opts.payFail ? { ok: false, error: "keypad_not_live" } : { ok: true }; if (b.action === "transfer") data = opts.transferFail ? { ok: false, error: "no_one_available" } : { ok: true, requested: true };
     return { status, json: async () => data }; };
   class W extends Sock { constructor(url, o) { super(); aiSock = this; this.url = url; this.headers = o.headers; if (!opts.aiNeverOpens) setTimeout(() => this.emit("open"), 5); } }
   const b = createBridge({ env: Object.assign({ SITE_URL: "https://site.test/", VOICE_BRIDGE_SECRET: "sec", GEMINI_API_KEY: "gk-x" }, opts.env || {}), WebSocket: W, fetch, log() {} });
@@ -120,5 +120,12 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
   r = rig({ resume: { code: "unverified:$250.00", recap: "x" } }); r.start(); await sleep(40); r.ready(); await sleep(10);
   { const sent = JSON.stringify(r.aiSock.sent); ok(/could NOT be confirmed/.test(sent) && /do NOT say it is paid/i.test(sent), "keypad: an unconfirmed payment is never called paid and never called failed"); }
   r.phone({ event: "stop" }); await sleep(20);
+
+  // ---- end_call (abuse after a warning): goodbye is spoken first, then the site is asked to hang up
+  r = rig({ toolResult: { ok: true, end_call: true, say: "x" } }); r.start(); await sleep(40); r.ready(); await sleep(10); r.ai(audio(240)); r.ai(sc({ turnComplete: true }));
+  r.ai({ toolCall: { functionCalls: [{ id: "ec1", name: "end_call", args: { reason: "abuse" } }] } }); await sleep(40); r.ai(audio(240)); r.ai(sc({ turnComplete: true })); for (let i = 0; i < 20; i++) r.phone({ event: "mark" }); await sleep(2200);
+  ok(r.calls.some(c => c.action === "hangup" && c.session_id === "S1"), "end_call: after her goodbye the bridge asks the site to hang up");
+  r.phone({ event: "stop" }); await sleep(40);
+  ok(r.calls.some(c => c.action === "end" && c.reason === "ended_by_agent"), "end_call: the call is recorded as ended by the agent");
   console.log("PASS: " + n + " assertions"); process.exit(0);
 })().catch(e => { console.error(e); process.exit(1); });

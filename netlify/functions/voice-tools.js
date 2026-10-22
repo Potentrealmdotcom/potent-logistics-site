@@ -60,7 +60,7 @@ exports.handler = async function (event) {
         const tr = rows(await B.sb("voice_transcripts?session_id=eq." + ses.id + "&role=in.(caller,agent)&select=role,text,seq&order=seq.desc&limit=24")).reverse();
         resume = { code: String(tok.r).slice(0, 80), recap: tr.map(function (t) { return (t.role === "caller" ? "Caller: " : "You: ") + t.text; }).join("\n").slice(0, 3000) };
       }
-      return B.J(200, { resume: resume, session_id: ses.id, org_id: ses.org_id, call_sid: ses.provider_call_id, instructions: P.build(cfg, org), greeting: P.greeting(cfg, org), voice: cfg.voice || "marin", tools: allowed, max_seconds: cap, recording: rec });
+      return B.J(200, { resume: resume, session_id: ses.id, org_id: ses.org_id, call_sid: ses.provider_call_id, instructions: P.build(cfg, org), greeting: P.greeting(cfg, org, ses.from_number), voice: cfg.voice || "marin", tools: allowed, max_seconds: cap, recording: rec });
     }
     const ses = await sessionById(b.session_id); if (!ses) return B.J(404, { error: "No such call" });
     if (act === "tool") {
@@ -83,6 +83,11 @@ exports.handler = async function (event) {
       const r = await TW.transfer(ses.provider_call_id, base() + "?a=pay&s=" + ses.id + "&b=" + bk.id);
       if (!r.ok) { try { await T.notifyOwner(ses.org_id, "PAYMENT NEEDED by phone (keypad could not start)", "Booking " + bk.id + ": the call could not be moved to the keypad (" + (r.reason || "failed") + "). Call the customer" + (ses.from_number ? " at " + ses.from_number : "") + " to take payment. No link was sent."); } catch (e) { /* ignore */ } }
       return B.J(200, r.ok ? { ok: true } : { ok: false, error: r.reason || "transfer_failed" });
+    }
+    if (act === "hangup") {   // the agent ended the call (genuine abuse after one warning). The bridge only asks after the tool succeeded.
+      const done = rows(await B.sb("voice_tool_executions?session_id=eq." + ses.id + "&tool=eq.end_call&select=id&limit=1"))[0];
+      if (!done) return B.J(200, { ok: false, error: "no_end_call_requested" });
+      const r = await TW.hangup(ses.provider_call_id); return B.J(200, { ok: !!r.ok, error: r.ok ? undefined : (r.reason || "hangup_failed") });
     }
     if (act === "transfer") {
       const cfg = await S.cfgOf(ses.org_id), h = rows(await B.sb("voice_handoffs?org_id=eq." + ses.org_id + "&session_id=eq." + ses.id + "&status=eq.requested&select=id&limit=1"))[0];
