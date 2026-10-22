@@ -55,7 +55,12 @@ exports.handler = async function (event) {
       const allowed = T.defs().filter(function (d) { return st.entitlements[T.FEATURE[d.name]] === true; });
       const cap = Math.min(st.plan.max_call_minutes, cfg.max_call_minutes || 1e9) * 60;
       const org = { name: st.org.name, slug: st.org.slug };
-      return B.J(200, { session_id: ses.id, org_id: ses.org_id, call_sid: ses.provider_call_id, instructions: P.build(cfg, org), greeting: P.greeting(cfg, org), voice: cfg.voice || "marin", tools: allowed, max_seconds: cap, recording: rec });
+      let resume = null;
+      if (tok.r) {   // the call is coming back from the keypad payment: tell the AI exactly what happened, plus what was said before, so she carries on without a new greeting
+        const tr = rows(await B.sb("voice_transcripts?session_id=eq." + ses.id + "&role=in.(caller,agent)&select=role,text,seq&order=seq.desc&limit=24")).reverse();
+        resume = { code: String(tok.r).slice(0, 80), recap: tr.map(function (t) { return (t.role === "caller" ? "Caller: " : "You: ") + t.text; }).join("\n").slice(0, 3000) };
+      }
+      return B.J(200, { resume: resume, session_id: ses.id, org_id: ses.org_id, call_sid: ses.provider_call_id, instructions: P.build(cfg, org), greeting: P.greeting(cfg, org), voice: cfg.voice || "marin", tools: allowed, max_seconds: cap, recording: rec });
     }
     const ses = await sessionById(b.session_id); if (!ses) return B.J(404, { error: "No such call" });
     if (act === "tool") {
@@ -71,6 +76,14 @@ exports.handler = async function (event) {
       return B.J(200, { ok: await S.transcript(ses.org_id, ses.id, role, b.text) });
     }
     if (act === "end") return B.J(200, await finish(ses, b.reason, b.seconds));
+    if (act === "pay") {   // the bridge asks to move the live call to the keypad payment. Everything is re-checked here; the model supplies nothing but a booking id we already own.
+      if (process.env.VOICE_PAY !== "on" || !process.env.VOICE_PAY_CONNECTOR) return B.J(200, { ok: false, error: "keypad_not_live" });
+      const JP = require("./lib/voice/jobpay"), bk = rows(await B.sb("voice_bookings?org_id=eq." + ses.org_id + "&id=eq." + encodeURIComponent(String(b.booking_id || "")) + "&session_id=eq." + ses.id + "&select=id,status,job_id,snapshot&limit=1"))[0];
+      if (!bk || bk.status !== "confirmed" || !bk.job_id || !JP.payableCents(bk)) return B.J(200, { ok: false, error: "not_payable" });
+      const r = await TW.transfer(ses.provider_call_id, base() + "?a=pay&s=" + ses.id + "&b=" + bk.id);
+      if (!r.ok) { try { await T.notifyOwner(ses.org_id, "PAYMENT NEEDED by phone (keypad could not start)", "Booking " + bk.id + ": the call could not be moved to the keypad (" + (r.reason || "failed") + "). Call the customer" + (ses.from_number ? " at " + ses.from_number : "") + " to take payment. No link was sent."); } catch (e) { /* ignore */ } }
+      return B.J(200, r.ok ? { ok: true } : { ok: false, error: r.reason || "transfer_failed" });
+    }
     if (act === "transfer") {
       const cfg = await S.cfgOf(ses.org_id), h = rows(await B.sb("voice_handoffs?org_id=eq." + ses.org_id + "&session_id=eq." + ses.id + "&status=eq.requested&select=id&limit=1"))[0];
       if (!h) return B.J(409, { ok: false, error: "no_handoff_requested" });

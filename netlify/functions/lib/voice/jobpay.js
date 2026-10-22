@@ -35,12 +35,37 @@ async function onCheckout(session) {
   if (Number(session.amount_total) !== expect) { await B.audit("system", "voicejob_amount_mismatch", bk.id, { paid: session.amount_total, expected: expect }); return { error: "Amount mismatch" }; }
   if (bk.status !== "confirmed" || !bk.job_id) { await B.audit("system", "voicejob_paid_unconfirmed", bk.id, { status: bk.status }); return { error: "Booking not confirmed" }; }
   const pi = typeof session.payment_intent === "string" ? session.payment_intent : null;
+  return markPaid(bk, expect, pi);
+}
+
+// Mark the job paid (shared by the payment link webhook and the keypad flow). Safe to run twice.
+async function markPaid(bk, expect, pi, how) {
   const job = rows(await B.sb("jobs?id=eq." + encodeURIComponent(bk.job_id) + "&select=id,payment_intent_id,payment_status&limit=1"))[0];
   if (!job) return { error: "Job not found" };
   if (job.payment_status === "paid" && (!pi || job.payment_intent_id === pi)) return { ok: true, duplicate: true };
-  const up = await B.sb("jobs?id=eq." + encodeURIComponent(job.id), { method: "PATCH", prefer: "return=minimal", body: { payment_status: "paid", amount_paid: expect / 100, paid_online: true, payment_intent_id: pi, payment_verified_at: new Date().toISOString(), payment: "card" } });
+  const up = await B.sb("jobs?id=eq." + encodeURIComponent(job.id), { method: "PATCH", prefer: "return=minimal", body: { payment_status: "paid", amount_paid: expect / 100, paid_online: true, payment_intent_id: pi, payment_verified_at: new Date().toISOString() } });
   if (!up.ok) return { error: "Could not mark the job paid" };
-  await B.audit("system", "voicejob_paid", bk.id, { job: job.id, cents: expect });
+  await B.audit("system", how === "keypad" ? "voicejob_paid_keypad" : "voicejob_paid", bk.id, { job: job.id, cents: expect });
   return { ok: true };
 }
-module.exports = { createLink, onCheckout };
+
+// The amount to charge on the phone: the confirmed quote's total from OUR database, in cents. The model never supplies it.
+function payableCents(bk) { const c = Number(bk && bk.snapshot && bk.snapshot.quote && bk.snapshot.quote.total_cents); return c >= 100 && c <= 5000000 ? c : 0; }
+
+// After a keypad charge, ask Stripe itself (not Twilio's word) whether the money moved, and for exactly the expected amount.
+// Twilio gives the Stripe id of the charge in PaymentConfirmationCode (a pi_ or ch_ id). Returns {ok, id, cents} or {ok:false, error, cents?}.
+async function verifyCharge(id, expectCents) {
+  const key = process.env.STRIPE_SECRET_KEY; if (!key) return { ok: false, error: "stripe_not_configured" };
+  id = String(id || ""); if (!/^(pi|ch)_[A-Za-z0-9]+$/.test(id)) return { ok: false, error: "no_stripe_id" };
+  let r, d; try {
+    r = await fetch("https://api.stripe.com/v1/" + (id.indexOf("pi_") === 0 ? "payment_intents/" : "charges/") + id, { headers: { Authorization: "Bearer " + key }, signal: AbortSignal.timeout(8000) });
+    d = await r.json();
+  } catch (e) { return { ok: false, error: "stripe_unreachable" }; }
+  if (!r.ok || !d) return { ok: false, error: "stripe_refused" };
+  const paid = id.indexOf("pi_") === 0 ? d.status === "succeeded" : (d.status === "succeeded" && d.paid === true && !d.refunded);
+  const cents = id.indexOf("pi_") === 0 ? Number(d.amount_received != null ? d.amount_received : d.amount) : Number(d.amount_captured != null ? d.amount_captured : d.amount);
+  if (!paid) return { ok: false, error: "not_succeeded", cents: cents };
+  if (cents !== Number(expectCents) || String(d.currency || "usd") !== "usd") return { ok: false, error: "amount_mismatch", cents: cents };
+  return { ok: true, id: id, cents: cents, pi: id.indexOf("pi_") === 0 ? id : (typeof d.payment_intent === "string" ? d.payment_intent : id) };
+}
+module.exports = { createLink, onCheckout, markPaid, payableCents, verifyCharge };

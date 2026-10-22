@@ -18,7 +18,7 @@ function createBridge(deps) {
   const sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
 
   function handle(tw) {
-    let idleAt = 0, closingAt = 0, closeNudges = 0, greetHold = true, greetT = null, lastCallerAt = 0, lastAgentAt = 0, toolDoneAt = 0, toolBusy = 0, nudges = 0, burst = 0, readyAt = 0, wdTimer = null;
+    let payPending = false, payStarted = false, idleAt = 0, closingAt = 0, closeNudges = 0, greetHold = true, greetT = null, lastCallerAt = 0, lastAgentAt = 0, toolDoneAt = 0, toolBusy = 0, nudges = 0, burst = 0, readyAt = 0, wdTimer = null;
     let lang = "English", langTimer = null, flushTimer = null, retries = 0, reconnecting = false, timersSet = false, hist = [], streamSid = null, ctx = null, ai = null, prov = null, connectTimerRef = null, spokeSinceTool = false, toolAt = 0, done = false, aiReady = false, buffered = [], lastItem = null, assistStart = null, mediaTs = 0, marks = 0, markQ = [], transferPending = false, transferred = false, startedAt = Date.now(), timers = [], nm = 0;
     const timer = function (fn, ms) { const t = setTimeout(fn, ms); timers.push(t); return t; };
     const twSend = function (o) { if (tw.readyState === 1) tw.send(JSON.stringify(o)); };
@@ -35,8 +35,8 @@ function createBridge(deps) {
         const d = prov && prov.diag ? prov.diag() : {}, got = (kinds.caller_text || 0) + (kinds.agent_text || 0);
         await api({ action: "health", provider: "bridge", kind: got || secs < 15 ? "call_summary" : "no_transcripts", ok: !!got || secs < 15, detail: JSON.stringify({ secs: secs, adapter: (prov && prov.version) || "old", ev: kinds, ago: { agent: lastAgentAt ? Math.round((Date.now() - lastAgentAt) / 1000) : null, caller: lastCallerAt ? Math.round((Date.now() - lastCallerAt) / 1000) : null, tool: toolDoneAt ? Math.round((Date.now() - toolDoneAt) / 1000) : null }, toolBusy: toolBusy, lang: lang, gemini: d }).slice(0, 1800) }, 5000);
       }
-      if (ctx) await api({ action: "end", session_id: ctx.session_id, reason: reason, seconds: secs }, 8000);
-      else if (reason !== "caller_hangup") await api({ action: "health", provider: "bridge", kind: "call_setup_failed", ok: false, detail: reason }, 5000);
+      if (ctx && reason !== "pay_handoff") await api({ action: "end", session_id: ctx.session_id, reason: reason, seconds: secs }, 8000);   // a keypad payment moves the call away and brings it back: the call is NOT over
+      else if (!ctx && reason !== "caller_hangup") await api({ action: "health", provider: "bridge", kind: "call_setup_failed", ok: false, detail: reason }, 5000);
       try { if (ai) ai.close(); } catch (e) { /* ignore */ }
       if (closeTwilio) { try { tw.close(); } catch (e) { /* ignore */ } }
       log("call finished", reason, secs);
@@ -77,8 +77,14 @@ function createBridge(deps) {
     function onReady() { // the AI accepted its setup: start the conversation (or resume it after a reconnect)
       clearTimeout(connectTimerRef);
       aiReady = true; readyAt = Date.now(); nudges = 0; lastCallerAt = 0; toolDoneAt = 0; buffered = []; // caller audio is not forwarded while the greeting plays, so background noise cannot interrupt it
-      greetHold = !reconnecting; clearTimeout(greetT); if (greetHold) greetT = setTimeout(function () { greetHold = false; }, 12000);
-      if (reconnecting) {
+      greetHold = !reconnecting && !ctx.resume; clearTimeout(greetT); if (greetHold) greetT = setTimeout(function () { greetHold = false; }, 12000);
+      if (ctx.resume) {   // back from the keypad payment: no greeting; tell her the verified result and what was said before
+        const rc = String(ctx.resume.code || ""), kind = rc.split(":")[0], val = rc.slice(kind.length + 1), recap = ctx.resume.recap || "(nothing said yet)";
+        const tail = "\nSpeak the caller's language, as before. The conversation so far:\n" + recap;
+        if (kind === "paid") { closingAt = Date.now(); sysNote("The caller is back from the keypad. Stripe CONFIRMED the payment of " + val + ". Do NOT greet again. Say warmly, in one or two short sentences, that the payment went through (" + val + ") and thank them. Then ask: \"Is there anything else I can help you with?\"" + tail); }
+        else if (kind === "unverified") sysNote("The caller is back from the keypad, but the payment could NOT be confirmed yet. Do NOT say it is paid and do NOT say it failed. Say the team will verify it and follow up with them shortly, so they do not need to do anything now. Do not take the card again and do not offer a link. Then ask if there is anything else you can help with." + tail);
+        else sysNote("The caller is back from the keypad, but the card payment did NOT go through (" + val.replace(/-/g, " ") + "). Do NOT greet again. Be kind and unbothered: say no worries, the booking is still locked in. If they want to try the keypad once more you may use take_card_payment again; otherwise say the team will reach out shortly to take the payment. Never send or offer a payment link, never ask for the card number out loud, and never say it is paid." + tail);
+      } else if (reconnecting) {
         reconnecting = false;
         const recap = hist.slice(-24).map(function (h) { return (h.role === "caller" ? "Caller: " : "You: ") + h.text; }).join("\n");
         sysNote("The connection dropped for a moment and is back. Do NOT greet again and do not restart. Say one short sentence like 'Sorry, I lost you for a second,' then continue exactly where you left off. Speak English. The conversation so far:\n" + (recap || "(nothing said yet)"));
@@ -110,15 +116,16 @@ function createBridge(deps) {
       const r = await api({ action: "tool", session_id: ctx.session_id, name: m.name, args: m.args, call_key: m.id }, 15000);
       result = (r.data && r.data.result) || { ok: false, error: "tool_unreachable", say: "The system did not answer. Offer a callback; do not guess." };
       if (m.name === "request_human_handoff" && result.transfer_possible) { transferPending = true; spokeSinceTool = false; toolAt = Date.now(); timer(function () { if (transferPending) { transferPending = false; doTransfer(); } }, 20000); }
+      if (m.name === "take_card_payment" && result.ok && result.pay_handoff) { payPending = true; spokeSinceTool = false; doPay(result.booking_id); }   // the card is never spoken: after one sentence the live call moves to the keypad
       if (result && result.language_name && result.ok) lang = String(result.language_name).slice(0, 40);   // the model reported the caller's language: remember it for the lock
       prov.toolResult(m.id, m.name, result).forEach(aiSend);
-      toolBusy = Math.max(0, toolBusy - 1); toolDoneAt = Date.now(); if (["send_payment_link", "send_approved_confirmation", "book_demo", "create_callback_task"].indexOf(m.name) >= 0 && result && result.ok !== false) closingAt = Date.now();
+      toolBusy = Math.max(0, toolBusy - 1); toolDoneAt = Date.now(); if (["send_approved_confirmation", "book_demo", "create_callback_task"].indexOf(m.name) >= 0 && result && result.ok !== false) closingAt = Date.now();
     }
     // SILENCE WATCHDOG. Dead air must be impossible: if the caller (or a finished tool) is waiting on her and she has said nothing for ~4 s,
     // 1st: tell the model the caller is waiting; 2nd: make her say "Still here, one second"; 3rd: drop and rebuild the AI link (the reconnect path with the conversation recap).
     // Also covers a greeting that never played. VOICE_SILENCE_MS changes the 4 s.
     function watchdog() {
-      if (done || !aiReady || toolBusy || transferPending || !ctx) return;
+      if (done || !aiReady || toolBusy || transferPending || payPending || !ctx) return;
       const now = Date.now(), th = Number(env.VOICE_SILENCE_MS) || 4000;
       const owed = Math.max(lastCallerAt, toolDoneAt) > lastAgentAt, noGreeting = !lastAgentAt && !reconnecting && readyAt && now - readyAt > 2 * th;
       if (closingAt && !owed && !noGreeting && closeNudges < 2 && lastAgentAt > closingAt && lastCallerAt <= lastAgentAt && now - lastAgentAt > th * 1.75) { // wrap-up done and the caller is quiet: never leave dead air, ask the close question
@@ -142,6 +149,18 @@ function createBridge(deps) {
     }
     // Language lock: every 40 s the model is quietly reminded which language this call is in, so it cannot drift into one the caller is not speaking.
     function lockReminder() { if (aiReady && prov && prov.noteSilent) aiSend(prov.noteSilent("Language lock: this call is in " + lang + ". Speak ONLY " + lang + ". Never switch to another language unless the caller clearly speaks one to you.")); }
+    // KEYPAD PAYMENT. Let her finish the one sentence, then ask the site to move the live call to Twilio <Pay>. The audio stream ends (so nothing she or the model hears can contain card digits),
+    // Twilio collects the card straight into Stripe, and the call comes back as a NEW stream carrying the verified result. The call is not ended in between.
+    async function doPay(bookingId) {
+      const t0 = Date.now();
+      for (let i = 0; i < 60; i++) { await sleep(250); if (done) return; if (!markQ.length && lastAgentAt > toolDoneAt && Date.now() - lastAgentAt > 1500) break; if (Date.now() - t0 > 14000) break; }
+      payStarted = true;
+      const r = await api({ action: "pay", session_id: ctx.session_id, booking_id: bookingId }, 12000);
+      if (r.data && r.data.ok) return;      // the phone company moves the call; the stream stops and finish("pay_handoff") runs from the stop event
+      payStarted = false; payPending = false; lastAgentAt = Date.now();
+      api({ action: "health", provider: "bridge", kind: "pay_handoff_failed", ok: false, detail: String((r.data && r.data.error) || "no answer").slice(0, 120) }, 4000);
+      sysNote("The keypad payment could not start. Tell the caller warmly that the booking is locked in and the team will reach out shortly to take the payment. Do not send or offer a payment link, do not ask for a card number out loud, and do not say it is paid.");
+    }
     async function doTransfer() {
       for (let i = 0; i < 20 && markQ.length; i++) await sleep(200);            // let the "connecting you" sentence finish playing
       const r = await api({ action: "transfer", session_id: ctx.session_id }, 10000);
@@ -154,10 +173,10 @@ function createBridge(deps) {
       if (m.event === "start") { streamSid = m.start && m.start.streamSid; const tok = m.start && m.start.customParameters && m.start.customParameters.token; if (!tok) return finish("no_token", true); begin(tok); }
       else if (m.event === "media" && m.media && (!m.media.track || m.media.track === "inbound")) { mediaTs = Number(m.media.timestamp) || mediaTs; if (!greetHold && loud(m.media.payload)) { if (++burst >= 6) lastCallerAt = Date.now(); } else burst = Math.max(0, burst - 1); if (aiReady && !greetHold) aiSend(prov.audioIn(m.media.payload)); }
       else if (m.event === "mark") markQ.shift();
-      else if (m.event === "stop") finish(transferred ? "transferred" : "caller_hangup", false);
+      else if (m.event === "stop") finish(transferred ? "transferred" : payStarted ? "pay_handoff" : "caller_hangup", false);
     });
-    tw.on("close", function () { finish("twilio_closed", false); });
-    tw.on("error", function () { finish("twilio_error", false); });
+    tw.on("close", function () { finish(payStarted ? "pay_handoff" : "twilio_closed", false); });
+    tw.on("error", function () { finish(payStarted ? "pay_handoff" : "twilio_error", false); });
   }
   return { handle: handle, api: api };
 }

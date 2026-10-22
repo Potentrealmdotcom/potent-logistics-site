@@ -6,7 +6,7 @@ const rows = S.rows;
 const PLAYBOOK = require("./playbook.js");
 const CALL_LANGS = { en: "English", es: "Spanish", pt: "Portuguese", kk: "Kazakh", ru: "Russian", fr: "French", zh: "Chinese (Mandarin)", ko: "Korean", vi: "Vietnamese", ar: "Arabic", hi: "Hindi", ht: "Haitian Creole", pl: "Polish", de: "German" };
 const FEATURE = { lookup_customer: "inbound", create_or_update_lead: "inbound", get_approved_service_information: "inbound", collect_shipment_details: "quotes", validate_shipment_eligibility: "quotes", calculate_quote: "quotes", quote_special_service: "quotes", check_live_availability: "booking",
-  set_call_language: "inbound", get_playbook: "inbound", create_pending_booking: "booking", confirm_eligible_booking: "booking", send_payment_link: "notifications", create_callback_task: "callbacks", book_demo: "callbacks", request_human_handoff: "handoff", send_approved_confirmation: "notifications", look_up_booking_status: "booking", request_reschedule: "booking", request_cancellation: "booking" };
+  set_call_language: "inbound", get_playbook: "inbound", create_pending_booking: "booking", confirm_eligible_booking: "booking", send_payment_link: "notifications", take_card_payment: "notifications", create_callback_task: "callbacks", book_demo: "callbacks", request_human_handoff: "handoff", send_approved_confirmation: "notifications", look_up_booking_status: "booking", request_reschedule: "booking", request_cancellation: "booking" };
 const CRITICAL = ["pickup_address", "delivery_address", "service_date", "time_window", "service_level", "total_weight_lb", "piece_count", "pieces", "total_dims", "pickup_dock", "delivery_dock", "needs_liftgate", "needs_pallet_jack", "forklift_pickup", "forklift_delivery", "site_has_pallet_jack", "inside_delivery", "hazmat", "special_handling", "extra_stops", "labor_helpers", "labor_hours", "holding_nights", "expected_wait_minutes", "freight_description"];
 const INTAKE_KEYS = CRITICAL.concat(["customer_name", "company", "callback_phone", "email", "pickup_contact_name", "pickup_contact_phone", "delivery_contact_name", "delivery_contact_phone", "special_instructions", "po_number", "recurring"]);
 const clip = function (v, n) { return String(v == null ? "" : v).trim().slice(0, n); };
@@ -48,11 +48,12 @@ function defs() {
     D("set_call_language", "Lock the language of this call to the caller's language. Call it as soon as the caller speaks a language other than English. Then speak ONLY that language for the whole call.", obj({ language: { type: "string", enum: Object.keys(CALL_LANGS), description: "language code of what the caller is speaking" } }, ["language"])),
     D("get_playbook", "Get the POTENT playbook script for the situation you are in: objections, junk removal, cleanouts, freight, pop-up events, recurring accounts and the wallet, closing, tracking and accounts. Call it when the caller pushes back, hesitates, or you are starting a service you need the questions for. It has no prices; prices only come from the quote tools.", obj({ topic: { type: "string", enum: PLAYBOOK.NAMES } }, ["topic"])),
     D("send_payment_link", "After a booking is CONFIRMED and the caller wants to pay by card, email them a secure Stripe payment link for the exact quoted total. The caller pays on Stripe's page; you never take or repeat card numbers. Needs the confirmed booking_id and an email read back and confirmed.", obj({ booking_id: str(""), email: str("their email exactly as the caller said it"), email_confirmed: { type: "boolean", description: "true only after you spelled it back and the caller said yes" } }, ["booking_id", "email"])),
+    D("take_card_payment", "After a booking is CONFIRMED, take the card payment ON THE CALL by phone keypad. The caller types the card on their keypad; you never hear, see, say or store it. The amount is the quoted total from our system. Needs the confirmed booking_id. After it says ok, say the one short sentence it gives you and then STOP TALKING until you are told the result.", obj({ booking_id: str("") }, ["booking_id"])),
     D("send_approved_confirmation", "Send the approved written confirmation or request-received notice for this call's booking.", obj({ booking_id: str(""), channel: { type: "string", enum: ["email", "sms"] }, email: str("only for email: exactly what the caller said"), email_confirmed: { type: "boolean", description: "true only after you spelled it back and the caller said yes" }, sms_consent: { type: "boolean", description: "caller agreed to a text message" } }, ["booking_id", "channel"])),
     D("look_up_booking_status", "Look up a booking. Needs the booking reference and the last 4 digits of the phone number on the booking.", obj({ reference: str(""), phone_last4: str("") }, ["reference", "phone_last4"])),
     D("request_reschedule", "Record a reschedule request (a person completes it).", obj({ reference: str(""), phone_last4: str(""), requested_date: str(""), note: str("") }, ["reference", "phone_last4"])),
     D("request_cancellation", "Record a cancellation request (a person completes it).", obj({ reference: str(""), phone_last4: str(""), note: str("") }, ["reference", "phone_last4"]))
-  ].filter(function (d) { return d.name !== "get_playbook" || require("./prompt.js").on("playbook"); });   // VOICE_LAYERS can switch the playbook tool off (bisecting a bad call)
+  ].filter(function (d) { return d.name !== "send_payment_link" || process.env.VOICE_PAYMENT_LINK === "on"; }).filter(function (d) { return d.name !== "get_playbook" || require("./prompt.js").on("playbook"); });   // VOICE_LAYERS can switch the playbook tool off (bisecting a bad call)
 }
 
 async function setIntake(ctx, intake, extra) { ctx.session.intake = intake; return S.patchSession(ctx.orgId, ctx.session.id, Object.assign({ intake: intake }, extra || {})); }
@@ -231,7 +232,28 @@ const TOOLS = {
     const intake = Object.assign({}, ctx.session.intake || {}); intake._lang = code; await setIntake(ctx, intake);
     return { ok: true, language_locked: code, language_name: name, say: "From now on speak ONLY " + name + " for the rest of this call, including questions, read-backs and goodbye. Do not switch to any other language unless the caller clearly switches. Keep prices, dates and addresses exactly as given." };
   },
+  // Card payment on the call. The AI only asks for it; the bridge then moves the live call to Twilio <Pay> (see voice-tools "pay" and voice-webhook "pay"/"payresult").
+  // Nothing here sees a card. The amount comes from the stored quote. "Paid" is only ever said after Stripe itself confirms the exact amount.
+  async take_card_payment(ctx, a) {
+    if (!S.UUID.test(String(a.booking_id || ""))) return { ok: false, error: "bad_booking" };
+    const bk = rows(await B.sb("voice_bookings?org_id=eq." + ctx.orgId + "&id=eq." + a.booking_id + "&session_id=eq." + ctx.session.id + "&select=*&limit=1"))[0];
+    if (!bk) return { ok: false, error: "booking_not_found" };
+    if (bk.status !== "confirmed" || !bk.job_id) return { ok: false, error: "not_confirmed", say: "The booking is not confirmed yet, so there is nothing to pay. Do not take payment. Tell the caller a person will confirm it first." };
+    const JP = require("./jobpay"), cents = JP.payableCents(bk), job = rows(await B.sb("jobs?id=eq." + encodeURIComponent(bk.job_id) + "&select=payment_status&limit=1"))[0];
+    if (job && job.payment_status === "paid") return { ok: true, already_paid: true, say: "This booking is already paid. Do not charge again. Thank them." };
+    const flag = async function (why) {
+      await notifyOwner(ctx.orgId, "PAYMENT NEEDED by phone: " + bk.reference, "The caller could not pay by keypad on the call (" + why + "). Booking " + bk.reference + (cents ? ", total " + P.money(cents) : "") + ". Call them back" + (ctx.session.from_number ? " at " + ctx.session.from_number : "") + " to take payment. No payment link was sent.");
+      if (ctx.session.from_number) await B.sb("voice_callbacks", { method: "POST", prefer: "return=minimal", body: { org_id: ctx.orgId, session_id: ctx.session.id, phone: ctx.session.from_number, reason: ("Take payment for " + bk.reference + " (" + why + ")").slice(0, 300) } });
+    };
+    const fail = "Tell the caller warmly that their booking is locked in and that the team will reach out shortly to take the payment, so nothing is lost. Do NOT send or offer a payment link, do not ask for a card number out loud, and never say it is paid.";
+    if (!cents) { await flag("amount not available"); return { ok: false, error: "bad_amount", flagged: true, say: fail }; }
+    if (process.env.VOICE_PAY !== "on" || !process.env.VOICE_PAY_CONNECTOR || !TW.configured() || !process.env.STRIPE_SECRET_KEY) { await flag("keypad payment is not switched on"); return { ok: false, error: "keypad_not_live", flagged: true, say: fail }; }
+    const tries = rows(await B.sb("voice_tool_executions?session_id=eq." + ctx.session.id + "&tool=eq.take_card_payment&select=id&limit=10")).length;
+    if (tries > 3) { await flag("too many keypad attempts"); return { ok: false, error: "too_many_attempts", flagged: true, say: fail }; }
+    return { ok: true, pay_handoff: true, booking_id: bk.id, amount: P.money(cents), say: "Say ONE short sentence in your own voice: you are taking the card now for " + P.money(cents) + ", they will hear a short automated prompt, and they should type the card number on their phone keypad. Mention you cannot hear the keys. Then STOP talking completely. Say nothing else until you are told the result. Never say it is paid until told." };
+  },
   async send_payment_link(ctx, a) {
+    if (process.env.VOICE_PAYMENT_LINK !== "on") return { ok: false, error: "link_retired", say: "We do not send payment links. Use take_card_payment to take the card on the call by keypad." };
     if (!S.UUID.test(String(a.booking_id || ""))) return { ok: false, error: "bad_booking" };
     const email = clip(a.email, 120).toLowerCase(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { ok: false, error: "need_valid_email", say: "Ask for their email and read it back letter by letter." };
     { const g = await emailGate(ctx, a, email); if (g) return g; }
@@ -329,7 +351,7 @@ TOOLS.request_reschedule = changeReq("Reschedule"); TOOLS.request_cancellation =
 // Run one tool call for a session. Never throws.
 // POTENT's own selling material, junk/pop-up price list, playbook and Stripe account belong to POTENT's line only; other companies never get them.
 const isPotentOrg = async function (ctx) { if (ctx._isP !== undefined) return ctx._isP; const o = rows(await B.sb("organizations?id=eq." + ctx.orgId + "&select=slug&limit=1"))[0]; return (ctx._isP = !!(o && o.slug === (process.env.POTENT_ORG_SLUG || "potent-logistics"))); };
-const POTENT_ONLY = { quote_special_service: 1, get_playbook: 1, send_payment_link: 1 };
+const POTENT_ONLY = { quote_special_service: 1, get_playbook: 1, send_payment_link: 1, take_card_payment: 1 };
 async function execute(ctx, name, args, callKey) {
   const t0 = Date.now(); let out;
   try {
@@ -345,4 +367,4 @@ async function execute(ctx, name, args, callKey) {
   try { await B.sb("voice_tool_executions", { method: "POST", prefer: "resolution=ignore-duplicates,return=minimal", body: { org_id: ctx.orgId, session_id: ctx.session && ctx.session.id, tool: name, call_key: String(callKey).slice(0, 120), args: JSON.parse(S.redact(JSON.stringify(args || {}))), result: out, ok: !!out.ok, error: out.error || null, ms: Date.now() - t0 } }); } catch (e) { /* logging must not fail the call */ }
   return out;
 }
-module.exports = { defs, execute, TOOLS, FEATURE, AFFIRM, NEG };
+module.exports = { defs, execute, TOOLS, FEATURE, AFFIRM, NEG, notifyOwner };

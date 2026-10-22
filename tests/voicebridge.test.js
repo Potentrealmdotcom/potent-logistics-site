@@ -8,8 +8,8 @@ const pcm = n => { const b = Buffer.alloc(n * 2); for (let i = 0; i < n; i++) b.
 function rig(opts) {
   opts = opts || {}; const calls = []; let aiSock = null;
   const fetch = async (url, o) => { const b = JSON.parse(o.body); calls.push(b); if (opts.apiDown) throw new Error("down"); let data = {}, status = 200;
-    if (b.action === "context") { if (opts.ctxStatus) { status = opts.ctxStatus; data = { error: "x" }; } else data = { session_id: "S1", instructions: "be nice", tools: [{ type: "function", name: "t", description: "d", parameters: { type: "object", properties: { a: { type: "string" } }, additionalProperties: false } }], voice: "alloy", greeting: "Hello", max_seconds: opts.maxSeconds || 1800 }; }
-    if (b.action === "tool") data = { result: opts.toolResult || { ok: true } }; if (b.action === "transfer") data = opts.transferFail ? { ok: false, error: "no_one_available" } : { ok: true, requested: true };
+    if (b.action === "context") { if (opts.ctxStatus) { status = opts.ctxStatus; data = { error: "x" }; } else data = { session_id: "S1", instructions: "be nice", tools: [{ type: "function", name: "t", description: "d", parameters: { type: "object", properties: { a: { type: "string" } }, additionalProperties: false } }], voice: "alloy", greeting: "Hello", max_seconds: opts.maxSeconds || 1800, resume: opts.resume || null }; }
+    if (b.action === "tool") data = { result: opts.toolResult || { ok: true } }; if (b.action === "pay") data = opts.payFail ? { ok: false, error: "keypad_not_live" } : { ok: true }; if (b.action === "transfer") data = opts.transferFail ? { ok: false, error: "no_one_available" } : { ok: true, requested: true };
     return { status, json: async () => data }; };
   class W extends Sock { constructor(url, o) { super(); aiSock = this; this.url = url; this.headers = o.headers; if (!opts.aiNeverOpens) setTimeout(() => this.emit("open"), 5); } }
   const b = createBridge({ env: Object.assign({ SITE_URL: "https://site.test/", VOICE_BRIDGE_SECRET: "sec", GEMINI_API_KEY: "gk-x" }, opts.env || {}), WebSocket: W, fetch, log() {} });
@@ -93,8 +93,29 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
   ok(JSON.stringify(r.aiSock.sent).includes("It has been quiet"), "dead-air backstop: nobody has spoken for a while, so she checks in whatever the cause");
   r.phone({ event: "stop" }); await sleep(20);
   r = rig({ env: { VOICE_SILENCE_MS: "100" }, toolResult: { ok: true, emailed: true } }); r.start(); await sleep(40); r.ready(); await sleep(10); r.ai(audio(240)); r.ai(sc({ turnComplete: true }));
-  r.ai({ toolCall: { functionCalls: [{ id: "pl1", name: "send_payment_link", args: {} }] } }); await sleep(30); r.ai(audio(240)); r.ai(sc({ turnComplete: true })); await sleep(1500);
+  r.ai({ toolCall: { functionCalls: [{ id: "pl1", name: "send_approved_confirmation", args: {} }] } }); await sleep(30); r.ai(audio(240)); r.ai(sc({ turnComplete: true })); await sleep(1500);
   ok(JSON.stringify(r.aiSock.sent).includes("Is there anything else I can help you with?"), "after booking + payment link are done and the caller is quiet, she is made to ask the close question (no dead air)");
+  r.phone({ event: "stop" }); await sleep(20);
+
+  // ---- keypad payment handoff
+  r = rig({ toolResult: { ok: true, pay_handoff: true, booking_id: "BK1", amount: "$250.00", say: "x" } }); r.start(); await sleep(40); r.ready(); await sleep(10); r.ai(audio(240)); r.ai(sc({ turnComplete: true }));
+  r.ai({ toolCall: { functionCalls: [{ id: "pay1", name: "take_card_payment", args: { booking_id: "BK1" } }] } }); await sleep(40); r.ai(audio(240)); r.ai(sc({ turnComplete: true })); for (let i = 0; i < 20; i++) r.phone({ event: "mark" }); await sleep(2600);
+  ok(r.calls.some(c => c.action === "pay" && c.booking_id === "BK1" && c.session_id === "S1"), "keypad: after her one sentence the bridge asks the site to move the call to the keypad");
+  r.phone({ event: "stop" }); await sleep(60);
+  ok(!r.calls.some(c => c.action === "end"), "keypad: the audio stream stopping for the keypad does NOT end the call");
+  ok(r.calls.filter(c => c.action === "health" && c.kind === "call_summary").length >= 0, "keypad: handoff closes quietly");
+  r = rig({ payFail: true, toolResult: { ok: true, pay_handoff: true, booking_id: "BK1", amount: "$250.00", say: "x" } }); r.start(); await sleep(40); r.ready(); await sleep(10); r.ai(audio(240)); r.ai(sc({ turnComplete: true }));
+  r.ai({ toolCall: { functionCalls: [{ id: "pay2", name: "take_card_payment", args: { booking_id: "BK1" } }] } }); await sleep(40); r.ai(audio(240)); r.ai(sc({ turnComplete: true })); for (let i = 0; i < 20; i++) r.phone({ event: "mark" }); await sleep(2600);
+  ok(JSON.stringify(r.aiSock.sent).includes("keypad payment could not start") && /never|not/.test(JSON.stringify(r.aiSock.sent)) && r.calls.some(c => c.action === "health" && c.kind === "pay_handoff_failed"), "keypad: if the call cannot be moved she tells the caller the team will take payment, and it is logged");
+  r.phone({ event: "stop" }); await sleep(30);
+  r = rig({ resume: { code: "paid:$250.00", recap: "Caller: yes take my card\nYou: Okay, taking it now" } }); r.start(); await sleep(40); r.ready(); await sleep(10);
+  { const sent = JSON.stringify(r.aiSock.sent); ok(!sent.includes("Hello") && sent.includes("Stripe CONFIRMED the payment of $250.00") && sent.includes("taking it now") && sent.includes("Is there anything else I can help you with?"), "keypad: coming back paid, she does NOT greet again, says the payment went through, and asks the close question"); }
+  r.phone({ event: "stop" }); await sleep(20);
+  r = rig({ resume: { code: "failed:too-many-failed-attempts", recap: "You: ok" } }); r.start(); await sleep(40); r.ready(); await sleep(10);
+  { const sent = JSON.stringify(r.aiSock.sent); ok(!sent.includes("Hello") && /did NOT go through/.test(sent) && /never send or offer a payment link/i.test(sent) && !/CONFIRMED the payment/.test(sent), "keypad: coming back failed, she stays kind, offers no link and never calls it paid"); }
+  r.phone({ event: "stop" }); await sleep(20);
+  r = rig({ resume: { code: "unverified:$250.00", recap: "x" } }); r.start(); await sleep(40); r.ready(); await sleep(10);
+  { const sent = JSON.stringify(r.aiSock.sent); ok(/could NOT be confirmed/.test(sent) && /do NOT say it is paid/i.test(sent), "keypad: an unconfirmed payment is never called paid and never called failed"); }
   r.phone({ event: "stop" }); await sleep(20);
   console.log("PASS: " + n + " assertions"); process.exit(0);
 })().catch(e => { console.error(e); process.exit(1); });

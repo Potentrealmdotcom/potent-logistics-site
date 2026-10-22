@@ -9,9 +9,12 @@ function parseForm(body, isB64) { const raw = isB64 ? Buffer.from(body || "", "b
 const xml = function (inner) { return '<?xml version="1.0" encoding="UTF-8"?><Response>' + inner + "</Response>"; };
 const say = function (t) { return "<Say>" + esc(t) + "</Say>"; };
 // Short-lived signed token so only calls we accepted can open the audio socket.
-function streamToken(secret, callSid, orgId, exp) { const body = Buffer.from(JSON.stringify({ c: callSid, o: orgId, e: exp })).toString("base64url"); return body + "." + crypto.createHmac("sha256", secret).update(body).digest("base64url"); }
+function streamToken(secret, callSid, orgId, exp, extra) { const body = Buffer.from(JSON.stringify(Object.assign({}, extra || {}, { c: callSid, o: orgId, e: exp }))).toString("base64url"); return body + "." + crypto.createHmac("sha256", secret).update(body).digest("base64url"); }
 function readStreamToken(secret, t, now) { const p = String(t || "").split("."); if (p.length !== 2 || !eqs(crypto.createHmac("sha256", secret).update(p[0]).digest("base64url"), p[1])) return null; try { const j = JSON.parse(Buffer.from(p[0], "base64url").toString()); return j.e > (now || Date.now()) ? j : null; } catch (e) { return null; } }
 function twimlStream(wsUrl, params, action) { return xml("<Connect" + (action ? ' action="' + esc(action) + '"' : "") + "><Stream url=\"" + esc(wsUrl) + "\">" + Object.keys(params || {}).map(function (k) { return '<Parameter name="' + esc(k) + '" value="' + esc(params[k]) + '"/>'; }).join("") + "</Stream></Connect>"); }
+// Card payment by keypad. <Pay> collects the digits itself and sends them straight to Stripe: they never touch our servers, the bridge or the AI.
+// The amount, connector and description are set by us; the caller only types the card.
+const twimlPay = function (o) { return xml('<Pay chargeAmount="' + esc(o.amount) + '" currency="usd" paymentConnector="' + esc(o.connector) + '" action="' + esc(o.action) + '" method="POST" maxAttempts="3" timeout="20" paymentMethod="credit-card" tokenType="one-time" validCardTypes="visa mastercard amex discover" description="' + esc(String(o.description || "").slice(0, 100)) + '"/>'); };
 const twimlSay = function (t) { return xml(say(t) + "<Hangup/>"); };
 const twimlDial = function (num, cb, say1) { return xml((say1 ? say(say1) : "") + '<Dial timeout="20" answerOnBridge="true"' + (cb ? ' action="' + esc(cb) + '" method="POST"' : "") + "><Number>" + esc(num) + "</Number></Dial>" + say("Sorry, no one could take the call. We will call you back.") + "<Hangup/>"); };
 async function api(path, form) {
@@ -27,4 +30,4 @@ const hangup = function (callSid) { return api("/Calls/" + encodeURIComponent(ca
 const startRecording = function (callSid, cb) { return api("/Calls/" + encodeURIComponent(callSid) + "/Recordings.json", cb ? { RecordingStatusCallback: cb } : {}); };
 const sms = function (to, body) { if (!process.env.TWILIO_SMS_FROM) return Promise.resolve({ ok: false, reason: "sms_not_configured" }); return api("/Messages.json", { To: to, From: process.env.TWILIO_SMS_FROM, Body: String(body).slice(0, 600) }); };
 const configured = function () { return !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN); };
-module.exports = { name: "twilio", signature, validate, parseForm, twimlStream, twimlSay, twimlDial, streamToken, readStreamToken, transfer, hangup, startRecording, sms, configured, esc };
+module.exports = { name: "twilio", signature, validate, parseForm, twimlStream, twimlSay, twimlPay, twimlDial, streamToken, readStreamToken, transfer, hangup, startRecording, sms, configured, esc };

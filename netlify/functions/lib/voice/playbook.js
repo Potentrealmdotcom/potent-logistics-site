@@ -42,7 +42,7 @@ const TOPICS = {
   junk_removal: [
     "JUNK REMOVAL is its own service with its own price list; quote it whenever a caller wants it, even though other chapters focus on larger commercial work. Listen first. Get what they are getting rid of and how much of the truck it fills (single item, quarter, half, three-quarter or full load), the address, and when they want it.",
     "Price ONLY from quote_special_service (junk removal). It carries the book's list; a big job with more than one truckload adds a fee per extra truckload, which the tool applies. Hazardous or restricted materials are never quoted.",
-    "Then close: 'Want me to get that booked for you?' After a confirmed booking offer the secure payment link (send_payment_link).",
+    "Then close: 'Want me to get that booked for you?' After a confirmed booking offer to take the card right now by phone keypad (take_card_payment). Never send a payment link.",
     "Turn a cleanout into a repeat account: a single cleanout can become a property-management relationship or a recurring removal account. Ask: 'Do you manage other properties, or have more cleanouts coming up?'"
   ].join("\n"),
   cleanout: [
@@ -75,7 +75,7 @@ const TOPICS = {
     "After you've listened and confirmed the problem: 'Based on what you've told me, it sounds like [problem] is really the biggest issue. Did I get that right?' If yes: 'And what you're really looking for is [result], correct?' If yes: 'Then I think we can help you with that. Let's get you set up.'",
     "Assumptive (clearly interested): 'Based on what we discussed, the next step is getting you set up. Does that make sense?' Choice: give two options, such as 'Would it make more sense to start with one job, or set up a regular route?' Next step: 'What would be the best next step from your side?' Commitment question: 'What would make you confident choosing POTENT?'",
     "Onboarding close: confirm company information, billing contact, service expectations, how they want to be contacted, an emergency contact, and payment terms. Do not celebrate too early; the relationship is just beginning.",
-    "After the booking: give the booking reference from the tool, offer the secure payment link, and tell them how to track the driver (get_playbook accounts_tracking).",
+    "After the booking: give the booking reference from the tool, take the card by keypad (take_card_payment), and tell them how to track the driver (get_playbook accounts_tracking).",
     "Follow-up rule: follow-up is service before the sale. Stay available, do not chase. After a completed job a person follows up within 24 hours: 'How did everything go? Was there anything we could improve? Is there anything coming up where we could help again?'"
   ].join("\n"),
   accounts_tracking: [

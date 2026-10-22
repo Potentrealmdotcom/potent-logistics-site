@@ -76,6 +76,37 @@ exports.handler = async function (event) {
       await S.patchSession(ses.org_id, ses.id, { state: "handoff" });
       return xmlR(TW.twimlDial(cfg.transfer_number, base() + "?a=dial&s=" + ses.id, "Connecting you now."));
     }
+    if (a === "pay" || a === "payresult") {   // KEYPAD PAYMENT. The caller types the card straight to Stripe through Twilio; the amount is re-read from our database here, never from the request or the AI.
+      const JP = require("./lib/voice/jobpay"), TL = require("./lib/voice/tools");
+      const ses = rows(await B.sb("voice_sessions?provider_call_id=eq." + encodeURIComponent(callSid) + "&select=*&limit=1"))[0];
+      const bk = ses && ses.id === q.s ? rows(await B.sb("voice_bookings?org_id=eq." + ses.org_id + "&id=eq." + encodeURIComponent(String(q.b || "")) + "&session_id=eq." + ses.id + "&select=*&limit=1"))[0] : null;
+      const cents = bk && bk.status === "confirmed" && bk.job_id ? JP.payableCents(bk) : 0;
+      const back = function (r) { return xmlR(TW.twimlStream(bridgeUrl(), { token: TW.streamToken(secret(), callSid, ses.org_id, Date.now() + 120000, { r: r }), session: ses.id }, base() + "?a=fallback&s=" + ses.id)); };
+      if (!ses || !cents || !bridgeUrl() || !secret()) return xmlR(TW.twimlSay("Sorry, we could not take the payment on this call. We will call you back."));
+      if (a === "pay") {
+        const conn = process.env.VOICE_PAY_CONNECTOR; if (process.env.VOICE_PAY !== "on" || !conn) return back("failed:not_live");
+        await health(ses.org_id, "keypad_pay_started", true, bk.reference);
+        return xmlR(TW.twimlPay({ amount: (cents / 100).toFixed(2), connector: conn, action: base() + "?a=payresult&s=" + ses.id + "&b=" + bk.id, description: "POTENT Logistics delivery " + bk.reference }));
+      }
+      const res = String(params.Result || "").slice(0, 60), code = String(params.PaymentConfirmationCode || ""), ref = bk.reference, money = "$" + (cents / 100).toFixed(2);
+      const flag = async function (subject, text) { try { await TL.notifyOwner(ses.org_id, subject, text); } catch (e) { /* ignore */ } if (ses.from_number) await B.sb("voice_callbacks", { method: "POST", prefer: "return=minimal", body: { org_id: ses.org_id, session_id: ses.id, phone: ses.from_number, reason: (subject + " " + ref).slice(0, 300) } }); };
+      if (res === "caller-hung-up") { await flag("PAYMENT NOT COMPLETED (caller hung up during keypad)", "Booking " + ref + ", total " + money + ". Call them back to take payment."); return xmlR("<Response/>"); }
+      if (res === "success") {
+        const v = await JP.verifyCharge(code, cents);
+        if (v.ok) {
+          const m = await JP.markPaid(bk, cents, v.pi, "keypad");
+          if (m && m.ok) { await S.transcript(ses.org_id, ses.id, "system", "[Keypad payment confirmed by Stripe: " + money + " for " + ref + "]"); await health(ses.org_id, "keypad_pay_paid", true, ref); return back("paid:" + money); }
+          await flag("PAYMENT TAKEN BUT JOB NOT MARKED PAID", "Stripe confirmed " + money + " (" + v.id + ") for booking " + ref + " but the job could not be marked paid. Check the job and mark it paid by hand. Do NOT charge again.");
+          return back("unverified:" + money);
+        }
+        await B.audit("system", "voicejob_keypad_unverified", bk.id, { why: v.error, charged_cents: v.cents == null ? null : v.cents, expected_cents: cents });
+        await flag("PAYMENT NEEDS YOUR EYES (" + v.error + ")", "The phone keypad reported a payment for booking " + ref + " (expected " + money + ", Stripe says " + (v.cents == null ? "unknown" : "$" + (v.cents / 100).toFixed(2)) + ", id " + (code || "none") + "). It was NOT marked paid. Check Stripe, then fix or refund.");
+        return back("unverified:" + money);
+      }
+      await health(ses.org_id, "keypad_pay_failed", false, res || "no_result");
+      await flag("PAYMENT NOT COMPLETED by keypad (" + (res || "no result") + ")", "Booking " + ref + ", total " + money + ". The caller could not finish paying by keypad (" + (res || "no result") + "). Call them back to take payment. No link was sent.");
+      return back("failed:" + (res || "no_result"));
+    }
     if (a === "dial") { // the result of the attempt to reach a person
       const ses = rows(await B.sb("voice_sessions?provider_call_id=eq." + encodeURIComponent(callSid) + "&select=*&limit=1"))[0]; if (!ses) return xmlR("<Response/>");
       const ds = String(params.DialCallStatus || ""), good = ds === "completed" || ds === "answered";
