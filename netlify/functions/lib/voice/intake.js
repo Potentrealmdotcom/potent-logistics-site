@@ -6,14 +6,35 @@ const WINDOWS = ["early", "morning", "afternoon", "evening", "all_day"];
 const LEVELS = ["standard", "same_day", "rush", "recurring", "savannah_early", "savannah_full"];
 const STATES = "AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY DC".split(" ");
 
+const STATE_NAMES = { ALABAMA: "AL", ALASKA: "AK", ARIZONA: "AZ", ARKANSAS: "AR", CALIFORNIA: "CA", COLORADO: "CO", CONNECTICUT: "CT", DELAWARE: "DE", FLORIDA: "FL", GEORGIA: "GA", HAWAII: "HI", IDAHO: "ID", ILLINOIS: "IL", INDIANA: "IN", IOWA: "IA", KANSAS: "KS", KENTUCKY: "KY", LOUISIANA: "LA", MAINE: "ME", MARYLAND: "MD", MASSACHUSETTS: "MA", MICHIGAN: "MI", MINNESOTA: "MN", MISSISSIPPI: "MS", MISSOURI: "MO", MONTANA: "MT", NEBRASKA: "NE", NEVADA: "NV", "NEW HAMPSHIRE": "NH", "NEW JERSEY": "NJ", "NEW MEXICO": "NM", "NEW YORK": "NY", "NORTH CAROLINA": "NC", "NORTH DAKOTA": "ND", OHIO: "OH", OKLAHOMA: "OK", OREGON: "OR", PENNSYLVANIA: "PA", "RHODE ISLAND": "RI", "SOUTH CAROLINA": "SC", "SOUTH DAKOTA": "SD", TENNESSEE: "TN", TEXAS: "TX", UTAH: "UT", VERMONT: "VT", VIRGINIA: "VA", WASHINGTON: "WA", "WEST VIRGINIA": "WV", WISCONSIN: "WI", WYOMING: "WY" };
 function phone(p) { const d = String(p || "").replace(/\D/g, ""); const t = d.length === 11 && d[0] === "1" ? d.slice(1) : d; return t.length === 10 && !/^[01]/.test(t) ? "+1" + t : null; }
 // "123 Main St, Atlanta, GA 30303": a street number, a street, and a state or ZIP. Verification against a geocoder happens separately.
-function stateOf(a) { const m = String(a || "").toUpperCase().match(/(?:,|\s)\s*([A-Z]{2})\s*(?:\d{5}(?:-\d{4})?)?\s*(?:,?\s*USA|,?\s*US)?\s*$/); return m && STATES.indexOf(m[1]) >= 0 ? m[1] : null; }
+function stateOf(a) {
+  const up = String(a || "").toUpperCase().replace(/[.]/g, "");
+  const m = up.match(/(?:,|\s)\s*([A-Z]{2})\s*(?:\d{5}(?:-\d{4})?)?\s*(?:,?\s*USA|,?\s*US)?\s*$/);
+  if (m && STATES.indexOf(m[1]) >= 0) return m[1];
+  // a spelled-out state ("Atlanta, Georgia" or "Marietta, Georgia 30060"), which callers say far more often than "GA"
+  const n = up.match(/(?:,|\s)\s*([A-Z]+(?: [A-Z]+)?)\s*(?:\d{5}(?:-\d{4})?)?\s*(?:,?\s*USA|,?\s*UNITED STATES|,?\s*US)?\s*$/);
+  if (n && STATE_NAMES[n[1]]) return STATE_NAMES[n[1]];
+  const last = up.match(/([A-Z]+)\s*(?:\d{5}(?:-\d{4})?)?\s*$/); if (last && STATE_NAMES[last[1]]) return STATE_NAMES[last[1]];
+  return null;
+}
+// "55 Roswell Road, Marietta, Georgia 30060" -> "55 Roswell Road, Marietta, GA 30060" (the geocoder wants the abbreviation)
+function canon(a) {
+  let out = String(a || "").trim();
+  Object.keys(STATE_NAMES).sort(function (x, y) { return y.length - x.length; }).some(function (k) {
+    const re = new RegExp(",?\\s*" + k.replace(/ /g, "\\s+") + "(\\s+\\d{5}(?:-\\d{4})?)?\\s*$", "i");
+    if (re.test(out)) { out = out.replace(re, function (all, zip) { return ", " + STATE_NAMES[k] + (zip || ""); }); return true; }
+    return false;
+  });
+  return out;
+}
 function cityOf(a) { const p = String(a || "").split(",").map(function (s) { return s.trim(); }); return p.length >= 3 ? p[p.length - 2] : (p.length === 2 ? p[0] : ""); }
 function addressCheck(a) {
   const s = clip(a, 200); if (!s) return { ok: false, why: "missing" };
   if (!/^\d+[A-Za-z]?\s+\S+/.test(s)) return { ok: false, why: "needs a street number and street name" };
-  if (!stateOf(s) && !/\b\d{5}\b/.test(s)) return { ok: false, why: "needs a city and state or ZIP code" };
+  // A ZIP is never required. With a city, the geocoder finds the rest; only a bare street with no city is incomplete.
+  if (!stateOf(s) && !/\b\d{5}\b/.test(s) && s.split(",").length < 2) return { ok: false, why: "needs a city and state (a ZIP code is optional)" };
   if (s.split(",").length < 2 && !/\b\d{5}\b/.test(s)) return { ok: false, why: "needs a city" };
   return { ok: true, state: stateOf(s) };
 }
@@ -66,4 +87,4 @@ function validate(raw, now) {
   d.special_handling = clip(raw.special_handling, 300); d.special_instructions = clip(raw.special_instructions, 400); d.po_number = clip(raw.po_number, 60);
   return { ok: !miss.length && !prob.length, missing: miss, problems: prob, data: d };
 }
-module.exports = { looseDims, validate, phone, stateOf, cityOf, addressCheck, WINDOWS, LEVELS };
+module.exports = { canon, looseDims, validate, phone, stateOf, cityOf, addressCheck, WINDOWS, LEVELS };

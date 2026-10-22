@@ -3,11 +3,12 @@
 const T = function (ms) { return AbortSignal.timeout(ms); };
 async function verifyAddress(addr) {
   try {
+    addr = require("./intake").canon(addr);
     const r = await fetch("https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=" + encodeURIComponent(addr) + "&benchmark=Public_AR_Current&format=json", { signal: T(5000) });
     if (!r.ok) return { ok: false, unknown: true, reason: "address_service_unavailable" };
     const d = await r.json(), m = d && d.result && d.result.addressMatches;
     if (!m || !m.length) return { ok: false, unknown: false, reason: "address_not_found" };
-    if (m.length > 1 && m[0].matchedAddress !== m[1].matchedAddress && m.length > 3) return { ok: false, unknown: false, reason: "address_ambiguous" };
+    if (m.length > 1 && new Set(m.map(function (z) { return String((z.addressComponents || {}).city || "").toUpperCase(); })).size > 1) return { ok: false, unknown: false, reason: "address_ambiguous" };
     const x = m[0], c = x.addressComponents || {};
     return { ok: true, matched: x.matchedAddress, lat: x.coordinates.y, lon: x.coordinates.x, state: c.state || null, city: c.city || null, zip: c.zip || null };
   } catch (e) { return { ok: false, unknown: true, reason: "address_service_unavailable" }; }

@@ -1,0 +1,10 @@
+const assert = require("assert"); let n = 0; const ok = (c, m) => { assert.ok(c, m); n++; };
+const I = require("../netlify/functions/lib/voice/intake.js");
+ok(I.addressCheck("100 Peachtree Street Northeast, Atlanta, Georgia").ok, "a spelled-out state with no ZIP is accepted (the Oct 22 call failed here)");
+ok(I.addressCheck("55 Roswell Road, Marietta, Georgia").ok && I.addressCheck("55 Roswell Road, Marietta, Georgia").state === "GA", "Marietta, Georgia -> GA");
+ok(I.addressCheck("55 Roswell Road, Marietta, Georgia 30060").ok && I.addressCheck("55 Roswell Rd, Marietta, GA").ok, "ZIP or GA also fine");
+ok(I.addressCheck("12 Main St, Rock Hill, South Carolina").state === "SC" && I.addressCheck("1 A St, Albany, New York").state === "NY", "two-word states");
+ok(!I.addressCheck("55 Roswell Road").ok, "a bare street with no city is still incomplete");
+ok(I.canon("55 Roswell Road, Marietta, Georgia 30060") === "55 Roswell Road, Marietta, GA 30060" && I.canon("100 Peachtree Street Northeast, Atlanta, Georgia") === "100 Peachtree Street Northeast, Atlanta, GA", "geocoder gets the abbreviation");
+ok(I.canon("55 Roswell Rd, Marietta, GA") === "55 Roswell Rd, Marietta, GA", "already abbreviated: unchanged");
+console.log("address state: " + n + " assertions PASS");
