@@ -21,7 +21,7 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
   let r = rig(); r.start(); await sleep(40);
   ok(r.calls[0].action === "context" && r.calls[0].token === "tok", "bridge asks the site for the call context using the stream token");
   ok(r.aiSock.headers["x-goog-api-key"] === "gk-x" && /^wss:\/\//.test(r.aiSock.url), "AI key stays on the bridge and is sent only to the AI provider");
-  const setup = r.aiSock.sent.find(m => m.setup); ok(setup && setup.setup.model === "models/gemini-3.8-live" && setup.setup.systemInstruction.parts[0].text === "be nice" && setup.setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName === "Aoede", "AI session configured (model, instructions, valid voice)");
+  const setup = r.aiSock.sent.find(m => m.setup); ok(setup && setup.setup.model === "models/gemini-3.8-live" && setup.setup.systemInstruction.parts[0].text === "be nice" && setup.setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName === "Leda", "AI session configured (model, instructions, valid voice)");
   const fd = setup.setup.tools[0].functionDeclarations[0]; ok(fd.name === "t" && fd.behavior === "BLOCKING" && fd.parameters.type === "OBJECT" && !("additionalProperties" in fd.parameters), "tools converted to the Gemini schema");
   ok(!r.aiSock.sent.some(m => m.clientContent), "nothing is said before the AI confirms its setup");
   r.phone({ event: "media", media: { track: "inbound", payload: Buffer.alloc(160, 0xff).toString("base64"), timestamp: "10" } }); r.ready(); await sleep(10);
