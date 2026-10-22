@@ -57,7 +57,7 @@ var TABLES = {
     site_profiles: {},
     customer_locations: {},
     incoming_loads: { pk: "id", writeRoles: ["owner", "dispatch", "dispatcher"] },
-    user_display_names: {},
+    user_display_names: { pk: "user_id" },   // staff display names: signed-in staff only (the public door was closed Oct 22)
     // ── POTENT staff records: the POTENT login only (RUN-THIS-SQL-5A adds org_id) ──
     employee_settings: { potentOnly: true, pk: "id", readRoles: ["owner"], writeRoles: ["owner"] },   // pay rates and bank details: owner only, read and write
     driver_availability: { potentOnly: true, pk: "id", writeRoles: ["owner", "dispatch", "dispatcher"] },

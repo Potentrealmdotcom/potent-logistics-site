@@ -348,7 +348,7 @@ function plApi(action, body) {
 // ── TENANT GATEWAY — company data goes through the server, never straight to the database ──
 // Every read/write of these tables is sent to /.netlify/functions/data-api with the
 // signed-in login, so each company only ever sees and changes its own rows.
-var PL_GATED = ["fleet_vehicles","fleet_maintenance","driver_locations","voice_room_messages","driver_compliance","brokers_carriers_backup","storage_partners","safety_alerts","job_route_legs","job_events","job_scope_changes","vendors","disposal_facilities","properties","potent_wallets","wallet_transactions","rate_cards","service_zones","job_templates","quote_terms_acceptance","jobs","job_photos","junk_jobs","jobs_backup","audit_log_real","expenses_real","commission_rates_real","payment_references","cost_profiles","customer_rate_cards","claims","change_orders","addon_authorizations","my_documents","deadlines","shift_handoffs","escalation_timers","site_profiles","customer_locations","incoming_loads","user_display_names","revoked_users","receipts","job_communications","login_log","push_subscriptions","griffin_queries","recurring_routes","reviews","waitlist","os_prospects","business_rules","factoring_receivables","employee_settings","driver_availability","vehicle_availability","b2b_pricing_settings"];
+var PL_GATED = ["user_display_names","fleet_vehicles","fleet_maintenance","driver_locations","voice_room_messages","driver_compliance","brokers_carriers_backup","storage_partners","safety_alerts","job_route_legs","job_events","job_scope_changes","vendors","disposal_facilities","properties","potent_wallets","wallet_transactions","rate_cards","service_zones","job_templates","quote_terms_acceptance","jobs","job_photos","junk_jobs","jobs_backup","audit_log_real","expenses_real","commission_rates_real","payment_references","cost_profiles","customer_rate_cards","claims","change_orders","addon_authorizations","my_documents","deadlines","shift_handoffs","escalation_timers","site_profiles","customer_locations","incoming_loads","user_display_names","revoked_users","receipts","job_communications","login_log","push_subscriptions","griffin_queries","recurring_routes","reviews","waitlist","os_prospects","business_rules","factoring_receivables","employee_settings","driver_availability","vehicle_availability","b2b_pricing_settings"];
 (function () {
     if (typeof window === "undefined" || !window.fetch || window.__plGate) return;
     window.__plGate = true;
@@ -7674,7 +7674,8 @@ function AdminDashboard(props) {
                 React.createElement(LangSwitcher, { lang: adminLang, changeLang: changeGlobalLang })),
             React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center" } },
                 React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1 } },
-                    React.createElement("div", { style: { fontSize: 11, color: C.white, fontWeight: 700 } }, props.currentUser ? props.currentUser.emoji + " " + props.currentUser.name : "Admin"),
+                    React.createElement("div", { style: { fontSize: 11, color: C.white, fontWeight: 700 } }, props.currentUser ? props.currentUser.emoji + " " + props.currentUser.name : "Admin",
+                        props.currentUser && props.currentUser.id && !props.currentUser.orgId && !props.currentUser.isDecoy && React.createElement("button", { title: "Change my display name", onClick: function () { var nn = window.prompt("Change my display name", props.currentUser.name || ""); if (nn && nn.trim()) { saveNameOverride(props.currentUser.id, nn.trim().slice(0, 40)); setTimeout(function () { window.location.reload(); }, 400); } }, style: { background: "none", border: "none", color: C.orange, fontSize: 11, cursor: "pointer", marginLeft: 6, padding: 0 } }, "\u270F")),
                     React.createElement("div", { style: { fontSize: 9, color: props.role === ROLES.OWNER ? C.orange : props.role === ROLES.DRIVER ? C.green : C.blue, fontWeight: 600, textTransform: "capitalize", letterSpacing: 1 } }, props.role),
                     React.createElement(Btn, { variant: "muted", onClick: props.onLogout, style: { padding: "4px 10px", fontSize: 10 } }, tA("signOut")),
                     React.createElement("button", { onClick: function () { var v = !plEasyMode(); plSetEasyMode(v); window.location.reload(); }, style: { background: plEasyMode() ? C.orange : "transparent", color: plEasyMode() ? "#000" : C.dim, border: "1px solid " + C.border, borderRadius: 6, padding: "4px 10px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, plEasyMode() ? "\u2728 Easy: ON" : "\u2728 Easy Mode")))),
@@ -8168,14 +8169,7 @@ function AdminLogin(props) {
                     React.createElement("select", { value: selected, onChange: function (e) { setSelected(e.target.value); setPw(""); setErr(false); setRevokedErr(false); setEditingName(false); setCodeStage(""); setCodeMsg(""); setCodeVal(""); }, style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 9, color: C.white, padding: "12px 14px", fontSize: 14, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box", cursor: "pointer" } },
                         React.createElement("option", { value: "" }, "\u2014 Select your name \u2014"),
                         USERS.map(function (u) { return React.createElement("option", { key: u.id, value: u.id }, u.emoji + " " + getDisplayName(u) + " (" + u.role + ")"); }))),
-                selectedUser && !editingName && React.createElement("div", { style: { display: "flex", justifyContent: "flex-end", marginBottom: 14 } },
-                    React.createElement("button", { onClick: startEdit, style: { background: "none", border: "none", color: C.orange, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" } }, "\u270F Edit my name")),
-                selectedUser && editingName && React.createElement("div", { style: { background: C.surface, border: "1px solid " + C.orange + "44", borderRadius: 9, padding: "12px 14px", marginBottom: 14 } },
-                    React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 } }, "Change Display Name"),
-                    React.createElement("input", { value: editValue, onChange: function (e) { setEditValue(e.target.value); }, placeholder: "e.g. Marcus", style: { background: C.card, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "9px 12px", fontSize: 13, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box", marginBottom: 10 } }),
-                    React.createElement("div", { style: { display: "flex", gap: 8 } },
-                        React.createElement(Btn, { variant: "ghost", onClick: function () { setEditingName(false); }, style: { flex: 1, padding: "8px", fontSize: 12 } }, "Cancel"),
-                        React.createElement(Btn, { onClick: saveEdit, disabled: !editValue.trim(), style: { flex: 2, padding: "8px", fontSize: 12 } }, "\u2713 Save Name"))),
+                // (display names are changed after sign-in, from the header; the login screen no longer edits or writes names)
                 selected && React.createElement("div", null,
                     React.createElement(TxtIn, { label: "Your Password", value: pw, onChange: function (v) { setPw(v); }, type: "password", placeholder: "Enter your password" }),
                     err && React.createElement("div", { style: { color: C.red, fontSize: 12, marginBottom: 10 } }, "\u26A0 Wrong password. Try again or contact POTENT."),
@@ -10265,9 +10259,12 @@ function Root() {
     // would know new names arrived without this.
     var [nameSyncVersion, setNameSyncVersion] = useState(0);
     useEffect(function () {
-        loadNameOverridesFromServer().then(function () { setNameSyncVersion(function (v) { return v + 1; }); });
         loadPasswordOverridesFromServer();
     }, []);
+    // Display names are readable only once signed in (the table is behind the login): load them at start (works when a session is already open) and again right after sign-in.
+    useEffect(function () {
+        loadNameOverridesFromServer().then(function () { setNameSyncVersion(function (v) { return v + 1; }); });
+    }, [currentUser && currentUser.id]);
     // Revoked-access check: on load, and then every 60s while someone is
     // logged in, re-check the synced revoke list. If the currently logged
     // in user shows up on it (owner revoked them from another device,
