@@ -1,11 +1,11 @@
 const assert = require("assert"); let n = 0; const ok = (c, m) => { assert.ok(c, m); n++; };
 const P = require("../netlify/functions/lib/voice/prompt.js"), A = require("../netlify/functions/lib/voice/adapters/gemini-live.js"), T = require("../netlify/functions/lib/voice/tools.js");
 const g = P.greeting({ agent_name: "Elevate" }, { name: "POTENT Logistics", slug: "potent-logistics" });
-ok(/I'm Ell-eh-vate, powered by POTENT/.test(g) && !/Elevate/.test(g), "greeting uses the phonetic name and the new intro");
-ok(P.greeting({ greeting: "This is Əlevate calling" }, {}).includes("Ell-eh-vate"), "custom greeting is respelled too");
+ok(/I'm Ella-vate, powered by POTENT/.test(g) && !/Elevate/.test(g), "greeting uses the phonetic name and the new intro");
+ok(P.greeting({ greeting: "This is Əlevate calling" }, {}).includes("Ella-vate"), "custom greeting is respelled too");
 const b = P.build({ agent_name: "Elevate" }, { name: "POTENT Logistics", slug: "potent-logistics" });
-ok(/ELL-eh-VATE/.test(b) && /Should we use the number you're calling from\?/.test(b) && /prepaid wallet/.test(b) && /recurring account/.test(b) && /one-time pop-up event, a junk removal/.test(b) && /best pricing/.test(b) && /never promise to beat or match/.test(b) && /get_playbook/.test(b) && /track their driver/.test(b) && /wants to drive for POTENT/.test(b), "prompt: name, caller-ID question, recurring/wallet, cross-sell, playbook pointer, tracking/account/driver join");
-ok(/Hey, this is Ell-eh-vate, powered by POTENT/.test(b), "sales opener uses the respelled name");
+ok(/EL-uh-vayt/.test(b) && /Should we use the number you're calling from\?/.test(b) && /prepaid wallet/.test(b) && /recurring account/.test(b) && /one-time pop-up event, a junk removal/.test(b) && /best pricing/.test(b) && /never promise to beat or match/.test(b) && /get_playbook/.test(b) && /track their driver/.test(b) && /wants to drive for POTENT/.test(b), "prompt: name, caller-ID question, recurring/wallet, cross-sell, playbook pointer, tracking/account/driver join");
+ok(/Hey, this is Ella-vate, powered by POTENT/.test(b), "sales opener uses the respelled name");
 delete process.env.VOICE_THINKING_BUDGET;
 let s = A.create({}).setup({ tools: [], instructions: "x" })[0].setup;
 ok(s.realtimeInputConfig.automaticActivityDetection.silenceDurationMs === 600 && !s.generationConfig.thinkingConfig, "original turn-taking by default; thinking budget only when set");

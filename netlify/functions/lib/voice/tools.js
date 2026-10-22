@@ -84,7 +84,7 @@ async function emailGate(ctx, a, email) {
   it._email_pending = email; ctx.session.intake = it;
   await S.patchSession(ctx.orgId, ctx.session.id, { intake: it });
   const spelled = email.replace(/@/, " at ").replace(/\./g, " dot ").split("").join(" ");
-  return { ok: false, error: "read_back_required", email: email, say: "NOT SENT YET. Say: \"Let me read that back: " + spelled + ". Is that right?\" Spell it letter by letter, wait for a clear yes. If they correct it, use the corrected address. Then call this tool again with the same email and email_confirmed true. If the caller did not clearly say an address, ask for it; never guess or reuse one from memory." };
+  return { ok: false, error: "read_back_required", email: email, say: "NOT SENT YET. Say: \"Let me read that back: " + spelled + ". Is that right?\" Spell it letter by letter, wait for a clear yes from the caller, and do not call the tool again until you have heard it. If they correct it, use the corrected address. Then call this tool again with the same email and email_confirmed true. If the caller did not clearly say an address, ask for it; never guess or reuse one from memory." };
 }
 const TOOLS = {
   async lookup_customer(ctx) {
@@ -239,6 +239,7 @@ const TOOLS = {
     if (!bk) return { ok: false, error: "booking_not_found" };
     if (bk.status !== "confirmed" || !bk.job_id) return { ok: false, error: "not_confirmed", say: "The booking is not confirmed yet, so there is nothing to pay. Do not send a payment link. Tell the caller a person will confirm it first." };
     const JP = require("./jobpay"), r = await JP.createLink(bk, email);
+    if (r.ok) await B.sb("voice_bookings?id=eq." + bk.id, { method: "PATCH", prefer: "return=minimal", body: { customer_email: email } });
     if (!r.ok) return { ok: false, error: r.error, say: "The payment link could not be created. Tell the caller honestly, and that they can pay cash or card before the job, or a person will send a link. Never ask for a card number." };
     const total = P.money(r.cents), text = "Thank you for booking with POTENT Logistics. Reference " + bk.reference + ".\n\nPay " + total + " securely by card on Stripe's own page (you can also pay cash or card before the job starts). This link works for 23 hours:";
     const mail = await require("../mail").send(email, "Pay for your POTENT delivery " + bk.reference + " (" + total + ")", text, r.url);

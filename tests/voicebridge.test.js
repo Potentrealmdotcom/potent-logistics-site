@@ -91,5 +91,9 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
   r = rig({ env: { VOICE_SILENCE_MS: "100" } }); r.start(); await sleep(40); r.ready(); r.ai(audio(240)); await sleep(1500);
   ok(!JSON.stringify(r.aiSock.sent).includes("The caller is waiting"), "caller is simply listening: no nudge");
   r.phone({ event: "stop" }); await sleep(20);
+  r = rig({ env: { VOICE_SILENCE_MS: "100" }, toolResult: { ok: true, emailed: true } }); r.start(); await sleep(40); r.ready(); await sleep(10); r.ai(audio(240)); r.ai(sc({ turnComplete: true }));
+  r.ai({ toolCall: { functionCalls: [{ id: "pl1", name: "send_payment_link", args: {} }] } }); await sleep(30); r.ai(audio(240)); r.ai(sc({ turnComplete: true })); await sleep(1500);
+  ok(JSON.stringify(r.aiSock.sent).includes("Is there anything else I can help you with?"), "after booking + payment link are done and the caller is quiet, she is made to ask the close question (no dead air)");
+  r.phone({ event: "stop" }); await sleep(20);
   console.log("PASS: " + n + " assertions"); process.exit(0);
 })().catch(e => { console.error(e); process.exit(1); });
