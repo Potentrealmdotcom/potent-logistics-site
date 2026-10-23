@@ -101,6 +101,12 @@ body.calm .orb *{animation:none!important;transition:none!important}body.calm .o
 .cat{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:left;color:var(--tx);font-weight:600;font-size:14px}
 .cat small{display:block;font-weight:400;color:var(--dim);font-size:12px}.cat.live small{color:var(--y)}.cat:disabled{opacity:.55}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:14px}
+.tiers{margin-top:16px;border-top:1px solid var(--line);padding-top:14px;text-align:left}
+.tiers-h{font-size:12px;letter-spacing:.2em;color:var(--y);text-transform:uppercase;font-weight:700;margin-bottom:8px}
+.tier{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px}
+.tier-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.tier-p{color:var(--y);font-weight:800;white-space:nowrap}
+.tier-d{font-size:13px;margin-top:2px}
 </style></head><body>
 <div id="login" class="center card hide">
   <div class="tag">YOUR WORLD. OFFLINE &amp; ONLINE.</div>
@@ -110,6 +116,15 @@ body.calm .orb *{animation:none!important;transition:none!important}body.calm .o
   <button id="osbtn" class="alt hide">Continue as POTENT owner</button>
   <div class="err" id="lerr" role="alert"></div>
   <p class="dim" style="font-size:13px">Only people the owner has added can sign in.</p>
+  <div class="tiers" aria-label="POTENT VOICE plans">
+    <div class="tiers-h">POTENT VOICE plans</div>
+    <p class="dim" style="font-size:13px;margin:0">Əlevate answers your company phones — quotes, bookings and callbacks, 24/7. Each tier matches a POTENT OS plan.</p>
+    <div class="tier"><div class="tier-top"><b>POTENT VOICE Starter</b><span class="tier-p">$199/mo</span></div><div class="dim tier-d">300 voice minutes included · then 50&cent;/min<br>Pairs with POTENT OS Starter (1-10 trucks)</div></div>
+    <div class="tier"><div class="tier-top"><b>POTENT VOICE Growth</b><span class="tier-p">$499/mo</span></div><div class="dim tier-d">1,000 voice minutes included · then 45&cent;/min<br>Pairs with POTENT OS Growth (11-50 trucks)</div></div>
+    <div class="tier"><div class="tier-top"><b>POTENT VOICE Fleet</b><span class="tier-p">$999/mo</span></div><div class="dim tier-d">3,000 voice minutes included · then 40&cent;/min<br>Pairs with POTENT OS Fleet</div></div>
+    <div class="tier"><div class="tier-top"><b>POTENT VOICE Enterprise</b><span class="tier-p">$1,999+/mo</span></div><div class="dim tier-d">10,000 voice minutes included · then 35&cent;/min<br>Pairs with POTENT OS Enterprise</div></div>
+    <p class="dim" style="font-size:12px;margin:10px 0 0">Minutes are per month; extra minutes bill at the tier's per-minute rate.</p>
+  </div>
 </div>
 <div id="vstage" role="dialog" aria-label="Voice"><div class="orb" id="sorb" data-state="idle"><i class="r1"></i><i class="r2"></i><i class="r3"></i><i class="core"></i><b>Ə</b></div>
 <div class="orbst" id="sorbst" role="status">Ready</div><div class="orbnote" id="sorbnote"></div><div class="cap" id="scap" aria-live="polite"></div>
