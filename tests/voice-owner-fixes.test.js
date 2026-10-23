@@ -8,7 +8,7 @@ ok(/EL-uh-vayt/.test(b) && /Should we use the number you're calling from\?/.test
 ok(/Hey, this is Ella-vate, powered by POTENT/.test(b), "sales opener uses the respelled name");
 delete process.env.VOICE_THINKING_BUDGET;
 let s = A.create({}).setup({ tools: [], instructions: "x" })[0].setup;
-ok(s.realtimeInputConfig.automaticActivityDetection.silenceDurationMs === 600 && !s.generationConfig.thinkingConfig, "original turn-taking by default; thinking budget only when set");
+ok(s.realtimeInputConfig.automaticActivityDetection.silenceDurationMs === 600 && s.realtimeInputConfig.automaticActivityDetection.startOfSpeechSensitivity === "START_SENSITIVITY_LOW" && s.realtimeInputConfig.automaticActivityDetection.endOfSpeechSensitivity === "END_SENSITIVITY_LOW" && s.realtimeInputConfig.automaticActivityDetection.prefixPaddingMs === 300 && !s.generationConfig.thinkingConfig, "noise-shy turn-taking by default (background noise does not cut her off; a speaking person still does); thinking budget only when set");
 process.env.VOICE_FAST_TURNS = "on"; ok(A.create({}).setup({ tools: [], instructions: "x" })[0].setup.realtimeInputConfig.automaticActivityDetection.silenceDurationMs === 350, "fast turns only when switched on"); delete process.env.VOICE_FAST_TURNS;
 process.env.VOICE_THINKING_BUDGET = "0"; s = A.create({}).setup({ tools: [], instructions: "x" })[0].setup; ok(s.generationConfig.thinkingConfig.thinkingBudget === 0, "thinking budget applied when configured"); delete process.env.VOICE_THINKING_BUDGET;
 const ad = A.create({}); ad.parse({ serverContent: { inputTranscription: { text: "hi" } } }); ad.parse({ usageMetadata: {} });

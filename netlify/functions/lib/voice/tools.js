@@ -159,19 +159,23 @@ const TOOLS = {
       if (cap && Number(intake.total_weight_lb) > cap) heavy = "That weight is over our limit of " + cap + " pounds. Do not keep collecting dimensions. Follow the REFUSAL PATH now: kindly say so and name the limit, offer the other ways POTENT can help, and ask to add them to the follow-up list.";
     }
     const l4 = a && a.use_caller_id === true && intake.callback_phone ? String(intake.callback_phone).replace(/\D/g, "").slice(-4) : undefined;
-    return { ok: true, complete: v.ok, missing: v.missing, problems: v.problems, number_ends_in: l4, say: heavy || (l4 ? "Read it back now in one short phrase, digit by digit: the number ending in " + l4.split("").join(" ") + ". Then move on." : undefined), reset: changed ? "Details changed, so earlier checks and any quote were cleared. Re-run validation and quote." : undefined };
+    const res = { ok: true, complete: v.ok, missing: v.missing, problems: v.problems, number_ends_in: l4, say: heavy || (l4 ? "Read it back now in one short phrase, digit by digit: the number ending in " + l4.split("").join(" ") + ". Then move on." : undefined), reset: changed ? "Details changed, so earlier checks and any quote were cleared. Re-run validation and quote." : undefined };
+    if (!res.say && v.problems.indexOf("piece_weights_do_not_match_total") >= 0) res.say = "The piece weights and the total weight do not agree. Do NOT change either number yourself. Ask the caller once: \"Is that weight the total for everything, or for each piece?\" Then record only what they answer.";
+    return res;
   },
   async validate_shipment_eligibility(ctx) {
     const intake = Object.assign({}, ctx.session.intake || {}), v = I.validate(intake);
     if (!v.ok) return { ok: false, missing: v.missing, problems: v.problems };
     const d = v.data, geo = intake._geo || {};
-    for (const k of ["pickup", "delivery"]) {
+    const notFound = [];
+    for (const k of ["pickup", "delivery"]) {   // BOTH addresses are checked even when the first one fails (call 4: the unverifiable drop-off hid behind the unverifiable pickup)
       const addr = d[k + "_address"]; if (geo[k] && geo[k].input === addr) continue;
       const g = await RT.verifyAddress(addr);
       if (g.unknown) return { ok: false, error: "address_check_unavailable", say: "I can't verify addresses right now. Offer a callback or a person." };
-      if (!g.ok) return { ok: false, problems: [k + "_address_not_found"], say: "I couldn't find the " + k + " address. Ask the caller to repeat it with street, city and state." };
+      if (!g.ok) { notFound.push(k); continue; }
       geo[k] = { input: addr, matched: g.matched, lat: g.lat, lon: g.lon, state: g.state }; d[k + "_state"] = g.state || d[k + "_state"];
     }
+    if (notFound.length) return { ok: false, problems: notFound.map(function (k) { return k + "_address_not_found"; }), say: notFound.length === 2 ? "I couldn't find the pickup or the delivery address. Ask the caller to repeat BOTH, each with street, city and state." : "I couldn't find the " + notFound[0] + " address. Ask the caller to repeat it with street, city and state." };
     intake._geo = geo;
     const prof = await S.profileOf(ctx.orgId);
     if (!prof) { intake._elig = { status: "review", reviews: [{ code: "no_vehicle_profile", text: "No authorized vehicle profile is configured." }], blocks: [] }; await setIntake(ctx, intake); return { ok: true, status: "review", reasons: ["No authorized vehicle is set up. A person must review this request."] }; }

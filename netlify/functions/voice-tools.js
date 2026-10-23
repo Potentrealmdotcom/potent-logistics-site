@@ -20,6 +20,14 @@ function summarize(ses) {
   if (i.pickup_address || i.delivery_address) bits.push((i.pickup_address || "?") + " to " + (i.delivery_address || "?") + (i.service_date ? " on " + i.service_date : ""));
   if (i.piece_count || i.total_weight_lb) bits.push((i.piece_count || "?") + " pc, " + (i.total_weight_lb || "?") + " lb" + (i.freight_description ? ", " + i.freight_description : ""));
   if (i._elig) bits.push("eligibility: " + i._elig.status + (i._elig.blocks && i._elig.blocks.length ? " (" + i._elig.blocks.map(function (b) { return b.code; }).join(", ") + ")" : ""));
+  // Self-updating v1: each finished call leaves a structured note on its own session row (the store the Calls screens read), so what she
+  // ran into accumulates as reference: why a job could not be taken (in words, not just codes), what else the caller wanted, who they were.
+  // It is a record, not training: nothing here is fed back into her instructions, and objections in the caller's own words live in the transcript.
+  if (i._elig && i._elig.status !== "eligible") { const why = (i._elig.blocks || []).concat(i._elig.reviews || []).map(function (b) { return b.text || b.code; }).filter(Boolean); if (why.length) bits.push("why: " + why.join("; ").slice(0, 240)); }
+  if (i.recurring) bits.push("wanted recurring service");
+  if (i.special_handling) bits.push("special handling: " + String(i.special_handling).slice(0, 80));
+  if (ses.customer_id) bits.push("known customer");
+  if (i._lang && i._lang !== "en") bits.push("language: " + i._lang);
   if (q) bits.push("quote " + q.number + " " + PR.money(q.total_cents));
   bits.push("outcome: " + (ses.outcome || "information only"));
   return bits.join(". ").slice(0, 900);
