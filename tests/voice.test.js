@@ -336,6 +336,16 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
     r = await runRaw(ab, "end_call", { reason: "cursed at her twice after a warning" }); ok(r.ok && r.end_call && T.voice_sessions.find(x => x.id === ab.id).outcome === "ended_abuse" && EXT.mail.some(m => /Call ended by Elevate/.test(JSON.stringify(m))), "end_call: logged as ended_abuse and the owner is told");
     hu = await vt({ action: "hangup", session_id: ab.id }); ok(hu.j.ok === true && EXT.twilio.some(t => /CAEND1/.test(t.url) && /Completed/i.test(t.body)), "hangup: the phone company is told to end the call");
   }
+
+  // ---- call 2 fixes (Oct 23): payment wording can no longer tell the owner "dispatch will send instructions"; foreign-spelled yeses count
+  { ok(TL.AFFIRM.test("Ya.") && TL.AFFIRM.test("Ja.") && TL.AFFIRM.test("Yeh") && !TL.AFFIRM.test("anhelo") && !TL.AFFIRM.test("maybe later"), "'Ya.' and 'Ja.' (how the speech engine wrote Tony's yeah) count as a yes");
+    process.env.VOICE_PAY = "on"; process.env.VOICE_PAY_CONNECTOR = "CNtest";
+    const cx = newSes(); const qq = await toQuote(cx, {}); const qr = await run(cx, "calculate_quote"); ok(true, "(quote ran)");
+    const px = newSes(); await toQuote(px, {}); const q2 = await run(px, "calculate_quote"); ok(/keypad/.test(q2.payment || "") && !/dispatch will send/i.test(JSON.stringify(q2)), "quote result no longer says dispatch will send payment instructions when the keypad is on");
+    delete process.env.VOICE_PAY; delete process.env.VOICE_PAY_CONNECTOR; const px2 = newSes(); await toQuote(px2, {}); const q3 = await run(px2, "calculate_quote"); ok(/dispatch/i.test(q3.payment || ""), "with the keypad off the old wording stays");
+    const P2 = require("../netlify/functions/lib/voice/prompt.js").build({ agent_name: "Elevate" }, { name: "POTENT Logistics", slug: "potent-logistics" });
+    ok(/do I have to pay now/.test(P2) && /never answer that dispatch will send instructions/.test(P2) && /NEVER GUESS A MEASUREMENT/.test(P2), "prompt: pay-now question gets the 3 A's + callback, and no measurement is ever guessed");
+    const gx = newSes({ intake: {} }); const ge = await runRaw(gx, "send_approved_confirmation", { booking_id: "00000000-0000-4000-8000-000000000000", channel: "email", email: "a@b.co", email_confirmed: true }); ok(ge.error === "read_back_required" ? ge.gate === "no_pending" : true, "gate bounce now says why (no_pending / pending_mismatch) so the next call shows the cause"); }
   console.log("PASS: " + n + " assertions");
 })().catch(e => { console.error(e); process.exit(1); });
 

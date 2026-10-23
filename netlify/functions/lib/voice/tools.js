@@ -11,7 +11,7 @@ const CRITICAL = ["pickup_address", "delivery_address", "service_date", "time_wi
 const INTAKE_KEYS = CRITICAL.concat(["customer_name", "company", "callback_phone", "email", "pickup_contact_name", "pickup_contact_phone", "delivery_contact_name", "delivery_contact_phone", "special_instructions", "po_number", "recurring"]);
 const clip = function (v, n) { return String(v == null ? "" : v).trim().slice(0, n); };
 const last4 = function (p) { return String(p || "").replace(/\D/g, "").slice(-4); };
-const AFFIRM = /\b(yes|yeah|yep|yup|correct|confirm|confirmed|go ahead|book it|that'?s right|sounds good|do it|please do|okay|ok|sure|let'?s do it|proceed)\b/i, NEG = /\b(no|not|don'?t|wait|hold on|stop|cancel|never ?mind|actually|change)\b/i;
+const AFFIRM = /\b(yes|yeah|yep|yup|correct|confirm|confirmed|go ahead|book it|that'?s right|sounds good|do it|please do|okay|ok|sure|let'?s do it|proceed|ya|yah|yeh|yea|ja|si|sí|claro|dale|vale)\b/i, NEG = /\b(no|not|don'?t|wait|hold on|stop|cancel|never ?mind|actually|change)\b/i;
 
 // ── schemas shown to the model (kept deliberately small; the server validates again) ──
 const obj = function (props, req) { return { type: "object", properties: props, required: req || [], additionalProperties: false }; };
@@ -86,8 +86,12 @@ async function emailGate(ctx, a, email) {
   it._email_pending = email; ctx.session.intake = it;
   await S.patchSession(ctx.orgId, ctx.session.id, { intake: it });
   const spelled = email.replace(/@/, " at ").replace(/\./g, " dot ").split("").join(" ");
-  return { ok: false, error: "read_back_required", email: email, say: "NOT SENT YET. Say: \"Let me read that back: " + spelled + ". Is that right?\" Spell it letter by letter, wait for a clear yes from the caller, and do not call the tool again until you have heard it. If they correct it, use the corrected address. Then call this tool again with the same email and email_confirmed true. If the caller did not clearly say an address, ask for it; never guess or reuse one from memory." };
+  return { ok: false, error: "read_back_required", gate: (a.email_confirmed === true ? (pend ? "pending_mismatch:" + pend : "no_pending") : "not_confirmed_flag"), email: email, say: "NOT SENT YET. Say: \"Let me read that back: " + spelled + ". Is that right?\" Spell it letter by letter, wait for a clear yes from the caller, and do not call the tool again until you have heard it. If they correct it, use the corrected address. Then call this tool again with the same email and email_confirmed true. If the caller did not clearly say an address, ask for it; never guess or reuse one from memory." };
 }
+// Payment wording the model sees. POTENT takes the card on the call by keypad when it is switched on, so no tool result may tell her "dispatch will send instructions" (call 2: that line made her tell the owner he did not have to pay).
+const payOn = function () { return process.env.VOICE_PAY === "on" && !!process.env.VOICE_PAY_CONNECTOR; };
+const PAY_HINT = "We take the card right on this call, over the phone keypad, once the booking is confirmed (take_card_payment).";
+const PAY_SAY = "Booking confirmed. NEXT, offer to take the card right now over the keypad (take_card_payment). If they say they do not need to pay now or hesitate, do NOT say dispatch will send instructions: work it with the 3 A's (Acknowledge, Associate, Ask), mention it takes about a minute and locks the slot; if they still decline, ask 'When would be a good time for us to reconnect?', then use create_callback_task with that time and create_or_update_lead with the note, and say you will follow up.";
 const TOOLS = {
   async lookup_customer(ctx) {
     const n = last4(ctx.session.from_number); if (!ctx.session.from_number || !n) return { ok: true, known: false };
@@ -157,7 +161,7 @@ const TOOLS = {
     const row = rows(ins)[0]; if (!row) return { ok: false, error: "save_failed" };
     intake._quote_id = row.id; intake._quote = { id: row.id, number: number, total_cents: q.total_cents, expires_at: q.expires_at, created_at: row.created_at || new Date().toISOString() };
     await setIntake(ctx, intake, { quote: { id: row.id, number: number, total_cents: q.total_cents } });
-    return { ok: true, quote_number: number, lines: q.lines.map(function (l) { return l.label + ": " + P.money(l.cents); }), total: P.money(q.total_cents), tax_note: q.exclusions[q.exclusions.length - 1], valid_minutes: Math.round((new Date(q.expires_at) - Date.now()) / 60000), exclusions: q.exclusions, payment: q.payment_text, deposit: q.deposit_cents ? P.money(q.deposit_cents) : null };
+    return { ok: true, quote_number: number, lines: q.lines.map(function (l) { return l.label + ": " + P.money(l.cents); }), total: P.money(q.total_cents), tax_note: q.exclusions[q.exclusions.length - 1], valid_minutes: Math.round((new Date(q.expires_at) - Date.now()) / 60000), exclusions: q.exclusions, payment: (await isPotentOrg(ctx)) && payOn() ? PAY_HINT : q.payment_text, deposit: q.deposit_cents ? P.money(q.deposit_cents) : null };
   },
   async check_live_availability(ctx) {
     const intake = Object.assign({}, ctx.session.intake || {}), q = intake._quote, el = intake._elig;
@@ -190,7 +194,7 @@ const TOOLS = {
     if (!S.UUID.test(String(a.booking_id || ""))) return { ok: false, error: "bad_booking" };
     const bk = rows(await B.sb("voice_bookings?org_id=eq." + ctx.orgId + "&id=eq." + a.booking_id + "&session_id=eq." + ctx.session.id + "&select=*&limit=1"))[0];
     if (!bk) return { ok: false, error: "booking_not_found" };
-    if (bk.status === "confirmed") return { ok: true, confirmed: true, duplicate: true, reference: bk.reference, job_id: bk.job_id };
+    if (bk.status === "confirmed") return { ok: true, confirmed: true, duplicate: true, reference: bk.reference, job_id: bk.job_id, say: (await isPotentOrg(ctx)) && payOn() ? PAY_SAY : undefined };
     if (bk.status !== "pending_review") return { ok: false, error: "booking_" + bk.status };
     const snap = bk.snapshot, q = rows(await B.sb("voice_quotes?org_id=eq." + ctx.orgId + "&id=eq." + bk.quote_id + "&select=*&limit=1"))[0];
     const fail = async function (why, say) { await B.sb("voice_bookings?id=eq." + bk.id, { method: "PATCH", prefer: "return=minimal", body: { review_reason: why } }); return { ok: true, confirmed: false, reference: bk.reference, pending: true, reason: why, say: say || "Not confirmed. It stays a request for a person to review. Say so honestly." }; };
@@ -212,7 +216,7 @@ const TOOLS = {
     await B.sb("voice_quotes?id=eq." + q.id, { method: "PATCH", prefer: "return=minimal", body: { status: "accepted" } });
     await S.patchSession(ctx.orgId, ctx.session.id, { outcome: "booked" });
     await notifyOwner(ctx.orgId, "Voice booking CONFIRMED " + bk.reference, d.customer_name + " " + d.callback_phone + ": " + d.pickup_address + " to " + d.delivery_address + " on " + d.service_date + " (" + d.time_window + "). Job " + res.job_id + ".");
-    return { ok: true, confirmed: true, reference: bk.reference, job_id: res.job_id, duplicate: !!res.duplicate };
+    return { ok: true, confirmed: true, reference: bk.reference, job_id: res.job_id, duplicate: !!res.duplicate, say: (await isPotentOrg(ctx)) && payOn() ? PAY_SAY : undefined };
   },
   async book_demo(ctx, a) {
     const email = clip(a.email, 120).toLowerCase(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { ok: false, error: "need_valid_email", say: "Ask for their email and read it back letter by letter." };

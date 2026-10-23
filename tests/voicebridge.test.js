@@ -127,5 +127,11 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
   ok(r.calls.some(c => c.action === "hangup" && c.session_id === "S1"), "end_call: after her goodbye the bridge asks the site to hang up");
   r.phone({ event: "stop" }); await sleep(40);
   ok(r.calls.some(c => c.action === "end" && c.reason === "ended_by_agent"), "end_call: the call is recorded as ended by the agent");
+
+  // ---- no close-the-call nudge after she has already said goodbye
+  r = rig({ env: { VOICE_SILENCE_MS: "100" }, toolResult: { ok: true, sent: true } }); r.start(); await sleep(40); r.ready(); await sleep(10); r.ai(audio(240)); r.ai(sc({ turnComplete: true }));
+  r.ai({ toolCall: { functionCalls: [{ id: "bye1", name: "send_approved_confirmation", args: {} }] } }); await sleep(30); r.ai(audio(240)); r.ai({ serverContent: { outputTranscription: { text: "Thank you, Anthony. Have a great day! Goodbye!" } } }); r.ai(sc({ turnComplete: true })); await sleep(1500);
+  ok(!JSON.stringify(r.aiSock.sent).includes("Is there anything else I can help you with?"), "after she has said goodbye, no stray 'anything else' nudge");
+  r.phone({ event: "stop" }); await sleep(20);
   console.log("PASS: " + n + " assertions"); process.exit(0);
 })().catch(e => { console.error(e); process.exit(1); });
