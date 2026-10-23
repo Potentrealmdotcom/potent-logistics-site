@@ -37,7 +37,7 @@ function create(opts) {
   const flushCaller = function (ev) { if (callerBuf.trim()) ev.push({ kind: "caller_text", text: callerBuf.trim(), key: "c:" + (++n) }); callerBuf = ""; };
   const flushAgent = function (ev) { if (agentBuf.trim()) ev.push({ kind: "agent_text", text: agentBuf.trim(), key: "a:" + (++n) }); agentBuf = ""; };
   return {
-    name: "gemini-live", version: "2026-10-22c",
+    name: "gemini-live", version: "2026-10-23d",
     setup: function (o) {
       const voice = DEFAULT_VOICE; // LOCKED: Elevate is always the same female voice (Leda), on every call and every reconnect. No config, env or caller can change it.
       const decl = declarations(o.tools);

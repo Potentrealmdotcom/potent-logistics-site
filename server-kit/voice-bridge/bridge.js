@@ -139,7 +139,13 @@ function createBridge(deps) {
       }
       if (!owed && !noGreeting && !closingAt && (!markQ.length || now - lastAgentAt > th * 8) && readyAt && lastAgentAt && now - lastAgentAt > th * 3 && now - Math.max(lastCallerAt, 0) > th * 3 && now - Math.max(idleAt, 0) > th * 3) { // dead-air backstop: whatever the cause, nobody has spoken for ~12s, so she checks in
         idleAt = now; kinds.idle_checkin = (kinds.idle_checkin || 0) + 1; api({ action: "health", provider: "bridge", kind: "silence_nudge", ok: false, detail: ("idle " + Math.round((now - lastAgentAt) / 1000) + "s").slice(0, 120) }, 4000);
-        if (kinds.idle_checkin % 3 === 0) aiDown("silence_watchdog", "idle for " + Math.round((now - lastAgentAt) / 1000) + "s"); else if (kinds.idle_checkin % 2 === 1) sysNote("It has been quiet. Say warmly: \"Are you still there? Take your time. If you do not have that handy, we can go ahead without it.\""); else aiSend(prov.say("I'm still right here with you. If it is easier, I can take this down without that and have someone follow up."));
+        { const n = kinds.idle_checkin;   // normal check-ins that never repeat; no forced restart (a quiet caller is not a broken connection)
+          if (n === 1) sysNote("It has been quiet. Say warmly, in one short sentence, that you are right here and they can take their time.");
+          else if (n === 2) sysNote("Still quiet. Say one short, different sentence: ask whether they would like to keep going or have someone call them back. Do not repeat your earlier words.");
+          else if (n === 3) sysNote("Still quiet. In one short sentence, say you can write down what you have so far and have a person follow up on this number. Do not repeat your earlier words.");
+          else if (n === 4) sysNote("Still quiet. Save what you have now (collect_shipment_details for anything said, then create_callback_task using the number they are calling from), and tell them in one short sentence that you saved it and someone will call them back. Do not repeat your earlier words.");
+          else if (n === 5) sysNote("Still quiet. Say one warm goodbye sentence: you saved their details, someone will call, and they can call back any time. Then stop.");
+          /* after that she stays quiet rather than looping; the site saves a callback if the call ends without one */ }
         return;
       }
       if (!owed && !noGreeting) return;

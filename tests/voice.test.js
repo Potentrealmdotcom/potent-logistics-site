@@ -364,6 +364,19 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
     const e3 = newSes(); await say(e3, "I need a truck"); await say(e3, "Can you speak Spanish?"); const g3 = await run(e3, "set_call_language", { language: "es" }); ok(g3.ok, "an explicit request for Spanish is honored");
     const e4 = newSes(); await say(e4, "Привет, мне нужен грузовик"); const g4 = await run(e4, "set_call_language", { language: "ru" }); ok(g4.ok, "a caller speaking another script gets that language"); }
   { const c4 = newSes(); const r4 = await run(c4, "collect_shipment_details", { customer_name: "Anthony", use_caller_id: true }); ok(r4.number_ends_in === "0142" && /0 1 4 2/.test(r4.say), "caller-id yes: the tool hands her the last four so she reads them back"); }
+  // ---- safety net (Call 3): a call that ends with details or words but no booking/callback/handoff is saved as a callback and the owner is emailed
+  { const mk = (o) => newSes(Object.assign({ intake: {} }, o));
+    const a1 = mk({ intake: { pickup_address: "100 Peachtree Street Northeast, Atlanta", customer_name: "Tony" } }); T.voice_sessions.push(a1);
+    EXT.mail.length = 0; let e1 = await vt({ action: "end", session_id: a1.id, reason: "caller_hangup", seconds: 40 });
+    const cb1 = T.voice_callbacks.filter(c => c.session_id === a1.id);
+    ok(e1.j.ok && e1.j.auto_callback === true && cb1.length === 1 && cb1[0].phone === a1.from_number && /AUTO-SAVED/.test(cb1[0].reason) && /100 Peachtree/.test(cb1[0].reason) && T.voice_sessions.find(q => q.id === a1.id).outcome === "callback", "safety net: details but no booking: a callback is saved on the caller-id number and the call is marked callback");
+    ok(EXT.mail.some(m => /owner@potent.test/.test(JSON.stringify(m.to)) && /Unfinished call saved/.test(m.subject) && /pickup 100 Peachtree/.test(JSON.stringify(m))), "safety net: the owner is emailed what we have and what is missing");
+    const a2 = mk({}); T.voice_sessions.push(a2); T.voice_transcripts.push({ id: "tz" + (++sn), org_id: a2.org_id, session_id: a2.id, seq: 9001, role: "caller", text: "I only need to book a delivery", created_at: new Date().toISOString() });
+    await vt({ action: "end", session_id: a2.id, reason: "caller_hangup", seconds: 20 }); ok(T.voice_callbacks.filter(c => c.session_id === a2.id).length === 1, "safety net: a caller who only spoke (nothing saved) is still saved with what they said");
+    const a3 = mk({}); T.voice_sessions.push(a3); await vt({ action: "end", session_id: a3.id, reason: "caller_hangup", seconds: 3 }); ok(T.voice_callbacks.filter(c => c.session_id === a3.id).length === 0, "safety net: a hang-up before anyone said anything saves nothing");
+    const a4 = mk({ intake: { pickup_address: "x" } }); T.voice_sessions.push(a4); T.voice_callbacks.push({ id: "cbx" + sn, org_id: a4.org_id, session_id: a4.id, phone: a4.from_number, reason: "she made one" }); await vt({ action: "end", session_id: a4.id, reason: "caller_hangup", seconds: 30 }); ok(T.voice_callbacks.filter(c => c.session_id === a4.id).length === 1, "safety net: she already took a callback, so no second one");
+    const a5 = mk({ intake: { pickup_address: "x" } }); T.voice_sessions.push(a5); await vt({ action: "end", session_id: a5.id, reason: "pay_handoff", seconds: 30 }); ok(T.voice_callbacks.filter(c => c.session_id === a5.id).length === 0, "safety net: a keypad handoff is not an unfinished call");
+    ok(/SAVE EVERY DETAIL THE MOMENT IT IS SAID/.test(require("../netlify/functions/lib/voice/prompt.js").build({ agent_name: "Elevate" }, { name: "POTENT Logistics", slug: "potent-logistics" })), "prompt: save every detail the moment it is said"); }
   console.log("PASS: " + n + " assertions");
 })().catch(e => { console.error(e); process.exit(1); });
 

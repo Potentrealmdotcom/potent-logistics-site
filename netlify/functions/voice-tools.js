@@ -24,12 +24,36 @@ function summarize(ses) {
   bits.push("outcome: " + (ses.outcome || "information only"));
   return bits.join(". ").slice(0, 900);
 }
+// SAFETY NET: a call that ends holding something from the caller but no booking, callback or handoff must never vanish.
+// Whatever she said she would do ("someone will follow up"), the site makes it true: a callback on the caller-id number plus what we have, and the owner is emailed.
+async function unfinishedNet(ses, reason) {
+  try {
+    if (!ses || ses.test_mode || ["pay_handoff", "ended_abuse"].indexOf(String(reason || "")) >= 0 || ses.outcome === "ended_abuse") return false;
+    const sid = ses.id, fresh = rows(await B.sb("voice_sessions?id=eq." + sid + "&select=intake,outcome,from_number,end_reason&limit=1"))[0] || ses, i = fresh.intake || {};
+    if (["booked", "callback", "handoff", "ended_abuse"].indexOf(fresh.outcome) >= 0) return false;
+    const n = async function (q) { return rows(await B.sb(q + "&select=id&limit=1")).length; };
+    if (await n("voice_bookings?session_id=eq." + sid) || await n("voice_callbacks?session_id=eq." + sid) || await n("voice_handoffs?session_id=eq." + sid)) return false;
+    const say = rows(await B.sb("voice_transcripts?session_id=eq." + sid + "&role=eq.caller&select=text&order=seq.desc&limit=4")).map(function (x) { return String(x.text || "").trim(); }).filter(Boolean).reverse();
+    const keys = ["pickup_address", "delivery_address", "service_date", "time_window", "freight_description", "piece_count", "total_weight_lb", "company", "email"];
+    const got = keys.filter(function (k) { return i[k] !== undefined && i[k] !== null && i[k] !== "" && i[k] !== false; });
+    if (!got.length && !say.length) return false;                                  // hung up before saying anything: nothing to follow up
+    const phone = fresh.from_number || ses.from_number || null, who = i.customer_name || null;
+    const have = [i.pickup_address && "pickup " + i.pickup_address, i.delivery_address && "drop-off " + i.delivery_address, i.service_date && "date " + i.service_date + (i.time_window ? " " + i.time_window : ""), i.piece_count && i.piece_count + " pieces", i.total_weight_lb && i.total_weight_lb + " lb", i.freight_description].filter(Boolean);
+    const need = ["pickup_address", "delivery_address", "service_date", "freight_description", "piece_count", "total_weight_lb"].filter(function (k) { return !i[k]; }).map(function (k) { return k.replace(/_/g, " "); });
+    const line = "AUTO-SAVED: call ended before booking. " + (have.length ? "Has: " + have.join("; ") + ". " : "") + (!have.length && say.length ? "Caller said: \"" + say[say.length - 1].slice(0, 120) + "\". " : "");
+    await B.sb("voice_callbacks", { method: "POST", prefer: "return=minimal", body: { org_id: ses.org_id, session_id: sid, name: who ? String(who).slice(0, 80) : null, phone: phone, reason: line.slice(0, 300) } });
+    await S.patchSession(ses.org_id, sid, { outcome: "callback" });
+    await T.notifyOwner(ses.org_id, "Unfinished call saved: " + (who || phone || "caller"), "A caller hung up before the booking was finished, so a callback was saved automatically.\n\nCaller: " + (who || "name not given") + (phone ? "  " + phone : "") + "\n" + (have.length ? "Details we have: " + have.join("; ") + "\n" : "") + (need.length ? "Still missing: " + need.join(", ") + "\n" : "") + (say.length ? "Last things they said: " + say.map(function (x) { return "\"" + x.slice(0, 140) + "\""; }).join(" / ") + "\n" : "") + "\nCall back to finish it. Session " + sid + ".");
+    return true;
+  } catch (e) { console.error("unfinishedNet", e && e.message); return false; }
+}
 async function finish(ses, reason, seconds) {
   if (["ended", "failed", "rejected"].indexOf(ses.state) >= 0 && ses.ended_at) { if (ses.seconds == null && seconds) await V.recordUsage(ses.org_id, ses.id, seconds, ses.direction === "outbound" ? "outbound" : "call", ses.started_at); return { ok: true, already: true }; }
   const secs = seconds != null ? Math.max(0, Math.floor(seconds)) : Math.max(0, Math.round((Date.now() - new Date(ses.answered_at || ses.started_at).getTime()) / 1000));
   await S.patchSession(ses.org_id, ses.id, { state: "ended", ended_at: new Date().toISOString(), seconds: secs, end_reason: String(reason || "hangup").slice(0, 60), summary: summarize(ses), outcome: ses.outcome || "info_only" });
   if (secs > 0) await V.recordUsage(ses.org_id, ses.id, secs, ses.direction === "outbound" ? "outbound" : "call", ses.started_at);
-  return { ok: true, seconds: secs };
+  const saved = ses.direction === "outbound" ? false : await unfinishedNet(ses, reason);
+  return { ok: true, seconds: secs, auto_callback: saved || undefined };
 }
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return B.J(405, { error: "POST only" });

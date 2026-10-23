@@ -136,5 +136,10 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
     // ---- a second stream of the same call (after the keypad) must not reuse the first stream's transcript/tool keys
   { const k = []; for (let i = 0; i < 2; i++) { const q = rig(); q.start(); await sleep(40); q.ready(); await sleep(10); q.ai(sc({ inputTranscription: { text: "hola" } })); q.ai(sc({ turnComplete: true })); await sleep(30); q.phone({ event: "stop" }); await sleep(60); k.push((q.calls.find(c => c.action === "transcript" && c.role === "caller") || {}).key); await sleep(5); }
     ok(k[0] && k[1] && k[0] !== k[1], "second stream of the same call gets different transcript keys (post-payment lines were being dropped as duplicates)"); }
+  // ---- a quiet caller: varied check-ins, never a forced restart of the AI link
+  { const q = rig({ env: { VOICE_SILENCE_MS: "100" } }); q.start(); await sleep(40); q.ready(); q.ai(audio(240)); q.ai(sc({ turnComplete: true })); const link = q.aiSock; await sleep(5600);
+    const notes = q.aiSock.sent.filter(m => m.clientContent).map(m => JSON.stringify(m)).filter(t => /Still quiet|It has been quiet/.test(t));
+    ok(q.aiSock === link && notes.length >= 4 && new Set(notes).size === notes.length, "quiet caller: several different check-ins, and the AI link is never rebuilt by the idle watchdog");
+    ok(notes.some(t => /create_callback_task/.test(t)), "quiet caller: by the fourth check-in she saves a callback"); q.phone({ event: "stop" }); await sleep(20); }
 console.log("PASS: " + n + " assertions"); process.exit(0);
 })().catch(e => { console.error(e); process.exit(1); });
