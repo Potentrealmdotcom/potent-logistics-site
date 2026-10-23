@@ -24,13 +24,15 @@ function createBridge(deps) {
     const twSend = function (o) { if (tw.readyState === 1) tw.send(JSON.stringify(o)); };
     const aiSend = function (o) { if (o && ai && ai.readyState === 1) ai.send(JSON.stringify(o)); };
     const kinds = {};   // what the AI link produced this call (audio, caller_text, agent_text, tool...), reported when the call ends
-    const note = function (role, text, key) { if (ctx && text) api({ action: "transcript", session_id: ctx.session_id, role: role, text: text, key: key }, 8000); };
+    // keys restart at 1 on every stream; after a keypad payment the SECOND stream of the same call reused them and the server dropped every line as a duplicate
+    const nonce = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36), nk = function (k) { return k ? nonce + ":" + k : k; };
+    const note = function (role, text, key) { if (ctx && text) api({ action: "transcript", session_id: ctx.session_id, role: role, text: text, key: nk(key) }, 8000); };
     const sysNote = function (text) { aiSend(prov.note(text)); };
 
     async function finish(reason, closeTwilio) {
       if (done) return; done = true; timers.forEach(clearTimeout); if (flushTimer) clearInterval(flushTimer); if (langTimer) clearInterval(langTimer); if (wdTimer) clearInterval(wdTimer);
       const secs = Math.round((Date.now() - startedAt) / 1000);
-      if (ctx && prov && prov.flush) await Promise.all(prov.flush().map(function (e) { return api({ action: "transcript", session_id: ctx.session_id, role: e.kind === "caller_text" ? "caller" : "agent", text: e.text, key: e.key }, 6000); }));   // keep what was said even if the call ended mid-sentence
+      if (ctx && prov && prov.flush) await Promise.all(prov.flush().map(function (e) { return api({ action: "transcript", session_id: ctx.session_id, role: e.kind === "caller_text" ? "caller" : "agent", text: e.text, key: nk(e.key) }, 6000); }));   // keep what was said even if the call ended mid-sentence
       if (ctx) {   // proof for the graders: did the AI produce transcripts, and which message types did it send
         const d = prov && prov.diag ? prov.diag() : {}, got = (kinds.caller_text || 0) + (kinds.agent_text || 0);
         await api({ action: "health", provider: "bridge", kind: got || secs < 15 ? "call_summary" : "no_transcripts", ok: !!got || secs < 15, detail: JSON.stringify({ secs: secs, adapter: (prov && prov.version) || "old", ev: kinds, ago: { agent: lastAgentAt ? Math.round((Date.now() - lastAgentAt) / 1000) : null, caller: lastCallerAt ? Math.round((Date.now() - lastCallerAt) / 1000) : null, tool: toolDoneAt ? Math.round((Date.now() - toolDoneAt) / 1000) : null }, toolBusy: toolBusy, lang: lang, gemini: d }).slice(0, 1800) }, 5000);
@@ -114,7 +116,7 @@ function createBridge(deps) {
 
     async function runTool(m) {
       let result; toolBusy++;
-      const r = await api({ action: "tool", session_id: ctx.session_id, name: m.name, args: m.args, call_key: m.id }, 15000);
+      const r = await api({ action: "tool", session_id: ctx.session_id, name: m.name, args: m.args, call_key: nk(m.id) }, 15000);
       result = (r.data && r.data.result) || { ok: false, error: "tool_unreachable", say: "The system did not answer. Offer a callback; do not guess." };
       if (m.name === "request_human_handoff" && result.transfer_possible) { transferPending = true; spokeSinceTool = false; toolAt = Date.now(); timer(function () { if (transferPending) { transferPending = false; doTransfer(); } }, 20000); }
       if (m.name === "end_call" && result.ok && result.end_call) { agentEnd = true; doEnd(); }   // abuse after a warning: let her say goodbye, then hang up
@@ -135,7 +137,7 @@ function createBridge(deps) {
         sysNote(closeNudges === 1 ? "The booking is done and the caller is quiet. Ask warmly: \"Is there anything else I can help you with?\"" : "The caller is still quiet. Thank them by name, give the job reference, and say a warm goodbye.");
         return;
       }
-      if (!owed && !noGreeting && !closingAt && readyAt && lastAgentAt && now - lastAgentAt > th * 3 && now - Math.max(lastCallerAt, 0) > th * 3 && now - Math.max(idleAt, 0) > th * 3) { // dead-air backstop: whatever the cause, nobody has spoken for ~12s, so she checks in
+      if (!owed && !noGreeting && !closingAt && (!markQ.length || now - lastAgentAt > th * 8) && readyAt && lastAgentAt && now - lastAgentAt > th * 3 && now - Math.max(lastCallerAt, 0) > th * 3 && now - Math.max(idleAt, 0) > th * 3) { // dead-air backstop: whatever the cause, nobody has spoken for ~12s, so she checks in
         idleAt = now; kinds.idle_checkin = (kinds.idle_checkin || 0) + 1; api({ action: "health", provider: "bridge", kind: "silence_nudge", ok: false, detail: ("idle " + Math.round((now - lastAgentAt) / 1000) + "s").slice(0, 120) }, 4000);
         if (kinds.idle_checkin % 3 === 0) aiDown("silence_watchdog", "idle for " + Math.round((now - lastAgentAt) / 1000) + "s"); else if (kinds.idle_checkin % 2 === 1) sysNote("It has been quiet. Say warmly: \"Are you still there? Take your time. If you do not have that handy, we can go ahead without it.\""); else aiSend(prov.say("I'm still right here with you. If it is easier, I can take this down without that and have someone follow up."));
         return;

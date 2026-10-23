@@ -38,12 +38,12 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
   const before = r.tw.sent.length; r.ai(sc({ interrupted: true })); ok(r.tw.sent.length === before, "interrupt with nothing playing does nothing");
   // transcripts
   r.ai(sc({ inputTranscription: { text: "I need " } })); r.ai(sc({ inputTranscription: { text: "a truck" } })); r.ai(sc({ outputTranscription: { text: "Sure" } })); await sleep(10);
-  ok(r.calls.some(c => c.action === "transcript" && c.role === "caller" && c.text === "I need a truck" && /^c:/.test(c.key)), "what the caller said is recorded (joined)");
+  ok(r.calls.some(c => c.action === "transcript" && c.role === "caller" && c.text === "I need a truck" && /^[a-z0-9]+:c:/.test(c.key)), "what the caller said is recorded (joined)");
   r.ai(sc({ outputTranscription: { text: ", where to?" } })); r.ai(sc({ turnComplete: true })); await sleep(10);
   ok(r.calls.some(c => c.action === "transcript" && c.role === "agent" && c.text === "Sure, where to?"), "what the assistant said is recorded at the end of its turn");
   // tool relay
   r.ai({ toolCall: { functionCalls: [{ id: "call_1", name: "lookup_customer", args: { a: 1 } }] } }); await sleep(20);
-  ok(r.calls.some(c => c.action === "tool" && c.name === "lookup_customer" && c.call_key === "call_1" && c.args.a === 1) && r.aiSock.sent.some(m => m.toolResponse && m.toolResponse.functionResponses[0].id === "call_1"), "tool call forwarded with the provider call id; result returned to the AI");
+  ok(r.calls.some(c => c.action === "tool" && c.name === "lookup_customer" && /^[a-z0-9]+:call_1$/.test(c.call_key) && c.args.a === 1) && r.aiSock.sent.some(m => m.toolResponse && m.toolResponse.functionResponses[0].id === "call_1"), "tool call forwarded with the provider call id; result returned to the AI");
   // hangup
   r.phone({ event: "stop" }); await sleep(20); const en = r.calls.filter(c => c.action === "end"); ok(en.length === 1 && en[0].reason === "caller_hangup" && r.aiSock.readyState === 3, "caller hangs up: call ended once, AI closed"); r.tw.close(); await sleep(10); ok(r.calls.filter(c => c.action === "end").length === 1, "a late socket close does not end it twice");
   // transfer ok
@@ -133,5 +133,8 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
   r.ai({ toolCall: { functionCalls: [{ id: "bye1", name: "send_approved_confirmation", args: {} }] } }); await sleep(30); r.ai(audio(240)); r.ai({ serverContent: { outputTranscription: { text: "Thank you, Anthony. Have a great day! Goodbye!" } } }); r.ai(sc({ turnComplete: true })); await sleep(1500);
   ok(!JSON.stringify(r.aiSock.sent).includes("Is there anything else I can help you with?"), "after she has said goodbye, no stray 'anything else' nudge");
   r.phone({ event: "stop" }); await sleep(20);
-  console.log("PASS: " + n + " assertions"); process.exit(0);
+    // ---- a second stream of the same call (after the keypad) must not reuse the first stream's transcript/tool keys
+  { const k = []; for (let i = 0; i < 2; i++) { const q = rig(); q.start(); await sleep(40); q.ready(); await sleep(10); q.ai(sc({ inputTranscription: { text: "hola" } })); q.ai(sc({ turnComplete: true })); await sleep(30); q.phone({ event: "stop" }); await sleep(60); k.push((q.calls.find(c => c.action === "transcript" && c.role === "caller") || {}).key); await sleep(5); }
+    ok(k[0] && k[1] && k[0] !== k[1], "second stream of the same call gets different transcript keys (post-payment lines were being dropped as duplicates)"); }
+console.log("PASS: " + n + " assertions"); process.exit(0);
 })().catch(e => { console.error(e); process.exit(1); });

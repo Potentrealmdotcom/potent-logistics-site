@@ -5,6 +5,30 @@ const S = require("./store"), I = require("./intake"), R = require("./rules"), P
 const rows = S.rows;
 const PLAYBOOK = require("./playbook.js");
 const CALL_LANGS = { en: "English", es: "Spanish", pt: "Portuguese", kk: "Kazakh", ru: "Russian", fr: "French", zh: "Chinese (Mandarin)", ko: "Korean", vi: "Vietnamese", ar: "Arabic", hi: "Hindi", ht: "Haitian Creole", pl: "Polish", de: "German" };
+// The speech engine sometimes turns a stray English syllable into a foreign word ("Ja.", "bien", "anhelo"). Switching the whole call's language on that is how an English call ended in Spanish.
+// Switch only on real evidence in what the caller said: an explicit request, two or more words of that language, or that language's own script.
+const LANG_WORDS = {
+  es: /\b(hola|gracias|buenos|buenas|necesito|quiero|por favor|habla|espa[nñ]ol|c[oó]mo|est[aá]|qu[eé]|cu[aá]nto|d[oó]nde|tengo|puedo|ayuda|camión|entrega|ma[nñ]ana|no hablo|usted|bueno|claro|muy bien)\b/gi,
+  pt: /\b(ol[aá]|obrigad[oa]|preciso|quero|por favor|voc[eê]|n[aã]o|bom dia|boa tarde|portugu[eê]s|quanto|onde)\b/gi,
+  fr: /\b(bonjour|merci|besoin|je voudrais|s'il vous pla[iî]t|fran[cç]ais|combien|o[uù]|oui|pouvez)\b/gi,
+  de: /\b(hallo|danke|bitte|ich brauche|ich m[oö]chte|deutsch|wie viel|guten tag|nicht)\b/gi,
+  pl: /\b(dzie[nń] dobry|dzi[eę]kuj[eę]|prosz[eę]|potrzebuj[eę]|polsku|ile|gdzie)\b/gi,
+  vi: /\b(xin ch[aà]o|c[aả]m [oơ]n|t[oô]i c[aầ]n|ti[eế]ng vi[eệ]t|bao nhi[eê]u)\b/gi,
+  ht: /\b(bonjou|mesi|tanpri|mwen bezwen|kreyòl|kreyol|konbyen)\b/gi
+};
+const LANG_SCRIPT = { ru: /[\u0400-\u04FF]/, kk: /[\u0400-\u04FF]/, ko: /[\uAC00-\uD7AF]/, zh: /[\u4E00-\u9FFF]/, ar: /[\u0600-\u06FF]/, hi: /[\u0900-\u097F]/ };
+const ASKED = /\b(speak|talk|habla|hablas|parle|spreche|falas?|говор\w*)\b[^.?!]{0,30}\b(spanish|espa[nñ]ol|portuguese|french|german|polish|vietnamese|russian|kazakh|korean|chinese|mandarin|arabic|hindi|creole)\b|\bin (spanish|portuguese|french|german|polish|vietnamese|russian|kazakh|korean|chinese|arabic|hindi|creole)\b|\b(no|don'?t) (speak|hablo) english\b|\bno hablo ingl[eé]s\b/i;
+const ENGLISH = /\b(the|and|you|need|get|some|boxes?|pick|deliver|from|please|yes|yeah|okay|thanks|thank|what|where|how|can|do|don'?t|i|we|my|is|it|that|this|to|for|with|about)\b/i;
+async function languageEvidence(ctx, code) {
+  const t = rows(await B.sb("voice_transcripts?session_id=eq." + ctx.session.id + "&role=eq.caller&select=text&order=seq.desc&limit=4")).map(function (x) { return String(x.text || ""); });
+  if (!t.length) return { ok: true, why: "no_lines" };            // nothing to judge by: do not block a real switch
+  const all = t.join(" . ");
+  if (ASKED.test(all)) return { ok: true, why: "asked" };
+  if (LANG_SCRIPT[code] && LANG_SCRIPT[code].test(all)) return { ok: true, why: "script" };
+  const hits = LANG_WORDS[code] ? (all.match(LANG_WORDS[code]) || []).length : 0;
+  if (hits >= 2) return { ok: true, why: "words" };
+  return { ok: !t.some(function (x) { return ENGLISH.test(x); }), why: hits ? "one_word" : "english" };
+}
 const FEATURE = { lookup_customer: "inbound", create_or_update_lead: "inbound", get_approved_service_information: "inbound", collect_shipment_details: "quotes", validate_shipment_eligibility: "quotes", calculate_quote: "quotes", quote_special_service: "quotes", check_live_availability: "booking",
   set_call_language: "inbound", get_playbook: "inbound", lookup_os_feature: "inbound", create_pending_booking: "booking", confirm_eligible_booking: "booking", end_call: "inbound", send_payment_link: "notifications", take_card_payment: "notifications", create_callback_task: "callbacks", book_demo: "callbacks", request_human_handoff: "handoff", send_approved_confirmation: "notifications", look_up_booking_status: "booking", request_reschedule: "booking", request_cancellation: "booking" };
 const CRITICAL = ["pickup_address", "delivery_address", "service_date", "time_window", "service_level", "total_weight_lb", "piece_count", "pieces", "total_dims", "pickup_dock", "delivery_dock", "needs_liftgate", "needs_pallet_jack", "forklift_pickup", "forklift_delivery", "site_has_pallet_jack", "inside_delivery", "hazmat", "special_handling", "extra_stops", "labor_helpers", "labor_hours", "holding_nights", "expected_wait_minutes", "freight_description"];
@@ -129,7 +153,8 @@ const TOOLS = {
     if (changed || Object.keys(inc).some(function (k) { return CRITICAL.indexOf(k) >= 0; })) await invalidate(ctx, intake);
     await setIntake(ctx, intake);
     const v = I.validate(intake);
-    return { ok: true, complete: v.ok, missing: v.missing, problems: v.problems, reset: changed ? "Details changed, so earlier checks and any quote were cleared. Re-run validation and quote." : undefined };
+    const l4 = a && a.use_caller_id === true && intake.callback_phone ? String(intake.callback_phone).replace(/\D/g, "").slice(-4) : undefined;
+    return { ok: true, complete: v.ok, missing: v.missing, problems: v.problems, number_ends_in: l4, say: l4 ? "Read it back now in one short phrase, digit by digit: the number ending in " + l4.split("").join(" ") + ". Then move on." : undefined, reset: changed ? "Details changed, so earlier checks and any quote were cleared. Re-run validation and quote." : undefined };
   },
   async validate_shipment_eligibility(ctx) {
     const intake = Object.assign({}, ctx.session.intake || {}), v = I.validate(intake);
@@ -246,6 +271,7 @@ const TOOLS = {
   async get_playbook(ctx, a) { return PLAYBOOK.get(a && a.topic); },
   async set_call_language(ctx, a) {
     const code = String(a.language || "").toLowerCase().slice(0, 5), name = CALL_LANGS[code]; if (!name) return { ok: false, error: "unsupported_language", say: "Say politely in English that you cannot continue in that language and offer a callback (create_callback_task)." };
+    if (code !== "en") { const ev = await languageEvidence(ctx, code); if (!ev.ok) return { ok: false, error: "language_unconfirmed", say: "Do NOT switch. The caller has been speaking English; a stray sound was misheard. Stay in English. If you are truly unsure, ask once in English: 'Would you prefer English or another language?' and switch only if they ask for it." }; }
     const intake = Object.assign({}, ctx.session.intake || {}); intake._lang = code; await setIntake(ctx, intake);
     return { ok: true, language_locked: code, language_name: name, say: "From now on speak ONLY " + name + " for the rest of this call, including questions, read-backs and goodbye. Do not switch to any other language unless the caller clearly switches. Keep prices, dates and addresses exactly as given." };
   },

@@ -356,6 +356,14 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
     const l2 = await run(lx, "lookup_os_feature", { query: "quantum teleportation dispatch" }); ok(l2.ok && l2.found === false && /Do not guess/.test(l2.say), "lookup with no match says to confirm, never guesses");
     const tx = newSes(OB); const l3 = await run(tx, "lookup_os_feature", { query: "offline" }); ok(l3.error === "not_available", "tenant companies get no deep POTENT lookup");
     const P3 = require("../netlify/functions/lib/voice/prompt.js"); ok(/lookup_os_feature/.test(P3.build({ agent_name: "Elevate" }, { name: "POTENT Logistics", slug: "potent-logistics" })) && !/lookup_os_feature/.test(P3.build({ agent_name: "Elevate" }, { name: "Bravo Haul", slug: "bravo" })), "prompt mentions the lookup for POTENT only"); }
+  // ---- language drift (Oct 23 call 3): a stray misheard word on an English call must not lock the call into Spanish
+  { const say = async (ss, txt) => { T.voice_transcripts.push({ id: "tx" + (++sn), org_id: ss.org_id, session_id: ss.id, seq: T.voice_transcripts.length + 1000, role: "caller", text: txt, created_at: new Date().toISOString() }); };
+    const e1 = newSes(); await say(e1, "Yes."); await say(e1, "Ja."); await say(e1, "bien"); const g1 = await run(e1, "set_call_language", { language: "es" });
+    ok(g1.ok === false && g1.error === "language_unconfirmed" && !(e1.intake || {})._lang, "one or two stray foreign words after English do not switch the call to Spanish");
+    const e2 = newSes(); await say(e2, "Hola, necesito un camión por favor"); const g2 = await run(e2, "set_call_language", { language: "es" }); ok(g2.ok && g2.language_locked === "es", "a caller who really speaks Spanish still gets Spanish");
+    const e3 = newSes(); await say(e3, "I need a truck"); await say(e3, "Can you speak Spanish?"); const g3 = await run(e3, "set_call_language", { language: "es" }); ok(g3.ok, "an explicit request for Spanish is honored");
+    const e4 = newSes(); await say(e4, "Привет, мне нужен грузовик"); const g4 = await run(e4, "set_call_language", { language: "ru" }); ok(g4.ok, "a caller speaking another script gets that language"); }
+  { const c4 = newSes(); const r4 = await run(c4, "collect_shipment_details", { customer_name: "Anthony", use_caller_id: true }); ok(r4.number_ends_in === "0142" && /0 1 4 2/.test(r4.say), "caller-id yes: the tool hands her the last four so she reads them back"); }
   console.log("PASS: " + n + " assertions");
 })().catch(e => { console.error(e); process.exit(1); });
 
