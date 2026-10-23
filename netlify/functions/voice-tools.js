@@ -24,6 +24,16 @@ function summarize(ses) {
   bits.push("outcome: " + (ses.outcome || "information only"));
   return bits.join(". ").slice(0, 900);
 }
+// A returning customer: the number matches a saved customer or a confirmed booking on this line. Only the first name is used (warmth), never any job detail: caller ID is not proof of identity.
+async function knownCaller(ses) {
+  try {
+    const want = String(ses.from_number || "").replace(/\D/g, "").slice(-10); if (want.length < 10) return null;
+    const hit = rows(await B.sb("customers?org_id=eq." + ses.org_id + "&select=name,phone&limit=500")).find(function (x) { return String(x.phone || "").replace(/\D/g, "").slice(-10) === want; })
+      || rows(await B.sb("voice_bookings?org_id=eq." + ses.org_id + "&status=eq.confirmed&customer_phone=like.*" + want + "&select=customer_name&limit=1"))[0];
+    const nm = hit && String(hit.name || hit.customer_name || "").trim().split(/\s+/)[0];
+    return nm ? { first: nm.slice(0, 24) } : null;
+  } catch (e) { return null; }
+}
 // SAFETY NET: a call that ends holding something from the caller but no booking, callback or handoff must never vanish.
 // Whatever she said she would do ("someone will follow up"), the site makes it true: a callback on the caller-id number plus what we have, and the owner is emailed.
 async function unfinishedNet(ses, reason) {
@@ -40,7 +50,13 @@ async function unfinishedNet(ses, reason) {
     const phone = fresh.from_number || ses.from_number || null, who = i.customer_name || null;
     const have = [i.pickup_address && "pickup " + i.pickup_address, i.delivery_address && "drop-off " + i.delivery_address, i.service_date && "date " + i.service_date + (i.time_window ? " " + i.time_window : ""), i.piece_count && i.piece_count + " pieces", i.total_weight_lb && i.total_weight_lb + " lb", i.freight_description].filter(Boolean);
     const need = ["pickup_address", "delivery_address", "service_date", "freight_description", "piece_count", "total_weight_lb"].filter(function (k) { return !i[k]; }).map(function (k) { return k.replace(/_/g, " "); });
-    const line = "AUTO-SAVED: call ended before booking. " + (have.length ? "Has: " + have.join("; ") + ". " : "") + (!have.length && say.length ? "Caller said: \"" + say[say.length - 1].slice(0, 120) + "\". " : "");
+    const blocked = i._elig && i._elig.status === "blocked", declined = /\b(neither|no,? thanks?|no thank you|not interested|nope)\b/i.test(say[say.length - 1] || "");
+    if (blocked && declined) {   // we could not take it and they said no to a follow-up: do not make a callback they refused; the owner still hears about the lost job
+      await S.patchSession(ses.org_id, sid, { outcome: "declined" });
+      await T.notifyOwner(ses.org_id, "Job we could not take: " + (who || phone || "caller"), "A caller asked for a job we cannot take as described (" + (i._elig.blocks || []).map(function (b) { return b.text; }).join("; ") + ") and declined a follow-up.\n\nCaller: " + (who || "name not given") + (phone ? "  " + phone : "") + "\n" + (have.length ? "Details: " + have.join("; ") + "\n" : "") + "Nothing was saved for follow-up because they said no. Session " + sid + ".");
+      return false;
+    }
+    const line = (blocked ? "AUTO-SAVED LEAD (we could not take it: " + (i._elig.blocks || []).map(function (b) { return b.text; }).join("; ").slice(0, 80) + "). " : "AUTO-SAVED: call ended before booking. ") + (have.length ? "Has: " + have.join("; ") + ". " : "") + (!have.length && say.length ? "Caller said: \"" + say[say.length - 1].slice(0, 120) + "\". " : "");
     await B.sb("voice_callbacks", { method: "POST", prefer: "return=minimal", body: { org_id: ses.org_id, session_id: sid, name: who ? String(who).slice(0, 80) : null, phone: phone, reason: line.slice(0, 300) } });
     await S.patchSession(ses.org_id, sid, { outcome: "callback" });
     await T.notifyOwner(ses.org_id, "Unfinished call saved: " + (who || phone || "caller"), "A caller hung up before the booking was finished, so a callback was saved automatically.\n\nCaller: " + (who || "name not given") + (phone ? "  " + phone : "") + "\n" + (have.length ? "Details we have: " + have.join("; ") + "\n" : "") + (need.length ? "Still missing: " + need.join(", ") + "\n" : "") + (say.length ? "Last things they said: " + say.map(function (x) { return "\"" + x.slice(0, 140) + "\""; }).join(" / ") + "\n" : "") + "\nCall back to finish it. Session " + sid + ".");
@@ -84,7 +100,7 @@ exports.handler = async function (event) {
         const tr = rows(await B.sb("voice_transcripts?session_id=eq." + ses.id + "&role=in.(caller,agent)&select=role,text,seq&order=seq.desc&limit=24")).reverse();
         resume = { code: String(tok.r).slice(0, 80), recap: tr.map(function (t) { return (t.role === "caller" ? "Caller: " : "You: ") + t.text; }).join("\n").slice(0, 3000) };
       }
-      return B.J(200, { resume: resume, session_id: ses.id, org_id: ses.org_id, call_sid: ses.provider_call_id, instructions: P.build(cfg, org), greeting: P.greeting(cfg, org, ses.from_number), voice: cfg.voice || "marin", tools: allowed, max_seconds: cap, recording: rec });
+      return B.J(200, { resume: resume, session_id: ses.id, org_id: ses.org_id, call_sid: ses.provider_call_id, instructions: P.build(cfg, org, await knownCaller(ses)), greeting: P.greeting(cfg, org, ses.from_number), voice: cfg.voice || "marin", tools: allowed, max_seconds: cap, recording: rec });
     }
     const ses = await sessionById(b.session_id); if (!ses) return B.J(404, { error: "No such call" });
     if (act === "tool") {

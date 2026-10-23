@@ -153,8 +153,13 @@ const TOOLS = {
     if (changed || Object.keys(inc).some(function (k) { return CRITICAL.indexOf(k) >= 0; })) await invalidate(ctx, intake);
     await setIntake(ctx, intake);
     const v = I.validate(intake);
+    let heavy;
+    if (inc.total_weight_lb !== undefined && Number(intake.total_weight_lb) > 0) {   // flag an overweight load the moment the weight is said, so she does not keep collecting details for a job we cannot take
+      const pr = rows(await B.sb("voice_vehicle_profiles?org_id=eq." + ctx.orgId + "&active=eq.true&authorized=eq.true&select=max_payload_lb&limit=20")).map(function (x) { return Number(x.max_payload_lb) || 0; }), cap = pr.length ? Math.max.apply(null, pr) : 0;
+      if (cap && Number(intake.total_weight_lb) > cap) heavy = "That weight is over our limit of " + cap + " pounds. Do not keep collecting dimensions. Follow the REFUSAL PATH now: kindly say so and name the limit, offer the other ways POTENT can help, and ask to add them to the follow-up list.";
+    }
     const l4 = a && a.use_caller_id === true && intake.callback_phone ? String(intake.callback_phone).replace(/\D/g, "").slice(-4) : undefined;
-    return { ok: true, complete: v.ok, missing: v.missing, problems: v.problems, number_ends_in: l4, say: l4 ? "Read it back now in one short phrase, digit by digit: the number ending in " + l4.split("").join(" ") + ". Then move on." : undefined, reset: changed ? "Details changed, so earlier checks and any quote were cleared. Re-run validation and quote." : undefined };
+    return { ok: true, complete: v.ok, missing: v.missing, problems: v.problems, number_ends_in: l4, say: heavy || (l4 ? "Read it back now in one short phrase, digit by digit: the number ending in " + l4.split("").join(" ") + ". Then move on." : undefined), reset: changed ? "Details changed, so earlier checks and any quote were cleared. Re-run validation and quote." : undefined };
   },
   async validate_shipment_eligibility(ctx) {
     const intake = Object.assign({}, ctx.session.intake || {}), v = I.validate(intake);
@@ -173,7 +178,7 @@ const TOOLS = {
     d.pickup_state = geo.pickup.state || d.pickup_state; d.delivery_state = geo.delivery.state || d.delivery_state;
     const e = R.evaluate(d, prof); intake._elig = { status: e.status, blocks: e.blocks, reviews: e.reviews, profile_id: prof.id, checked_at: new Date().toISOString() };
     await setIntake(ctx, intake);
-    return { ok: true, status: e.status, reasons: e.blocks.concat(e.reviews).map(function (x) { return x.text; }), say: e.status === "blocked" ? "We cannot take this shipment as described. Explain the reason plainly and offer a person or callback." : e.status === "review" ? "A person must review this. Offer a callback or transfer. Do not quote." : "Eligible. You may calculate the quote." };
+    return { ok: true, status: e.status, reasons: e.blocks.concat(e.reviews).map(function (x) { return x.text; }), say: e.status === "blocked" ? "We cannot take this shipment as described. Follow the REFUSAL PATH: thank them for calling, explain the reason kindly and name the limit, offer the other ways POTENT can help, and ask to add them to the follow-up list. Never end on the refusal or a bare goodbye." : e.status === "review" ? "A person must review this. Offer a callback or transfer. Do not quote." : "Eligible. You may calculate the quote." };
   },
   async calculate_quote(ctx) {
     const intake = Object.assign({}, ctx.session.intake || {}), el = intake._elig;
