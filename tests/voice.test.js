@@ -34,7 +34,7 @@ const say = (s, who, text) => S.transcript(s.org_id, s.id, who, text);
 async function toQuote(s, over) { await run(s, "collect_shipment_details", full(over)); const el = await run(s, "validate_shipment_eligibility"); if (el.status !== "eligible") return { el }; const q = await run(s, "calculate_quote"); return { el, q }; }
 (async () => {
   // ── tool list / injection surface ──
-  const defs = TL.defs(); ok(defs.length === 21 && defs.every(d => d.type === "function" && d.parameters), "all 21 required tools are defined");
+  const defs = TL.defs(); ok(defs.length === 22 && defs.every(d => d.type === "function" && d.parameters), "all 22 required tools are defined");
   ok(!JSON.stringify(defs.map(d=>Object.keys((d.parameters&&d.parameters.properties)||{}))).match(/discount|override|price|org_id|session_id|caller_confirmed|authorized_by/i), "no tool lets the model set a price, discount, company, session or its own confirmation");
   // ── 1. successful call ──
   let s = newSes(); let r = await run(s, "lookup_customer"); ok(r.ok && r.known === false, "unknown caller");
@@ -163,7 +163,7 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
   const vt = async (b, auth) => { const r = await VT.handler({ httpMethod: "POST", headers: { authorization: auth === undefined ? "Bearer bridgesecret" : auth }, body: JSON.stringify(b) }); return { s: r.statusCode, j: JSON.parse(r.body) }; };
   ok((await vt({ action: "health" }, "Bearer wrong")).s === 401 && (await vt({ action: "health" }, "")).s === 401, "bridge endpoint needs the shared secret");
   const open = newSes({ provider_call_id: "CA7001", state: "ringing", answered_at: null }); const stok = TW.streamToken("bridgesecret", "CA7001", OA, Date.now() + 60000);
-  let c = await vt({ action: "context", token: stok }); ok(c.s === 200 && c.j.session_id === open.id && /AI/.test(c.j.instructions) && c.j.tools.length === 21 && c.j.max_seconds === 1800 && c.j.recording === false, "bridge gets instructions, the 17 tools, a 30-minute cap for Fleet, recording off");
+  let c = await vt({ action: "context", token: stok }); ok(c.s === 200 && c.j.session_id === open.id && /AI/.test(c.j.instructions) && c.j.tools.length === 22 && c.j.max_seconds === 1800 && c.j.recording === false, "bridge gets instructions, the 17 tools, a 30-minute cap for Fleet, recording off");
   ok(/not being recorded/.test(c.j.instructions) && !/may be recorded/.test(c.j.greeting), "the agent does not claim recording when it is off");
   ok((await vt({ action: "context", token: TW.streamToken("bridgesecret", "CA7001", OA, Date.now() - 1) })).s === 403 && (await vt({ action: "context", token: TW.streamToken("other", "CA7001", OA, Date.now() + 5000) })).s === 403, "expired or forged stream tokens refused");
   T.voice_agent_config[0].recording_enabled = true; T.voice_agent_config[0].recording_consent_confirmed = false; const o2 = newSes({ provider_call_id: "CA7002", state: "ringing" }); c = await vt({ action: "context", token: TW.streamToken("bridgesecret", "CA7002", OA, Date.now() + 60000) }); ok(c.j.recording === false, "recording stays off until consent is confirmed");
@@ -346,6 +346,16 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
     const P2 = require("../netlify/functions/lib/voice/prompt.js").build({ agent_name: "Elevate" }, { name: "POTENT Logistics", slug: "potent-logistics" });
     ok(/do I have to pay now/.test(P2) && /never answer that dispatch will send instructions/.test(P2) && /NEVER GUESS A MEASUREMENT/.test(P2), "prompt: pay-now question gets the 3 A's + callback, and no measurement is ever guessed");
     const gx = newSes({ intake: {} }); const ge = await runRaw(gx, "send_approved_confirmation", { booking_id: "00000000-0000-4000-8000-000000000000", channel: "email", email: "a@b.co", email_confirmed: true }); ok(ge.error === "read_back_required" ? ge.gate === "no_pending" : true, "gate bounce now says why (no_pending / pending_mismatch) so the next call shows the cause"); }
+  // ---- reference library (Oct 23): Master Inventory behind a POTENT-only lookup, Demo book flow as a playbook topic
+  { const inv = require("../netlify/functions/lib/voice/osinventory.json"), raw = JSON.stringify(inv), PB = require("../netlify/functions/lib/voice/playbook.js");
+    ok(inv.features.length >= 195 && inv.features.length <= 200 && inv.screens.length === 535, "inventory: 200 features (minus removed discount lines) and all 535 screens are in the library");
+    ok(!/POTENTADMIN/i.test(raw) && !/POTENTADMIN/i.test(JSON.stringify(PB.TOPICS)), "library never holds the demo password");
+    ok(!/Lowest Floor|Family\/Loyalty|Cash discount/i.test(raw), "removed discounts are not in the library");
+    const dc = PB.get("demo_closing"); ok(dc.ok !== false && /DEMO, then NUMBERS, then CLOSE, then PAYMENT/.test(JSON.stringify(dc)) && /STOP TALKING/.test(JSON.stringify(dc)) && !/14,500|69,500|109,500/.test(JSON.stringify(dc)), "demo_closing follows the Demo book flow with no stale prices");
+    const lx = newSes(); const l1 = await run(lx, "lookup_os_feature", { query: "does it work offline with no internet" }); ok(l1.ok && l1.found && /offline/i.test(JSON.stringify(l1.features)), "lookup finds offline mode");
+    const l2 = await run(lx, "lookup_os_feature", { query: "quantum teleportation dispatch" }); ok(l2.ok && l2.found === false && /Do not guess/.test(l2.say), "lookup with no match says to confirm, never guesses");
+    const tx = newSes(OB); const l3 = await run(tx, "lookup_os_feature", { query: "offline" }); ok(l3.error === "not_available", "tenant companies get no deep POTENT lookup");
+    const P3 = require("../netlify/functions/lib/voice/prompt.js"); ok(/lookup_os_feature/.test(P3.build({ agent_name: "Elevate" }, { name: "POTENT Logistics", slug: "potent-logistics" })) && !/lookup_os_feature/.test(P3.build({ agent_name: "Elevate" }, { name: "Bravo Haul", slug: "bravo" })), "prompt mentions the lookup for POTENT only"); }
   console.log("PASS: " + n + " assertions");
 })().catch(e => { console.error(e); process.exit(1); });
 

@@ -6,7 +6,7 @@ const rows = S.rows;
 const PLAYBOOK = require("./playbook.js");
 const CALL_LANGS = { en: "English", es: "Spanish", pt: "Portuguese", kk: "Kazakh", ru: "Russian", fr: "French", zh: "Chinese (Mandarin)", ko: "Korean", vi: "Vietnamese", ar: "Arabic", hi: "Hindi", ht: "Haitian Creole", pl: "Polish", de: "German" };
 const FEATURE = { lookup_customer: "inbound", create_or_update_lead: "inbound", get_approved_service_information: "inbound", collect_shipment_details: "quotes", validate_shipment_eligibility: "quotes", calculate_quote: "quotes", quote_special_service: "quotes", check_live_availability: "booking",
-  set_call_language: "inbound", get_playbook: "inbound", create_pending_booking: "booking", confirm_eligible_booking: "booking", end_call: "inbound", send_payment_link: "notifications", take_card_payment: "notifications", create_callback_task: "callbacks", book_demo: "callbacks", request_human_handoff: "handoff", send_approved_confirmation: "notifications", look_up_booking_status: "booking", request_reschedule: "booking", request_cancellation: "booking" };
+  set_call_language: "inbound", get_playbook: "inbound", lookup_os_feature: "inbound", create_pending_booking: "booking", confirm_eligible_booking: "booking", end_call: "inbound", send_payment_link: "notifications", take_card_payment: "notifications", create_callback_task: "callbacks", book_demo: "callbacks", request_human_handoff: "handoff", send_approved_confirmation: "notifications", look_up_booking_status: "booking", request_reschedule: "booking", request_cancellation: "booking" };
 const CRITICAL = ["pickup_address", "delivery_address", "service_date", "time_window", "service_level", "total_weight_lb", "piece_count", "pieces", "total_dims", "pickup_dock", "delivery_dock", "needs_liftgate", "needs_pallet_jack", "forklift_pickup", "forklift_delivery", "site_has_pallet_jack", "inside_delivery", "hazmat", "special_handling", "extra_stops", "labor_helpers", "labor_hours", "holding_nights", "expected_wait_minutes", "freight_description"];
 const INTAKE_KEYS = CRITICAL.concat(["customer_name", "company", "callback_phone", "email", "pickup_contact_name", "pickup_contact_phone", "delivery_contact_name", "delivery_contact_phone", "special_instructions", "po_number", "recurring"]);
 const clip = function (v, n) { return String(v == null ? "" : v).trim().slice(0, n); };
@@ -46,6 +46,7 @@ function defs() {
     D("create_callback_task", "Create a callback for a person to follow up.", obj({ name: str(""), phone: str("number to call"), reason: str(""), preferred_time: str("") }, ["reason"])),
     D("request_human_handoff", "Ask to transfer to a person: negotiations, discounts, complaints, safety concerns, anything uncertain, or when the caller asks for one.", obj({ reason: str("why"), summary: str("one or two sentences for the person") }, ["reason"])),
     D("set_call_language", "Lock the language of this call to the caller's language. Call it as soon as the caller speaks a language other than English. Then speak ONLY that language for the whole call.", obj({ language: { type: "string", enum: Object.keys(CALL_LANGS), description: "language code of what the caller is speaking" } }, ["language"])),
+    D("lookup_os_feature", "POTENT-only reference: look up whether POTENT OS has a feature, screen or control, and what it does, from the Master Inventory (200 features, 535 screens). Call it when the caller asks if OS can do something or you need the detail behind a feature. It answers only from the book; if nothing matches it says so and you offer to confirm. It has no prices.", obj({ query: { type: "string" } }, ["query"])),
     D("get_playbook", "Get the POTENT playbook script for the situation you are in: objections, junk removal, cleanouts, freight, pop-up events, recurring accounts and the wallet, closing, tracking and accounts. Call it when the caller pushes back, hesitates, or you are starting a service you need the questions for. It has no prices; prices only come from the quote tools.", obj({ topic: { type: "string", enum: PLAYBOOK.NAMES } }, ["topic"])),
     D("send_payment_link", "After a booking is CONFIRMED and the caller wants to pay by card, email them a secure Stripe payment link for the exact quoted total. The caller pays on Stripe's page; you never take or repeat card numbers. Needs the confirmed booking_id and an email read back and confirmed.", obj({ booking_id: str(""), email: str("their email exactly as the caller said it"), email_confirmed: { type: "boolean", description: "true only after you spelled it back and the caller said yes" } }, ["booking_id", "email"])),
     D("end_call", "End the call because the caller kept being abusive or disrespectful AFTER you gave one firm warning. Never use it on someone who is merely upset, confused, sad or hard to understand, and never when someone is in danger. Say a short goodbye line first.", obj({ reason: str("what happened, one sentence") }, ["reason"])),
@@ -231,6 +232,17 @@ const TOOLS = {
     await S.patchSession(ctx.orgId, ctx.session.id, { outcome: "callback" });
     return { ok: true, callback_id: rows(r)[0] && rows(r)[0].id, link_emailed: !!(mail && mail.ok), say: mail && mail.ok ? "Tell them you just emailed the booking link and they can pick any time that works for a 30-minute demo. Do not say a time is booked." : "Tell them honestly the email could not be sent right now, that a person will follow up with a time, and do not say a time is booked." };
   },
+  async lookup_os_feature(ctx, a) {
+    const inv = require("./osinventory.json"), q = String((a && a.query) || "").toLowerCase().slice(0, 120);
+    const STOP = { the: 1, and: 1, for: 1, can: 1, does: 1, with: 1, have: 1, you: 1, your: 1, how: 1, what: 1, that: 1, this: 1, any: 1, do: 1, it: 1, os: 1, potent: 1, a: 1, an: 1, to: 1, of: 1, in: 1, is: 1, on: 1 };
+    const w = q.split(/[^a-z0-9]+/).filter(function (x) { return x.length > 2 && !STOP[x]; }).map(function (x) { return x.length > 5 ? x.replace(/(ing|ed|es|s)$/, "") : x.replace(/s$/, ""); });
+    if (!w.length) return { ok: false, error: "empty_query", say: "Ask what feature they mean." };
+    const score = function (t, area) { const h = (t + " " + area).toLowerCase(); let n = 0, hit = 0; w.forEach(function (x) { if (h.indexOf(x) >= 0) { hit++; n += (t.toLowerCase().indexOf(x) >= 0 ? 2 : 1); } }); return hit >= Math.ceil(w.length / 2) ? n : 0; };
+    const f = inv.features.map(function (x) { return { s: score(x.text, x.area), area: x.area, text: x.text }; }).filter(function (x) { return x.s > 0; }).sort(function (x, y) { return y.s - x.s; }).slice(0, 6);
+    const sc = inv.screens.map(function (x) { return { s: score(x.text, x.group), group: x.group, text: x.text }; }).filter(function (x) { return x.s > 0; }).sort(function (x, y) { return y.s - x.s; }).slice(0, 6);
+    if (!f.length && !sc.length) return { ok: true, found: false, say: "Not in the book. Do not guess. Say you will confirm that and offer a callback or a demo; never say it can or cannot." };
+    return { ok: true, found: true, features: f.map(function (x) { return x.area + ": " + x.text; }), screens: sc.map(function (x) { return x.group + ": " + x.text; }), say: "Answer only from these lines, in plain words, one or two sentences. If they do not cover the exact question, say you will confirm." };
+  },
   async get_playbook(ctx, a) { return PLAYBOOK.get(a && a.topic); },
   async set_call_language(ctx, a) {
     const code = String(a.language || "").toLowerCase().slice(0, 5), name = CALL_LANGS[code]; if (!name) return { ok: false, error: "unsupported_language", say: "Say politely in English that you cannot continue in that language and offer a callback (create_callback_task)." };
@@ -363,7 +375,7 @@ TOOLS.request_reschedule = changeReq("Reschedule"); TOOLS.request_cancellation =
 // Run one tool call for a session. Never throws.
 // POTENT's own selling material, junk/pop-up price list, playbook and Stripe account belong to POTENT's line only; other companies never get them.
 const isPotentOrg = async function (ctx) { if (ctx._isP !== undefined) return ctx._isP; const o = rows(await B.sb("organizations?id=eq." + ctx.orgId + "&select=slug&limit=1"))[0]; return (ctx._isP = !!(o && o.slug === (process.env.POTENT_ORG_SLUG || "potent-logistics"))); };
-const POTENT_ONLY = { quote_special_service: 1, get_playbook: 1, send_payment_link: 1, take_card_payment: 1 };
+const POTENT_ONLY = { quote_special_service: 1, get_playbook: 1, lookup_os_feature: 1, send_payment_link: 1, take_card_payment: 1 };
 async function execute(ctx, name, args, callKey) {
   const t0 = Date.now(); let out;
   try {
