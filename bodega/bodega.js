@@ -11,13 +11,26 @@
     list: "/.netlify/functions/bodega-list",
     market: "/.netlify/functions/bodega-market",
     buy: "/.netlify/functions/bodega-buy",
+    bid: "/.netlify/functions/bodega-bid",
+    auction: "/.netlify/functions/bodega-auction",
     admin: "/.netlify/functions/bodega-admin"
+  };
+
+  // MULTICITY × POTENT Mystery Box Collection — display copy mirrors
+  // netlify/functions/lib/bodega-boxes.js (the server source of truth).
+  var BOX_INFO = {
+    "mystery-box-platinum": { name: "Platinum Box", price: 299, value: "$598+", contents: ["1 clothing top", "1 clothing bottom", "1 accessory"] },
+    "mystery-box-diamond": { name: "Diamond Box", price: 499, value: "$998+", contents: ["1 clothing top", "1 clothing bottom", "1 specialty jersey", "2 accessories"] },
+    "mystery-box-vault": { name: "POTENT'S PICK — The Vault", price: 899, value: "$1,798+", contents: ["2 complete outfits (2 tops + 2 bottoms)", "3 accessories", "1 collectible", "Chance of a special Vault Hit"], vaultHit: "Vault Hits may include a rare 1-of-1 accessory, archived design, numbered piece, special jersey, exclusive colorway, early release, or signed/numbered collectible." },
+    "mystery-box-black-label": { name: "Black Label Box", price: 1499, value: "$2,998+", contents: ["2 premium outfits", "1 specialty or limited-edition jersey", "4 accessories", "1 premium collectible", "Numbered certificate", "Premium packaging", "Personal styling selection"] }
   };
 
   var state = {
     catalog: [],
     byHandle: {},
     history: {}, // handle -> resale count from market endpoint
+    pieceStats: {}, // handle -> { lastSaleCents, timesSold, history: [{priceCents, soldAt}] }
+    marketStats: null, // { totalPiecesSold, totalVolumeCents, royaltyPayouts }
     listings: [],
     activeFilter: "All",
     search: "",
@@ -161,8 +174,31 @@
     }
     buildChips();
     renderShop();
+    renderBoxes();
     // if we landed on a detail hash, re-render detail now catalog is ready
     handleHash();
+  }
+
+  // ---------- mystery boxes ----------
+  function renderBoxes() {
+    var grid = $("#boxesGrid");
+    if (!grid) return;
+    var handles = Object.keys(BOX_INFO);
+    grid.innerHTML = handles.map(function (handle) {
+      var info = BOX_INFO[handle];
+      var p = state.byHandle[handle];
+      var items = info.contents.map(function (c) { return "<li>" + esc(c) + "</li>"; }).join("");
+      return '<article class="box-card">' +
+        '<div class="box-media">' + (p ? mediaHtml(p) : placeholderHtml("")) + '<span class="badge badge-360" style="position:absolute;left:8px;top:8px">2× VALUE</span></div>' +
+        '<div class="box-body"><div class="box-name">' + esc(info.name) + "</div>" +
+        '<div class="box-price">' + fmt(info.price) + ' <span class="box-value">' + esc(info.value) + " retail/MSRP value</span></div>" +
+        '<p class="card-meta" style="margin:.2rem 0">Includes:</p><ul class="box-contents">' + items + "</ul>" +
+        (info.vaultHit ? '<p class="tiny muted">' + esc(info.vaultHit) + "</p>" : "") +
+        '<button type="button" class="btn btn-primary btn-block" data-box-add="' + esc(handle) + '">Add to Bag — ALL SALES FINAL</button></div></article>';
+    }).join("");
+    $$("button[data-box-add]", grid).forEach(function (btn) {
+      btn.addEventListener("click", function () { addToBag(btn.getAttribute("data-box-add"), 1); });
+    });
   }
 
   async function loadMarket() {
@@ -172,6 +208,8 @@
       var data = out.data || {};
       state.listings = Array.isArray(data.listings) ? data.listings : [];
       state.history = data.history && typeof data.history === "object" ? data.history : {};
+      state.pieceStats = data.pieceStats && typeof data.pieceStats === "object" ? data.pieceStats : {};
+      state.marketStats = data.stats && typeof data.stats === "object" ? data.stats : null;
     } catch (e) {
       state.listings = [];
       state.history = {};
@@ -181,6 +219,36 @@
       console.warn("bodega-market failed", e);
     }
     renderMarket();
+    // if a detail page is open, refresh its market stats block too
+    if (state.view === "detail" && state.detailHandle) renderDetailStats(state.detailHandle);
+  }
+
+  // StockX-style per-piece stats on the detail page: last sale, times sold, price history.
+  function detailStatsHtml(handle) {
+    var ps = state.pieceStats[handle];
+    if (!ps || !ps.timesSold) return "";
+    var rows = (ps.history || []).map(function (h) {
+      return '<li><strong>' + fmtCents(h.priceCents) + '</strong> <span class="muted">' + esc(fmtDate(h.soldAt)) + "</span></li>";
+    }).join("");
+    return '<div class="piece-stats"><h3>Market Record</h3>' +
+      '<div class="piece-stats-row"><span>Last Sale<strong>' + fmtCents(ps.lastSaleCents) + '</strong></span>' +
+      '<span>Times Sold<strong>' + ps.timesSold + '</strong></span></div>' +
+      (rows ? '<ul class="simple-list">' + rows + "</ul>" : "") + "</div>";
+  }
+  function renderDetailStats(handle) {
+    var el = $("#detailMarketStats");
+    if (el) el.innerHTML = detailStatsHtml(handle);
+  }
+
+  function renderMarketStats() {
+    var wrap = $("#marketStats");
+    if (!wrap) return;
+    var s = state.marketStats;
+    wrap.hidden = !s;
+    if (!s) return;
+    $("#statSold").textContent = String(s.totalPiecesSold || 0);
+    $("#statVolume").textContent = fmtCents(s.totalVolumeCents || 0);
+    $("#statRoyalties").textContent = String(s.royaltyPayouts || 0);
   }
 
   function buildChips() {
@@ -371,9 +439,12 @@
           '<div class="detail-price">' + fmt(p.price) + "</div>" +
           (sold ? '<p><span class="badge badge-soldout" style="position:static">SOLD OUT</span></p>' : "") +
           '<p class="detail-desc">' + esc(p.description || "") + "</p>" +
-          '<div class="creator-line">Creator: ' + esc(p.creator || "POTENT") + " · Resale floor " + fmt(floor) + "<br/>" +
-          '<span class="muted">Resale floor $' + esc(floor.toFixed ? floor.toFixed(2) : floor) + " — listings below the floor are not allowed.</span></div>" +
+          (BOX_INFO[handle]
+            ? '<div class="creator-line">MULTICITY × POTENT Mystery Box — contents are curated by hand from Vault stock. Boxes are not resale pieces: no ownership record is minted for a box.</div>'
+            : '<div class="creator-line">Creator: ' + esc(p.creator || "POTENT") + " · Resale floor " + fmt(floor) + "<br/>" +
+              '<span class="muted">Resale floor $' + esc(floor.toFixed ? floor.toFixed(2) : floor) + " — listings below the floor are not allowed.</span></div>") +
           (histCount > 0 ? '<p class="history-line">Verified resale history: ' + histCount + " recorded transfer" + (histCount === 1 ? "" : "s") + "</p>" : "") +
+          '<div id="detailMarketStats">' + detailStatsHtml(handle) + "</div>" +
           '<div class="qty-row"><label for="qtyInput">Qty</label>' +
             '<button type="button" id="qtyMinus" aria-label="Decrease quantity">−</button>' +
             '<input id="qtyInput" type="number" min="1" value="1" />' +
@@ -596,47 +667,106 @@
     }
   }
 
-  // ---------- marketplace ----------
+  // ---------- marketplace (bid / ask) ----------
   function renderMarket() {
     var grid = $("#marketGrid");
     var empty = $("#marketEmpty");
     if (!grid) return;
+    renderMarketStats();
     if (empty) empty.hidden = state.listings.length !== 0;
     grid.innerHTML = state.listings.map(function (l) {
       var p = state.byHandle[l.productHandle];
       var title = l.title || (p ? p.title : l.productHandle);
       var hist = l.historyCount != null ? Number(l.historyCount) : Number(state.history[l.productHandle] || 0);
       var prodLike = p || { title: title, images: [], handle: l.productHandle };
+      var chain = Array.isArray(l.chain) ? l.chain : [];
+      var chainHtml = chain.length
+        ? '<div class="card-meta">Verified history: ' + chain.map(function (c) { return esc(fmtDate(c.since)); }).join(" → ") + "</div>"
+        : "";
       return '<article class="card" style="cursor:default">' +
         '<div class="card-media">' + mediaHtml(prodLike) + "</div>" +
         '<div class="card-body"><div class="card-title">' + esc(title) + "</div>" +
         (l.editionLabel ? '<div class="card-meta">' + esc(l.editionLabel) + "</div>" : "") +
-        '<div class="card-price">' + fmtCents(l.priceCents) + "</div>" +
         '<div class="card-meta">Floor ' + fmtCents(l.floorCents) + " · " + hist + " transfer" + (hist === 1 ? "" : "s") + "</div>" +
-        '<button type="button" class="btn btn-primary" data-buy="' + esc(l.id) + '">Buy</button></div></article>';
+        chainHtml +
+        '<div class="bidask">' +
+          '<div class="bidask-cell"><span>ASK</span><strong class="ask-price">' + fmtCents(l.priceCents) + "</strong></div>" +
+          '<div class="bidask-cell"><span>HIGHEST BID</span><strong>' + (l.highestBidCents ? fmtCents(l.highestBidCents) : "—") + (l.bidCount ? ' <small>(' + l.bidCount + ")</small>" : "") + "</strong></div>" +
+          '<div class="bidask-cell"><span>LAST SALE</span><strong>' + (l.lastSaleCents ? fmtCents(l.lastSaleCents) : "—") + "</strong></div>" +
+        "</div>" +
+        '<form class="bid-form" data-bid-form="' + esc(l.id) + '">' +
+          '<input type="number" step="0.01" min="0" placeholder="Your bid (USD)" data-bid-amount="' + esc(l.id) + '" required />' +
+          '<button type="submit" class="btn">Place Bid</button></form>' +
+        '<p class="tiny muted bid-note">No charge to bid. A bid at or above the ask matches instantly; lower bids wait for the seller to accept. 7-day expiry.</p>' +
+        '<button type="button" class="btn btn-primary" data-buy="' + esc(l.id) + '">Buy at Ask — ' + fmtCents(l.priceCents) + "</button></div></article>";
     }).join("");
     $$("button[data-buy]", grid).forEach(function (btn) {
       btn.addEventListener("click", function () { buyListing(btn.getAttribute("data-buy")); });
     });
+    $$("form[data-bid-form]", grid).forEach(function (form) {
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        var listingId = form.getAttribute("data-bid-form");
+        var input = $('input[data-bid-amount="' + listingId + '"]', form);
+        var dollars = Number(input ? input.value : 0);
+        if (!dollars || isNaN(dollars) || dollars <= 0) { toast("Enter your bid amount.", true); return; }
+        placeBid(listingId, Math.round(dollars * 100));
+      });
+    });
   }
 
-  async function buyListing(listingId) {
+  function savedEmail() {
     var saved = "";
     try { saved = localStorage.getItem("potent-bodega-email") || ""; } catch (e) {}
-    var email = window.prompt("Email for this purchase (ownership will be recorded to it):", saved);
-    if (!email) return;
+    return saved;
+  }
+  function askEmail(purpose) {
+    var email = window.prompt(purpose, savedEmail());
+    if (!email) return "";
     email = email.trim();
-    if (email.indexOf("@") === -1) { toast("Enter a valid email.", true); return; }
+    if (email.indexOf("@") === -1) { toast("Enter a valid email.", true); return ""; }
+    try { localStorage.setItem("potent-bodega-email", email); } catch (e) {}
+    return email;
+  }
+
+  async function placeBid(listingId, amountCents) {
+    var email = askEmail("Email for your bid (no charge unless it matches and you check out):");
+    if (!email) return;
     try {
+      var out = await fetchJson(API.bid, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "place", email: email, listingId: listingId, amountCents: amountCents })
+      });
+      var data = out.data || {};
+      if (data.error) throw new Error(data.error);
+      if (!out.res.ok) throw new Error("Bid failed (" + out.res.status + ")");
+      if (data.matched) {
+        toast("Your bid matched the ask! Complete checkout to take the piece.");
+        buyListing(listingId, data.bid ? data.bid.id : null, email);
+      } else {
+        toast("Bid placed: " + fmtCents(amountCents) + ". If the seller accepts, you'll check out at your bid price.");
+      }
+      loadMarket();
+    } catch (e) {
+      toast("Bid failed: " + e.message, true);
+    }
+  }
+
+  async function buyListing(listingId, bidId, knownEmail) {
+    var email = knownEmail || askEmail("Email for this purchase (ownership will be recorded to it):");
+    if (!email) return;
+    try {
+      var payload = { action: "checkout", listingId: listingId, email: email };
+      if (bidId) payload.bidId = bidId;
       var out = await fetchJson(API.buy, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "checkout", listingId: listingId, email: email })
+        body: JSON.stringify(payload)
       });
       var data = out.data || {};
       if (data.error) throw new Error(data.error);
       if (!out.res.ok || !data.url) throw new Error("Could not start resale checkout.");
-      try { localStorage.setItem("potent-bodega-email", email); } catch (e) {}
       location.href = data.url;
     } catch (e) {
       toast("Resale checkout failed: " + e.message, true);
@@ -690,11 +820,15 @@
       var onHold = holdMs && now < holdMs;
       var daysLeft = onHold ? Math.ceil((holdMs - now) / 86400000) : 0;
       var floorDollars = ((Number(o.resaleFloorCents) || 0) / 100);
+      var saleHist = Array.isArray(o.saleHistory) ? o.saleHistory : [];
+      var saleHistHtml = saleHist.length
+        ? '<div class="card-meta">This piece\'s resale history: ' + saleHist.map(function (s) { return fmtCents(s.priceCents) + " (" + esc(fmtDate(s.soldAt)) + ")"; }).join(" · ") + "</div>"
+        : "";
       var holdHtml;
       if (onHold) {
-        holdHtml = '<p><span class="badge badge-hold">On hold — marketplace eligible ' + esc(fmtDate(o.holdUntil)) + " (" + daysLeft + " day" + (daysLeft === 1 ? "" : "s") + ' left)</span></p>';
+        holdHtml = '<p><span class="badge badge-hold">On hold — ' + daysLeft + " day" + (daysLeft === 1 ? "" : "s") + ' left (eligible ' + esc(fmtDate(o.holdUntil)) + ")</span></p>";
       } else {
-        holdHtml = '<p><span class="badge badge-eligible">MARKETPLACE ELIGIBLE</span></p>' +
+        holdHtml = '<p><span class="badge badge-eligible">ELIGIBLE TO LIST</span></p>' +
           '<form class="list-form" data-list-form="' + esc(o.id) + '">' +
           '<label>List for resale (USD) — min ' + fmt(floorDollars) + "</label>" +
           '<input type="number" step="0.01" min="' + esc(floorDollars.toFixed(2)) + '" value="' + esc(floorDollars.toFixed(2)) + '" data-price-for="' + esc(o.id) + '" required />' +
@@ -711,6 +845,7 @@
         (o.editionLabel ? '<div class="card-meta">' + esc(o.editionLabel) + "</div>" : "") +
         '<div class="card-meta">Purchased ' + esc(fmtDate(o.purchasedAt)) + "</div>" +
         (o.status ? '<div class="card-meta">Status: ' + esc(o.status) + "</div>" : "") +
+        saleHistHtml +
         holdHtml + "</div></article>";
     }).join("");
 
@@ -769,6 +904,91 @@
         return "<li><strong>" + esc(r.role || "Royalty") + "</strong> — " + fmtCents(r.amountCents) + ' <span class="muted">' + esc(fmtDate(r.createdAt)) + "</span></li>";
       }).join("") || '<li class="muted">No royalties yet.</li>';
     }
+
+    loadBidPanels();
+  }
+
+  // Bids I placed + bids on my listings (accepting a bid matches it: the bidder then
+  // checks out at their bid price through the normal resale checkout).
+  async function loadBidPanels() {
+    var sellerWrap = $("#sellerBidsWrap"), sellerList = $("#sellerBidsList");
+    var myWrap = $("#myBidsWrap"), myList = $("#myBidsList");
+    if (!state.myEmail) return;
+    try {
+      var sellerOut = await fetchJson(API.bid, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "for_seller", email: state.myEmail })
+      });
+      var sellerBids = (sellerOut.data && sellerOut.data.bids) || [];
+      if (sellerWrap && sellerList) {
+        sellerWrap.hidden = sellerBids.length === 0;
+        sellerList.innerHTML = sellerBids.map(function (b) {
+          var own = (state.myData.ownerships || []).find(function (x) { return String(x.id) === String(b.ownershipId); });
+          var p = own ? state.byHandle[own.productHandle] : null;
+          var label = p ? p.title : "Your listing";
+          return "<li><strong>" + fmtCents(b.amountCents) + "</strong> bid on " + esc(label) +
+            ' <span class="muted">ask ' + fmtCents(b.askCents) + " · " + esc(b.status) + " · expires " + esc(fmtDate(b.expiresAt)) + "</span> " +
+            (b.status === "active" ? '<button type="button" class="btn" data-accept-bid="' + esc(b.id) + '">Accept Bid</button>' : '<span class="badge badge-eligible">MATCHED</span>') + "</li>";
+        }).join("");
+        $$("button[data-accept-bid]", sellerList).forEach(function (btn) {
+          btn.addEventListener("click", async function () {
+            try {
+              var out = await fetchJson(API.bid, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "accept", email: state.myEmail, bidId: btn.getAttribute("data-accept-bid") })
+              });
+              var d = out.data || {};
+              if (d.error) throw new Error(d.error);
+              if (!out.res.ok) throw new Error("Accept failed (" + out.res.status + ")");
+              toast("Bid accepted — the bidder can now check out at their bid price.");
+              loadBidPanels();
+              loadMarket();
+            } catch (err) { toast("Accept failed: " + err.message, true); }
+          });
+        });
+      }
+    } catch (e) { /* panels are additive; pieces already rendered */ }
+
+    try {
+      var myOut = await fetchJson(API.bid, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "my_bids", email: state.myEmail })
+      });
+      var myBids = (myOut.data && myOut.data.bids) || [];
+      if (myWrap && myList) {
+        myWrap.hidden = myBids.length === 0;
+        myList.innerHTML = myBids.map(function (b) {
+          var live = b.status === "active" || b.status === "matched" || b.status === "accepted";
+          var label = b.status === "matched" || b.status === "accepted" ? "MATCHED — ready to check out"
+            : b.status === "won" ? "WON" : b.expired ? "expired" : b.status;
+          return "<li><strong>" + fmtCents(b.amountCents) + "</strong>" +
+            ' <span class="muted">ask ' + (b.askCents ? fmtCents(b.askCents) : "—") + " · " + esc(label) + "</span> " +
+            ((b.status === "matched" || b.status === "accepted") && b.listingStatus === "active"
+              ? '<button type="button" class="btn btn-primary" data-bid-buy="' + esc(b.id) + '" data-bid-listing="' + esc(b.listingId) + '">Check Out at ' + fmtCents(b.amountCents) + "</button>" : "") +
+            (live ? '<button type="button" class="btn" data-bid-cancel="' + esc(b.id) + '">Withdraw</button>' : "") + "</li>";
+        }).join("");
+        $$("button[data-bid-buy]", myList).forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            buyListing(btn.getAttribute("data-bid-listing"), btn.getAttribute("data-bid-buy"), state.myEmail);
+          });
+        });
+        $$("button[data-bid-cancel]", myList).forEach(function (btn) {
+          btn.addEventListener("click", async function () {
+            try {
+              var out = await fetchJson(API.bid, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "cancel", email: state.myEmail, bidId: btn.getAttribute("data-bid-cancel") })
+              });
+              var d = out.data || {};
+              if (d.error) throw new Error(d.error);
+              toast("Bid withdrawn.");
+              loadBidPanels();
+              loadMarket();
+            } catch (err) { toast("Withdraw failed: " + err.message, true); }
+          });
+        });
+      }
+    } catch (e) { /* additive */ }
   }
 
   // ---------- admin ----------
@@ -813,15 +1033,88 @@
           '<div class="stat"><span class="muted">Ownerships</span><strong>' + esc(data.ownerships != null ? data.ownerships : "—") + "</strong></div>" +
           '<div class="stat"><span class="muted">Active Listings</span><strong>' + esc(data.activeListings != null ? data.activeListings : (data.listings != null ? data.listings : "—")) + "</strong></div>" +
           '<div class="stat"><span class="muted">Sales</span><strong>' + esc(data.sales != null ? data.sales : "—") + "</strong></div>" +
+          '<div class="stat"><span class="muted">Box Orders Pending</span><strong>' + esc(data.boxesPending != null ? data.boxesPending : "—") + "</strong></div>" +
           "</div>" +
           "<h3>Royalties Owed</h3>" +
-          (owed.length ? "<table><thead><tr><th>Payee</th><th>Role</th><th>Amount</th></tr></thead><tbody>" + owedRows + "</tbody></table>" : '<p class="muted">Nothing owed right now.</p>');
+          (owed.length ? "<table><thead><tr><th>Payee</th><th>Role</th><th>Amount</th></tr></thead><tbody>" + owedRows + "</tbody></table>" : '<p class="muted">Nothing owed right now.</p>') +
+          '<div id="adminBoxes"><p class="muted">Loading box orders…</p></div>';
+        loadAdminBoxes(token);
       }
       if (panel) panel.scrollIntoView({ behavior: "smooth" });
     } catch (e) {
       if (content) content.innerHTML = '<p class="muted">Could not load overview.</p>';
       toast("Admin failed: " + e.message, true);
     }
+  }
+
+  async function loadAdminBoxes(token) {
+    var wrap = $("#adminBoxes");
+    if (!wrap) return;
+    try {
+      var res = await fetch(API.admin, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body: JSON.stringify({ action: "box_orders" })
+      });
+      var data = null;
+      try { data = await res.json(); } catch (e) {}
+      data = data || {};
+      if (data.error) throw new Error(data.error);
+      var orders = Array.isArray(data.orders) ? data.orders : [];
+      var pending = orders.filter(function (o) { return o.status === "pending_fulfillment"; });
+      var done = orders.filter(function (o) { return o.status === "fulfilled"; });
+      function row(o, withBtn) {
+        var checks = (o.checklist || []).map(function (c) { return "<li>" + esc(c) + "</li>"; }).join("");
+        return "<tr><td>" + esc(o.boxKey) + (o.qty > 1 ? " ×" + o.qty : "") + "</td><td>" + esc(o.buyerEmail) + "</td><td>" + fmtCents(o.priceCents) + "</td><td><ul class='box-contents'>" + checks + "</ul></td><td>" + esc(fmtDate(o.createdAt)) + "</td>" +
+          "<td>" + (withBtn ? '<button type="button" class="btn btn-primary" data-fulfill-box="' + esc(o.id) + '">Mark Fulfilled</button>' : esc(o.status)) + "</td></tr>";
+      }
+      wrap.innerHTML = "<h3>Mystery Box Orders</h3>" +
+        (pending.length ? "<table><thead><tr><th>Box</th><th>Buyer</th><th>Paid</th><th>Must Contain</th><th>Ordered</th><th></th></tr></thead><tbody>" + pending.map(function (o) { return row(o, true); }).join("") + "</tbody></table>" : '<p class="muted">No boxes waiting on fulfillment.</p>') +
+        (done.length ? '<p class="muted tiny">' + done.length + " box order(s) fulfilled.</p>" : "");
+      $$("button[data-fulfill-box]", wrap).forEach(function (btn) {
+        btn.addEventListener("click", async function () {
+          try {
+            var r2 = await fetch(API.admin, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+              body: JSON.stringify({ action: "fulfill_box", id: btn.getAttribute("data-fulfill-box") })
+            });
+            var d2 = null;
+            try { d2 = await r2.json(); } catch (e) {}
+            if ((d2 || {}).error) throw new Error(d2.error);
+            if (!r2.ok) throw new Error("Fulfill failed (" + r2.status + ")");
+            toast("Box marked fulfilled.");
+            loadAdminBoxes(token);
+          } catch (err) { toast("Fulfill failed: " + err.message, true); }
+        });
+      });
+    } catch (e) {
+      wrap.innerHTML = '<p class="muted">Could not load box orders.</p>';
+    }
+  }
+
+  // ---------- live drops strip ----------
+  async function loadLiveDrops() {
+    var strip = $("#liveDropsStrip");
+    if (!strip) return;
+    try {
+      var out = await fetchJson(API.auction, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "a_list" })
+      });
+      var auctions = (out.data && out.data.auctions) || [];
+      var live = auctions.filter(function (a) { return a.status === "live"; });
+      var upcoming = auctions.filter(function (a) { return a.status === "scheduled"; });
+      if (!live.length && !upcoming.length) { strip.hidden = true; return; }
+      strip.hidden = false;
+      var line = $("#liveDropsLine");
+      if (line) {
+        line.textContent = live.length
+          ? "LIVE NOW: " + live.map(function (a) { return a.title; }).join(" · ")
+          : "Next drop: " + upcoming.map(function (a) { return a.title + (a.startsAt ? " — " + fmtDate(a.startsAt) : ""); }).join(" · ");
+      }
+    } catch (e) { strip.hidden = true; }
   }
 
   // ---------- return flows ----------
@@ -849,7 +1142,7 @@
         state.bag = [];
         saveBag();
         closeBag();
-        showBanner("Payment confirmed — your pieces are now in My Pieces");
+        showBanner("Payment confirmed — pieces are in My Pieces; mystery boxes are fulfilled by hand from the Vault");
         showView("mypieces");
         location.hash = "#/mypieces";
         // prefill my pieces if we have a saved email
@@ -942,6 +1235,7 @@
     handleReturns();
     loadCatalog();
     loadMarket();
+    loadLiveDrops();
     renderBag();
     // initial route (loadCatalog will re-run handleHash when ready)
     handleHash();

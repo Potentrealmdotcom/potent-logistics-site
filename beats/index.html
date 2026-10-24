@@ -46,6 +46,7 @@ input,select{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid 
 <div class="t" id="pterms"></div>
 <div class="row"><a href="/beats/terms.html" target="_blank">Read the purchase agreement</a></div></details></div>
 <div id="thanks"></div>
+<div id="packs"></div>
 <div id="gbtn" class="chips" style="display:flex;gap:6px;overflow-x:auto;padding:6px 0"></div>
 <div id="feat"></div><div id="prods"></div><div id="trend"></div>
 <div id="filters"><input id="srch" placeholder="Search beats, genres, moods, BPM, keys..." aria-label="Search"><select id="sort" aria-label="Sort"><option value="new">Newest</option><option value="plays">Most played</option><option value="price_asc">Price: low to high</option><option value="price_desc">Price: high to low</option><option value="bpm">BPM</option></select></div>
@@ -63,7 +64,7 @@ function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return
 function usd(c){return"$"+(c/100).toFixed(2).replace(/\.00$/,"")}
 function post(fn,b){if(fn==="beat-api"&&b.action==="catalog"){var qs=Object.keys(b).filter(function(k){return b[k]!==""&&b[k]!=null}).map(function(k){return encodeURIComponent(k)+"="+encodeURIComponent(b[k])}).join("&");return fetch(API+fn+"?"+qs).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||"Something went wrong");return j})})}return fetch(API+fn,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||"Something went wrong");return j})})}
 var q=new URLSearchParams(location.search);
-if(q.get("paid")&&q.get("session_id")){post("beat-api",{action:"delivery",session_id:q.get("session_id")}).then(function(j){document.getElementById("thanks").innerHTML='<div class="card"><b>Payment received. Thank you!</b><br>'+esc(j.title||"Your beat")+' ('+esc(j.license||"")+')<div class="row">'+(j.url?'<a class="btn" href="'+esc(j.url)+'" target="_blank" rel="noopener">Download your beat</a>':'<span class="muted">The producer will email your files shortly.</span>')+'</div></div>'}).catch(function(){document.getElementById("thanks").innerHTML='<div class="card">We are confirming your payment. Refresh in a minute, or contact POTENT with your receipt.</div>'})}
+if(q.get("paid")&&q.get("session_id")){post("beat-api",{action:"delivery",session_id:q.get("session_id")}).then(function(j){if(j.pack){var items=j.items||[];document.getElementById("thanks").innerHTML='<div class="card"><b>Payment received — your mystery pack is revealed!</b><br>'+esc(j.title||"Mystery Pack")+' ('+esc(j.license||"exclusive")+')'+(items.length?items.map(function(it){return'<div class="row"><span style="flex:1;min-width:0">'+esc(it.title)+'</span>'+(it.url?'<a class="btn" href="'+esc(it.url)+'" target="_blank" rel="noopener">Download</a>':'<span class="muted">The producer will email your files shortly.</span>')+'</div>'}).join(""):'<div class="row"><span class="muted">We are still assigning your beats — refresh in a minute to see them here.</span></div>')+'</div>'}else{document.getElementById("thanks").innerHTML='<div class="card"><b>Payment received. Thank you!</b><br>'+esc(j.title||"Your beat")+' ('+esc(j.license||"")+')<div class="row">'+(j.url?'<a class="btn" href="'+esc(j.url)+'" target="_blank" rel="noopener">Download your beat</a>':'<span class="muted">The producer will email your files shortly.</span>')+'</div></div>'}}).catch(function(){document.getElementById("thanks").innerHTML='<div class="card">We are confirming your payment. Refresh in a minute, or contact POTENT with your receipt.</div>'})}
 var ALL=[],cur=-1,au=document.getElementById("au"),offset=0,AGV="1.0",FAV=[],onlyFav=false;
 try{FAV=JSON.parse(localStorage.getItem("bfav")||"[]")}catch(e){}
 function $(i){return document.getElementById(i)}
@@ -138,6 +139,19 @@ function openLic(b){var m=$("mb"),can=b.state==="available";
 function closeM(){$("modal").style.display="none";document.title="POTENT Beats — Exclusive Masters";try{history.replaceState(null,"",location.pathname)}catch(e){}}$("modal").onclick=function(e){if(e.target===this)closeM()};
 ["srch","bmin","bmax","pmin","pmax"].forEach(function(i){$(i).oninput=reload});["sort","genre","mood","key","prod","expl","voc","avail"].forEach(function(i){$(i).onchange=reload});
 $("more").onclick=function(){load(true)};$("favs").onclick=function(){onlyFav=!onlyFav;this.classList.toggle("on",onlyFav);this.textContent=onlyFav?"♥ Showing favorites (tap for all)":"♥ My favorites";draw()};
+var PACKS=[{key:"pack3",name:"Mystery Pack — 3 Beats",size:3,price:99900,save:"$1,500 bought separately"},{key:"pack5",name:"Mystery Pack — 5 Beats",size:5,price:149900,save:"$2,500 bought separately"}];
+function drawPacks(){$("packs").innerHTML='<h2 style="margin:10px 0 0">🎁 Mystery packs</h2><p class="muted" style="margin:2px 0 6px">Exclusive beats picked at random from the live catalog. Contents revealed after purchase — every beat is sold only to you.</p><div class="fcards" style="flex-wrap:wrap;overflow:visible">'+PACKS.map(function(p,i){return'<div class="fc" style="flex:1 1 230px;cursor:default"><b style="font-size:16px">'+esc(p.name)+'</b><div style="font-size:22px;color:var(--gold);font-weight:800;margin:4px 0">'+usd(p.price)+'</div><small>'+p.size+' exclusive masters · '+esc(p.save)+'</small><div class="row"><button data-pack="'+i+'">Buy the pack</button></div></div>'}).join("")+"</div>";
+ [].forEach.call($("packs").querySelectorAll("[data-pack]"),function(x){x.onclick=function(){openPack(PACKS[+x.dataset.pack])}})}
+function openPack(p){var m=$("mb");
+ m.innerHTML='<b style="font-size:20px">'+esc(p.name)+'</b><div class="muted"><small>Mystery pack · contents revealed after purchase</small></div>'+
+ '<div class="opt"><b>How it works</b><ul><li>'+p.size+' exclusive beats picked at random from the live catalog</li><li>Every beat is an exclusive master: sold once, to you, then removed from the store</li><li>Download links for all '+p.size+' beats appear right after payment</li><li>If the store cannot fill the pack, your payment is refunded in full automatically</li><li>Digital product. All sales final.</li></ul></div>'+
+ '<label class="ag"><input type="checkbox" id="agr"><span>I have read and accept the <a href="/beats/terms.html" target="_blank">Exclusive Purchase Agreement (v'+esc(AGV)+')</a>.</span></label>'+
+ '<button id="pkbuy" style="width:100%">Buy the pack — '+usd(p.price)+'</button><small class="muted">You pay the pack price once. The split is taken from the sale, never added to your price.</small>'+
+ '<div class="row" style="margin-top:12px"><button class="alt" id="cl" style="flex:1">Close</button></div>';
+ $("modal").style.display="flex";
+ $("pkbuy").onclick=function(){if(!$("agr").checked){alert("Please accept the purchase agreement first.");return}this.disabled=true;var x=this;post("beat-checkout",{pack:p.key,agree:true}).then(function(j){location.href=j.url}).catch(function(e){alert(e.message);x.disabled=false})};
+ $("cl").onclick=closeM}
+drawPacks();
 load(false);
 </script>
 </body>

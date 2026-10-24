@@ -39,20 +39,24 @@ const call = async b => { const r = await api.handler({ httpMethod: "POST", head
   ok(writes.length === 0, "nothing was written for rejected values");
   let r = await call({ action: "o_setproducer", id, exclusive_pct: 93 }); ok(r[0] === 200, "93% accepted");
   r = await call({ action: "o_create", name: "A", email: "a@b.co", exclusive_pct: 80 }); ok(r[0] === 400, "o_create rejects 80%");
-  // 5. A real sale through the ledger, with a producer whose stored split is an old 50%
-  const sales = [];
+  // 5. A real sale through the ledger, with a producer whose stored split is an old 50%.
+  // The beat names no separate maker, so the maker IS the seller: the 8% royalty is his too
+  // (owner decision Oct 24 2026 — it used to sit in unallocated, paid to nobody).
+  const sales = [], wtx = [];
   global.fetch = async (u, o) => { o = o || {}; u = String(u); const m = o.method || "GET"; let d = [];
     if (u.includes("/rpc/beat_finalize")) d = "sold";
     else if (u.includes("beat_items?id=eq.")) d = [{ id: "b1", title: "T", producer_id: "p1", seller_type: "platform" }];
     else if (u.includes("beat_producers?id=eq.")) d = [{ id: "p1", splits: { lease: 50, exclusive: 50 }, deduct_fees: true, hold_days: 0 }];
     else if (u.includes("/beat_sales") && m === "POST") { sales.push(JSON.parse(o.body)); d = [Object.assign({ id: "s1" }, JSON.parse(o.body))]; }
+    else if (u.includes("beat_wallet_txns") && m === "POST") { wtx.push(JSON.parse(o.body)); d = []; }
     return { ok: true, status: 200, text: async () => JSON.stringify(d), json: async () => d }; };
   const res = await B.fulfillSession({ id: "cs_1", payment_status: "paid", amount_total: 50000, payment_intent: "pi_1", total_details: { amount_tax: 0 }, metadata: { product: "BEAT", beat_id: "b1", sale_type: "lease" } });
   ok(res.ok && sales.length === 1, "sale recorded");
   const rec = sales[0];
   ok(rec.sale_type === "exclusive", "a lease request is still recorded as exclusive only (non-exclusive is not offered)");
-  ok(rec.producer_cents === 45500 && rec.platform_fee_cents === 500 && rec.unallocated_cents === 4000 && rec.eligible_cents === 50000, "ledger: $455 seller / $5 POTENT / $40 unassigned");
-  ok(rec.producer_cents + rec.platform_fee_cents + rec.unallocated_cents === rec.eligible_cents, "ledger adds up");
+  ok(rec.producer_cents === 45500 && rec.platform_fee_cents === 500 && rec.maker_cents === 4000 && rec.maker_id === "p1" && rec.unallocated_cents === 0 && rec.eligible_cents === 50000, "ledger: $455 seller / $40 maker royalty / $5 POTENT / $0 unassigned");
+  ok(rec.producer_cents + rec.maker_cents + rec.platform_fee_cents + rec.unallocated_cents === rec.eligible_cents, "ledger adds up");
+  ok(wtx.some(t => t.ref === "sale:s1" && t.amount_cents === 45500 && t.producer_id === "p1") && wtx.some(t => t.ref === "maker:s1" && t.amount_cents === 4000 && t.producer_id === "p1"), "maker == seller: seller credit + maker royalty both land in his wallet (99% total)");
   ok(rec.fee_cents > 0 && rec.platform_fee_cents === 500, "processing fee stored separately from platform fee");
   console.log("PASS: " + n + " assertions");
 })().catch(e => { console.error("FAIL", e.message); process.exit(1); });

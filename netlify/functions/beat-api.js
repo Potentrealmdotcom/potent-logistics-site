@@ -14,7 +14,17 @@ function tooMany(k) { const f = fails[k]; return !!(f && f.n >= 8 && Date.now() 
 function noteFail(k) { const f = fails[k]; if (!f || Date.now() - f.t > 15 * 60 * 1000) fails[k] = { n: 1, t: Date.now() }; else { f.n++; f.t = Date.now(); } }
 function money(v) { const n = Math.round(Number(v)); return isFinite(n) ? n : NaN; }
 function pubProducer(p) { return { id: p.id, name: p.name, email: p.email, country: p.country, payout_method: p.payout_method, payout_handle: p.payout_handle, splits: { lease: 0, exclusive: B.sellerPct(p.splits && p.splits.exclusive) }, hold_days: p.hold_days, deduct_fees: p.deduct_fees, active: p.active, store_admin: p.store_admin, kind: p.kind, verified: p.verified }; }
-function pubBeat(b) { return { id: b.id, title: b.title, lease_cents: b.lease_cents, exclusive_cents: b.exclusive_cents, preview_url: b.preview_url, deliver_url: b.deliver_url, exclusive_sold: b.exclusive_sold, active: b.active, status: b.status, genre: b.genre, mood: b.mood, tags: b.tags, bpm: b.bpm, musical_key: b.musical_key, explicit: b.explicit, has_vocal_samples: b.has_vocal_samples, description: b.description, sample_disclosure: b.sample_disclosure, rights_confirmed: b.rights_confirmed, rights_package: b.rights_package, cover_url: b.cover_url, play_count: b.play_count }; }
+function pubBeat(b) { return { id: b.id, title: b.title, lease_cents: b.lease_cents, exclusive_cents: b.exclusive_cents, preview_url: b.preview_url, deliver_url: b.deliver_url, exclusive_sold: b.exclusive_sold, active: b.active, status: b.status, genre: b.genre, mood: b.mood, tags: b.tags, bpm: b.bpm, musical_key: b.musical_key, explicit: b.explicit, has_vocal_samples: b.has_vocal_samples, description: b.description, sample_disclosure: b.sample_disclosure, rights_confirmed: b.rights_confirmed, rights_package: b.rights_package, cover_url: b.cover_url, play_count: b.play_count, maker_id: b.maker_id || null }; }
+// Turn a stored deliverable reference into a download URL: storage: refs get a 7-day signed URL,
+// plain https links pass through.
+async function signBeatFile(dl) {
+  if (dl && dl.indexOf("storage:") === 0) {
+    const sg = await fetch(B.SB + "/storage/v1/object/sign/" + dl.slice(8), { method: "POST", headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: "Bearer " + process.env.SUPABASE_SERVICE_ROLE_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ expiresIn: 604800 }) });
+    const sj = await sg.json().catch(function () { return {}; });
+    return sj.signedURL ? B.SB + "/storage/v1" + sj.signedURL : null;
+  }
+  return dl || null;
+}
 
 const STATUSES = ["draft", "processing", "pending_review", "approved", "published", "unavailable", "rejected"];
 const DEFAULT_RIGHTS = "Exclusive rights to the master recording of this instrumental: the finished instrumental recording and the audio files listed under 'What you get'. You may use it in new recordings and release them commercially. Only one buyer ever gets this beat. Ownership of the underlying composition (melody and arrangement) and any publishing share stays with the producer unless the listing says otherwise.";
@@ -54,6 +64,7 @@ function beatRow(b, pid, ctx) {
   if (!cur) row.seller_type = thirdParty ? "third_party" : "platform";
   if (b.preview_url !== undefined) row.preview_url = url(b.preview_url);
   if (b.deliver_url !== undefined) row.deliver_url = url(b.deliver_url);
+  if (b.maker_id !== undefined) row.maker_id = /^[0-9a-f-]{36}$/i.test(String(b.maker_id || "")) ? String(b.maker_id) : null; // who MADE the beat (the 8% royalty goes to them); null = the producer of record
   if (b.cover_url !== undefined) { const c = clip(b.cover_url, 500); row.cover_url = /^https:\/\//i.test(c) ? c : null; }
   if (Array.isArray(b.tags)) row.tags = b.tags.map(function (t) { return clip(t, 30).toLowerCase(); }).filter(Boolean).slice(0, 12);
   if (Array.isArray(b.deliverables)) row.deliverables = b.deliverables.map(function (t) { return clip(t, 30).toLowerCase(); }).filter(Boolean).slice(0, 8);
@@ -186,14 +197,20 @@ async function core(event) {
       const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
       const s = await stripe.checkout.sessions.retrieve(sid);
       if (!s || s.payment_status !== "paid" || !s.metadata || s.metadata.product !== "BEAT") return B.J(402, { error: "Payment not found" });
+      if (s.metadata.pack) { // mystery pack: reveal every beat the purchase assigned, each with its own download
+        const pr = await B.sb("beat_sales?pack_session_id=eq." + encodeURIComponent(sid) + "&status=eq.complete&select=title,beat_id&order=created_at.asc");
+        const items = [];
+        for (const row of (pr.ok && Array.isArray(pr.data) ? pr.data : [])) {
+          const br = await B.sb("beat_items?id=eq." + encodeURIComponent(row.beat_id) + "&select=title,deliver_url");
+          const bit = br.ok && Array.isArray(br.data) && br.data[0];
+          items.push({ title: row.title, url: bit ? await signBeatFile(bit.deliver_url) : null });
+        }
+        const pk = B.PACKS[s.metadata.pack] || {};
+        return B.J(200, { ok: true, pack: true, title: pk.name || "Mystery Pack", license: "exclusive", items: items });
+      }
       const r = await B.sb("beat_items?id=eq." + encodeURIComponent(s.metadata.beat_id) + "&select=title,deliver_url");
       const it = r.ok && Array.isArray(r.data) && r.data[0];
-      let dl = it && it.deliver_url || null;
-      if (dl && dl.indexOf("storage:") === 0) {
-        const sg = await fetch(B.SB + "/storage/v1/object/sign/" + dl.slice(8), { method: "POST", headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: "Bearer " + process.env.SUPABASE_SERVICE_ROLE_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ expiresIn: 604800 }) });
-        const sj = await sg.json().catch(function () { return {}; });
-        dl = sj.signedURL ? B.SB + "/storage/v1" + sj.signedURL : null;
-      }
+      const dl = it ? await signBeatFile(it.deliver_url) : null;
       return B.J(200, { ok: true, title: it && it.title, url: dl, license: s.metadata.sale_type });
     } catch (e) { return B.J(500, { error: "Could not verify payment" }); }
   }
@@ -353,16 +370,16 @@ async function core(event) {
     return B.J(200, { ok: true });
   }
   if (a === "o_stats") {
-    const [items, sales, pays] = await Promise.all([B.sb("beat_items?select=status,play_count&limit=5000"), B.sb("beat_sales?select=status,gross_cents,tax_cents,fee_cents,eligible_cents,platform_fee_cents,unallocated_cents,producer_cents,refunded_cents&limit=10000"), B.sb("beat_payouts?select=amount_cents,status&limit=5000")]);
+    const [items, sales, pays] = await Promise.all([B.sb("beat_items?select=status,play_count&limit=5000"), B.sb("beat_sales?select=status,gross_cents,tax_cents,fee_cents,eligible_cents,platform_fee_cents,unallocated_cents,producer_cents,maker_cents,refunded_cents&limit=10000"), B.sb("beat_payouts?select=amount_cents,status&limit=5000")]);
     const by = {}; (items.data || []).forEach(function (x) { by[x.status] = (by[x.status] || 0) + 1; });
-    let gross = 0, elig = 0, plat = 0, unal = 0, prod = 0, refunds = 0, proc = 0, ex = 0;
-    (sales.data || []).forEach(function (x) { gross += x.gross_cents; refunds += x.refunded_cents || 0; if (x.status === "complete") { const keep = x.gross_cents > 0 ? 1 - Math.min(1, (x.refunded_cents || 0) / x.gross_cents) : 1; elig += x.eligible_cents; plat += Math.round(x.platform_fee_cents * keep); unal += Math.round(x.unallocated_cents * keep); prod += Math.round(x.producer_cents * keep); proc += x.fee_cents; ex++; } });
-    return B.J(200, { ok: true, byStatus: by, plays: (items.data || []).reduce(function (a2, x) { return a2 + (x.play_count || 0); }, 0), soldExclusives: ex, grossCents: gross, eligibleCents: elig, platformCents: plat, sellerCents: prod, unallocatedCents: unal, processingEstCents: proc, refundsCents: refunds,
-      rules: { platformFeePct: B.PLATFORM_FEE_PCT, minSellerPct: B.MIN_SELLER_PCT, maxSellerPct: B.MAX_SELLER_PCT },
+    let gross = 0, elig = 0, plat = 0, unal = 0, prod = 0, maker = 0, refunds = 0, proc = 0, ex = 0;
+    (sales.data || []).forEach(function (x) { gross += x.gross_cents; refunds += x.refunded_cents || 0; if (x.status === "complete") { const keep = x.gross_cents > 0 ? 1 - Math.min(1, (x.refunded_cents || 0) / x.gross_cents) : 1; elig += x.eligible_cents; plat += Math.round(x.platform_fee_cents * keep); unal += Math.round(x.unallocated_cents * keep); prod += Math.round(x.producer_cents * keep); maker += Math.round((x.maker_cents || 0) * keep); proc += x.fee_cents; ex++; } });
+    return B.J(200, { ok: true, byStatus: by, plays: (items.data || []).reduce(function (a2, x) { return a2 + (x.play_count || 0); }, 0), soldExclusives: ex, grossCents: gross, eligibleCents: elig, platformCents: plat, sellerCents: prod, makerCents: maker, unallocatedCents: unal, processingEstCents: proc, refundsCents: refunds,
+      rules: { platformFeePct: B.PLATFORM_FEE_PCT, minSellerPct: B.MIN_SELLER_PCT, maxSellerPct: B.MAX_SELLER_PCT, makerRoyaltyPct: B.MAKER_ROYALTY_PCT },
       pendingPayoutsCents: (pays.data || []).filter(function (x) { return x.status === "pending"; }).reduce(function (a2, x) { return a2 + x.amount_cents; }, 0), payoutCodeSet: !!((await B.getSetting("payout_code")) || {}).hash });
   }
   if (a === "o_sales") { // every sale with buyer, amounts and the saved agreement record
-    const r = await B.sb("beat_sales?select=id,title,beat_id,buyer_email,buyer_user_id,gross_cents,tax_cents,discount_cents,eligible_cents,platform_fee_cents,producer_cents,unallocated_cents,refunded_cents,status,stripe_session_id,payment_intent_id,agreement_version,agreement_accepted_at,created_at,beat_producers(name)&order=created_at.desc&limit=" + Math.max(1, Math.min(500, parseInt(b.limit, 10) || 200)));
+    const r = await B.sb("beat_sales?select=id,title,beat_id,buyer_email,buyer_user_id,gross_cents,tax_cents,discount_cents,eligible_cents,platform_fee_cents,producer_cents,maker_id,maker_cents,pack_session_id,unallocated_cents,refunded_cents,status,stripe_session_id,payment_intent_id,agreement_version,agreement_accepted_at,created_at,beat_producers(name)&order=created_at.desc&limit=" + Math.max(1, Math.min(500, parseInt(b.limit, 10) || 200)));
     return B.J(200, { ok: true, sales: r.data || [] });
   }
   if (a === "o_beat_stats") { // plays, favorites and sale for one beat

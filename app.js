@@ -19949,7 +19949,11 @@ var ADMIN_PARTNER_TOUR_STEPS = [
 // what actually pops a notification on the lock screen in the
 // background, not just an in-tab alert.
 // ═══════════════════════════════════════════════════════════════════
-var VAPID_PUBLIC_KEY = "BBQlQTbRgBgULvEs_OKZTuCif4X81lgSExlayrkPixNtkRx_NlZcFlgEtgkb8lMIsNAtp95TNIIUZJmDC-STnoc";
+// This MUST be the public half of the VAPID pair the server signs with (netlify/functions/lib/push.js).
+// It previously held a different key (BBQlQTbR…), so every subscription created here was encrypted for
+// a keypair the server cannot sign for and push services rejected every send — notifications "enabled"
+// but never arrived. Fixed Oct 24, 2026.
+var VAPID_PUBLIC_KEY = "BJ5PoBvxHwvSLxIOo6VyNoAmy5sQXsR60mN3aZ0hO5hez1gqhyKXeJl4aYQ1xqR4m2GBcqljNczT3lJu5oVoeSQ";
 
 function urlBase64ToUint8Array(base64String) {
     var padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -19964,17 +19968,37 @@ function subscribeToPushNotifications(userId, userName) {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
         return Promise.resolve({ ok: false, reason: "Push isn't supported on this browser." });
     }
+    var wantKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+    function saveSubscription(subscription) {
+        var direct = fetch(SUPABASE_URL + "/rest/v1/push_subscriptions", {
+            method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" },
+            body: JSON.stringify({ user_id: userId, user_name: userName, endpoint: subscription.endpoint, subscription: subscription.toJSON() })
+        }).catch(function () {});
+        // Also register through the server endpoint, which stamps the row with this sign-in's company
+        // and role — that stamp is what lets Elevate call alerts reach only the owner's devices.
+        return direct.then(function () {
+            try {
+                var tok = (typeof plTokenGet === "function") ? plTokenGet() : null;
+                if (!tok) return null;
+                return fetch("/.netlify/functions/push-subscribe", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + tok }, body: JSON.stringify({ subscription: subscription.toJSON(), user_name: userName }) }).catch(function () {});
+            } catch (e) { return null; }
+        }).then(function () { return { ok: true }; });
+    }
+    function doSubscribe(registration) {
+        return registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: wantKey }).then(saveSubscription);
+    }
     return navigator.serviceWorker.ready.then(function (registration) {
         return Notification.requestPermission().then(function (permission) {
             if (permission !== "granted") return { ok: false, reason: "Notification permission was not granted." };
-            return registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-            }).then(function (subscription) {
-                return fetch(SUPABASE_URL + "/rest/v1/push_subscriptions", {
-                    method: "POST", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" },
-                    body: JSON.stringify({ user_id: userId, user_name: userName, endpoint: subscription.endpoint, subscription: subscription.toJSON() })
-                }).then(function () { return { ok: true }; });
+            // A live subscription made under the OLD (mismatched) key can never receive our pushes, and
+            // subscribe() will not change keys on an existing subscription — drop it and subscribe fresh.
+            return registration.pushManager.getSubscription().then(function (existing) {
+                if (!existing) return doSubscribe(registration);
+                var cur = existing.options && existing.options.applicationServerKey;
+                var curB = cur ? new Uint8Array(cur) : null;
+                var same = !!curB && curB.byteLength === wantKey.byteLength && Array.prototype.every.call(curB, function (b, idx) { return b === wantKey[idx]; });
+                if (same) return saveSubscription(existing);
+                return existing.unsubscribe().then(function () { return doSubscribe(registration); });
             });
         });
     }).catch(function (err) { return { ok: false, reason: "Real error: " + (err && err.message ? err.message : "unknown") }; });
@@ -20010,8 +20034,10 @@ function PushNotificationSettings(props) {
 // Real trigger — call this anywhere a real event should alert someone,
 // e.g. a new job assigned, a panic button pressed, a load accepted.
 function sendPushNotification(title, body, url, targetUserId) {
+    var h = { "Content-Type": "application/json" };
+    try { var tok = (typeof plTokenGet === "function") ? plTokenGet() : null; if (tok) h.Authorization = "Bearer " + tok; } catch (e) {}
     return fetch("/.netlify/functions/send-push", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", headers: h,
         body: JSON.stringify({ title: title, body: body, url: url || "/", userId: targetUserId || null })
     }).catch(function () {});
 }

@@ -28,6 +28,7 @@
   <nav class="main-nav" aria-label="Main">
     <button type="button" class="nav-btn is-active" data-view="shop">Shop</button>
     <button type="button" class="nav-btn" data-view="marketplace">Marketplace</button>
+    <a class="nav-btn nav-link" href="live.html">Live Drops</a>
     <button type="button" class="nav-btn" data-view="mypieces">My Pieces</button>
   </nav>
 
@@ -47,6 +48,93 @@
   <div class="hero-overlay-text" id="heroOverlayText" hidden>
     <h1 class="hero-title">POTENT</h1>
     <p class="hero-sub">THE VAULT — verified pieces, verified history.</p>
+  </div>
+</section>
+
+<!-- ══════════ THE STORY: first fashion line with royalties ══════════ -->
+<section class="story" id="story">
+  <div class="story-inner">
+    <div class="story-video">
+      <video src="https://voice.potentworld.online/static/bodega/media/aegis-key-promo.mp4"
+             muted loop autoplay playsinline controls preload="metadata"
+             aria-label="AEGIS KEY promo video"></video>
+    </div>
+    <div class="story-copy">
+      <p class="kicker">POTENT — THE VAULT</p>
+      <h2 class="story-title">THE FIRST FASHION LINE WITH ROYALTIES</h2>
+      <p>Every POTENT piece carries a <strong>verified ownership record</strong>. When a piece
+      resells on the verified marketplace, the money splits automatically — the creator keeps
+      earning on every resale, forever, and the original buyer keeps earning even after
+      they've sold the piece.</p>
+      <p class="story-quote">“You can copy the piece. You can't copy the history.”</p>
+    </div>
+  </div>
+
+  <div class="split-card">
+    <h3>How the resale royalties work</h3>
+    <p class="muted">A permanent <strong>5% royalty</strong> on every qualifying verified resale.
+    Example: one verified resale for <strong>$1,000</strong> —</p>
+    <div class="split-rows">
+      <div class="split-row"><span class="split-who"><strong>Reseller / current seller</strong><small>Receives 95% of the resale price</small></span><span class="split-amt">$950</span></div>
+      <div class="split-row"><span class="split-who"><strong>Original creator</strong><small>2.5% permanent resale royalty</small></span><span class="split-amt">$25</span></div>
+      <div class="split-row"><span class="split-who"><strong>Original buyer</strong><small>1.5% permanent resale royalty</small></span><span class="split-amt">$15</span></div>
+      <div class="split-row"><span class="split-who"><strong>POTENT</strong><small>1% platform royalty</small></span><span class="split-amt">$10</span></div>
+      <div class="split-row split-total"><span class="split-who"><strong>Total distributed</strong></span><span class="split-amt">$1,000</span></div>
+    </div>
+    <ol class="rules-list">
+      <li>The creator receives the original creator royalty on <strong>every</strong> qualifying resale.</li>
+      <li>The original buyer continues receiving their royalty, <strong>even after selling the clothing</strong>.</li>
+      <li>Every subsequent owner can resell the item subject to the Vault's rules, including the <strong>180-day holding period</strong>.</li>
+      <li>The current seller receives the remaining proceeds — <strong>95%</strong>.</li>
+      <li>POTENT receives its 1% platform royalty.</li>
+    </ol>
+    <p class="tiny muted">The 5% royalty pool is split permanently between the original creator (2.5%), the original buyer (1.5%), and POTENT (1%). Percentages are illustrated before any separately applicable taxes or transaction costs. Retail/MSRP value is not a guarantee of cash resale value or profit.</p>
+  </div>
+</section>
+
+<!-- ══════════ MYSTERY BOXES ══════════ -->
+<section class="boxes" id="boxes">
+  <div class="boxes-inner">
+    <p class="kicker">MULTICITY × POTENT</p>
+    <h2 class="story-title">MYSTERY BOX COLLECTION</h2>
+    <p class="muted boxes-lede">Every box is curated around exclusive clothing, collectibles, and accessories.
+    Each tier guarantees <strong>at least 2× its purchase price in POTENT retail/MSRP value</strong>.
+    Higher tiers include more premium pieces and exclusive items. Exact designs, colors, and selections vary by box.
+    Vault Hits are potential bonus finds — never guaranteed in every box. ALL SALES FINAL.</p>
+    <div id="boxesGrid" class="boxes-grid"></div>
+  </div>
+</section>
+
+<!-- ══════════ AEGIS KEY ══════════ -->
+<section class="aegis" id="aegis">
+  <div class="story-inner">
+    <div class="story-copy">
+      <p class="kicker">MEMBERSHIP</p>
+      <h2 class="story-title">THE AEGIS KEY</h2>
+      <p>The Aegis Key is the membership key to the Vault. Key holders earn a
+      <strong>higher percentage on resale</strong>, unlock extra perks across the POTENT world,
+      and get <strong>first dibs to build with POTENT</strong> — including opening their own
+      storefront on the platform.</p>
+      <p>The physical key in this film is the one and only numbered Aegis Key —
+      <strong>a 1-of-1</strong>. When the Key program opens, it opens here first.</p>
+    </div>
+    <div class="story-video">
+      <video src="https://voice.potentworld.online/static/bodega/media/aegis-key-card.mov"
+             muted loop autoplay playsinline controls preload="metadata"
+             aria-label="The Aegis Key — the physical numbered key"></video>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ LIVE DROPS ══════════ -->
+<section class="livedrops-strip" id="liveDropsStrip" hidden>
+  <div class="livedrops-inner">
+    <div>
+      <p class="kicker">LIVE DROPS</p>
+      <h2 class="story-title" style="margin:0">LIVE BIDDING, VAULT RULES</h2>
+      <p class="muted" id="liveDropsLine">Live auctions from the Vault — highest bid when the countdown ends takes the piece.</p>
+    </div>
+    <a class="btn btn-primary" href="live.html">Enter Live Drops</a>
   </div>
 </section>
 
@@ -70,7 +158,12 @@
   <section id="view-marketplace" class="view" hidden>
     <div class="view-head">
       <h2>Marketplace</h2>
-      <p class="muted">Collector-to-collector resale. Prices respect the resale floor.</p>
+      <p class="muted">Collector-to-collector resale. The listing price is the ASK — place a BID, or buy at the ask. Prices respect the resale floor.</p>
+    </div>
+    <div id="marketStats" class="market-stats" hidden>
+      <div class="stat"><span class="muted">Pieces Sold</span><strong id="statSold">—</strong></div>
+      <div class="stat"><span class="muted">Resale Volume</span><strong id="statVolume">—</strong></div>
+      <div class="stat"><span class="muted">Royalty Payouts</span><strong id="statRoyalties">—</strong></div>
     </div>
     <div id="marketGrid" class="product-grid"></div>
     <div id="marketEmpty" class="empty-state" hidden>No active listings right now. Check back soon.</div>
@@ -91,6 +184,14 @@
     <div id="collectorInfo" class="collector-info" hidden></div>
     <div id="myPiecesGrid" class="product-grid"></div>
     <div id="myPiecesEmpty" class="empty-state" hidden>No pieces found for that email yet.</div>
+    <div id="sellerBidsWrap" class="royalties-wrap" hidden>
+      <h3>Bids on Your Listings</h3>
+      <ul id="sellerBidsList" class="simple-list"></ul>
+    </div>
+    <div id="myBidsWrap" class="royalties-wrap" hidden>
+      <h3>My Bids</h3>
+      <ul id="myBidsList" class="simple-list"></ul>
+    </div>
     <div id="royaltiesWrap" class="royalties-wrap" hidden>
       <h3>Royalty History</h3>
       <ul id="royaltiesList" class="simple-list"></ul>

@@ -164,6 +164,74 @@ table{width:100%;border-collapse:collapse}
 th,td{text-align:left;padding:.6rem;border-bottom:1px solid var(--line)}
 th{color:var(--yellow)}
 
+/* V2 — marketing sections (black + POTENT yellow only) */
+.nav-link{text-decoration:none;display:inline-flex;align-items:center}
+.kicker{color:var(--yellow);font-weight:900;letter-spacing:.32em;font-size:.72rem;margin:0 0 .4rem}
+.story{background:#000;border-bottom:1px solid var(--line);padding:2.6rem 1rem}
+.story-inner{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:1.1fr .9fr;gap:26px;align-items:center}
+@media(max-width:860px){.story-inner{grid-template-columns:1fr}}
+.story-video video{width:100%;border-radius:16px;border:1px solid var(--line);background:#000;display:block;aspect-ratio:16/9;object-fit:cover}
+.aegis .story-video video{aspect-ratio:1/1}
+.story-title{font-size:clamp(1.7rem,4.4vw,2.9rem);font-weight:900;letter-spacing:.03em;line-height:1.05;margin:.2rem 0 .8rem}
+.story-copy p{line-height:1.65;color:#e6e6e6}
+.story-quote{color:var(--yellow);font-weight:900;font-size:1.15rem;letter-spacing:.02em}
+.split-card{max-width:1240px;margin:2.2rem auto 0;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:1.4rem}
+.split-card h3{margin:.1rem 0 .4rem;font-size:1.35rem}
+.split-rows{margin:1rem 0;border-top:1px solid var(--line)}
+.split-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:.8rem 0;border-bottom:1px solid var(--line)}
+.split-who{display:flex;flex-direction:column;gap:2px}
+.split-who small{color:var(--muted)}
+.split-amt{font-size:1.35rem;font-weight:900;color:var(--yellow);white-space:nowrap}
+.split-total .split-amt{color:#fff}
+.rules-list{line-height:1.65;color:#e6e6e6;padding-left:1.3rem}
+.rules-list li{margin:.35rem 0}
+
+/* V2 — mystery boxes */
+.boxes{background:#070707;border-bottom:1px solid var(--line);padding:2.6rem 1rem}
+.boxes-inner{max-width:1240px;margin:0 auto}
+.boxes-lede{max-width:820px;line-height:1.65}
+.boxes-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:1.4rem}
+@media(max-width:1024px){.boxes-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.boxes-grid{grid-template-columns:1fr}}
+.box-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column}
+.box-card:hover{border-color:var(--yellow)}
+.box-media{aspect-ratio:1/1;background:#000;position:relative;overflow:hidden}
+.box-media img{width:100%;height:100%;object-fit:cover;display:block}
+.box-media .placeholder{min-height:0;height:100%}
+.box-body{padding:.9rem;display:flex;flex-direction:column;gap:.4rem;flex:1}
+.box-name{font-weight:900;font-size:1.05rem;line-height:1.25}
+.box-price{color:var(--yellow);font-weight:900;font-size:1.25rem}
+.box-value{color:var(--muted);font-size:.8rem;font-weight:700}
+.box-contents{margin:.2rem 0 .6rem;padding-left:1.15rem;color:#e6e6e6;line-height:1.5;font-size:.92rem}
+.box-body .btn{margin-top:auto}
+
+/* V2 — Aegis + Live Drops strip */
+.aegis{background:#000;border-bottom:1px solid var(--line);padding:2.6rem 1rem}
+.livedrops-strip{background:#0a0a00;border-bottom:2px solid var(--yellow);padding:1.6rem 1rem}
+.livedrops-inner{max-width:1240px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap}
+
+/* V2 — market stats + bid/ask */
+.market-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 1.2rem}
+@media(max-width:720px){.market-stats{grid-template-columns:1fr}}
+.market-stats .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:.8rem}
+.market-stats .stat strong{display:block;font-size:1.4rem;color:var(--yellow)}
+.bidask{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:.4rem 0}
+.bidask-cell{background:#0b0b0b;border:1px solid var(--line);border-radius:10px;padding:.5rem .6rem}
+.bidask-cell span{display:block;font-size:.66rem;font-weight:900;letter-spacing:.14em;color:var(--muted)}
+.bidask-cell strong{font-size:1rem;color:#fff}
+.bidask-cell .ask-price{color:var(--yellow)}
+.bidask-cell small{color:var(--muted)}
+.bid-form{display:flex;gap:6px;margin-top:.4rem}
+.bid-form input{flex:1;min-width:0;background:#141414;border:1px solid var(--line);color:#fff;padding:.6rem .7rem;border-radius:8px}
+.bid-note{margin:.35rem 0 .6rem}
+
+/* V2 — piece market record on detail */
+.piece-stats{border:1px solid var(--line);border-radius:12px;padding:1rem;margin:1rem 0;background:var(--panel)}
+.piece-stats h3{margin:0 0 .6rem;color:var(--yellow);letter-spacing:.04em}
+.piece-stats-row{display:flex;gap:26px;flex-wrap:wrap}
+.piece-stats-row span{color:var(--muted);font-size:.82rem;display:flex;flex-direction:column;gap:2px}
+.piece-stats-row strong{color:#fff;font-size:1.25rem}
+
 /* Footer */
 .site-footer{border-top:2px solid var(--yellow);background:#000;padding:2rem 1rem;text-align:center}
 .footer-brand{display:flex;justify-content:center;align-items:center;gap:10px;font-weight:900;letter-spacing:.12em}

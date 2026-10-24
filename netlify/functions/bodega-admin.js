@@ -31,12 +31,29 @@ exports.handler = async function (event) {
   if (!tok || tok.role !== "owner" || tok.orgId || tok.assist) return B.J(403, { error: "POTENT owner only" });
   let b; try { b = JSON.parse(event.body || "{}"); } catch (e) { return B.J(400, { error: "Bad request" }); }
 
+  if (b.action === "box_orders") {
+    const r = await B.sb("bodega_box_orders?select=*&order=created_at.desc&limit=200");
+    const orders = (r.ok && Array.isArray(r.data) ? r.data : []).map(function (o) {
+      return { id: o.id, boxKey: o.box_key, buyerEmail: o.buyer_email, priceCents: o.price_cents, qty: o.qty, status: o.status, checklist: o.contents_checklist || [], createdAt: o.created_at, fulfilledAt: o.fulfilled_at };
+    });
+    return B.J(200, { ok: true, orders: orders });
+  }
+  if (b.action === "fulfill_box") {
+    const id = String(b.id || "");
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return B.J(400, { error: "Bad id" });
+    const upd = await B.sb("bodega_box_orders?id=eq." + encodeURIComponent(id) + "&status=eq.pending_fulfillment", { method: "PATCH", prefer: "return=representation", body: { status: "fulfilled", fulfilled_at: new Date().toISOString() } });
+    if (!upd.ok) return B.J(500, { error: "Could not update box order" });
+    if (!Array.isArray(upd.data) || !upd.data.length) return B.J(409, { error: "Box order not pending" });
+    return B.J(200, { ok: true });
+  }
+
   if (b.action === "overview") {
     const counts = await Promise.all([
       countRows("bodega_collectors?select=id&limit=100000"),
       countRows("bodega_ownership?select=id&limit=100000"),
       countRows("bodega_listings?status=eq.active&select=id&limit=100000"),
-      countRows("bodega_sales?select=id&limit=100000")
+      countRows("bodega_sales?select=id&limit=100000"),
+      countRows("bodega_box_orders?status=eq.pending_fulfillment&select=id&limit=100000")
     ]);
     const led = await B.sb("bodega_royalty_ledger?select=payee_email,role,amount_cents&limit=100000");
     const grouped = {};
@@ -51,6 +68,7 @@ exports.handler = async function (event) {
       ownerships: counts[1],
       listings: counts[2],
       sales: counts[3],
+      boxesPending: counts[4],
       royaltiesOwed: Object.keys(grouped).sort().map(function (k) { return grouped[k]; })
     });
   }

@@ -6193,5 +6193,69 @@
    "img/unisex-vintage-wash-distressed-layer-t-shirt/4.jpg",
    "img/unisex-vintage-wash-distressed-layer-t-shirt/5.jpg"
   ]
+ },
+ {
+  "handle": "mystery-box-platinum",
+  "title": "MULTICITY × POTENT Mystery Box — Platinum",
+  "description": "The entry-level MULTICITY collectible clothing box. Includes 1 clothing top, 1 clothing bottom and 1 accessory. Every box guarantees at least 2x its purchase price in POTENT retail/MSRP value ($598+). Exact designs and colors vary by box. ALL SALES FINAL.",
+  "price": 299.0,
+  "tags": [
+   "Mystery Box",
+   "MULTICITY"
+  ],
+  "productType": "Mystery Box",
+  "totalInventory": 999,
+  "variantInventory": 999,
+  "resaleFloor": 299.0,
+  "creator": "POTENT",
+  "images": []
+ },
+ {
+  "handle": "mystery-box-diamond",
+  "title": "MULTICITY × POTENT Mystery Box — Diamond",
+  "description": "A larger MULTICITY selection with a specialty jersey. Includes 1 clothing top, 1 clothing bottom, 1 specialty jersey and 2 accessories. Every box guarantees at least 2x its purchase price in POTENT retail/MSRP value ($998+). Exact designs and colors vary by box. ALL SALES FINAL.",
+  "price": 499.0,
+  "tags": [
+   "Mystery Box",
+   "MULTICITY"
+  ],
+  "productType": "Mystery Box",
+  "totalInventory": 999,
+  "variantInventory": 999,
+  "resaleFloor": 499.0,
+  "creator": "POTENT",
+  "images": []
+ },
+ {
+  "handle": "mystery-box-vault",
+  "title": "MULTICITY × POTENT Mystery Box — POTENT'S PICK (The Vault)",
+  "description": "POTENT'S PICK — The Vault. Includes 2 complete outfits (2 tops and 2 bottoms), 3 accessories and 1 collectible, plus a chance of a special Vault Hit: a rare 1-of-1 accessory, archived design, numbered piece, special jersey, exclusive colorway, early release, or signed/numbered collectible. Vault Hits are possible bonus finds, never guaranteed. Every box guarantees at least 2x its purchase price in POTENT retail/MSRP value ($1,798+). Exact designs and colors vary by box. ALL SALES FINAL.",
+  "price": 899.0,
+  "tags": [
+   "Mystery Box",
+   "MULTICITY"
+  ],
+  "productType": "Mystery Box",
+  "totalInventory": 999,
+  "variantInventory": 999,
+  "resaleFloor": 899.0,
+  "creator": "POTENT",
+  "images": []
+ },
+ {
+  "handle": "mystery-box-black-label",
+  "title": "MULTICITY × POTENT Mystery Box — Black Label",
+  "description": "The highest-tier curated MULTICITY experience. Includes 2 premium outfits, 1 specialty or limited-edition jersey, 4 accessories, 1 premium collectible, a numbered certificate, premium packaging and a personal styling selection. Every box guarantees at least 2x its purchase price in POTENT retail/MSRP value ($2,998+). Exact designs and colors vary by box. ALL SALES FINAL.",
+  "price": 1499.0,
+  "tags": [
+   "Mystery Box",
+   "MULTICITY"
+  ],
+  "productType": "Mystery Box",
+  "totalInventory": 999,
+  "variantInventory": 999,
+  "resaleFloor": 1499.0,
+  "creator": "POTENT",
+  "images": []
  }
 ]

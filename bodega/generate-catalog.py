@@ -40,6 +40,39 @@ IMG_OUT_DIR = BODEGA_DIR / "img"
 
 EXCLUDED_HANDLES = {"gallery-page"}
 
+# MULTICITY × POTENT Mystery Box Collection (owner spec, Oct 24 2026). Boxes are not
+# Shopify products: they are appended after the product loop so regeneration keeps them.
+# The server-side source of truth for box definitions is
+# netlify/functions/lib/bodega-boxes.js — keep the two in sync. Boxes have no photos
+# (images: [] renders the POTENT placeholder) and effectively unlimited stock (they are
+# fulfilled by hand from catalog stock), so they never read as sold out.
+BOXES = [
+    {
+        "handle": "mystery-box-platinum",
+        "title": "MULTICITY × POTENT Mystery Box — Platinum",
+        "price": 299.0,
+        "description": "The entry-level MULTICITY collectible clothing box. Includes 1 clothing top, 1 clothing bottom and 1 accessory. Every box guarantees at least 2x its purchase price in POTENT retail/MSRP value ($598+). Exact designs and colors vary by box. ALL SALES FINAL.",
+    },
+    {
+        "handle": "mystery-box-diamond",
+        "title": "MULTICITY × POTENT Mystery Box — Diamond",
+        "price": 499.0,
+        "description": "A larger MULTICITY selection with a specialty jersey. Includes 1 clothing top, 1 clothing bottom, 1 specialty jersey and 2 accessories. Every box guarantees at least 2x its purchase price in POTENT retail/MSRP value ($998+). Exact designs and colors vary by box. ALL SALES FINAL.",
+    },
+    {
+        "handle": "mystery-box-vault",
+        "title": "MULTICITY × POTENT Mystery Box — POTENT'S PICK (The Vault)",
+        "price": 899.0,
+        "description": "POTENT'S PICK — The Vault. Includes 2 complete outfits (2 tops and 2 bottoms), 3 accessories and 1 collectible, plus a chance of a special Vault Hit: a rare 1-of-1 accessory, archived design, numbered piece, special jersey, exclusive colorway, early release, or signed/numbered collectible. Vault Hits are possible bonus finds, never guaranteed. Every box guarantees at least 2x its purchase price in POTENT retail/MSRP value ($1,798+). Exact designs and colors vary by box. ALL SALES FINAL.",
+    },
+    {
+        "handle": "mystery-box-black-label",
+        "title": "MULTICITY × POTENT Mystery Box — Black Label",
+        "price": 1499.0,
+        "description": "The highest-tier curated MULTICITY experience. Includes 2 premium outfits, 1 specialty or limited-edition jersey, 4 accessories, 1 premium collectible, a numbered certificate, premium packaging and a personal styling selection. Every box guarantees at least 2x its purchase price in POTENT retail/MSRP value ($2,998+). Exact designs and colors vary by box. ALL SALES FINAL.",
+    },
+]
+
 
 def clean_description(raw):
     """Strip HTML tags, unescape entities, collapse whitespace, cap length."""
@@ -231,6 +264,33 @@ def main():
             "priceCents": price_cents,
             "floorCents": price_cents,
         }
+
+    # Mystery boxes (see BOXES above): appended to both catalogs, never sold out.
+    for box in BOXES:
+        if box["handle"] in server_catalog:
+            continue
+        price_cents = round(box["price"] * 100)
+        catalog.append(
+            {
+                "handle": box["handle"],
+                "title": box["title"],
+                "description": box["description"],
+                "price": box["price"],
+                "tags": ["Mystery Box", "MULTICITY"],
+                "productType": "Mystery Box",
+                "totalInventory": 999,
+                "variantInventory": 999,
+                "resaleFloor": box["price"],
+                "creator": "POTENT",
+                "images": [],
+            }
+        )
+        server_catalog[box["handle"]] = {
+            "title": box["title"],
+            "priceCents": price_cents,
+            "floorCents": price_cents,
+        }
+    print(f"Mystery boxes appended: {len(BOXES)}")
 
     CATALOG_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(CATALOG_FILE, "w", encoding="utf-8") as f:

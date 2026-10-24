@@ -16,6 +16,22 @@ async function ownershipById(id) {
   const r = await B.sb("bodega_ownership?id=eq." + encodeURIComponent(id) + "&select=*&limit=1");
   return r.ok && Array.isArray(r.data) && r.data[0] ? r.data[0] : null;
 }
+async function bidById(id) {
+  const r = await B.sb("bodega_bids?id=eq." + encodeURIComponent(id) + "&select=*&limit=1");
+  return r.ok && Array.isArray(r.data) && r.data[0] ? r.data[0] : null;
+}
+// A bid can fund a purchase only while it is matched/accepted, unexpired, on this
+// listing, and placed by the buyer checking out. Returns the bid or null.
+async function liveBidForCheckout(bidId, listingId, email) {
+  if (!UUID.test(String(bidId || ""))) return null;
+  const bid = await bidById(bidId);
+  if (!bid) return null;
+  if (String(bid.listing_id) !== String(listingId)) return null;
+  if (String(bid.bidder_email || "").toLowerCase() !== email) return null;
+  if (bid.status !== "matched" && bid.status !== "accepted") return null;
+  if (new Date(bid.expires_at).getTime() <= Date.now()) return null;
+  return bid;
+}
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") return B.J(405, { error: "POST only" });
@@ -31,17 +47,32 @@ exports.handler = async function (event) {
     const listing = await listingById(listingId);
     if (!listing) return B.J(404, { error: "Listing not found" });
     if (listing.status !== "active") return B.J(409, { error: "Listing is no longer active" });
+    // Auction wins are reserved: only the winning bidder may check the piece out.
+    if (listing.reserved_email && String(listing.reserved_email).toLowerCase() !== email) {
+      return B.J(403, { error: "This piece is reserved for the auction winner" });
+    }
     const ownership = await ownershipById(listing.ownership_id);
     if (!ownership) return B.J(404, { error: "Piece not found" });
     const entry = CAT.CATALOG[ownership.product_handle];
     const title = entry && entry.title ? entry.title : ownership.product_handle;
+    // Bid/ask: a matched or accepted bid sets the agreed price. Without a bid the
+    // price is the ask (the listing price), exactly as V1.
+    let priceCents = Number(listing.price_cents);
+    const metadata = { product: "BODEGA_RESALE", listing_id: listingId, email: email };
+    if (body.bidId) {
+      const bid = await liveBidForCheckout(body.bidId, listingId, email);
+      if (!bid) return B.J(409, { error: "That bid is no longer live — place a new bid" });
+      priceCents = Number(bid.amount_cents);
+      metadata.bid_id = bid.id;
+      metadata.agreed_price_cents = String(priceCents);
+    }
     const origin = B.originFromEvent(event);
     try {
       const session = await stripe.checkout.sessions.create({
         mode: "payment",
         customer_email: email,
-        line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: listing.price_cents, product_data: { name: title + " — Verified Resale", description: "ALL SALES FINAL." } } }],
-        metadata: { product: "BODEGA_RESALE", listing_id: listingId, email: email },
+        line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: priceCents, product_data: { name: title + " — Verified Resale", description: "ALL SALES FINAL." } } }],
+        metadata: metadata,
         custom_text: { submit: { message: "All sales are final." } },
         success_url: origin + "/bodega/?resale_session={CHECKOUT_SESSION_ID}",
         cancel_url: origin + "/bodega/?canceled=1"
@@ -75,14 +106,29 @@ exports.handler = async function (event) {
     const ownership = await ownershipById(listing.ownership_id);
     if (!ownership) return B.J(404, { error: "Piece not found" });
 
-    const split = B.royaltySplit(listing.price_cents);
+    // The price actually paid: the agreed bid price when this session came from a
+    // matched/accepted bid (re-validated against the bid row), else the ask.
+    let priceCents = Number(listing.price_cents);
+    let winningBid = null;
+    if (session.metadata.bid_id) {
+      const agreed = Math.floor(Number(session.metadata.agreed_price_cents));
+      const bid = await bidById(String(session.metadata.bid_id));
+      if (!bid || String(bid.listing_id) !== listingId || String(bid.bidder_email || "").toLowerCase() !== buyer
+        || !isFinite(agreed) || agreed !== Number(bid.amount_cents)) {
+        return B.J(400, { error: "Bid on session does not check out" });
+      }
+      priceCents = agreed;
+      winningBid = bid;
+    }
+
+    const split = B.royaltySplit(priceCents);
 
     // (1) Record the sale.
     const saleIns = await B.sb("bodega_sales", { method: "POST", prefer: "return=representation", body: {
       listing_id: listing.id,
       product_handle: ownership.product_handle,
       buyer_email: buyer,
-      price_cents: listing.price_cents,
+      price_cents: priceCents,
       royalty_creator_cents: split.creator,
       royalty_original_buyer_cents: split.originalBuyer,
       royalty_platform_cents: split.platform,
@@ -111,6 +157,17 @@ exports.handler = async function (event) {
     const lUpd = await B.sb("bodega_listings?id=eq." + encodeURIComponent(listing.id), { method: "PATCH", prefer: "return=minimal", body: { status: "sold" } });
     if (!lUpd.ok) return B.J(500, { error: "Could not close listing" });
 
+    // (3b) Bid bookkeeping: the winning bid is won; every other live bid on this
+    // listing closes (the piece is gone). Best-effort — the sale above already stands.
+    if (winningBid) {
+      await B.sb("bodega_bids?id=eq." + encodeURIComponent(winningBid.id), { method: "PATCH", prefer: "return=minimal", body: { status: "won", updated_at: new Date().toISOString() } });
+    }
+    const allBids = await B.sb("bodega_bids?listing_id=eq." + encodeURIComponent(listing.id) + "&status=in.(active,matched,accepted)&select=id&limit=500");
+    const others = (allBids.ok && Array.isArray(allBids.data) ? allBids.data : []).filter(function (b) { return !winningBid || b.id !== winningBid.id; });
+    for (let i = 0; i < others.length; i++) {
+      await B.sb("bodega_bids?id=eq." + encodeURIComponent(others[i].id), { method: "PATCH", prefer: "return=minimal", body: { status: "closed", updated_at: new Date().toISOString() } });
+    }
+
     // (4) Old ownership transfers out.
     const oUpd = await B.sb("bodega_ownership?id=eq." + encodeURIComponent(ownership.id), { method: "PATCH", prefer: "return=minimal", body: { status: "transferred" } });
     if (!oUpd.ok) return B.J(500, { error: "Could not transfer ownership" });
@@ -122,7 +179,7 @@ exports.handler = async function (event) {
       product_handle: ownership.product_handle,
       owner_email: buyer,
       edition_label: ownership.edition_label,
-      purchase_price_cents: listing.price_cents,
+      purchase_price_cents: priceCents,
       source_ref: session.id,
       status: "active",
       hold_until: new Date(Date.now() + HOLD_MS).toISOString(),

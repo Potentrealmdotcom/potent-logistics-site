@@ -1,5 +1,5 @@
-// POTENT OS Service Worker — v7 cache bust (fixed curly quotes) — real push notifications added
-var CACHE = "potent-os-v7";
+// POTENT OS Service Worker — v8 cache bust (push tap now navigates to the notification's page) — real push notifications added
+var CACHE = "potent-os-v8";
 var ASSETS = ["/", "/index.html", "/app.js", "/manifest.json"];
 
 self.addEventListener("install", function(e){
@@ -43,8 +43,8 @@ try { data = e.data ? e.data.json() : {}; } catch(err) { data = { title: "POTENT
 var title = data.title || "POTENT OS";
 var options = {
 body: data.body || "",
-icon: "https://raw.githubusercontent.com/potent-logistics-site/main/icon-192.png",
-badge: "https://raw.githubusercontent.com/potent-logistics-site/main/icon-192.png",
+icon: "/potent-griffin-icon.png",
+badge: "/potent-griffin-icon.png",
 data: { url: data.url || "/" },
 vibrate: [200, 100, 200],
 tag: data.tag || "potent-general"
@@ -55,14 +55,19 @@ e.waitUntil(self.registration.showNotification(title, options));
 self.addEventListener("notificationclick", function(e){
 e.notification.close();
 var url = (e.notification.data && e.notification.data.url) || "/";
+var target = new URL(url, self.registration.scope).href;
 e.waitUntil(
 clients.matchAll({ type: "window", includeUncontrolled: true }).then(function(clientList){
 for (var i = 0; i < clientList.length; i++) {
 if (clientList[i].url.indexOf(self.registration.scope) === 0 && "focus" in clientList[i]) {
-return clientList[i].focus();
+// Old behavior only focused the open app and dropped the notification's page on the floor —
+// tapping a call alert while the app was open appeared to do nothing. Navigate it instead.
+var c = clientList[i];
+if (c.url !== target && "navigate" in c) return c.navigate(target).then(function(){ return c.focus(); });
+return c.focus();
 }
 }
-if (clients.openWindow) return clients.openWindow(url);
+if (clients.openWindow) return clients.openWindow(target);
 })
 );
 });

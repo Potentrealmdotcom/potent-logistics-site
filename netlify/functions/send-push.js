@@ -1,84 +1,35 @@
-// netlify/functions/send-push.js
-// Upload to: potent-logistics-site/netlify/functions/send-push.js
+// netlify/functions/send-push.js — HTTP front door for Web Push.
+// The sending itself lives in lib/push.js (shared with the voice owner alerts); this handler only
+// authenticates and routes: { title, body, url, userId } → that user, or everyone when no userId.
 //
-// Sends real push notifications to every subscribed device (or one specific
-// user), using the real VAPID key pair below. Requires the "web-push" npm
-// package — add it to your repo's package.json dependencies (see note at
-// the bottom of this file for the exact steps).
+// Oct 24, 2026 fixes (the "notifications never worked" chain):
+//  - VAPID signing now comes from lib/push.js — the key pair that matches the app's subscribe key.
+//    (This file previously held the right private key, but app.js subscribed devices with a DIFFERENT
+//    public key, so push services rejected every send.)
+//  - Subscriptions are read with the service role (via lib/beats sb), not the anon key: with RLS on
+//    and no anon policy, the old read silently returned zero devices forever.
+//  - The endpoint now requires a signed-in staff token (or the PUSH_INTERNAL_SECRET header for
+//    server-to-server callers). It used to accept unauthenticated POSTs from anyone, which meant
+//    anyone who found the URL could broadcast a push to every subscribed device.
+const PUSH = require("./lib/push");
+const A = require("./lib/voice/auth");
 
-var webpush = require("web-push");
-
-var VAPID_PUBLIC_KEY = "BJ5PoBvxHwvSLxIOo6VyNoAmy5sQXsR60mN3aZ0hO5hez1gqhyKXeJl4aYQ1xqR4m2GBcqljNczT3lJu5oVoeSQ";
-var VAPID_PRIVATE_KEY = "RBXmilmfr0S7Yqx5tQ1m9k8G-T1WBwuv_m61JfmtPRI";
-var VAPID_SUBJECT = "mailto:potentlogistics@proton.me";
-
-var SUPABASE_URL = "https://ymvsatlrkzgxwzxybwmk.supabase.co";
-var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltdnNhdGxya3pneHd6eHlid21rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4NzgwMTQsImV4cCI6MjEwMzQ1NDAxNH0.KbW0enJr5FOzJmDQnT3Thhr5NJdbI4Ehp1vkhVEyPEg";
-
-webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+const headers = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type, Authorization", "Content-Type": "application/json" };
+const J = function (s, b) { return { statusCode: s, headers: headers, body: JSON.stringify(b) }; };
 
 exports.handler = async function (event) {
-var headers = {
-"Access-Control-Allow-Origin": "*",
-"Access-Control-Allow-Headers": "Content-Type",
-"Content-Type": "application/json"
+  if (event.httpMethod === "OPTIONS") return J(200, {});
+  if (event.httpMethod !== "POST") return J(405, { error: "POST only" });
+  const tok = A.verify(A.bearer(event));
+  const internal = process.env.PUSH_INTERNAL_SECRET && (event.headers || {})["x-push-secret"] === process.env.PUSH_INTERNAL_SECRET;
+  if (!tok && !internal) return J(401, { error: "Sign-in required" });
+
+  let body;
+  try { body = JSON.parse(event.body || "{}"); } catch (e) { return J(400, { error: "Invalid JSON" }); }
+  const payload = { title: String(body.title || "POTENT OS").slice(0, 80), body: String(body.body || "").slice(0, 240), url: String(body.url || "/").slice(0, 300), tag: body.tag ? String(body.tag).slice(0, 60) : undefined };
+  try {
+    const r = body.userId ? await PUSH.pushToUser(String(body.userId), payload) : await PUSH.pushToAll(payload);
+    if (!r.totalDevices) return J(200, { sent: 0, note: "No subscribed devices found." });
+    return J(200, { sent: r.sent, failed: r.failed, totalDevices: r.totalDevices });
+  } catch (e) { console.error("send-push", e && e.message); return J(500, { error: "Push failed" }); }
 };
-
-if (event.httpMethod !== "POST") {
-return { statusCode: 405, headers: headers, body: JSON.stringify({ error: "POST only" }) };
-}
-
-var body;
-try { body = JSON.parse(event.body); } catch (e) {
-return { statusCode: 400, headers: headers, body: JSON.stringify({ error: "Invalid JSON" }) };
-}
-
-var title = body.title || "POTENT OS";
-var message = body.body || "";
-var url = body.url || "/";
-var targetUserId = body.userId || null; // if set, only send to that one user's devices
-
-// Real fetch of every subscribed device from Supabase — never fabricated.
-var query = SUPABASE_URL + "/rest/v1/push_subscriptions?select=*";
-if (targetUserId) query += "&user_id=eq." + encodeURIComponent(targetUserId);
-
-var subsRes = await fetch(query, {
-headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
-});
-var subs = await subsRes.json();
-
-if (!Array.isArray(subs) || subs.length === 0) {
-return { statusCode: 200, headers: headers, body: JSON.stringify({ sent: 0, note: "No subscribed devices found." }) };
-}
-
-var payload = JSON.stringify({ title: title, body: message, url: url });
-var results = await Promise.allSettled(subs.map(function (row) {
-return webpush.sendNotification(row.subscription, payload).catch(function (err) {
-// A 410 Gone means that device unsubscribed — real cleanup, not a silent failure.
-if (err.statusCode === 410 || err.statusCode === 404) {
-return fetch(SUPABASE_URL + "/rest/v1/push_subscriptions?id=eq." + row.id, {
-method: "DELETE", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
-});
-}
-throw err;
-});
-}));
-
-var sent = results.filter(function (r) { return r.status === "fulfilled"; }).length;
-var failed = results.filter(function (r) { return r.status === "rejected"; }).length;
-
-return { statusCode: 200, headers: headers, body: JSON.stringify({ sent: sent, failed: failed, totalDevices: subs.length }) };
-};
-
-// ═══════════════════════════════════════════════════════════════════
-// SETUP NOTE — one real step needed before this works:
-// In your repo's package.json (root level), add "web-push" to
-// dependencies:
-//
-//   "dependencies": { "web-push": "^3.6.7" }
-//
-// If you don't have a package.json yet, create one with just that,
-// commit it alongside this file, and Netlify installs it automatically
-// on the next deploy. No other setup needed — the real VAPID keys are
-// already embedded above, matching the public key used in the app.
-// ═══════════════════════════════════════════════════════════════════

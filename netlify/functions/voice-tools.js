@@ -6,6 +6,7 @@ const TW = require("./lib/voice/adapters/twilio");
 const S = require("./lib/voice/store");
 const V = require("./lib/voice/billing");
 const T = require("./lib/voice/tools");
+const OR = require("./lib/voice/owner-report");
 const P = require("./lib/voice/prompt");
 const PR = require("./lib/voice/pricing");
 const EP = require("./lib/elevate-phone");   // Əlevate phone calls: separate table, separate rules
@@ -72,11 +73,14 @@ async function unfinishedNet(ses, reason) {
   } catch (e) { console.error("unfinishedNet", e && e.message); return false; }
 }
 async function finish(ses, reason, seconds) {
-  if (["ended", "failed", "rejected"].indexOf(ses.state) >= 0 && ses.ended_at) { if (ses.seconds == null && seconds) await V.recordUsage(ses.org_id, ses.id, seconds, ses.direction === "outbound" ? "outbound" : "call", ses.started_at); return { ok: true, already: true }; }
+  if (["ended", "failed", "rejected"].indexOf(ses.state) >= 0 && ses.ended_at) { if (ses.seconds == null && seconds) await V.recordUsage(ses.org_id, ses.id, seconds, ses.direction === "outbound" ? "outbound" : "call", ses.started_at); await OR.reportCall(ses.org_id, ses.id); return { ok: true, already: true }; }
   const secs = seconds != null ? Math.max(0, Math.floor(seconds)) : Math.max(0, Math.round((Date.now() - new Date(ses.answered_at || ses.started_at).getTime()) / 1000));
   await S.patchSession(ses.org_id, ses.id, { state: "ended", ended_at: new Date().toISOString(), seconds: secs, end_reason: String(reason || "hangup").slice(0, 60), summary: summarize(ses), outcome: ses.outcome || "info_only" });
   if (secs > 0) await V.recordUsage(ses.org_id, ses.id, secs, ses.direction === "outbound" ? "outbound" : "call", ses.started_at);
   const saved = ses.direction === "outbound" ? false : await unfinishedNet(ses, reason);
+  // The owner's copy of the call (summary + full transcript email + push). Runs AFTER the safety net so
+  // the report sees the final outcome; reportCall is once-per-session, so the status callback can't re-send it.
+  await OR.reportCall(ses.org_id, ses.id);
   return { ok: true, seconds: secs, auto_callback: saved || undefined };
 }
 exports.handler = async function (event) {

@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>POTENT — LIVE DROPS | Bodega</title>
+<meta name="description" content="POTENT Bodega Live Drops — live bidding on verified pieces. Highest bid when the countdown ends takes it." />
+<link rel="stylesheet" href="bodega.css" />
+<style>
+  .room{max-width:1240px;margin:0 auto;padding:1.2rem 1rem 3rem}
+  .room-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
+  .live-pill{display:inline-flex;align-items:center;gap:6px;font-weight:900;letter-spacing:.1em;font-size:.75rem;padding:.35rem .7rem;border-radius:999px;border:1px solid var(--line);color:var(--muted);text-transform:uppercase}
+  .live-pill.on{color:#000;background:var(--yellow);border-color:var(--yellow)}
+  .room-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:20px;margin-top:1.2rem}
+  @media(max-width:900px){.room-grid{grid-template-columns:1fr}}
+  .stage-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .stage-media{background:#000;position:relative;aspect-ratio:1/1}
+  .stage-media img{width:100%;height:100%;object-fit:cover;display:block}
+  .stage-media .placeholder{min-height:0;height:100%}
+  .countdown{position:absolute;right:10px;top:10px;background:rgba(0,0,0,.85);border:2px solid var(--yellow);color:var(--yellow);font-weight:900;font-size:1.5rem;padding:.35rem .8rem;border-radius:12px;font-variant-numeric:tabular-nums}
+  .countdown.hot{color:#000;background:var(--yellow)}
+  .stage-body{padding:1rem}
+  .bid-now{font-size:2rem;font-weight:900;color:var(--yellow);line-height:1}
+  .bid-form-room{display:flex;gap:8px;flex-wrap:wrap;margin-top:.8rem}
+  .bid-form-room input{background:#141414;border:1px solid var(--line);color:#fff;padding:.7rem .8rem;border-radius:10px}
+  .bid-form-room input[type=number]{width:150px}
+  .bid-form-room input[type=email]{flex:1;min-width:200px}
+  .feed{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:1rem;display:flex;flex-direction:column;gap:14px}
+  .feed h3,.queue h3{margin:0;color:var(--yellow);letter-spacing:.04em}
+  .feed-list{list-style:none;margin:0;padding:0;max-height:300px;overflow-y:auto}
+  .feed-list li{display:flex;justify-content:space-between;gap:10px;padding:.5rem 0;border-bottom:1px solid var(--line);font-size:.95rem}
+  .feed-list li:first-child{color:var(--yellow);font-weight:800}
+  .queue-list{list-style:none;margin:0;padding:0}
+  .queue-list li{padding:.55rem 0;border-bottom:1px solid var(--line)}
+  .winner-banner{background:var(--yellow);color:#000;font-weight:900;border-radius:12px;padding:1rem;margin-top:1rem}
+  .winner-banner .btn{background:#000;color:var(--yellow);border-color:#000;margin-top:.5rem}
+  .av-box{margin-top:1rem}
+  .av-box iframe{border:0;border-radius:12px}
+  .owner-panel{margin-top:2rem;background:#0d0d0d;border:2px solid var(--yellow);border-radius:14px;padding:1rem}
+  .owner-panel input{background:#141414;border:1px solid var(--line);color:#fff;padding:.6rem .7rem;border-radius:8px}
+  .owner-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:.5rem 0}
+  .drop-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:1rem}
+  @media(max-width:860px){.drop-picker{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="toastWrap" class="toast-wrap" aria-live="polite"></div>
+
+<header class="site-header">
+  <a class="brand" href="./#/shop" aria-label="POTENT Bodega home">
+    <img src="https://voice.potentworld.online/static/bodega/griffin.png" alt="POTENT Griffin" class="brand-griffin" onerror="this.style.display='none'" />
+    <span class="brand-text">
+      <span class="brand-word">POTENT</span>
+      <span class="brand-tag">LIVE DROPS</span>
+    </span>
+  </a>
+  <nav class="main-nav" aria-label="Main">
+    <a class="nav-btn nav-link" href="./#/shop">Shop</a>
+    <a class="nav-btn nav-link" href="./#/marketplace">Marketplace</a>
+    <a class="nav-btn nav-link is-active" href="live.html">Live Drops</a>
+    <a class="nav-btn nav-link" href="./#/mypieces">My Pieces</a>
+  </nav>
+</header>
+
+<main class="room">
+  <div class="room-head">
+    <div>
+      <p class="kicker">LIVE DROPS</p>
+      <h1 id="dropTitle" class="story-title" style="margin:0">The Auction Room</h1>
+      <p class="muted" id="dropSub">Highest bid when the countdown ends takes the piece. Bids in the last 15 seconds add 15 seconds. Winners check out at the winning bid — royalties split the Vault way, every time.</p>
+    </div>
+    <span id="livePill" class="live-pill">Loading…</span>
+  </div>
+
+  <div id="dropPicker"></div>
+
+  <div id="roomMain" hidden>
+    <div class="room-grid">
+      <section class="stage-card" aria-label="Current piece">
+        <div class="stage-media" id="stageMedia">
+          <div class="placeholder"><span>POTENT</span></div>
+          <div class="countdown" id="countdown" hidden>0:00</div>
+        </div>
+        <div class="stage-body">
+          <h2 id="pieceTitle" style="margin:.1rem 0">Waiting for the next piece…</h2>
+          <p class="card-meta" id="pieceMeta"></p>
+          <p class="muted" style="margin:.4rem 0 0">Current bid</p>
+          <div class="bid-now" id="currentBid">—</div>
+          <p class="card-meta" id="bidMeta"></p>
+          <form class="bid-form-room" id="bidForm">
+            <input type="email" id="bidEmail" placeholder="Your email (your Bodega identity)" autocomplete="email" />
+            <input type="number" id="bidAmount" step="0.01" min="0" placeholder="Your bid (USD)" />
+            <button type="submit" class="btn btn-primary" id="bidBtn">Place Bid</button>
+          </form>
+          <p class="tiny muted">No charge to bid. Only the winner pays, at checkout. ALL SALES FINAL.</p>
+          <div id="winnerBox"></div>
+          <div class="av-box">
+            <button type="button" class="btn" id="avJoin">Join the Host Video Room</button>
+            <div id="avFrame" style="margin-top:.6rem"></div>
+            <p class="tiny muted">The video room runs on POTENT's own server (meet.potentworld.online). Cameras and mics start off. POTENT does not record it.</p>
+          </div>
+        </div>
+      </section>
+
+      <aside style="display:flex;flex-direction:column;gap:20px">
+        <section class="feed" aria-label="Live bid feed">
+          <h3>Live Bid Feed</h3>
+          <ul class="feed-list" id="feedList"><li class="muted">No bids yet.</li></ul>
+        </section>
+        <section class="feed queue" aria-label="Up next and results">
+          <h3>Up Next</h3>
+          <ul class="queue-list" id="queueList"><li class="muted">Queue is empty.</li></ul>
+          <h3>Results</h3>
+          <ul class="queue-list" id="resultsList"><li class="muted">Nothing settled yet.</li></ul>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Owner controls (staff token) -->
+  <section class="owner-panel" id="ownerPanel" hidden>
+    <div class="admin-head">
+      <h2 style="margin:0">Owner — Run the Drop</h2>
+      <button type="button" class="btn btn-ghost" id="ownerHide">Hide</button>
+    </div>
+    <div class="owner-row">
+      <input id="newTitle" placeholder="New drop title" style="flex:1;min-width:200px" />
+      <button type="button" class="btn btn-primary" id="oCreate">Create Drop</button>
+    </div>
+    <div class="owner-row">
+      <input id="addOwnership" placeholder="Ownership ID" style="flex:1;min-width:200px" />
+      <input id="addStartBid" type="number" step="0.01" placeholder="Starting bid $" style="width:140px" />
+      <input id="addDuration" type="number" placeholder="Seconds" style="width:110px" />
+      <button type="button" class="btn" id="oAdd">Queue Piece</button>
+    </div>
+    <div class="owner-row">
+      <button type="button" class="btn btn-primary" id="oStart">Go Live</button>
+      <button type="button" class="btn" id="oNext">Settle &amp; Next Piece</button>
+      <button type="button" class="btn" id="oRelease">Release Unpaid Win</button>
+      <button type="button" class="btn" id="oEnd">End Drop</button>
+    </div>
+    <p class="tiny muted">Queue pieces by ownership ID (from the Bodega admin overview / collector records). Releasing a win cancels the winner's reserved listing and frees the piece. Settling runs the same anti-snipe + highest-bid rules as the timer.</p>
+  </section>
+  <p style="margin-top:1.4rem"><button type="button" class="link-btn" id="ownerLink">Owner controls</button></p>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-brand">
+    <img src="https://voice.potentworld.online/static/bodega/griffin.png" alt="" class="footer-griffin" onerror="this.style.display='none'" />
+    <span>POTENT — THE VAULT</span>
+  </div>
+  <p class="footer-final">ALL SALES FINAL — no refunds</p>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var API = "/.netlify/functions/bodega-auction";
+  var IMG_BASE = "https://voice.potentworld.online/static/bodega/";
+  var Q = new URLSearchParams(location.search);
+  var auctionId = Q.get("id") || "";
+  var catalog = {};
+  var st = null; // last poll payload
+  var skew = 0;
+  var pollT = null;
+  var currentItemId = null;
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function fmt(n) { return "$" + (Number(n) || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function fmtCents(c) { return fmt((Number(c) || 0) / 100); }
+  function toast(msg, isError) {
+    var el = document.createElement("div");
+    el.className = "toast" + (isError ? " error" : "");
+    el.textContent = msg;
+    $("toastWrap").appendChild(el);
+    setTimeout(function () { el.remove(); }, 5200);
+  }
+  function token() { try { return sessionStorage.getItem("bodega-admin-token") || ""; } catch (e) { return ""; } }
+  async function api(body) {
+    var headers = { "Content-Type": "application/json" };
+    var t = token();
+    if (t) headers.Authorization = "Bearer " + t;
+    var res = await fetch(API, { method: "POST", headers: headers, body: JSON.stringify(body) });
+    var data = null;
+    try { data = await res.json(); } catch (e) {}
+    data = data || {};
+    if (data.error) throw new Error(data.error);
+    if (!res.ok) throw new Error("Request failed (" + res.status + ")");
+    return data;
+  }
+  function srvNow() { return Date.now() + skew; }
+  function myEmail() {
+    var v = $("bidEmail").value.trim();
+    if (v) { try { localStorage.setItem("potent-bodega-email", v); } catch (e) {} return v; }
+    try { return localStorage.getItem("potent-bodega-email") || ""; } catch (e) { return ""; }
+  }
+
+  async function loadCatalog() {
+    try {
+      var r = await fetch("catalog.json", { headers: { "Accept": "application/json" } });
+      var data = await r.json();
+      (Array.isArray(data) ? data : []).forEach(function (p) {
+        if (p && p.handle) {
+          if (Array.isArray(p.images)) p.images = p.images.map(function (src) {
+            return (typeof src === "string" && src.indexOf("img/") === 0) ? IMG_BASE + src : src;
+          });
+          catalog[p.handle] = p;
+        }
+      });
+    } catch (e) { /* images are decoration here */ }
+  }
+
+  async function loadPicker() {
+    var wrap = $("dropPicker");
+    try {
+      var out = await api({ action: "a_list" });
+      var auctions = out.auctions || [];
+      if (!auctions.length) {
+        wrap.innerHTML = '<div class="empty-state">No drops scheduled right now. Check back — when the Vault goes live, it goes live here.</div>';
+        return;
+      }
+      wrap.innerHTML = '<div class="drop-picker">' + auctions.map(function (a) {
+        return '<article class="card" style="cursor:pointer" data-drop="' + esc(a.id) + '">' +
+          '<div class="card-body"><div class="card-title">' + esc(a.title) + "</div>" +
+          '<div class="card-meta">' + esc(a.status.toUpperCase()) + (a.startsAt ? " · starts " + esc(new Date(a.startsAt).toLocaleString("en-US")) : "") + "</div>" +
+          '<span class="badge ' + (a.status === "live" ? "badge-eligible" : "badge-hold") + '">' + (a.status === "live" ? "LIVE NOW" : a.status.toUpperCase()) + "</span></div></article>";
+      }).join("") + "</div>";
+      Array.prototype.forEach.call(wrap.querySelectorAll("[data-drop]"), function (card) {
+        card.addEventListener("click", function () {
+          location.search = "?id=" + encodeURIComponent(card.getAttribute("data-drop"));
+        });
+      });
+    } catch (e) {
+      wrap.innerHTML = '<div class="empty-state">Could not load drops.</div>';
+    }
+  }
+
+  function render(j) {
+    st = j;
+    var a = j.auction;
+    $("dropTitle").textContent = a.title;
+    var pill = $("livePill");
+    pill.textContent = a.status === "live" ? "● LIVE" : a.status.toUpperCase();
+    pill.classList.toggle("on", a.status === "live");
+    $("roomMain").hidden = false;
+
+    var cur = j.current;
+    var media = $("stageMedia");
+    var cd = $("countdown");
+    if (cur) {
+      var p = catalog[cur.productHandle];
+      var title = p ? p.title : cur.productHandle;
+      $("pieceTitle").textContent = title;
+      $("pieceMeta").textContent = (cur.editionLabel ? cur.editionLabel + " · " : "") + "Starting bid " + fmtCents(cur.startingBidCents) + " · " + (cur.bidCount || 0) + " bid" + (cur.bidCount === 1 ? "" : "s");
+      media.innerHTML = (p && p.images && p.images.length
+        ? '<img src="' + esc(p.images[0]) + '" alt="' + esc(title) + '" />'
+        : '<div class="placeholder"><span>POTENT</span></div>') +
+        '<div class="countdown" id="countdown">0:00</div>';
+      cd = $("countdown");
+      $("currentBid").textContent = cur.currentBidCents ? fmtCents(cur.currentBidCents) : fmtCents(cur.startingBidCents);
+      $("bidMeta").textContent = cur.currentBidCents ? "Highest bid right now — beat it to lead." : "No bids yet — open at the starting bid.";
+      var next = cur.currentBidCents ? cur.currentBidCents + 100 : cur.startingBidCents;
+      $("bidAmount").placeholder = "Min " + fmtCents(next);
+      currentItemId = cur.id;
+      tickCountdown();
+    } else {
+      $("pieceTitle").textContent = a.status === "live" ? "Between pieces — the next one is coming up." : (a.status === "ended" ? "This drop has ended." : "The drop hasn't started yet.");
+      $("pieceMeta").textContent = "";
+      $("currentBid").textContent = "—";
+      $("bidMeta").textContent = "";
+      media.innerHTML = '<div class="placeholder"><span>POTENT</span></div>';
+      currentItemId = null;
+    }
+
+    var feed = j.feed || [];
+    $("feedList").innerHTML = feed.length ? feed.map(function (b) {
+      return "<li><span>" + esc(b.bidder) + "</span><strong>" + fmtCents(b.amountCents) + "</strong></li>";
+    }).join("") : '<li class="muted">No bids yet.</li>';
+
+    var queue = j.queue || [];
+    $("queueList").innerHTML = queue.length ? queue.map(function (it, i) {
+      var p2 = catalog[it.productHandle];
+      return "<li>" + (i + 1) + ". <strong>" + esc(p2 ? p2.title : it.productHandle) + "</strong> <span class='muted'>opens " + fmtCents(it.startingBidCents) + "</span></li>";
+    }).join("") : '<li class="muted">Queue is empty.</li>';
+
+    var results = j.results || [];
+    $("resultsList").innerHTML = results.length ? results.map(function (it) {
+      var p3 = catalog[it.productHandle];
+      return "<li><strong>" + esc(p3 ? p3.title : it.productHandle) + "</strong> — " +
+        (it.status === "won" ? '<span style="color:var(--yellow);font-weight:800">SOLD ' + fmtCents(it.winningBidCents) + "</span>" : '<span class="muted">unsold — returned to the Vault</span>') + "</li>";
+    }).join("") : '<li class="muted">Nothing settled yet.</li>';
+
+    var wb = $("winnerBox");
+    if (j.myWin) {
+      wb.innerHTML = '<div class="winner-banner">YOU WON — ' + esc(j.myWin.productHandle) + " at " + fmtCents(j.myWin.winningBidCents) + "!" +
+        '<br/><button type="button" class="btn" id="winCheckout">Check Out Now</button></div>';
+      $("winCheckout").addEventListener("click", function () { checkoutWin(j.myWin.itemId); });
+    } else {
+      wb.innerHTML = "";
+    }
+  }
+
+  function tickCountdown() {
+    var cd = $("countdown");
+    if (!cd || !st || !st.current || !st.current.endsAt) return;
+    var left = Math.max(0, Math.round((new Date(st.current.endsAt).getTime() - srvNow()) / 1000));
+    cd.textContent = Math.floor(left / 60) + ":" + ("0" + (left % 60)).slice(-2);
+    cd.classList.toggle("hot", left <= 15);
+  }
+  setInterval(tickCountdown, 250);
+
+  async function poll() {
+    clearTimeout(pollT);
+    if (!auctionId) return;
+    try {
+      var body = { action: "a_poll", auctionId: auctionId };
+      var em = myEmail();
+      if (em) body.email = em;
+      var j = await api(body);
+      var t = Date.parse(j.now);
+      if (t) skew = t - Date.now();
+      render(j);
+    } catch (e) {
+      $("livePill").textContent = "OFFLINE";
+    }
+    pollT = setTimeout(poll, document.hidden ? 10000 : 3000);
+  }
+
+  async function checkoutWin(itemId) {
+    var email = myEmail();
+    if (!email || email.indexOf("@") === -1) { toast("Enter the email you bid with first.", true); $("bidEmail").focus(); return; }
+    try {
+      var out = await api({ action: "a_checkout", auctionId: auctionId, itemId: itemId, email: email });
+      if (!out.url) throw new Error("No checkout URL returned.");
+      location.href = out.url;
+    } catch (e) { toast("Checkout failed: " + e.message, true); }
+  }
+
+  $("bidForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    var email = myEmail();
+    if (!email || email.indexOf("@") === -1) { toast("Enter a valid email — that's your Bodega identity.", true); return; }
+    var dollars = Number($("bidAmount").value);
+    if (!dollars || isNaN(dollars) || dollars <= 0) { toast("Enter your bid.", true); return; }
+    try {
+      var out = await api({ action: "a_bid", auctionId: auctionId, email: email, amountCents: Math.round(dollars * 100) });
+      toast(out.extended ? "Bid in — and the clock just gained 15 seconds." : "Bid in at " + fmtCents(out.currentBidCents) + ". You're leading.");
+      $("bidAmount").value = "";
+      poll();
+    } catch (err) { toast("Bid failed: " + err.message, true); }
+  });
+
+  // Host video (Jitsi on POTENT's own server) — same embed pattern as Smoke Sessions.
+  var avDone = false;
+  $("avJoin").addEventListener("click", async function () {
+    try {
+      var body = { action: "a_av_token", auctionId: auctionId };
+      var em = myEmail(); if (em) body.email = em;
+      var r = await api(body);
+      if (!r.available) { toast("The video room isn't switched on yet."); return; }
+      var sc = document.createElement("script");
+      sc.src = "https://" + r.domain + "/external_api.js";
+      sc.onerror = function () { toast("Couldn't reach the video server.", true); };
+      sc.onload = function () {
+        $("avFrame").innerHTML = '<div id="avMount" style="height:420px;border-radius:12px;overflow:hidden"></div>';
+        new JitsiMeetExternalAPI(r.domain, {
+          roomName: r.room, jwt: r.jwt, parentNode: $("avMount"), width: "100%", height: "100%",
+          configOverwrite: { startWithAudioMuted: true, startWithVideoMuted: true, prejoinPageEnabled: false, disableDeepLinking: true },
+          interfaceConfigOverwrite: { MOBILE_APP_PROMO: false }
+        });
+        avDone = true;
+      };
+      document.head.appendChild(sc);
+    } catch (e) { toast(e.message, true); }
+  });
+
+  // ───────── owner controls ─────────
+  function showOwner() {
+    var t = token();
+    if (!t) {
+      t = window.prompt("Owner token:");
+      if (!t) return;
+      try { sessionStorage.setItem("bodega-admin-token", t); } catch (e) {}
+    }
+    $("ownerPanel").hidden = false;
+  }
+  $("ownerLink").addEventListener("click", showOwner);
+  $("ownerHide").addEventListener("click", function () { $("ownerPanel").hidden = true; });
+  function ownerAct(body, msg) {
+    return api(body).then(function (r) { if (msg) toast(msg); poll(); return r; }).catch(function (e) { toast(e.message, true); });
+  }
+  $("oCreate").addEventListener("click", function () {
+    var title = $("newTitle").value.trim();
+    if (title.length < 3) { toast("Give the drop a title.", true); return; }
+    ownerAct({ action: "o_create", title: title, startNow: false }, "Drop created").then(function (r) {
+      if (r.auction) location.search = "?id=" + encodeURIComponent(r.auction.id);
+    });
+  });
+  $("oAdd").addEventListener("click", function () {
+    if (!auctionId) { toast("Open a drop first.", true); return; }
+    var oid = $("addOwnership").value.trim();
+    var bid = Number($("addStartBid").value);
+    if (!oid || !bid) { toast("Ownership ID + starting bid required.", true); return; }
+    ownerAct({ action: "o_add_item", auctionId: auctionId, ownershipId: oid, startingBidCents: Math.round(bid * 100), durationSeconds: Number($("addDuration").value) || 120 }, "Piece queued");
+  });
+  $("oStart").addEventListener("click", function () { if (auctionId) ownerAct({ action: "o_start", auctionId: auctionId }, "We are live"); });
+  $("oNext").addEventListener("click", function () { if (auctionId) ownerAct({ action: "o_next", auctionId: auctionId }, "Settled — next piece"); });
+  $("oEnd").addEventListener("click", function () { if (auctionId && window.confirm("End this drop for everyone?")) ownerAct({ action: "o_end", auctionId: auctionId }, "Drop ended"); });
+  $("oRelease").addEventListener("click", function () {
+    if (!auctionId) { toast("Open a drop first.", true); return; }
+    var itemId = window.prompt("Won item ID to release (winner never paid — frees the piece back to active):");
+    if (!itemId) return;
+    ownerAct({ action: "o_release", auctionId: auctionId, itemId: itemId.trim() }, "Win released — piece freed");
+  });
+
+  // init
+  (function init() {
+    var saved = "";
+    try { saved = localStorage.getItem("potent-bodega-email") || ""; } catch (e) {}
+    if (saved) $("bidEmail").value = saved;
+    loadCatalog().then(function () {
+      if (auctionId) { $("roomMain").hidden = false; poll(); }
+      else loadPicker();
+    });
+  })();
+})();
+</script>
+</body>
+</html>

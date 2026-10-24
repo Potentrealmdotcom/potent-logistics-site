@@ -1563,5 +1563,25 @@
   "title": "Unisex Vintage Wash Distressed Layer T-Shirt",
   "priceCents": 3996,
   "floorCents": 3996
+ },
+ "mystery-box-platinum": {
+  "title": "MULTICITY × POTENT Mystery Box — Platinum",
+  "priceCents": 29900,
+  "floorCents": 29900
+ },
+ "mystery-box-diamond": {
+  "title": "MULTICITY × POTENT Mystery Box — Diamond",
+  "priceCents": 49900,
+  "floorCents": 49900
+ },
+ "mystery-box-vault": {
+  "title": "MULTICITY × POTENT Mystery Box — POTENT'S PICK (The Vault)",
+  "priceCents": 89900,
+  "floorCents": 89900
+ },
+ "mystery-box-black-label": {
+  "title": "MULTICITY × POTENT Mystery Box — Black Label",
+  "priceCents": 149900,
+  "floorCents": 149900
  }
 }
