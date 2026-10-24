@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>POTENT — THE VAULT | Bodega</title>
+<meta name="description" content="POTENT Bodega — THE VAULT. Verified pieces, verified history. All sales final." />
+<link rel="stylesheet" href="bodega.css" />
+</head>
+<body>
+<div id="banner" class="banner" hidden></div>
+<div id="toastWrap" class="toast-wrap" aria-live="polite"></div>
+
+<header class="site-header">
+  <a class="brand" href="#/shop" aria-label="POTENT Bodega home">
+    <img src="https://voice.potentworld.online/static/bodega/griffin.png" alt="POTENT Griffin" class="brand-griffin" onerror="this.style.display='none'" />
+    <span class="brand-text">
+      <span class="brand-word">POTENT</span>
+      <span class="brand-tag">THE VAULT</span>
+    </span>
+  </a>
+
+  <div class="header-search">
+    <label class="sr-only" for="searchInput">Search pieces</label>
+    <input id="searchInput" type="search" placeholder="Search pieces, tags, types…" autocomplete="off" />
+  </div>
+
+  <nav class="main-nav" aria-label="Main">
+    <button type="button" class="nav-btn is-active" data-view="shop">Shop</button>
+    <button type="button" class="nav-btn" data-view="marketplace">Marketplace</button>
+    <button type="button" class="nav-btn" data-view="mypieces">My Pieces</button>
+  </nav>
+
+  <button type="button" id="bagBtn" class="bag-btn" aria-label="Open bag">
+    Bag <span id="bagCount" class="bag-count">0</span>
+  </button>
+</header>
+
+<section id="hero" class="hero">
+  <video id="heroVideo" class="hero-video" muted loop autoplay playsinline hidden></video>
+  <div class="hero-fallback" id="heroFallback">
+    <img src="https://voice.potentworld.online/static/bodega/griffin.png" alt="" class="hero-griffin" onerror="this.style.opacity='0.15'" />
+    <h1 class="hero-title">POTENT</h1>
+    <p class="hero-sub">THE VAULT — verified pieces, verified history.</p>
+    <p class="hero-note">Every piece is recorded. Every transfer is verified.</p>
+  </div>
+  <div class="hero-overlay-text" id="heroOverlayText" hidden>
+    <h1 class="hero-title">POTENT</h1>
+    <p class="hero-sub">THE VAULT — verified pieces, verified history.</p>
+  </div>
+</section>
+
+<div class="chips-row-wrap">
+  <div id="filterChips" class="filter-chips" role="tablist" aria-label="Filters"></div>
+</div>
+
+<main id="mainContent" class="main-content">
+  <!-- Shop view -->
+  <section id="view-shop" class="view">
+    <div class="view-head">
+      <h2>Shop</h2>
+      <p class="muted">Verified pieces from the vault. All sales final.</p>
+    </div>
+    <div id="shopGrid" class="product-grid"></div>
+    <div id="shopEmpty" class="empty-state" hidden>No pieces match your search.</div>
+    <div id="shopLoading" class="empty-state">Loading the vault…</div>
+  </section>
+
+  <!-- Marketplace view -->
+  <section id="view-marketplace" class="view" hidden>
+    <div class="view-head">
+      <h2>Marketplace</h2>
+      <p class="muted">Collector-to-collector resale. Prices respect the resale floor.</p>
+    </div>
+    <div id="marketGrid" class="product-grid"></div>
+    <div id="marketEmpty" class="empty-state" hidden>No active listings right now. Check back soon.</div>
+    <div id="marketLoading" class="empty-state" hidden>Loading marketplace…</div>
+  </section>
+
+  <!-- My Pieces view -->
+  <section id="view-mypieces" class="view" hidden>
+    <div class="view-head">
+      <h2>My Pieces</h2>
+      <p class="muted">Enter the email you checked out with to see your collection.</p>
+    </div>
+    <form id="myPiecesForm" class="inline-form">
+      <label for="myPiecesEmail">Email</label>
+      <input id="myPiecesEmail" type="email" placeholder="you@example.com" required />
+      <button type="submit" class="btn btn-primary">View My Pieces</button>
+    </form>
+    <div id="collectorInfo" class="collector-info" hidden></div>
+    <div id="myPiecesGrid" class="product-grid"></div>
+    <div id="myPiecesEmpty" class="empty-state" hidden>No pieces found for that email yet.</div>
+    <div id="royaltiesWrap" class="royalties-wrap" hidden>
+      <h3>Royalty History</h3>
+      <ul id="royaltiesList" class="simple-list"></ul>
+    </div>
+  </section>
+
+  <!-- Product detail view (hash route #/p/<handle>) -->
+  <section id="view-detail" class="view" hidden>
+    <button type="button" id="backToShop" class="btn btn-ghost">← Back to Shop</button>
+    <div id="detailContent"></div>
+  </section>
+</main>
+
+<!-- Bag drawer -->
+<div id="bagOverlay" class="drawer-overlay" hidden></div>
+<aside id="bagDrawer" class="bag-drawer" hidden aria-label="Shopping bag">
+  <div class="drawer-head">
+    <h2>Your Bag</h2>
+    <button type="button" id="closeBag" class="btn btn-ghost" aria-label="Close bag">✕</button>
+  </div>
+  <p class="final-banner">ALL SALES FINAL — no refunds</p>
+  <div id="bagItems" class="bag-items"></div>
+  <div id="bagEmpty" class="empty-state">Your bag is empty.</div>
+  <div class="bag-footer">
+    <div class="bag-row"><span>Subtotal</span><strong id="bagSubtotal">$0.00</strong></div>
+    <label for="bagEmail">Email for checkout &amp; ownership</label>
+    <input id="bagEmail" type="email" placeholder="you@example.com" />
+    <button type="button" id="checkoutBtn" class="btn btn-primary btn-block">Checkout — ALL SALES FINAL</button>
+    <p class="tiny muted">By checking out you agree: ALL SALES FINAL — no refunds. Ownership is recorded to your email at payment confirmation.</p>
+  </div>
+</aside>
+
+<!-- Product detail overlay (mobile / quick-view shell, detail itself renders in view-detail) -->
+<div id="detailOverlay" class="detail-overlay" hidden>
+  <div class="detail-overlay-card">
+    <button type="button" id="closeDetailOverlay" class="btn btn-ghost">✕ Close</button>
+    <div id="detailOverlayContent"></div>
+  </div>
+</div>
+
+<!-- Admin panel -->
+<section id="adminPanel" class="admin-panel" hidden>
+  <div class="admin-head">
+    <h2>Owner — Bodega Overview</h2>
+    <button type="button" id="dismissAdmin" class="btn btn-ghost">Dismiss</button>
+  </div>
+  <div id="adminContent"></div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-brand">
+    <img src="https://voice.potentworld.online/static/bodega/griffin.png" alt="" class="footer-griffin" onerror="this.style.display='none'" />
+    <span>POTENT — THE VAULT</span>
+  </div>
+  <p class="footer-final">ALL SALES FINAL — no refunds</p>
+  <p class="muted tiny">Creator: POTENT · Verified pieces, verified history.</p>
+  <p><button type="button" id="adminLink" class="link-btn">Admin</button></p>
+</footer>
+
+<script src="bodega.js"></script>
+</body>
+</html>
