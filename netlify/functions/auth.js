@@ -302,7 +302,9 @@ exports.handler = async function (event) {
             var limitKey = "staff:" + uid;
             if (tooMany(limitKey)) return J(429, { ok: false, error: "Too many attempts. Try again in 15 minutes." });
             var rec = staffMap()[uid];
-            if (!rec) { noteFail(limitKey); return J(401, { ok: false, error: "Wrong password" }); }
+            // noPhoto: the quill (agent) account has no camera step at sign-in (owner order) — the client honors this
+            // server-asserted flag, so the exemption does not rest on the client alone. All other accounts get false.
+            if (!rec) { noteFail(limitKey); return J(401, { ok: false, error: "Wrong password", noPhoto: uid === "quill" }); }
 
             var rev = await sb("revoked_users?user_id=eq." + encodeURIComponent(uid) + "&select=user_id");
             if (rev.ok && Array.isArray(rev.data) && rev.data.length) return J(403, { ok: false, error: "revoked" });
@@ -311,10 +313,10 @@ exports.handler = async function (event) {
             var ov = await sb("user_password_overrides?user_id=eq." + encodeURIComponent(uid) + "&select=password");
             if (ov.ok && Array.isArray(ov.data) && ov.data[0] && ov.data[0].password) okPw = checkPw(ov.data[0].password, body.password);
             if (!okPw) okPw = checkPw(rec.p, body.password) && !(ov.ok && Array.isArray(ov.data) && ov.data[0] && ov.data[0].password);
-            if (!okPw) { noteFail(limitKey); return J(401, { ok: false, error: "Wrong password" }); }
+            if (!okPw) { noteFail(limitKey); return J(401, { ok: false, error: "Wrong password", noPhoto: uid === "quill" }); }
 
             var role = rec.r || "dispatch";
-            return J(200, { ok: true, token: sign({ uid: uid, role: role, orgId: null, exp: Date.now() + TOKEN_TTL_MS }), role: role });
+            return J(200, { ok: true, token: sign({ uid: uid, role: role, orgId: null, exp: Date.now() + TOKEN_TTL_MS }), role: role, noPhoto: uid === "quill" });
         }
 
         // ── public: a company page's id from its web address (the id alone; nothing else about the company) ──

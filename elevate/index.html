@@ -23,6 +23,14 @@ main{flex:1;overflow:auto;padding:16px;max-width:1180px;width:100%;margin:0 auto
 .msg{padding:10px 14px;border-radius:16px;margin:8px 0;max-width:88%;white-space:pre-wrap;word-wrap:break-word}
 .me{background:#1d1d1d;margin-left:auto;border-bottom-right-radius:4px}.ai{background:#15140a;border:1px solid #3a3600;border-bottom-left-radius:4px}
 .did{font-size:12px;color:var(--y);margin:-2px 0 6px 4px}
+/* ---------- pull-up display: what she presents goes on the neural wall, not in a plain bubble ---------- */
+.neural{position:relative;overflow:hidden;max-width:94%;background:linear-gradient(155deg,#051638 0,#020a22 55%,#01040f 100%);border:1px solid #2a55b8;border-radius:16px;padding:0;box-shadow:0 0 22px rgba(38,92,255,.22),inset 0 0 34px rgba(24,70,200,.14)}
+.neural::before{content:"";position:absolute;inset:0;opacity:.55;pointer-events:none;background-size:cover;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='170' viewBox='0 0 300 170'%3E%3Cg stroke='%232f6bff' stroke-opacity='.45' fill='none'%3E%3Cpath d='M30 130 L85 80 L150 105 L205 55 L268 88'/%3E%3Cpath d='M85 80 L120 30 L205 55'/%3E%3Cpath d='M150 105 L185 140 L268 88'/%3E%3Cpath d='M30 130 L150 105'/%3E%3Cpath d='M120 30 L150 105'/%3E%3C/g%3E%3Cg fill='%237cc0ff'%3E%3Ccircle cx='30' cy='130' r='2.5'/%3E%3Ccircle cx='85' cy='80' r='3.5'/%3E%3Ccircle cx='120' cy='30' r='2.5'/%3E%3Ccircle cx='150' cy='105' r='4'/%3E%3Ccircle cx='205' cy='55' r='3'/%3E%3Ccircle cx='268' cy='88' r='3.5'/%3E%3Ccircle cx='185' cy='140' r='2.5'/%3E%3Ccircle cx='52' cy='52' r='1.8'/%3E%3Ccircle cx='238' cy='128' r='1.8'/%3E%3C/g%3E%3C/svg%3E")}
+.neural-h{position:relative;display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid #1d3a75;font-size:10px;font-weight:700;letter-spacing:.3em;color:#8fc2ff}
+.neural-h .ndot{width:7px;height:7px;flex:none;border-radius:50%;background:#5db9ff;box-shadow:0 0 10px #5db9ff;animation:pulse 2.4s ease-in-out infinite}
+.neural-b{position:relative;padding:10px 14px;white-space:pre-wrap;word-wrap:break-word}
+.neural .did{margin:6px 0 0}
+@media(prefers-reduced-motion:reduce){.neural-h .ndot{animation:none}}
 form.bar{display:flex;gap:8px;padding:10px 16px;border-top:1px solid var(--line);max-width:1180px;width:100%;margin:0 auto}
 input,textarea,select{font:inherit;color:var(--tx);background:#0b0b0b;border:1px solid var(--line);border-radius:12px;padding:12px;width:100%}
 input[type=checkbox]{width:auto}
@@ -61,8 +69,8 @@ input[type=checkbox]{width:auto}
 .orb{--amp:0;position:relative;width:150px;height:150px;border-radius:50%;display:grid;place-items:center}
 .orb i{position:absolute;inset:0;border-radius:50%;border:2px solid #3a3600}
 .orb .r2{inset:14px;border-color:#2a2700}
-.orb .core{inset:34px;background:radial-gradient(circle at 50% 40%,#fff6 0,var(--y) 28%,#6b6400 75%,#1a1800 100%);border:0;transform:scale(calc(1 + var(--amp)*.35));box-shadow:0 0 calc(18px + var(--amp)*60px) #F0E00055;transition:transform .08s linear}
-.orb b{position:relative;font-size:40px;color:#000;font-weight:800;line-height:1}
+.orb .mouth{position:relative;width:97%;height:auto;display:block;pointer-events:none;user-select:none;-webkit-user-drag:none;transform:scale(calc(1 + var(--amp)*.16));filter:drop-shadow(0 0 calc(9px + var(--amp)*34px) rgba(240,224,0,.45));transition:transform .08s linear}
+.orb[data-state=listening] .mouth{animation:pulse 3s ease-in-out infinite}
 .orb[data-state=listening] .r1{animation:pulse 3s ease-in-out infinite}
 .orb[data-state=thinking] .r1{border-color:var(--y) transparent transparent transparent;animation:spin 1.6s linear infinite}
 .orb[data-state=executing] .r1{border-color:var(--y) var(--y) transparent transparent;animation:spin 1.1s linear infinite}
@@ -74,8 +82,8 @@ input[type=checkbox]{width:auto}
 .orb[data-state=blocked]{filter:grayscale(1) brightness(.6)}.orb[data-state=blocked] .r1{border-style:dashed}
 @keyframes pulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.07);opacity:1}}
 @keyframes spin{to{transform:rotate(360deg)}}
-@media(prefers-reduced-motion:reduce){.orb *{animation:none!important;transition:none!important}.orb .core{transform:none!important}}
-body.calm .orb *{animation:none!important;transition:none!important}body.calm .orb .core{transform:none!important}
+@media(prefers-reduced-motion:reduce){.orb *{animation:none!important;transition:none!important}.orb .mouth{transform:none!important}}
+body.calm .orb *{animation:none!important;transition:none!important}body.calm .orb .mouth{transform:none!important}
 
 /* ---------- full-screen voice stage: the orb takes the whole page while voice is on ---------- */
 #vstage{position:fixed;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;gap:2.2vmin;text-align:center;padding:16px;
@@ -85,9 +93,8 @@ body.calm .orb *{animation:none!important;transition:none!important}body.calm .o
   -webkit-mask-image:radial-gradient(circle at 50% 45%,#000 0,transparent 70%);mask-image:radial-gradient(circle at 50% 45%,#000 0,transparent 70%);pointer-events:none}
 #vstage .orb{width:min(84vmin,660px);height:min(84vmin,660px);flex:none}
 #vstage .orb i{border-width:3px}
-#vstage .orb .r2{inset:9%}#vstage .orb .core{inset:21%;box-shadow:0 0 calc(40px + var(--amp)*160px) #F0E000aa,0 0 calc(90px + var(--amp)*220px) #F0E00033}
+#vstage .orb .r2{inset:9%}#vstage .orb .mouth{width:88%;filter:drop-shadow(0 0 calc(34px + var(--amp)*130px) rgba(240,224,0,.5))}
 #vstage .orb .r3{inset:-6%;border:1px dashed #F0E00055;animation:spin 28s linear infinite}
-#vstage .orb b{font-size:min(22vmin,150px)}
 #vstage .orbst{font-size:clamp(14px,3.4vmin,26px);letter-spacing:.34em}
 #vstage .orbnote{font-size:clamp(13px,2.6vmin,20px);max-width:min(92vw,760px);color:#d9d6a0}
 #vstage .cap{max-width:min(92vw,820px);min-height:3.2em;font-size:clamp(14px,2.6vmin,20px);line-height:1.45;color:var(--tx);opacity:.92}
@@ -126,7 +133,7 @@ body.calm .orb *{animation:none!important;transition:none!important}body.calm .o
     <p class="dim" style="font-size:12px;margin:10px 0 0">Minutes are per month; extra minutes bill at the tier's per-minute rate.</p>
   </div>
 </div>
-<div id="vstage" role="dialog" aria-label="Voice"><div class="orb" id="sorb" data-state="idle"><i class="r1"></i><i class="r2"></i><i class="r3"></i><i class="core"></i><b>Ə</b></div>
+<div id="vstage" role="dialog" aria-label="Voice"><div class="orb" id="sorb" data-state="idle"><i class="r1"></i><i class="r2"></i><i class="r3"></i><img class="mouth" src="https://voice.potentworld.online/static/assets/elevate-mouth.png" alt="" draggable="false"></div>
 <div class="orbst" id="sorbst" role="status">Ready</div><div class="orbnote" id="sorbnote"></div><div class="cap" id="scap" aria-live="polite"></div>
 <button class="end" id="send_voice" type="button">END</button><button class="type" id="stype" type="button">Back to typing</button></div>
 <div id="app" class="hide" style="display:flex;flex-direction:column;flex:1;min-height:0">
@@ -141,6 +148,7 @@ body.calm .orb *{animation:none!important;transition:none!important}body.calm .o
 <script>
 var API="/.netlify/functions/elevate-api",$=function(i){return document.getElementById(i)},tab="home",chat=[],TOK="",VOICES=["Kore"],ME={};
 var MAPURL="https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json";
+var MOUTHURL="https://voice.potentworld.online/static/assets/elevate-mouth.png";
 try{TOK=localStorage.getItem("elv_t")||""}catch(e){}
 function setTok(t){TOK=t||"";try{t?localStorage.setItem("elv_t",t):localStorage.removeItem("elv_t")}catch(e){}}
 function rawApi(b){return fetch(API,{method:"POST",headers:Object.assign({"Content-Type":"application/json"},TOK?{Authorization:"Bearer "+TOK}:{}),body:JSON.stringify(b)})
@@ -213,7 +221,9 @@ function go(t){tab=t;drawTabs();draw()}
 function draw(){var m=$("main");m.innerHTML="";m.className="";$("bar").classList.toggle("hide",tab!=="chat");
   if(tab==="home")return home(m);if(tab==="set")return settings(m);
   if(tab==="chat"){if(!chat.length)m.appendChild(el("div","card dim","Hi. Type or tap the mic and talk. I can save notes, add tasks and reminders, and remember things for you. I can't send messages, make calls or move money yet."));
-    chat.forEach(function(c){var d=el("div","msg "+(c.role==="user"?"me":"ai"),c.content);m.appendChild(d);if(c.did)c.did.forEach(function(x){m.appendChild(el("div","did","✓ "+(x.item&&x.item.title||"saved")))})});m.scrollTop=m.scrollHeight;return}
+    chat.forEach(function(c){if(c.role==="user"){m.appendChild(el("div","msg me",c.content));return}
+      var p=el("div","msg ai neural");var h=el("div","neural-h");h.appendChild(el("span","ndot"));h.appendChild(document.createTextNode("ƏLEVATE · PULLED UP FOR YOU"));p.appendChild(h);
+      var b=el("div","neural-b",c.content);if(c.did)c.did.forEach(function(x){b.appendChild(el("div","did","✓ "+(x.item&&x.item.title||"saved")))});p.appendChild(b);m.appendChild(p)});m.scrollTop=m.scrollHeight;return}
   var add=el("form","card"),inp=el("input");inp.placeholder=tab==="task"?"Add a task…":tab==="note"?"Add a note…":"Something to remember…";inp.maxLength=200;inp.setAttribute("aria-label",inp.placeholder);add.appendChild(inp);
   var due;if(tab==="task"){due=el("input");due.type="datetime-local";due.style.marginTop="8px";due.setAttribute("aria-label","Due date");add.appendChild(due)}
   var b=el("button",null,"Add");b.style.marginTop="8px";add.appendChild(b);m.appendChild(add);var list=el("div","card");m.appendChild(list);
@@ -269,7 +279,7 @@ function loadMap(force){mapStat="loading";return Promise.resolve().then(function
 function home(m){
   var side=el("div","side"),orbCard=el("div","card");
   var ob=el("div","orbbox");var orb=el("div","orb");orb.id="orb";orb.dataset.state=orbState;orb.setAttribute("role","img");orb.setAttribute("aria-label","Əlevate status");
-  ["r1","r2","core"].forEach(function(c){orb.appendChild(el("i",c))});orb.appendChild(el("b",null,"Ə"));ob.appendChild(orb);
+  ["r1","r2"].forEach(function(c){orb.appendChild(el("i",c))});var mi=el("img","mouth");mi.src=MOUTHURL;mi.alt="";mi.draggable=false;orb.appendChild(mi);ob.appendChild(orb);
   var st=el("div","orbst",ORBLBL[orbState]);st.id="orbst";st.setAttribute("role","status");ob.appendChild(st);var nt=el("div","orbnote",orbNote);nt.id="orbnote";ob.appendChild(nt);
   var ctl=el("div","ctl");var mic=el("button","mic"+(pc?" live":""),pc?"■":"🎙");mic.title="Talk";mic.id="hmic";mic.setAttribute("aria-label",pc?"Stop voice":"Talk to Əlevate");mic.onclick=function(){$("mic").click()};ctl.appendChild(mic);
   var pause=el("button","alt",pc&&ms&&ms.getTracks()[0]&&!ms.getTracks()[0].enabled?"Resume mic":"Pause mic");pause.disabled=!pc;pause.onclick=function(){if(!ms)return;var t=ms.getTracks()[0];t.enabled=!t.enabled;pause.textContent=t.enabled?"Pause mic":"Resume mic";micStat()};ctl.appendChild(pause);

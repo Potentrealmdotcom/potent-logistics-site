@@ -4014,13 +4014,16 @@ function sendEmail(job) {
 // of a vague "worth a call?" ask.
 var LEAD_EMAIL_TEMPLATES = {
     intro: {
-        label: "👋 Intro Email",
-        subject: function (lead) { return "Backup transportation support for " + (lead.name || "your company"); },
+        label: "🚚 Freight & Delivery",
+        subject: function (lead) { return "Pickup & delivery help for " + (lead.company || lead.name || "your company"); },
         body: function (lead) {
             return "Hello " + (lead.name || "there") + ",\n\n" +
-                "I'm reaching out from POTENT Logistics. We help businesses" + (lead.city ? " around " + lead.city : "") + " with time-sensitive transportation needs, emergency freight, and overflow situations when normal transportation options can't respond.\n\n" +
-                "I was curious how " + (lead.name || "your company") + " currently handles urgent transportation requests. Would it make sense to have an additional transportation resource available when needed?\n\n" +
-                "Thank you,\nPOTENT Logistics\n" + PHONE_DISPLAY;
+                "I'm Tony Figueroa Mendes, owner of Potent Logistics here in Conyers. We run a 16-ft box truck (up to 4,999 lb) for local businesses" + (lead.city ? " around " + lead.city : "") + " — recurring weekly pickup & delivery runs, same-day when it's urgent, and live tracking on every job so you always know where your freight is.\n\n" +
+                "A lot of our accounts started with one question: who do you call when your usual option falls through or a delivery just has to move today? We also handle FF&E deliveries and haul-offs if you ever need old equipment or junk gone.\n\n" +
+                "And instead of juggling gig apps like Curri load by load, everything runs through one Potent account — live tracking on every job, one simple invoice, and an optional prepaid wallet so repeat jobs pay automatically.\n\n" +
+                "Worth a 10-minute call this week to see if we fit? Or just reply here and I'll send details. We're rated 5.0 stars on Google.\n\n" +
+                "If it's not a fit, reply \"no thanks\" and I'll close the loop — no hard feelings.\n\n" +
+                "Thank you,\nTony Figueroa Mendes\nPotent Logistics (POTENT OPERATIONS LLC) — Conyers, GA\n" + PHONE_DISPLAY + " · Direct (470) 453-1616";
         }
     },
     follow_up: {
@@ -4028,9 +4031,9 @@ var LEAD_EMAIL_TEMPLATES = {
         subject: function (lead) { return "Quick follow-up — POTENT Logistics"; },
         body: function (lead) {
             return "Hi " + (lead.name || "there") + ",\n\n" +
-                "I don't want to keep bothering you. Should I close the loop for now, or would it make sense to stay connected as a backup transportation option" + (lead.city ? " in " + lead.city : "") + "?\n\n" +
-                "Either way, happy to answer any questions.\n\n" +
-                "Best,\nPOTENT Logistics\n" + PHONE_DISPLAY;
+                "Floating this back up — Potent Logistics runs recurring weekly pickup & delivery routes" + (lead.city ? " around " + lead.city : "") + " with a 16-ft box truck and live tracking on every job. If a run ever lands on your plate with nobody to move it, we can usually cover it same-day.\n\n" +
+                "Want me to hold a spot on the route for " + (lead.company || lead.name || "your team") + "? A 10-minute call is all it takes. And if the answer is no, just say the word and I'll close the loop.\n\n" +
+                "Best,\nTony Figueroa Mendes\nPotent Logistics — Conyers, GA\n" + PHONE_DISPLAY + " · Direct (470) 453-1616";
         }
     },
     quote: {
@@ -4042,6 +4045,133 @@ var LEAD_EMAIL_TEMPLATES = {
                 (lead.service_type ? "Needs: " + lead.service_type + "\n" : "") +
                 "\nBased on what we discussed, does it make sense for POTENT to be a transportation resource for your team? Happy to lock in details whenever you're ready — just reply or call " + PHONE_DISPLAY + ".\n\n" +
                 "Best,\nPOTENT Logistics";
+        }
+    },
+    junk: {
+        label: "🗑️ Junk Removal",
+        subject: function (lead) { return "Junk removal & cleanouts for " + (lead.company || lead.name || "your property"); },
+        body: function (lead) {
+            return "Hello " + (lead.name || "there") + ",\n\n" +
+                "I'm Tony Figueroa Mendes, owner of Potent Logistics here in Conyers. Alongside our delivery work, we run junk removal and cleanouts" + (lead.city ? " around " + lead.city : "") + " — furniture, appliances, debris, garage and property cleanouts, hauled off and gone.\n\n" +
+                "Straightforward pricing, no surprises:\n" +
+                "• Single item — $179\n" +
+                "• Quarter load — $250\n" +
+                "• Half load — $350–$400\n" +
+                "• Full truckload — $750–$850\n" +
+                "• Studio/1BR cleanout — $499\n" +
+                "• 3BR cleanout — $1,299\n\n" +
+                "We're 24/7, same-day is often possible, you can track the driver live, and we're rated 5.0 stars on Google. We cover Conyers, Covington, Lithonia & surrounding areas.\n\n" +
+                "Want a fast quote? Just reply with a few photos of what needs to go — or call and we'll book the pickup.\n\n" +
+                "If it's not a fit, reply \"no thanks\" and I'll close the loop — no hard feelings.\n\n" +
+                "Thank you,\nTony Figueroa Mendes\nPotent Logistics (POTENT OPERATIONS LLC) — Conyers, GA\n" + PHONE_DISPLAY + " · Direct (470) 453-1616";
+        }
+    },
+    popup: {
+        label: "🎪 Pop-Up Events",
+        subject: function (lead) { return "Event-day truck & crew for " + (lead.company || lead.name || "your next event"); },
+        body: function (lead) {
+            return "Hello " + (lead.name || "there") + ",\n\n" +
+                "I'm Tony Figueroa Mendes, owner of Potent Logistics here in Conyers. We don't just deliver for events — we run our own fashion and pop-up events, so we know event day from the inside: the load-in scramble, the booth runs, the teardown nobody wants to haul.\n\n" +
+                "For your event we bring the truck and the crew: event-day delivery, setup runs, merch and booth transport, and haul-off after it ends. One flat rate — $1,000 covers round trips up to 150 miles (past that it's just +$1 a mile), quoted up front before you book, no surprises on the day.\n\n" +
+                "Send me your event date and location and I'll lock in your quote. More events coming up after this one? We can talk about a standing rate.\n\n" +
+                "If it's not a fit, reply \"no thanks\" and I'll close the loop — no hard feelings.\n\n" +
+                "Thank you,\nTony Figueroa Mendes\nPotent Logistics (POTENT OPERATIONS LLC) — Conyers, GA\n" + PHONE_DISPLAY + " · Direct (470) 453-1616";
+        }
+    },
+    potent_os: {
+        label: "🖥️ POTENT OS",
+        subject: function (lead) { return "The system we run our own trucks on"; },
+        body: function (lead) {
+            return "Hello " + (lead.name || "there") + ",\n\n" +
+                "Quick one from the other side of my business. I'm Tony Figueroa Mendes — I run Potent Logistics in Conyers, and POTENT OS is the software I built to run it on: 735 features covering dispatch, drivers, settlements, maintenance, compliance and documents, all in one system.\n\n" +
+                "It's the same system we run our own trucks on every day. It works fully offline, it's one payment with no monthly subscription — licenses run $4,995 / $9,995 / $19,995 / $34,995 depending on fleet size — and there's a free demo you can brand as your own company and try before you spend a dollar.\n\n" +
+                "Want me to send you the demo? Reply here and it's yours.\n\n" +
+                "If it's not a fit, reply \"no thanks\" and I'll close the loop — no hard feelings.\n\n" +
+                "Thank you,\nTony Figueroa Mendes\nPotent Logistics (POTENT OPERATIONS LLC) — Conyers, GA\n" + PHONE_DISPLAY + " · Direct (470) 453-1616";
+        }
+    },
+    elevate: {
+        label: "📞 Əlevate AI Phones",
+        subject: function (lead) { return "Never miss a booking call again"; },
+        body: function (lead) {
+            return "Hello " + (lead.name || "there") + ",\n\n" +
+                "I'm Tony Figueroa Mendes, owner of Potent Logistics in Conyers. Every missed call in this business is a job somebody else booked — so we built Əlevate (POTENT VOICE), an AI phone agent that answers your calls for you.\n\n" +
+                "She picks up 24/7, quotes the job, books it, and takes payment right on the call — nights, weekends, and the moments you're on another line or out on a job. Plans run $199 / $499 / $999 / $1,999 a month depending on minutes.\n\n" +
+                "Want to hear her work? Reply here and I'll set up a quick demo call.\n\n" +
+                "If it's not a fit, reply \"no thanks\" and I'll close the loop — no hard feelings.\n\n" +
+                "Thank you,\nTony Figueroa Mendes\nPotent Logistics (POTENT OPERATIONS LLC) — Conyers, GA\n" + PHONE_DISPLAY + " · Direct (470) 453-1616";
+        }
+    },
+    aceheals: {
+        label: "🧩 AceHeals",
+        subject: function (lead) { return "A free app built for kids with autism — for the families you serve"; },
+        body: function (lead) {
+            return "Hello " + (lead.name || "there") + ",\n\n" +
+                "I'm Tony Figueroa Mendes — a parent here in Conyers, and the builder of AceHeals, an app made for kids with autism: learning games, calming tools, a food scanner, and a beat studio where kids make their own music. I built it for my own family, and it's free for parents to try at aceheals.netlify.app.\n\n" +
+                "I'm reaching out because " + (lead.company || lead.name || "your organization") + " works with families like ours. If it's useful, I'd love for you to pass it along to the parents you serve — no cost to them, no cost to you. AceHeals shares one family's experience and what works for us; it's not medical advice, and we always tell parents doctor-first.\n\n" +
+                "Want a short one-pager you can hand to families? Reply here and I'll send it over.\n\n" +
+                "If it's not a fit, reply \"no thanks\" and I'll close the loop — no hard feelings.\n\n" +
+                "Thank you,\nTony Figueroa Mendes\nPotent Logistics (POTENT OPERATIONS LLC) — Conyers, GA\n" + PHONE_DISPLAY + " · Direct (470) 453-1616";
+        }
+    },
+    playbook: {
+        label: "📕 Potent Playbook",
+        subject: function (lead) { return "How I built my logistics company — the Playbook"; },
+        body: function (lead) {
+            return "Hello " + (lead.name || "there") + ",\n\n" +
+                "I'm Tony Figueroa Mendes. I started Potent Logistics in Conyers and built it into a running operation — and I wrote down exactly how I did it in the Potent Playbook.\n\n" +
+                "Regular is $100. Deluxe is $297 and adds the two things people ask me for most: my secret suppliers list, and a bundle of 20 AI cinematic videos. It's the real playbook — getting accounts, pricing work, running the day-to-day — not theory. All sales are final.\n\n" +
+                "Thinking about starting or growing in trucking and logistics? Reply here and I'll send you the link.\n\n" +
+                "If it's not a fit, reply \"no thanks\" and I'll close the loop — no hard feelings.\n\n" +
+                "Thank you,\nTony Figueroa Mendes\nPotent Logistics (POTENT OPERATIONS LLC) — Conyers, GA\n" + PHONE_DISPLAY + " · Direct (470) 453-1616";
+        }
+    },
+    ccml: {
+        label: "💳 Credit Changed My Life",
+        subject: function (lead) { return "Fix your credit — Module 1 is free"; },
+        body: function (lead) {
+            return "Hello " + (lead.name || "there") + ",\n\n" +
+                "I'm Tony Figueroa Mendes, owner of Potent Logistics in Conyers. In this business your credit decides a lot — trucks, insurance, funding, accounts. That's why we built Credit Changed My Life.\n\n" +
+                "It's a full credit-repair course: $79, 26 lessons, and Module 1 is free so you can start before you pay anything. It includes a Score Simulator and the dispute tools to work your file step by step.\n\n" +
+                "Want the free first module? Reply here and I'll send it.\n\n" +
+                "If it's not a fit, reply \"no thanks\" and I'll close the loop — no hard feelings.\n\n" +
+                "Thank you,\nTony Figueroa Mendes\nPotent Logistics (POTENT OPERATIONS LLC) — Conyers, GA\n" + PHONE_DISPLAY + " · Direct (470) 453-1616";
+        }
+    },
+    bodega: {
+        label: "👟 Bodega — Fashion Resale",
+        subject: function (lead) { return "Sell on the first fashion platform that pays royalties"; },
+        body: function (lead) {
+            return "Hello " + (lead.name || "there") + ",\n\n" +
+                "I'm Tony Figueroa Mendes, founder of Potent. We built Bodega — a verified resale marketplace for fashion, and the first platform with royalties: every piece carries a verified ownership record, so its history travels with it. You can copy the piece — you can't copy the history.\n\n" +
+                "If you sell, collect, or run a brand, Bodega is built for you: verified pieces, a real ownership trail, and royalties written into how the platform works.\n\n" +
+                "Want in? Reply here and I'll send you the details.\n\n" +
+                "If it's not a fit, reply \"no thanks\" and I'll close the loop — no hard feelings.\n\n" +
+                "Thank you,\nTony Figueroa Mendes\nPotent Logistics (POTENT OPERATIONS LLC) — Conyers, GA\n" + PHONE_DISPLAY + " · Direct (470) 453-1616";
+        }
+    },
+    publishing: {
+        label: "📚 POTENT Publishing",
+        subject: function (lead) { return "Got a story or a method? We publish books"; },
+        body: function (lead) {
+            return "Hello " + (lead.name || "there") + ",\n\n" +
+                "I'm Tony Figueroa Mendes, founder of Potent. Alongside the logistics company, we run POTENT Publishing — we publish books for people with a real story or a real method, and we take a cut when the book sells.\n\n" +
+                "Right now we're publishing a how-to book from a real $4 million lottery winner — her method, in her words, with the proof to back it up. That's the kind of book we look for: lived it, can prove it, want it told right.\n\n" +
+                "If you've got a book in you, reply here and tell me what it's about. We'll talk honestly about whether it fits.\n\n" +
+                "If it's not a fit, reply \"no thanks\" and I'll close the loop — no hard feelings.\n\n" +
+                "Thank you,\nTony Figueroa Mendes\nPotent Logistics (POTENT OPERATIONS LLC) — Conyers, GA\n" + PHONE_DISPLAY + " · Direct (470) 453-1616";
+        }
+    },
+    armed_security: {
+        label: "🛡️ Armed Security",
+        subject: function (lead) { return "Licensed armed security — $185/hr"; },
+        body: function (lead) {
+            return "Hello " + (lead.name || "there") + ",\n\n" +
+                "I'm Tony Figueroa Mendes, owner of Potent Logistics in Conyers. One of the services under our roof is licensed armed security — for events, properties, and high-value moves where a uniform and a presence actually matter.\n\n" +
+                "The rate is $185 an hour with a 4-hour minimum. Professional, licensed, and direct — no middlemen, no runaround.\n\n" +
+                "Have a date or a property in mind? Reply with the details and I'll confirm coverage.\n\n" +
+                "If it's not a fit, reply \"no thanks\" and I'll close the loop — no hard feelings.\n\n" +
+                "Thank you,\nTony Figueroa Mendes\nPotent Logistics (POTENT OPERATIONS LLC) — Conyers, GA\n" + PHONE_DISPLAY + " · Direct (470) 453-1616";
         }
     },
 };
@@ -8106,8 +8236,10 @@ function AdminLogin(props) {
             else {
                 var failedName = user ? getDisplayName(user) : selected;
                 logAdminAction("Failed Login Attempt", "Wrong password entered from " + getDeviceInfo(), failedName);
-                // any account: a wrong password takes a photo now and attaches it to the failed-attempt row (falls back to the pre-check photo if there is one).
-                captureFailedLoginPhoto().then(function (shot) { logLoginToSupabase("Failed Login Attempt", failedName, getDeviceInfo(), shot || photoUrl); });
+                // any account EXCEPT quill: a wrong password takes a photo now and attaches it to the failed-attempt row (falls back to the pre-check photo if there is one).
+                // quill is the agent account (owner order): no camera step at all — the failed attempt is still written to the log, just with no photo. auth.js asserts the same exemption server-side (authRes.noPhoto) so it does not rest on the client alone.
+                if (isQuill || (authRes && authRes.noPhoto)) logLoginToSupabase("Failed Login Attempt", failedName, getDeviceInfo(), photoUrl || null);
+                else captureFailedLoginPhoto().then(function (shot) { logLoginToSupabase("Failed Login Attempt", failedName, getDeviceInfo(), shot || photoUrl); });
                 if (!isQuill) alertLoginEmail(   // the Quill assistant's own attempts are logged above but never emailed (owner order)
                     "\u26A0\uFE0F FAILED LOGIN ATTEMPT: " + failedName,
                     "Someone tried to log in as " + failedName + " with the wrong password.\n\nDevice: " + getDeviceInfo() + "\nTime: " + new Date().toLocaleString() + "\n\nIf this wasn't the employee, consider changing their password immediately." + (photoUrl ? "\n\nPhoto captured: " + photoUrl : "")
@@ -8293,7 +8425,7 @@ function HeroSoundButton() {
 function LandingMenuSheet(props) {
     var sets = {
         guides: ["\uD83D\uDCDA Guides & Training", [["\uD83D\uDCDA Prices & How It Works", "/guide.html"], ["\uD83D\uDCBB POTENT OS Guide", "/os-guide.html"], ["\uD83C\uDF93 Training", "/training.html"], ["\uD83D\uDC65 Team Guide", "/team.html"]]],
-        partners: ["\uD83C\uDF10 Partner Apps", [["\uD83D\uDCB3 Credit Changed My Life \u2014 Credit Book", "/ccml/"], ["\uD83E\uDDF8 AceHeals Kids App", "https://aceheals.netlify.app"], ["\uD83D\uDC57 Potent Playbook \u2014 Fashion", "/playbook/"], ["\uD83C\uDFB5 POTENT MUSIC \u2014 Stream, Beats & Studio", "/music/"], ["\uD83E\uDE99 POTENT Wallet \u2014 Coins & Rewards", "/music/coins.html"], ["\uD83C\uDFA4 POTENT LIVE 360\u00B0 \u2014 Smoke Sessions", "/music/live.html"], ["\uD83E\uDDE0 LIFE OS \u2014 Your AI Operator", "/life/"], ["\uD83D\uDCAC POTENT PLAYER OS \u2014 AI Wingman", "/player/"], ["\uD83D\uDCDE POTENT VOICE \u2014 AI Calls & Booking", "/voice/"], ["\u018Flevate \u2014 Your Private Assistant", "/elevate/"]]]
+        partners: ["\uD83C\uDF10 Partner Apps", [["\uD83D\uDCB3 Credit Changed My Life \u2014 Credit Book", "/ccml/"], ["\uD83E\uDDF8 AceHeals Kids App", "https://aceheals.netlify.app"], ["\uD83D\uDC57 Potent Playbook \u2014 Fashion", "/playbook/"], ["\uD83C\uDFB5 POTENT MUSIC \u2014 Stream, Beats & Studio", "/music/"], ["\uD83E\uDE99 POTENT Wallet \u2014 Coins & Rewards", "/music/coins.html"], ["\uD83D\uDCAC POTENT PLAYER OS \u2014 AI Wingman", "/player/"], ["\u018Flevate \u2014 Your Private Assistant", "/elevate/"]]]
     };
     var set = sets[props.kind]; if (!set) return null;
     return React.createElement("div", { onClick: props.onClose, style: { position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", zIndex: 9500, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 } },
