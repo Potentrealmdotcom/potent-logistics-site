@@ -8191,6 +8191,47 @@ function AdminLogin(props) {
             next();
         });
     }
+    // ── TEAM ACCOUNTS (self-serve): sign in with the email + password you
+    // chose, or create your own account and pick your role. New accounts
+    // start with NO access until the owner approves them (auth.js "signup").
+    var [accountMode, setAccountMode] = useState(""); // "" | "signin" | "signup"
+    var [acctName, setAcctName] = useState("");
+    var [acctEmail, setAcctEmail] = useState("");
+    var [acctRole, setAcctRole] = useState("dispatch");
+    var [acctBusy, setAcctBusy] = useState(false);
+    var [acctErr, setAcctErr] = useState("");
+    var [acctMsg, setAcctMsg] = useState("");
+    function acctSignIn() {
+        var email = acctEmail.trim().toLowerCase();
+        if (!email || !pw) return;
+        setAcctBusy(true); setAcctErr(""); setAcctMsg("");
+        plApi("staff", { userId: email, password: pw }).then(function (res) {
+            setAcctBusy(false);
+            if (!res || !res.ok) {
+                if (res && res.pending) { setAcctMsg("Your account exists but is not approved yet. The owner can see it — once he approves it, this same email and password sign you in."); return; }
+                if (res && res.error === "revoked") { setAcctErr("This account no longer has access. Contact the owner."); return; }
+                setAcctErr(res && res.error === "network" ? "Can't reach the server. Check your connection." : ((res && res.error) || "Wrong email or password."));
+                return;
+            }
+            if (!res.account) { setAcctErr("That email is not a team account. Pick your name above, use your company sign-in, or create your account below."); return; }
+            plTokenSet(res.token);
+            var auser = plBuildStaffAccountUser(res);
+            logAdminAction("Login", "Signed in from " + getDeviceInfo(), auser.name + " (" + auser.role + ")");
+            alertLoginEmail("\uD83D\uDD10 POTENT OS Login: " + auser.name, auser.name + " (" + auser.role + ") signed in with their team account.\n\nDevice: " + getDeviceInfo() + "\nTime: " + new Date().toLocaleString());
+            props.onLogin(auser);
+        });
+    }
+    function acctSignUp() {
+        if (!acctName.trim() || !acctEmail.trim() || !pw) return;
+        setAcctBusy(true); setAcctErr(""); setAcctMsg("");
+        plApi("signup", { name: acctName.trim(), email: acctEmail.trim(), password: pw, role: acctRole }).then(function (res) {
+            setAcctBusy(false);
+            if (!res || !res.ok) { setAcctErr(res && res.error === "network" ? "Can't reach the server. Check your connection." : ((res && res.error) || "Could not create the account.")); return; }
+            setPw("");
+            setAccountMode("signin");
+            setAcctMsg("Account created. The owner can see it now — once he approves it, sign in here with this email and your password.");
+        });
+    }
     // ── COMPANY LOGIN (Shopify-style): email + password against org_users ──
     var [companyMode, setCompanyMode] = useState(false);
     var [coEmail, setCoEmail] = useState("");
@@ -8325,6 +8366,31 @@ function AdminLogin(props) {
         setEditingName(false);
         setNameVersion(function (v) { return v + 1; });
     }
+    if (accountMode) {
+        var signingUp = accountMode === "signup";
+        return React.createElement("div", { style: { minHeight: "100vh", background: C.black, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
+            React.createElement("div", { style: { width: "100%", maxWidth: 380 } },
+                React.createElement("div", { style: { textAlign: "center", marginBottom: 24 } },
+                    React.createElement("div", { style: { fontSize: 20, fontWeight: 900 } }, React.createElement(BrandName, null)),
+                    React.createElement("div", { style: { color: C.dim, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", marginTop: 8 } }, signingUp ? "Create Your Team Account" : "Team Account Sign In")),
+                React.createElement(Card, null,
+                    React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 14 } }, signingUp ? "Your account, your password — nobody makes one for you. Pick your role: Dispatch gets the dispatch features plus most admin tools, Driver gets the driver tools. New accounts start with no access until the owner approves them." : "Sign in with the email and password you chose for your team account."),
+                    signingUp && React.createElement(TxtIn, { label: "Your Name", value: acctName, onChange: setAcctName, placeholder: "First and last name" }),
+                    React.createElement(TxtIn, { label: "Email", value: acctEmail, onChange: setAcctEmail, type: "email", placeholder: "you@email.com" }),
+                    React.createElement(TxtIn, { label: "Your Password", value: pw, onChange: setPw, type: "password", placeholder: signingUp ? "Choose a password (6+ characters)" : "Enter your password" }),
+                    signingUp && React.createElement("div", { style: { marginBottom: 10 } },
+                        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 4 } }, "I am a"),
+                        React.createElement("select", { value: acctRole, onChange: function (e) { setAcctRole(e.target.value); }, style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 9, color: C.white, padding: "12px 14px", fontSize: 14, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box", cursor: "pointer" } },
+                            React.createElement("option", { value: "dispatch" }, "\uD83D\uDCDE Dispatch"),
+                            React.createElement("option", { value: "driver" }, "\uD83D\uDE90 Driver"))),
+                    acctErr && React.createElement("div", { style: { color: C.red, fontSize: 12, marginBottom: 10 } }, "⚠ " + acctErr),
+                    acctMsg && React.createElement("div", { style: { color: C.green, fontSize: 12, marginBottom: 10, lineHeight: 1.6 } }, acctMsg),
+                    signingUp
+                        ? React.createElement(Btn, { onClick: acctSignUp, disabled: !acctName.trim() || !acctEmail.trim() || !pw || acctBusy, style: { width: "100%" } }, acctBusy ? "Creating…" : "Create My Account →")
+                        : React.createElement(Btn, { onClick: acctSignIn, disabled: !acctEmail.trim() || !pw || acctBusy, style: { width: "100%" } }, acctBusy ? "Signing in…" : "Sign In →"),
+                    React.createElement("div", { onClick: function () { setAccountMode(signingUp ? "signin" : "signup"); setAcctErr(""); setAcctMsg(""); }, style: { textAlign: "center", marginTop: 14, fontSize: 11, color: C.orange, cursor: "pointer", textDecoration: "underline" } }, signingUp ? "Already have a team account? Sign in →" : "New team member? Create your account →"),
+                    React.createElement("div", { onClick: function () { setAccountMode(""); setAcctErr(""); setAcctMsg(""); setPw(""); }, style: { textAlign: "center", marginTop: 10, fontSize: 11, color: C.orange, cursor: "pointer", textDecoration: "underline" } }, "← Back to team sign in"))));
+    }
     if (companyMode) {
         return React.createElement("div", { style: { minHeight: "100vh", background: C.black, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
             React.createElement("div", { style: { width: "100%", maxWidth: 380 } },
@@ -8382,7 +8448,8 @@ function AdminLogin(props) {
                     codeMsg && React.createElement("div", { style: { color: codeStage === "sent" ? C.dim : C.red, fontSize: 12, marginTop: 8, textAlign: "center" } }, codeMsg),
                     React.createElement("div", { onClick: function () { if (!codeBusy) codeSend(); }, style: { textAlign: "center", marginTop: 10, fontSize: 12, color: C.orange, cursor: "pointer", textDecoration: "underline" } }, codeStage === "sent" ? "Send a new code" : "Forgot it? Email me a sign-in code instead"),
                     React.createElement("div", { style: { fontSize: 9, color: "#444", textAlign: "center", marginTop: 8 } }, "By clicking Sign In, you accept the Terms of Access.")),
-                React.createElement("div", { onClick: function () { setCompanyMode(true); setPw(""); setErr(false); }, style: { textAlign: "center", marginTop: 14, fontSize: 11, color: C.orange, cursor: "pointer", textDecoration: "underline" } }, "Have a company account? Sign in with email →"))));
+                React.createElement("div", { onClick: function () { setCompanyMode(true); setPw(""); setErr(false); }, style: { textAlign: "center", marginTop: 14, fontSize: 11, color: C.orange, cursor: "pointer", textDecoration: "underline" } }, "Have a company account? Sign in with email →"),
+                React.createElement("div", { onClick: function () { setAccountMode("signin"); setPw(""); setErr(false); setAcctErr(""); setAcctMsg(""); }, style: { textAlign: "center", marginTop: 10, fontSize: 11, color: C.orange, cursor: "pointer", textDecoration: "underline" } }, "Team member? Sign in with your email — or create your account →"))));
 }
 // ── PUBLIC APP ────────────────────────────────────────────────────
 
@@ -9573,6 +9640,7 @@ function LicenseManager(props) {
     var [orgs, setOrgs] = useState([]);
     var [unlinked, setUnlinked] = useState([]);
     var [waitlist, setWaitlist] = useState([]);
+    var [accounts, setAccounts] = useState([]);
     var [q, setQ] = useState("");
     var [openId, setOpenId] = useState(null);
     var _bt = useBackableTab("customers", "licTab"); var tab = _bt[0], setTab = _bt[1];
@@ -9585,9 +9653,15 @@ function LicenseManager(props) {
     }
     function load() {
         return plApi("listorgs").then(function (r) {
-            if (r && r.ok) { setOrgs(r.orgs || []); setUnlinked(r.unlinked || []); setAuthed(true); sbWaitlist().then(setWaitlist); }
+            if (r && r.ok) { setOrgs(r.orgs || []); setUnlinked(r.unlinked || []); setAuthed(true); sbWaitlist().then(setWaitlist); plApi("listaccounts").then(function (a) { if (a && a.ok) setAccounts(a.accounts || []); }); }
             else setAuthed(false);
         });
+    }
+    function acctApprove(a, status) {
+        plApi("approveaccount", { id: a.id, status: status }).then(function (r) { if (r && r.ok) load(); else { try { window.alert((r && r.error) || "Could not update the account."); } catch (e) { } } });
+    }
+    function acctSetRole(a, role) {
+        plApi("setaccountrole", { id: a.id, role: role }).then(function (r) { if (r && r.ok) load(); else { try { window.alert((r && r.error) || "Could not change the role."); } catch (e) { } load(); } });
     }
     useEffect(function () { load(); }, []);
     function doLogin() {
@@ -9623,7 +9697,8 @@ function LicenseManager(props) {
     var pendingWaitlist = waitlist.filter(function (w) { return w.status === "pending"; }).length;
     var needle = q.trim().toLowerCase();
     var shown = orgs.filter(function (o) { return !needle || (o.name + " " + (o.owner_email || "") + " " + (o.slug || "")).toLowerCase().indexOf(needle) > -1; });
-    var tabs = [["customers", "🏢 Customers (" + orgs.length + ")"], ["unlinked", "💳 Paid, no account (" + unlinked.length + ")"], ["waitlist", "📋 Waitlist (" + pendingWaitlist + ")"]];
+    var pendingAccounts = accounts.filter(function (a) { return a.status === "pending"; }).length;
+    var tabs = [["customers", "🏢 Customers (" + orgs.length + ")"], ["unlinked", "💳 Paid, no account (" + unlinked.length + ")"], ["waitlist", "📋 Waitlist (" + pendingWaitlist + ")"], ["accounts", "👥 Team accounts (" + pendingAccounts + ")"]];
     return wrap(React.createElement("div", null,
         !props.embedded && React.createElement("div", { style: { borderBottom: "1px solid " + C.border, padding: "12px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" } },
             React.createElement("div", { style: { fontSize: 16, fontWeight: 900 } }, "POTENT ", React.createElement("span", { style: { color: C.orange } }, "OS"), React.createElement("span", { style: { fontSize: 10, color: C.dim, marginLeft: 8, letterSpacing: 1.5, textTransform: "uppercase" } }, "Customers & Licenses")),
@@ -9685,6 +9760,25 @@ function LicenseManager(props) {
                         w.status === "pending" && React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8 } },
                             React.createElement(Btn, { onClick: function () { setShowOnboard(w); }, style: { flex: 2, padding: "7px", fontSize: 11 } }, "✅ Approve & onboard"),
                             React.createElement(Btn, { variant: "ghost", onClick: function () { fetch(SUPABASE_URL + "/rest/v1/waitlist?id=eq." + w.id, { method: "PATCH", headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ status: "rejected" }) }).then(load); }, style: { flex: 1, padding: "7px", fontSize: 11 } }, "Reject")));
+                })),
+            tab === "accounts" && React.createElement("div", null,
+                React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 10 } }, "Team members who created their own account. They picked their role and their own password — a new account has NO access until you approve it here. Dispatch gets the dispatch features plus most admin tools; Driver gets the driver tools."),
+                accounts.length === 0 && React.createElement("div", { style: { textAlign: "center", padding: "30px 0", color: C.dim, fontSize: 13 } }, "No team accounts yet. Team members create theirs from the sign-in screen."),
+                accounts.map(function (a) {
+                    var pend = a.status === "pending";
+                    return React.createElement(Card, { key: a.id, style: { marginBottom: 10, padding: "12px 16px" } },
+                        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" } },
+                            React.createElement("div", null,
+                                React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white } }, a.name),
+                                React.createElement("div", { style: { fontSize: 11, color: C.dim } }, a.email + " · signed up " + (a.created_at ? new Date(a.created_at).toLocaleDateString() : ""))),
+                            licBadge(pend ? "Waiting for approval" : "Approved", pend ? "#ED8936" : C.green)),
+                        React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10, alignItems: "center", flexWrap: "wrap" } },
+                            React.createElement("select", { value: a.role, onChange: function (e) { acctSetRole(a, e.target.value); }, style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "6px 8px", fontSize: 11, fontFamily: "inherit", cursor: "pointer" } },
+                                React.createElement("option", { value: "dispatch" }, "📞 Dispatch"),
+                                React.createElement("option", { value: "driver" }, "🚐 Driver")),
+                            pend
+                                ? React.createElement(Btn, { onClick: function () { acctApprove(a, "approved"); }, style: { padding: "7px 12px", fontSize: 11 } }, "✅ Approve — give access")
+                                : React.createElement(Btn, { variant: "ghost", onClick: function () { acctApprove(a, "pending"); }, style: { padding: "7px 12px", fontSize: 11 } }, "Take access back")));
                 }))),
         showAdd && React.createElement(AddCustomerModal, { onClose: function () { setShowAdd(false); }, onSave: async function (data) { var cr = await plApi("createorg", { org: data }); setShowAdd(false); created(cr); } }),
         showOnboard && React.createElement(AddCustomerModal, { entry: showOnboard, onClose: function () { setShowOnboard(null); }, onSave: async function (data) {
@@ -9839,6 +9933,17 @@ function plBuildCompanyUser(res) {
     if (isOwner) { access.push("setup"); access.push("teamaccts"); access.push("pricingsetup"); access.push("mycompany"); access.push("datatools"); }
     if (isOwner || res.user.role !== "driver") { access.push("vendors"); access.push("properties"); access.push("growthtools"); access.push("commandcenter"); }
     return { id: res.user.id, name: res.user.name, role: res.user.role, emoji: isOwner ? "\uD83D\uDC51" : "\uD83D\uDCDE", access: access, commission: 0, orgId: res.org.id, orgSlug: res.org.slug, orgName: res.org.name, limits: res.limits, pricing: res.pricing || null, billing: res.billing || null, branding: res.branding || null, assist: res.assist === true, assistUntil: res.until || null };
+}
+// Builds the signed-in user for a SELF-SERVE team account (staff_accounts):
+// the person signed up with their email + own password and picked a role.
+// Features come from the SAME templates the numbered slots used — dispatch
+// accounts get the dispatch1 template (the dispatch feature set plus most
+// admin features; only the owner template holds more), driver accounts get
+// the driver template. Exactly what a slot login received, nothing new.
+function plBuildStaffAccountUser(res) {
+    var isDriver = res.role === "driver";
+    var tpl = USERS.find(function (u) { return u.id === (isDriver ? "driver" : "dispatch1"); }) || {};
+    return { id: res.uid || "account", name: res.name || res.email || "Team", displayName: res.name || res.email || "Team", role: isDriver ? "driver" : "dispatch", emoji: isDriver ? "\uD83D\uDE90" : "\uD83D\uDCDE", access: (tpl.access || ["quote", "jobs"]).slice(), commission: tpl.commission || 0, commLogistics: tpl.commLogistics || 0, commOS: tpl.commOS || 0, commLoadboard: tpl.commLoadboard || 0, email: res.email || "", staffAccount: true };
 }
 
 function plCsvParse(text) {

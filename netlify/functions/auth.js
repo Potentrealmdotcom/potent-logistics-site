@@ -7,7 +7,11 @@
 //   STAFF_PASSWORDS_JSON       - {"potent":{"p":"...","r":"owner"},"dispatch1":{"p":"...","r":"dispatch"},...}
 //
 // Actions (POST JSON { action, ... }):
-//   staff        { userId, password }                 POTENT team login
+//   staff        { userId, password }                 POTENT team login (userId = slot id, or the email of a self-serve staff_accounts login)
+//   signup       { name, email, password, role }      public: team self-signup — own password, role picked, starts PENDING owner approval
+//   listaccounts { token }                            POTENT owner: self-serve team accounts (never includes password hashes)
+//   approveaccount { token, id, status? }             POTENT owner: approve a team account (status "pending" sends it back)
+//   setaccountrole { token, id, role }                POTENT owner: change a team account's role (dispatch | driver)
 //   company      { email, password }                  customer-company login (org_users)
 //   setpw        { token, userId, newPassword }       POTENT owner changes a team password
 //   createorg    { token, org }                       POTENT owner creates company + owner login
@@ -248,6 +252,38 @@ function cleanPricing(c) {
     return out;
 }
 
+// ── Self-serve team accounts (staff_accounts — see staff-accounts.sql) ──────
+// A team member signs up with their own email + password and picks a role;
+// the account is 'pending' (no access) until the owner approves it. Roles are
+// only ever dispatch or driver — owner is never self-served.
+var STAFF_ACCOUNT_ROLES = ["dispatch", "driver"];
+async function staffAccountByEmail(email) {
+    var r = await sb("staff_accounts?email=eq." + encodeURIComponent(email) + "&select=*");
+    if (!r.ok || !Array.isArray(r.data)) return null; // table missing (SQL not run yet) → the account path simply does not exist
+    return r.data[0] || null;
+}
+// Tries a staff_accounts login for `uidRaw` (an email). Returns a finished
+// response, or null when there is no such account or the password is wrong —
+// the caller then returns the standard 401, so a wrong password never leaks
+// whether an account exists or is still pending.
+async function staffAccountLogin(uidRaw, password, limitKey) {
+    var email = String(uidRaw || "").trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return null;
+    var acct = await staffAccountByEmail(email);
+    if (!acct) return null;
+    if (!checkPw(acct.password_hash, password)) return null;
+    var acctUid = "acct-" + acct.id;
+    // revocation works the same as for slot logins (revoked_users), keyed by
+    // the account's uid or by its email — either one blocks the sign-in.
+    var rv1 = await sb("revoked_users?user_id=eq." + encodeURIComponent(acctUid) + "&select=user_id");
+    var rv2 = await sb("revoked_users?user_id=eq." + encodeURIComponent(email) + "&select=user_id");
+    if ((rv1.ok && Array.isArray(rv1.data) && rv1.data.length) || (rv2.ok && Array.isArray(rv2.data) && rv2.data.length)) return J(403, { ok: false, error: "revoked" });
+    if (acct.status !== "approved") return J(403, { ok: false, error: "Account waiting for owner approval", pending: true });
+    var role = STAFF_ACCOUNT_ROLES.indexOf(acct.role) > -1 ? acct.role : "dispatch";
+    await logAuthAttempt(null, "Login", acct.name + " (" + role + ", team account)");
+    return J(200, { ok: true, token: sign({ uid: acctUid, role: role, orgId: null, exp: Date.now() + TOKEN_TTL_MS }), role: role, uid: acctUid, name: acct.name, email: email, account: true, noPhoto: false });
+}
+
 function staffMap() {
     var m = {};
     try { m = JSON.parse(process.env.STAFF_PASSWORDS_JSON || "{}") || {}; } catch (e) { m = {}; }
@@ -304,7 +340,14 @@ exports.handler = async function (event) {
             var rec = staffMap()[uid];
             // noPhoto: the quill (agent) account has no camera step at sign-in (owner order) — the client honors this
             // server-asserted flag, so the exemption does not rest on the client alone. All other accounts get false.
-            if (!rec) { noteFail(limitKey); return J(401, { ok: false, error: "Wrong password", noPhoto: uid === "quill" }); }
+            if (!rec) {
+                // Not a numbered slot: try a self-serve team account (email +
+                // own password, owner-approved). Only reached when the slot
+                // map misses, so existing logins behave exactly as before.
+                var acctRes = await staffAccountLogin(uid, body.password, limitKey);
+                if (acctRes) return acctRes;
+                noteFail(limitKey); return J(401, { ok: false, error: "Wrong password", noPhoto: uid === "quill" });
+            }
 
             var rev = await sb("revoked_users?user_id=eq." + encodeURIComponent(uid) + "&select=user_id");
             if (rev.ok && Array.isArray(rev.data) && rev.data.length) return J(403, { ok: false, error: "revoked" });
@@ -429,6 +472,30 @@ exports.handler = async function (event) {
             var mk = await sb("customer_accounts", { method: "POST", prefer: "return=minimal", body: { email: skey, password: hashPw(String(body.password)) } });
             if (!mk.ok) return J(500, { ok: false, error: "Could not create account." });
             return J(200, { ok: true, token: sign({ uid: "cust:" + sem, role: "customer", orgId: sorg ? sorg.id : null, exp: Date.now() + TOKEN_TTL_MS }), autopay_enabled: false, account_role: "admin" });
+        }
+
+        // ── Team self-signup: own email + own password, role picked at signup ──
+        // The account starts PENDING with no access at all; the owner sees it
+        // in listaccounts and approves it. Owner is never a self-serve role.
+        if (action === "signup") {
+            var suIp = String((event.headers && (event.headers["x-nf-client-connection-ip"] || event.headers["x-forwarded-for"])) || "x").split(",")[0].trim();
+            var suKey = "su:" + suIp;
+            if (tooMany(suKey)) return J(429, { ok: false, error: "Too many signups. Try again later." });
+            noteFail(suKey);
+            var suName = cleanStr(body.name, 80);
+            var suEmail = String(body.email || "").trim().toLowerCase();
+            var suPw = String(body.password || "");
+            var suRole = String(body.role || "").toLowerCase(); if (suRole === "dispatcher") suRole = "dispatch";
+            if (!suName) return J(400, { ok: false, error: "Enter your name." });
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(suEmail)) return J(400, { ok: false, error: "Enter a real email address." });
+            if (suPw.length < 6 || suPw.length > 200) return J(400, { ok: false, error: "Password must be at least 6 characters." });
+            if (STAFF_ACCOUNT_ROLES.indexOf(suRole) < 0) return J(400, { ok: false, error: "Pick a role: Dispatch or Driver." });
+            var suDupe = await sb("staff_accounts?email=eq." + encodeURIComponent(suEmail) + "&select=id");
+            if (!suDupe.ok) return J(503, { ok: false, error: "Team accounts are not set up yet. Ask the owner." });
+            if (Array.isArray(suDupe.data) && suDupe.data.length) return J(409, { ok: false, error: "An account with that email already exists. Use Sign In." });
+            var suMk = await sb("staff_accounts", { method: "POST", prefer: "return=minimal", body: { name: suName, email: suEmail, role: suRole, password_hash: hashPw(suPw), status: "pending" } });
+            if (!suMk.ok) return J(500, { ok: false, error: "Could not create the account. Try again." });
+            return J(200, { ok: true, pending: true });
         }
 
 
@@ -713,6 +780,30 @@ exports.handler = async function (event) {
                 body: { user_id: body.userId, password: hashPw(String(body.newPassword)), updated_at: new Date().toISOString() }
             });
             return up.ok ? J(200, { ok: true }) : J(500, { ok: false, error: "Could not save password." });
+        }
+
+        // ── POTENT owner: self-serve team accounts (the one admin list) ────
+        // listaccounts never selects password_hash — hashes never leave the server.
+        if (["listaccounts", "approveaccount", "setaccountrole"].indexOf(action) > -1) {
+            if (tok.orgId || tok.role !== "owner") return J(403, { ok: false, error: "Owner only" });
+            if (action === "listaccounts") {
+                var la = await sb("staff_accounts?select=id,name,email,role,status,created_at,approved_at&order=created_at.desc");
+                if (!la.ok) return J(503, { ok: false, error: "Team accounts are not set up yet (run staff-accounts.sql)." });
+                // Field-picked on purpose: even if the query above ever changes, a hash can never ride along.
+                var laSafe = (Array.isArray(la.data) ? la.data : []).map(function (a) { return { id: a.id, name: a.name, email: a.email, role: a.role, status: a.status, created_at: a.created_at, approved_at: a.approved_at }; });
+                return J(200, { ok: true, accounts: laSafe });
+            }
+            if (!body.id) return J(400, { ok: false, error: "id required" });
+            if (action === "approveaccount") {
+                var apSt = body.status === "pending" ? "pending" : "approved";
+                var ap = await sb("staff_accounts?id=eq." + encodeURIComponent(body.id), { method: "PATCH", prefer: "return=minimal", body: { status: apSt, approved_at: apSt === "approved" ? new Date().toISOString() : null, approved_by: apSt === "approved" ? String(tok.uid || "") : null } });
+                return ap.ok ? J(200, { ok: true, status: apSt }) : J(500, { ok: false, error: "Could not update the account." });
+            }
+            // setaccountrole
+            var nrRole = String(body.role || "").toLowerCase(); if (nrRole === "dispatcher") nrRole = "dispatch";
+            if (STAFF_ACCOUNT_ROLES.indexOf(nrRole) < 0) return J(400, { ok: false, error: "Role must be Dispatch or Driver." });
+            var sr2 = await sb("staff_accounts?id=eq." + encodeURIComponent(body.id), { method: "PATCH", prefer: "return=minimal", body: { role: nrRole } });
+            return sr2.ok ? J(200, { ok: true, role: nrRole }) : J(500, { ok: false, error: "Could not update the role." });
         }
 
 

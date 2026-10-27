@@ -22,7 +22,10 @@ body{background:#080808;color:#F2F2F2;font-family:'Segoe UI',Arial,sans-serif;mi
 .login-btn{width:100%;background:#F0E000;color:#000;border:none;border-radius:8px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;}
 .login-btn:hover{background:#E8D800;}
 .login-error{background:#E53E3E18;border:1px solid #E53E3E44;border-radius:7px;padding:8px 12px;font-size:12px;color:#E53E3E;margin-bottom:12px;display:none;}
+.login-ok{background:#1DB95418;border:1px solid #1DB95444;border-radius:7px;padding:8px 12px;font-size:12px;color:#1DB954;margin-bottom:12px;display:none;}
+.login-input.plain{letter-spacing:0;}
 .login-note{font-size:11px;color:#444;text-align:center;margin-top:16px;}
+.login-note a{color:#F0E000;}
 
 /* APP */
 #appScreen{display:none;}
@@ -129,18 +132,6 @@ td strong{color:#F2F2F2;}
 </head>
 <body>
 
-<!-- CONFIRM MODAL -->
-
-<div class="confirm-modal" id="confirmModal">
-  <div class="confirm-box">
-    <div class="confirm-title" id="confirmTitle">Confirm Action</div>
-    <div class="confirm-msg" id="confirmMsg"></div>
-    <div class="confirm-btns">
-      <button class="confirm-no" onclick="closeConfirm()">Cancel</button>
-      <button class="confirm-yes" id="confirmYes">Confirm</button>
-    </div>
-  </div>
-</div>
 
 <!-- LOGIN SCREEN -->
 
@@ -148,16 +139,34 @@ td strong{color:#F2F2F2;}
   <div class="login-wrap">
     <div class="login-brand">POTENT PRÄDƏKT®</div>
     <div class="login-title">Employee Portal</div>
-    <div class="login-sub">Select your name and enter your password</div>
-    <div class="login-error" id="loginError">Incorrect password. Try again or contact the Owner.</div>
-    <div class="login-label">Your Name</div>
-    <select class="login-select" id="staffSelect">
-      <option value="">— Select your name —</option>
-    </select>
-    <div class="login-label">Password</div>
-    <input type="password" class="login-input" id="pwInput" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()"/>
-    <button class="login-btn" onclick="doLogin()">Sign In →</button>
-    <div class="login-note">Forgot your password? Contact the Owner at (912) 914-2166</div>
+    <div class="login-sub">Sign in with your email and the password you chose</div>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-ok" id="loginOk"></div>
+    <div id="signinBox">
+      <div class="login-label">Email or Team ID</div>
+      <input type="text" class="login-input plain" id="loginIdInput" placeholder="you@email.com" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <div class="login-label">Password</div>
+      <input type="password" class="login-input" id="pwInput" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <button class="login-btn" onclick="doLogin()">Sign In →</button>
+      <div class="login-note">New team member? <a href="#" onclick="showSignup();return false;">Create your account</a> — your own password, you pick your role, the Owner approves it.</div>
+      <div class="login-note">Owner and existing team IDs still work — type your team ID instead of an email.<br/>Forgot your password? Contact the Owner at (912) 914-2166</div>
+    </div>
+    <div id="signupBox" style="display:none">
+      <div class="login-label">Your Name</div>
+      <input type="text" class="login-input plain" id="suName" placeholder="First and last name"/>
+      <div class="login-label">Email</div>
+      <input type="email" class="login-input plain" id="suEmail" placeholder="you@email.com" autocomplete="email"/>
+      <div class="login-label">Choose Your Password</div>
+      <input type="password" class="login-input" id="suPw" placeholder="At least 6 characters"/>
+      <div class="login-label">I am a</div>
+      <select class="login-select" id="suRole">
+        <option value="dispatch">📞 Dispatch — dispatch features + most admin tools</option>
+        <option value="driver">🚐 Driver — driver tools</option>
+      </select>
+      <button class="login-btn" onclick="doSignup()">Create My Account →</button>
+      <div class="login-note">Your account starts with NO access. The Owner sees every account and approves yours — then this email and password sign you in.</div>
+      <div class="login-note"><a href="#" onclick="showSignin();return false;">← Back to sign in</a></div>
+    </div>
   </div>
 </div>
 
@@ -180,36 +189,12 @@ td strong{color:#F2F2F2;}
 var SUPABASE_URL='https://ymvsatlrkzgxwzxybwmk.supabase.co';
 var SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltdnNhdGxya3pneHd6eHlid21rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4NzgwMTQsImV4cCI6MjEwMzQ1NDAxNH0.KbW0enJr5FOzJmDQnT3Thhr5NJdbI4Ehp1vkhVEyPEg';
 
-// ── TEAM ROSTER — display metadata ONLY (names + grouping for the login
-// dropdown and the admin panel). NO passwords live in this page: sign-in
-// goes through the same server auth as POTENT OS (see portalApi below),
-// and the role that drives this portal comes from the server response.
-var ROSTER={
-  potent:{name:'POTENT (Owner)',role:'owner',emoji:'👑',type:'owner'},
-  dispatch1:{name:'Slot 1',role:'dispatch',emoji:'📞',type:'dispatcher'},
-  dispatch2:{name:'Slot 2',role:'dispatch',emoji:'📞',type:'dispatcher'},
-  dispatch3:{name:'Slot 3',role:'dispatch',emoji:'📞',type:'dispatcher'},
-  dispatch4:{name:'Slot 4',role:'dispatch',emoji:'📞',type:'dispatcher'},
-  dispatch5:{name:'Slot 5',role:'dispatch',emoji:'📞',type:'dispatcher'},
-  dispatch6:{name:'Slot 6',role:'dispatch',emoji:'📞',type:'dispatcher'},
-  dispatch7:{name:'Slot 7',role:'dispatch',emoji:'📞',type:'dispatcher'},
-  dispatch8:{name:'Slot 8',role:'dispatch',emoji:'📞',type:'dispatcher'},
-  dispatch9:{name:'Slot 9',role:'dispatch',emoji:'📞',type:'dispatcher'},
-  dispatch10:{name:'Slot 10',role:'dispatch',emoji:'📞',type:'dispatcher'},
-  dispatch11:{name:'Slot 11',role:'dispatch',emoji:'📞',type:'dispatcher'},
-  dispatch12:{name:'Slot 12',role:'dispatch',emoji:'📞',type:'dispatcher'},
-  dispatch13:{name:'Slot 13',role:'dispatch',emoji:'📞',type:'dispatcher'},
-  dispatch14:{name:'Slot 14',role:'dispatch',emoji:'📞',type:'dispatcher'},
-  dispatch15:{name:'Slot 15',role:'dispatch',emoji:'📞',type:'dispatcher'},
-  dispatch16:{name:'Slot 16',role:'dispatch',emoji:'📞',type:'dispatcher'},
-  dispatch17:{name:'Slot 17',role:'dispatch',emoji:'📞',type:'dispatcher'},
-  dispatch18:{name:'Slot 18',role:'dispatch',emoji:'📞',type:'dispatcher'},
-  dispatch19:{name:'Slot 19',role:'dispatch',emoji:'📞',type:'dispatcher'},
-  dispatch20:{name:'Slot 20',role:'dispatch',emoji:'📞',type:'dispatcher'},
-  driver:{name:'Driver 1',role:'driver',emoji:'🚐',type:'driver'},
-  driver2:{name:'Driver 2',role:'driver',emoji:'🚐',type:'driver'},
-  driver3:{name:'Driver 3',role:'driver',emoji:'🚐',type:'driver'}
-};
+// ── NO ROSTER IN THIS PAGE ─────────────────────────────────────
+// Team accounts live on the server (auth.js staff_accounts): each person
+// creates their own account with their own email + password and picks a
+// role; the owner approves it from the Admin panel below. Legacy team IDs
+// (Owner / slots) still sign in through the same server 'staff' action —
+// this page keeps no list of them and no passwords, ever.
 
 // ── SERVER AUTH — the main app's contract, mirrored (app.js plApi /
 // plTokenGet / plTokenSet): POST /.netlify/functions/auth with
@@ -228,63 +213,7 @@ function portalApi(action, body){
 }
 function normalizePortalRole(r){ r=String(r||'').toLowerCase(); if(r==='dispatcher') return 'dispatch'; return r; }
 
-var TYPE_EMOJI={owner:'👑',closer:'🤝',dispatcher:'📞',driver:'🚐'};
-var TYPE_LABEL={owner:'Owner',closer:'Closer',dispatcher:'Dispatcher',driver:'Driver'};
-
-function loadSlotData(){
-  try{
-    var saved=JSON.parse(localStorage.getItem('pl_slot_data')||'{}');
-    Object.keys(saved).forEach(function(uid){
-      if(ROSTER[uid]){
-        if(saved[uid].name) ROSTER[uid].name=saved[uid].name;
-        if(saved[uid].type){
-          ROSTER[uid].type=saved[uid].type;
-          if(saved[uid].type==='driver') ROSTER[uid].role='driver';
-          else ROSTER[uid].role='dispatch';
-          ROSTER[uid].emoji=TYPE_EMOJI[saved[uid].type]||'📞';
-        }
-      }
-    });
-  }catch(e){}
-}
-function saveSlotData(){
-  var data={};
-  Object.keys(ROSTER).filter(function(uid){return uid!=='potent';}).forEach(function(uid){
-    data[uid]={name:ROSTER[uid].name,type:ROSTER[uid].type||'dispatcher'};
-  });
-  try{localStorage.setItem('pl_slot_data',JSON.stringify(data));}catch(e){}
-}
-function buildLoginDropdown(){
-  var sel=document.getElementById('staffSelect');
-  if(!sel)return;
-  sel.innerHTML='<option value="">— Select your name —</option>';
-  var og0=document.createElement('optgroup');og0.label='Owner';
-  var o=document.createElement('option');o.value='potent';o.textContent='👑 POTENT (Owner)';
-  og0.appendChild(o);sel.appendChild(og0);
-  var types={closer:[],dispatcher:[],driver:[]};
-  Object.keys(ROSTER).filter(function(uid){return uid!=='potent';}).forEach(function(uid){
-    var t=ROSTER[uid].type||'dispatcher';
-    if(types[t]) types[t].push(uid); else types.dispatcher.push(uid);
-  });
-  [['closer','🤝 Closers'],['dispatcher','📞 Dispatch'],['driver','🚐 Drivers']].forEach(function(g){
-    var slots=types[g[0]]||[];
-    if(!slots.length)return;
-    var og=document.createElement('optgroup');og.label=g[1];
-    slots.forEach(function(uid){
-      var u=ROSTER[uid];
-      var named=u.name&&!u.name.match(/^Slot \d+$/)&&!u.name.match(/^Driver \d+$/);
-      var opt=document.createElement('option');
-      opt.value=uid;
-      opt.textContent=(TYPE_EMOJI[u.type]||'📞')+' '+(named?u.name:'[Open Slot]');
-      if(!named)opt.style.color='#444';
-      og.appendChild(opt);
-    });
-    sel.appendChild(og);
-  });
-}
-
 var currentUser=null;
-var revokedUsers={};
 var displayNames={};
 
 // Load display names from Supabase
@@ -296,95 +225,82 @@ async function loadDisplayNames(){
     var data=await res.json();
     if(Array.isArray(data)){
       data.forEach(function(r){displayNames[r.user_id]=r.name;});
-      // Update dropdown labels
-      Object.keys(displayNames).forEach(function(uid){
-        var opt=document.querySelector('#staffSelect option[value="'+uid+'"]');
-        if(opt)opt.textContent=displayNames[uid];
-      });
     }
   }catch(e){}
 }
 
-// Load revoked users from Supabase
-async function loadRevokedUsers(){
-  try{
-    var res=await fetch(SUPABASE_URL+'/rest/v1/revoked_users?select=user_id',{
-      headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY}
-    });
-    var data=await res.json();
-    revokedUsers={};
-    if(Array.isArray(data)){data.forEach(function(r){revokedUsers[r.user_id]=true;});}
-  }catch(e){}
-}
-
-function getDisplayName(uid){return ROSTER[uid]?.name||uid;}
-
-function buildLoginDropdown(){
-  var sel=document.getElementById('staffSelect');
-  if(!sel)return;
-  sel.innerHTML='<option value="">— Select your name —</option>';
-  // Owner
-  var og0=document.createElement('optgroup');og0.label='Owner';
-  var o=document.createElement('option');o.value='potent';o.textContent='👑 '+getDisplayName('potent');og0.appendChild(o);
-  sel.appendChild(og0);
-  // Group active slots by type
-  var types={closer:[],dispatcher:[],driver:[]};
-  Object.keys(ROSTER).filter(function(uid){return uid!=='potent';}).forEach(function(uid){
-    var u=ROSTER[uid];
-    var t=u.type||'dispatcher';
-    if(types[t]) types[t].push(uid);
-    else types.dispatcher.push(uid);
-  });
-  var groups=[['closer','🤝 Closers'],['dispatcher','📞 Dispatch'],['driver','🚐 Drivers']];
-  groups.forEach(function(g){
-    var slots=types[g[0]].filter(function(uid){return ROSTER[uid].name&&!ROSTER[uid].name.startsWith('Slot ')&&!ROSTER[uid].name.startsWith('Driver ');});
-    var unset=types[g[0]].filter(function(uid){return !slots.includes(uid);});
-    // Show named slots first, then unset
-    var all=[...slots,...unset];
-    if(all.length===0)return;
-    var og=document.createElement('optgroup');og.label=g[1];
-    all.forEach(function(uid){
-      var opt=document.createElement('option');
-      opt.value=uid;
-      var u=ROSTER[uid];
-      var named=u.name&&!u.name.startsWith('Slot ')&&!u.name.startsWith('Driver ');
-      opt.textContent=(TYPE_EMOJI[u.type||'dispatcher']||'📞')+' '+(named?u.name:'[Empty Slot]');
-      opt.style.color=named?'':'#444';
-      og.appendChild(opt);
-    });
-    sel.appendChild(og);
-  });
-}
+function getDisplayName(uid){return displayNames[uid]||uid;}
 
 var portalLoginBusy=false;
+function hideLoginMsgs(){var e=document.getElementById('loginError');if(e)e.style.display='none';var o=document.getElementById('loginOk');if(o)o.style.display='none';}
+function showLoginError(msg){var e=document.getElementById('loginError');e.textContent=msg;e.style.display='block';var o=document.getElementById('loginOk');if(o)o.style.display='none';}
+function showLoginOk(msg){var o=document.getElementById('loginOk');o.textContent=msg;o.style.display='block';var e=document.getElementById('loginError');if(e)e.style.display='none';}
+function showSignup(){document.getElementById('signinBox').style.display='none';document.getElementById('signupBox').style.display='block';hideLoginMsgs();}
+function showSignin(){document.getElementById('signupBox').style.display='none';document.getElementById('signinBox').style.display='block';hideLoginMsgs();}
+
 function doLogin(){
-  var uid=document.getElementById('staffSelect').value;
+  var idVal=document.getElementById('loginIdInput').value.trim();
   var pw=document.getElementById('pwInput').value;
-  var err=document.getElementById('loginError');
-  err.style.display='none';
-  if(!uid){err.textContent='Please select your name.';err.style.display='block';return;}
-  if(!pw){err.textContent='Incorrect password. Try again or contact the Owner at (912) 914-2166.';err.style.display='block';return;}
+  hideLoginMsgs();
+  if(!idVal){showLoginError('Enter your email or team ID.');return;}
+  if(!pw){showLoginError('Incorrect password. Try again or contact the Owner at (912) 914-2166.');return;}
   if(portalLoginBusy)return;
   portalLoginBusy=true;
   // Server auth — the SAME staff login as POTENT OS (auth.js action 'staff').
-  // The server checks the password AND the revoked list; this page never
-  // holds a stored password to compare against.
-  portalApi('staff',{userId:uid,password:pw}).then(function(res){
+  // The identifier is a legacy team ID (Owner / slots — checked server-side
+  // against STAFF_PASSWORDS_JSON) or the email of a self-serve account the
+  // person created themselves. This page never holds a password to compare.
+  portalApi('staff',{userId:idVal,password:pw}).then(function(res){
     portalLoginBusy=false;
-    if(res&&res.error==='network'){err.textContent="Can't reach the server. Check your connection and try again.";err.style.display='block';return;}
-    if(res&&res.error==='revoked'){err.textContent='Your access has been revoked. Contact the Owner.';err.style.display='block';return;}
+    if(res&&res.error==='network'){showLoginError("Can't reach the server. Check your connection and try again.");return;}
+    if(res&&res.error==='revoked'){showLoginError('Your access has been revoked. Contact the Owner.');return;}
+    if(res&&res.pending){showLoginOk('Your account is created but not approved yet. The Owner can see it — once he approves it, this same email and password sign you in.');return;}
     if(res&&res.ok&&res.token){
       portalTokenSet(res.token);
       var role=normalizePortalRole(res.role);
-      var dn=getDisplayName(uid);
-      currentUser={uid:uid,role:role,name:dn,displayName:dn,emoji:(ROSTER[uid]&&ROSTER[uid].emoji)||''};
-      try{localStorage.setItem('potent_portal_session',JSON.stringify({uid:uid,role:role,ts:Date.now()}));}catch(e){}
+      if(res.account){
+        // Self-serve account: identity comes from the server response.
+        currentUser={uid:res.uid,role:role,name:res.name,displayName:res.name,email:res.email,emoji:role==='driver'?'🚐':'📞',account:true};
+        try{localStorage.setItem('potent_portal_session',JSON.stringify({uid:res.uid,role:role,name:res.name,email:res.email,account:true,ts:Date.now()}));}catch(e){}
+      }else{
+        var dn=getDisplayName(idVal);
+        currentUser={uid:idVal,role:role,name:dn,displayName:dn,emoji:(role==='owner'?'👑':role==='driver'?'🚐':'📞')};
+        try{localStorage.setItem('potent_portal_session',JSON.stringify({uid:idVal,role:role,ts:Date.now()}));}catch(e){}
+      }
       document.getElementById('pwInput').value='';
       launchApp();
       return;
     }
-    if(res&&res.error&&res.error!=='Wrong password'){err.textContent=res.error;err.style.display='block';return;}
-    err.textContent='Incorrect password. Try again or contact the Owner at (912) 914-2166.';err.style.display='block';
+    if(res&&res.error&&res.error!=='Wrong password'){showLoginError(res.error);return;}
+    showLoginError('Incorrect password. Try again or contact the Owner at (912) 914-2166.');
+  });
+}
+
+var portalSignupBusy=false;
+function doSignup(){
+  var name=document.getElementById('suName').value.trim();
+  var email=document.getElementById('suEmail').value.trim();
+  var pw=document.getElementById('suPw').value;
+  var role=document.getElementById('suRole').value;
+  hideLoginMsgs();
+  if(!name){showLoginError('Enter your name.');return;}
+  if(!email){showLoginError('Enter your email.');return;}
+  if(!pw||pw.length<6){showLoginError('Choose a password of at least 6 characters.');return;}
+  if(portalSignupBusy)return;
+  portalSignupBusy=true;
+  // Server-side signup (auth.js 'signup'): password is hashed on the server,
+  // never stored in this page. The account starts PENDING — no access until
+  // the Owner approves it from the Admin panel.
+  portalApi('signup',{name:name,email:email,password:pw,role:role}).then(function(res){
+    portalSignupBusy=false;
+    if(res&&res.ok){
+      showSignin();
+      document.getElementById('loginIdInput').value=email;
+      document.getElementById('suPw').value='';
+      showLoginOk('Account created. The Owner can see it now — once he approves it, sign in here with this email and your password.');
+      return;
+    }
+    showLoginError((res&&res.error)||'Could not create the account.');
   });
 }
 
@@ -401,7 +317,7 @@ function launchApp(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('appScreen').style.display='block';
   document.getElementById('topbarName').textContent=currentUser.emoji+' '+currentUser.displayName;
-  loadSlotData();buildLoginDropdown();buildTabs();
+  buildTabs();
 }
 
 // ── TAB DEFINITIONS BY ROLE ──────────────────────────────────────
@@ -422,10 +338,6 @@ function getTabs(){
   return all.filter(function(t){return t.roles.indexOf(currentUser.role)>-1;});
 }
 
-window.addEventListener('DOMContentLoaded',function(){
-  loadSlotData();
-  buildLoginDropdown();
-});
 function buildTabs(){
   var tabs=getTabs();
   var navEl=document.getElementById('navTabs');
@@ -511,13 +423,13 @@ function contentApps(){return `
 </a>
 <h2>Your Login</h2>
 <div class="card">
-  <p style="font-size:12px;color:#888;margin-bottom:8px;">To access POTENT OS go to potentoperations.netlify.app and scroll to the very bottom of the page. Tap the copyright text to open the login screen. Use your assigned name and password.</p>
+  <p style="font-size:12px;color:#888;margin-bottom:8px;">To access POTENT OS go to potentoperations.netlify.app and scroll to the very bottom of the page. Tap the copyright text to open the login screen. Sign in with your team account — your email and the password YOU chose. Don't have one yet? Create it right on the sign-in screen (pick your role) and the Owner approves it.</p>
   <div style="background:#E53E3E18;border:1px solid #E53E3E44;border-radius:7px;padding:10px 12px;font-size:11px;color:#E53E3E;">
     <strong>Do not share your password with anyone.</strong> Your password is tied to your activity log. Everything done under your login has your name and timestamp on it.
   </div>
 </div>
 <div class="card">
-  <p style="font-size:12px;color:#888;margin:0;">Need your login credentials? Contact the Owner directly at <strong style="color:#F0E000">(912) 914-2166</strong> or <strong style="color:#F0E000">potentlogistics@proton.me</strong></p>
+  <p style="font-size:12px;color:#888;margin:0;">Your login is the account you created — nobody at POTENT knows your password, and nobody will ever ask for it. Locked out? Contact the Owner directly at <strong style="color:#F0E000">(912) 914-2166</strong> or <strong style="color:#F0E000">potentlogistics@proton.me</strong></p>
 </div>
 `;}
 
@@ -760,262 +672,103 @@ function handlePortalSign(){
 // (Retired: the old localStorage master/custom password stores. Passwords
 // now live only in the server login system — see portalApi + 'setpw' below.)
 
+// ── TEAM ACCOUNTS (self-serve) — owner list, fed by auth.js 'listaccounts'.
+// Shows every account (name, email, role, status) — never a password or a
+// hash; those never leave the server. Approve / take-back / role change go
+// through the owner-token actions 'approveaccount' and 'setaccountrole'.
+function loadTeamAccounts(){
+  var list=document.getElementById('teamAccountsList');
+  if(!list)return;
+  portalApi('listaccounts',{}).then(function(res){
+    if(!res||!res.ok){list.innerHTML='';var ep=document.createElement('p');ep.style.color='#E53E3E';ep.textContent=(res&&res.error)||'Could not load accounts.';list.appendChild(ep);return;}
+    var accts=res.accounts||[];
+    list.innerHTML='';
+    if(!accts.length){list.innerHTML='<p style="color:#555">No team accounts yet. Team members create theirs from this page\'s sign-in screen ("Create your account").</p>';return;}
+    accts.forEach(function(a){
+      var pend=a.status!=='approved';
+      var row=document.createElement('div');
+      row.style.cssText='background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px;padding:10px 12px;margin-bottom:8px;';
+      var head=document.createElement('div');
+      head.style.cssText='display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;';
+      var who=document.createElement('div');
+      var nm=document.createElement('div');nm.style.cssText='font-size:13px;font-weight:700;color:#F2F2F2;';nm.textContent=(a.role==='driver'?'🚐 ':'📞 ')+a.name;
+      var em=document.createElement('div');em.style.cssText='font-size:11px;color:#666;';em.textContent=a.email+(a.created_at?' · signed up '+new Date(a.created_at).toLocaleDateString():'');
+      who.appendChild(nm);who.appendChild(em);
+      var badge=document.createElement('span');
+      badge.className='status-badge '+(pend?'':'status-active');
+      if(pend)badge.style.cssText='background:#ED893622;color:#ED8936;';
+      badge.textContent=pend?'WAITING FOR APPROVAL':'APPROVED';
+      head.appendChild(who);head.appendChild(badge);
+      row.appendChild(head);
+      var acts=document.createElement('div');
+      acts.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center;';
+      var roleSel=document.createElement('select');
+      roleSel.style.cssText='background:#060606;border:1px solid #222;border-radius:6px;color:#F2F2F2;padding:6px 8px;font-size:11px;outline:none;font-family:inherit;color-scheme:dark;';
+      [['dispatch','📞 Dispatch'],['driver','🚐 Driver']].forEach(function(r){
+        var o=document.createElement('option');o.value=r[0];o.textContent=r[1];if(a.role===r[0])o.selected=true;roleSel.appendChild(o);
+      });
+      roleSel.addEventListener('change',function(){
+        portalApi('setaccountrole',{id:a.id,role:roleSel.value}).then(function(r){
+          if(r&&r.ok)loadTeamAccounts();
+          else{alert((r&&r.error)||'Could not change the role.');loadTeamAccounts();}
+        });
+      });
+      acts.appendChild(roleSel);
+      var actBtn=document.createElement('button');
+      if(pend){
+        actBtn.textContent='✅ Approve — give access';
+        actBtn.style.cssText='background:#F0E000;color:#000;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;';
+        actBtn.addEventListener('click',function(){
+          portalApi('approveaccount',{id:a.id}).then(function(r){
+            if(r&&r.ok)loadTeamAccounts(); else alert((r&&r.error)||'Could not approve.');
+          });
+        });
+      }else{
+        actBtn.textContent='Take access back';
+        actBtn.style.cssText='background:transparent;border:1px solid #E53E3E;color:#E53E3E;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;';
+        actBtn.addEventListener('click',function(){
+          portalApi('approveaccount',{id:a.id,status:'pending'}).then(function(r){
+            if(r&&r.ok)loadTeamAccounts(); else alert((r&&r.error)||'Could not update.');
+          });
+        });
+      }
+      acts.appendChild(actBtn);
+      row.appendChild(acts);
+      list.appendChild(row);
+    });
+  });
+}
+
 async function renderAdminPanel(){
   var el=document.getElementById('adminPanelContent');
   if(!el)return;
-  loadSlotData();
-
-  function isDefaultName(name){
-    if(!name)return true;
-    if(/^Slot [0-9]+$/.test(name))return true;
-    if(/^Driver [0-9]+$/.test(name))return true;
-    return false;
-  }
 
   function buildAdminUI(){
     el.innerHTML='';
 
-    // Title
-    var title=document.createElement('div');
-    title.style.cssText='font-size:11px;color:#F0E000;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;';
-    title.textContent='Edit Employee Names & Roles';
-    el.appendChild(title);
-    var sub=document.createElement('div');
-    sub.style.cssText='font-size:11px;color:#555;margin-bottom:14px;';
-    sub.textContent='Rename any slot when someone joins or leaves. Change their role type. Saves instantly.';
-    el.appendChild(sub);
+    // ── TEAM ACCOUNTS (self-serve) — the one admin list ──
+    var acctSec=document.createElement('div');
+    acctSec.style.cssText='margin-bottom:22px;';
+    var acctTitle=document.createElement('div');
+    acctTitle.style.cssText='font-size:11px;color:#F0E000;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;';
+    acctTitle.textContent='👥 Team Accounts — Self-Signup';
+    var acctSub=document.createElement('div');
+    acctSub.style.cssText='font-size:11px;color:#555;margin-bottom:10px;';
+    acctSub.textContent='Team members create their own account with their own password and pick a role. A new account has NO access until you approve it here. Dispatch = dispatch features + most admin tools · Driver = driver tools.';
+    var acctRefresh=document.createElement('button');
+    acctRefresh.textContent='↻ Refresh';
+    acctRefresh.style.cssText='background:transparent;border:1px solid #333;color:#888;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;';
+    acctRefresh.addEventListener('click',function(){loadTeamAccounts();});
+    var acctList=document.createElement('div');
+    acctList.id='teamAccountsList';
+    acctList.innerHTML='<p style="color:#555">Loading accounts...</p>';
+    acctSec.appendChild(acctTitle);acctSec.appendChild(acctSub);acctSec.appendChild(acctRefresh);acctSec.appendChild(acctList);
+    el.appendChild(acctSec);
+    loadTeamAccounts();
 
-    // Slots
-    Object.keys(ROSTER).filter(function(uid){return uid!=='potent';}).forEach(function(uid){
-      var u=ROSTER[uid];
-      var row=document.createElement('div');
-      row.style.cssText='display:flex;gap:8px;align-items:center;margin-bottom:8px;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px;padding:8px 10px;';
-
-      var nameInput=document.createElement('input');
-      nameInput.id='name_'+uid;
-      nameInput.value=isDefaultName(u.name)?'':u.name;
-      nameInput.placeholder='Enter name...';
-      nameInput.style.cssText='flex:1;background:#060606;border:1px solid #222;border-radius:6px;color:#F2F2F2;padding:6px 9px;font-size:12px;outline:none;font-family:inherit;min-width:0;';
-      row.appendChild(nameInput);
-
-      var typeSelect=document.createElement('select');
-      typeSelect.id='type_'+uid;
-      typeSelect.style.cssText='background:#060606;border:1px solid #222;border-radius:6px;color:#F2F2F2;padding:6px 8px;font-size:11px;outline:none;font-family:inherit;color-scheme:dark;flex-shrink:0;';
-      ['dispatcher','closer','driver'].forEach(function(t){
-        var opt=document.createElement('option');
-        opt.value=t; opt.textContent=TYPE_LABEL[t]||t;
-        if(u.type===t||((!u.type)&&t==='dispatcher'))opt.selected=true;
-        typeSelect.appendChild(opt);
-      });
-      row.appendChild(typeSelect);
-
-      var saveBtn=document.createElement('button');
-      saveBtn.textContent='Save';
-      saveBtn.style.cssText='background:#F0E000;color:#000;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;';
-      saveBtn.addEventListener('click',function(){
-        var newName=nameInput.value.trim();
-        var newType=typeSelect.value;
-        if(!newName){alert('Enter a name for this slot.');return;}
-        ROSTER[uid].name=newName;
-        ROSTER[uid].type=newType;
-        ROSTER[uid].role=newType==='driver'?'driver':'dispatch';
-        ROSTER[uid].emoji=TYPE_EMOJI[newType]||'📞';
-        saveSlotData();
-        buildLoginDropdown();
-        saveBtn.textContent='✓ Saved';
-        saveBtn.style.background='#1DB954';
-        setTimeout(function(){saveBtn.textContent='Save';saveBtn.style.background='#F0E000';},2000);
-      });
-      row.appendChild(saveBtn);
-      el.appendChild(row);
-    });
-
-    var note=document.createElement('div');
-    note.style.cssText='font-size:10px;color:#333;margin-top:4px;margin-bottom:20px;';
-    note.textContent='Names and roles save instantly. Passwords are not stored in this page — they live in the POTENT login system. Set or reset them below.';
-    el.appendChild(note);
-
-    // Change slot password section (server-side now — auth.js 'setpw'; the
-    // old local "master password" override section is gone for good.)
-    var pwSec=document.createElement('div');
-    pwSec.style.cssText='background:#0d0d0d;border:1px solid #1a1a1a;border-radius:10px;padding:14px;margin-bottom:20px;';
-    var pwTitle=document.createElement('div');
-    pwTitle.style.cssText='font-size:11px;color:#4299E1;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;';
-    pwTitle.textContent='🔐 Change Any Employee Password';
-    var pwSub=document.createElement('div');
-    pwSub.style.cssText='font-size:11px;color:#555;margin-bottom:10px;';
-    pwSub.textContent='Set a new login password for any team member — saved in the POTENT login system, the same one the main app uses. When someone leaves, set a new password here so the old one stops working.';
-    var pwRow=document.createElement('div');
-    pwRow.style.cssText='display:flex;gap:8px;flex-wrap:wrap;';
-    var slotSel=document.createElement('select');
-    slotSel.id='slotPwSelect';
-    slotSel.style.cssText='flex:1;background:#060606;border:1px solid #222;border-radius:6px;color:#F2F2F2;padding:8px 10px;font-size:12px;outline:none;font-family:inherit;color-scheme:dark;min-width:120px;';
-    var defOpt=document.createElement('option');defOpt.value='';defOpt.textContent='Select slot...';slotSel.appendChild(defOpt);
-    Object.keys(ROSTER).filter(function(uid){return uid!=='potent';}).forEach(function(uid){
-      var opt=document.createElement('option');opt.value=uid;
-      opt.textContent=ROSTER[uid].name;slotSel.appendChild(opt);
-    });
-    var newPwInput=document.createElement('input');
-    newPwInput.id='slotNewPw';newPwInput.placeholder='New password...';newPwInput.type='text';
-    newPwInput.style.cssText='flex:1;background:#060606;border:1px solid #222;border-radius:6px;color:#F2F2F2;padding:8px 10px;font-size:13px;outline:none;font-family:monospace;min-width:120px;';
-    var setPwBtn=document.createElement('button');
-    setPwBtn.textContent='Set Password';
-    setPwBtn.style.cssText='background:#4299E1;color:#000;border:none;border-radius:6px;padding:8px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;';
-    setPwBtn.addEventListener('click',function(){
-      var uid=slotSel.value;var pw=newPwInput.value.trim();
-      if(!uid||!pw||pw.length<6){alert('Select a slot and enter at least 6 characters.');return;}
-      setPwBtn.textContent='Saving...';
-      // Server-side password change (auth.js 'setpw') — requires the Owner
-      // session token; the server stores the new password hashed.
-      portalApi('setpw',{userId:uid,newPassword:pw}).then(function(res){
-        if(res&&res.ok){
-          newPwInput.value='';
-          setPwBtn.textContent='✓ Saved';setPwBtn.style.background='#1DB954';
-          setTimeout(function(){setPwBtn.textContent='Set Password';setPwBtn.style.background='#4299E1';},2000);
-        }else{
-          setPwBtn.textContent='Set Password';
-          alert((res&&res.error)||'Could not save password.');
-        }
-      });
-    });
-    pwRow.appendChild(slotSel);pwRow.appendChild(newPwInput);pwRow.appendChild(setPwBtn);
-    pwSec.appendChild(pwTitle);pwSec.appendChild(pwSub);pwSec.appendChild(pwRow);
-    el.appendChild(pwSec);
-
-    // Revoke section
-    var revokeTitle=document.createElement('div');
-    revokeTitle.style.cssText='font-size:11px;color:#E53E3E;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;border-top:1px solid #1a1a1a;padding-top:16px;';
-    revokeTitle.textContent='Access Control — Revoke / Restore';
-    el.appendChild(revokeTitle);
-
-    Object.keys(ROSTER).filter(function(uid){return uid!=='potent';}).forEach(function(uid){
-      var u=ROSTER[uid];
-      if(isDefaultName(u.name))return;
-      var rRow=document.createElement('div');
-      rRow.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #111;';
-      var rName=document.createElement('div');
-      rName.style.cssText='font-size:12px;color:#F2F2F2;';
-      rName.textContent=(TYPE_EMOJI[u.type||'dispatcher']||'📞')+' '+u.name;
-      var rBtn=document.createElement('button');
-      rBtn.id='revoke_'+uid;
-      rBtn.textContent='Revoke';
-      rBtn.style.cssText='background:transparent;border:1px solid #E53E3E;color:#E53E3E;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;';
-      rBtn.addEventListener('click',function(){toggleRevoke(uid,rBtn);});
-      rRow.appendChild(rName); rRow.appendChild(rBtn);
-      el.appendChild(rRow);
-    });
   }
 
   buildAdminUI();
-
-  window.saveSlot=function(uid){
-    var nameEl=document.getElementById('name_'+uid);
-    var typeEl=document.getElementById('type_'+uid);
-    if(!nameEl||!typeEl)return;
-    var newName=nameEl.value.trim();
-    var newType=typeEl.value;
-    if(!newName){alert('Enter a name for this slot.');return;}
-    ROSTER[uid].name=newName;
-    ROSTER[uid].type=newType;
-    ROSTER[uid].role=newType==='driver'?'driver':'dispatch';
-    ROSTER[uid].emoji=TYPE_EMOJI[newType]||'📞';
-    saveSlotData();
-    buildLoginDropdown();
-    // Flash confirm
-    var btn=nameEl.parentElement.querySelector('button');
-    if(btn){btn.textContent='✓ Saved';btn.style.background='#1DB954';setTimeout(function(){btn.textContent='Save';btn.style.background='#F0E000';},2000);}
-  };
-
-  window.toggleRevoke=async function(uid,btn){
-    if(!btn)btn=document.getElementById('revoke_'+uid);
-    if(!btn)return;
-    var isRevoked=btn.textContent==='Restore';
-    var action=isRevoked?'DELETE':'POST';
-    var url=SUPABASE_URL+'/rest/v1/revoked_users';
-    if(action==='DELETE') url+='?user_id=eq.'+uid;
-    try{
-      await fetch(url,{method:action,headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},body:action==='POST'?JSON.stringify({user_id:uid,revoked_by:'Owner',reason:'Admin revoked'}):undefined});
-      btn.textContent=isRevoked?'Revoke':'Restore';
-      btn.style.borderColor=isRevoked?'#E53E3E':'#1DB954';
-      btn.style.color=isRevoked?'#E53E3E':'#1DB954';
-    }catch(e){alert('Error updating access. Check connection.');}
-  };
-}
-async function saveName(uid){
-  var input=document.getElementById('rename-'+uid);
-  var newName=input.value.trim();
-  if(!newName)return;
-  try{
-    await fetch(SUPABASE_URL+'/rest/v1/user_display_names',{
-      method:'POST',
-      headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},
-      body:JSON.stringify({user_id:uid,name:newName})
-    });
-    displayNames[uid]=newName;
-    var nameEl=document.querySelector('#empcard-'+uid+' .emp-name');
-    if(nameEl)nameEl.textContent=ROSTER[uid].emoji+' '+newName;
-    // Update dropdown
-    var opt=document.querySelector('#staffSelect option[value="'+uid+'"]');
-    if(opt)opt.textContent=newName;
-    alert('Name updated to "'+newName+'"');
-  }catch(e){alert('Failed to save name. Check connection.');}
-}
-
-var pendingRevokeUid=null;
-function confirmRevoke(uid,name){
-  pendingRevokeUid=uid;
-  document.getElementById('confirmTitle').textContent='Revoke Access — '+name;
-  document.getElementById('confirmMsg').innerHTML='Are you sure you want to revoke access for <strong style="color:#F2F2F2">'+name+'</strong>?<br><br>This takes effect immediately. They will not be able to log in. You can restore access at any time.';
-  document.getElementById('confirmYes').textContent='Yes, Revoke Access';
-  document.getElementById('confirmYes').onclick=doRevoke;
-  document.getElementById('confirmModal').classList.add('show');
-}
-
-async function doRevoke(){
-  closeConfirm();
-  var uid=pendingRevokeUid;
-  var name=getDisplayName(uid);
-  try{
-    await fetch(SUPABASE_URL+'/rest/v1/revoked_users',{
-      method:'POST',
-      headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},
-      body:JSON.stringify({user_id:uid,revoked_by:'Owner',reason:'Revoked via Employee Portal'})
-    });
-    revokedUsers[uid]=true;
-    var badge=document.getElementById('badge-'+uid);
-    if(badge){badge.textContent='REVOKED';badge.className='status-badge status-revoked';}
-    var actions=document.getElementById('actions-'+uid);
-    if(actions){
-      var revokeBtn=actions.querySelector('.btn-revoke');
-      if(revokeBtn){revokeBtn.textContent='✅ Restore Access';revokeBtn.className='action-btn btn-restore';revokeBtn.onclick=function(){restoreAccess(uid);};}
-    }
-    alert(name+' has been revoked. They cannot log in until access is restored.');
-  }catch(e){alert('Failed to revoke. Check connection.');}
-}
-
-async function restoreAccess(uid){
-  var name=getDisplayName(uid);
-  if(!confirm('Restore access for '+name+'? They will be able to log in immediately.'))return;
-  try{
-    await fetch(SUPABASE_URL+'/rest/v1/revoked_users?user_id=eq.'+uid,{
-      method:'DELETE',
-      headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY}
-    });
-    delete revokedUsers[uid];
-    var badge=document.getElementById('badge-'+uid);
-    if(badge){badge.textContent='ACTIVE';badge.className='status-badge status-active';}
-    var actions=document.getElementById('actions-'+uid);
-    if(actions){
-      var restoreBtn=actions.querySelector('.btn-restore');
-      if(restoreBtn){restoreBtn.textContent='🚫 Revoke Access';restoreBtn.className='action-btn btn-revoke';restoreBtn.onclick=function(){confirmRevoke(uid,name);};}
-    }
-    alert(name+' can now log in again.');
-  }catch(e){alert('Failed to restore. Check connection.');}
-}
-
-function closeConfirm(){
-  document.getElementById('confirmModal').classList.remove('show');
-  pendingRevokeUid=null;
 }
 
 // ── INIT ─────────────────────────────────────────────────────────
@@ -1025,16 +778,24 @@ window.addEventListener('DOMContentLoaded',async function(){
   // wherever they still linger in a browser.
   try{localStorage.removeItem('pl_portal_master_pw');localStorage.removeItem('pl_portal_custom_pws');}catch(e){}
   await loadDisplayNames();
-  await loadRevokedUsers();
   // Restore the session the way the main app does: the stored user record
   // PLUS the server-issued token in 'pl_token'. Sessions saved by the old
   // local-password version (no token) fall back to the sign-in screen.
   // Revocation is enforced by the server at sign-in and on token calls.
   try{
     var saved=JSON.parse(localStorage.getItem('potent_portal_session')||'null');
-    if(saved&&saved.uid&&ROSTER[saved.uid]&&portalTokenGet()){
+    if(saved&&saved.uid&&saved.account&&portalTokenGet()){
+      // Self-serve account session: identity was saved at sign-in (from the
+      // server response); the token in 'pl_token' is the proof of session.
+      var arole=normalizePortalRole(saved.role||'dispatch');
+      currentUser={uid:saved.uid,role:arole,name:saved.name||saved.email||'Team',displayName:saved.name||saved.email||'Team',email:saved.email||'',emoji:arole==='driver'?'🚐':'📞',account:true};
+      launchApp();
+      return;
+    }
+    if(saved&&saved.uid&&portalTokenGet()){
+      var lrole=normalizePortalRole(saved.role||'dispatch');
       var dn=getDisplayName(saved.uid);
-      currentUser={uid:saved.uid,role:normalizePortalRole(saved.role||ROSTER[saved.uid].role),name:dn,displayName:dn,emoji:ROSTER[saved.uid].emoji};
+      currentUser={uid:saved.uid,role:lrole,name:dn,displayName:dn,emoji:(lrole==='owner'?'👑':lrole==='driver'?'🚐':'📞')};
       launchApp();
       return;
     }
