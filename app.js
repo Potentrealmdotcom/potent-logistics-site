@@ -329,6 +329,57 @@ function plSwapNamespace(target) {
 var PL_TOKEN_KEY = "pl_token";
 function plTokenGet() { try { return localStorage.getItem(PL_TOKEN_KEY) || ""; } catch (e) { return ""; } }
 function plTokenSet(t) { try { if (t) localStorage.setItem(PL_TOKEN_KEY, t); else localStorage.removeItem(PL_TOKEN_KEY); } catch (e) { } }
+// ── PUBLIC DEMO SESSION — a prospect walks the REAL app on sample data ──────
+// Fully client-side. Entering the demo parks the current namespace's data
+// (plSwapNamespace), opens a dedicated "demo" namespace, and carries NO server
+// token — so the tenant gateway below never forwards demo traffic (see the
+// fetch gate: in demo mode every gated-table call is answered locally with an
+// empty result). No real org, account or table is read or written. Exit
+// restores whatever session/data was parked and wipes the demo data.
+var PL_DEMO_NS = "demo";
+function plDemoActive() { try { return localStorage.getItem("pl_demo_mode") === "1" && localStorage.getItem("pl_ns") === PL_DEMO_NS; } catch (e) { return false; } }
+function plDemoUser(brand, acct) {
+    var tpl = USERS.find(function (u) { return u.id === "potent"; }) || {};
+    var nm = (brand && (brand.name || brand.companyName)) || (acct && acct.bizName) || "Demo Company";
+    var branding = { name: nm, companyName: nm, logo: (brand && brand.logo) || "", tagline: (brand && brand.tagline) || "", primaryColor: (brand && brand.primary) || "", accentColor: (brand && brand.accent) || "", email: "" };
+    return { id: "demo", name: nm, role: "owner", emoji: "\uD83C\uDFAE", demo: true, commission: 0, access: (tpl.access || ["quote", "jobs", "loadanalysis"]).slice(), branding: branding };
+}
+function plStartDemoSession(brand, acct) {
+    try {
+        // Stash any real session (staff/company) so Exit can restore it untouched.
+        try { sessionStorage.setItem("pl_demo_stash", JSON.stringify({ user: localStorage.getItem("pl_user"), auth: localStorage.getItem("pl3_auth"), token: localStorage.getItem("pl_token"), ns: localStorage.getItem("pl_ns") || "potent" })); } catch (e) { }
+        plSwapNamespace(PL_DEMO_NS); // parks current data, opens the demo data space
+        try {
+            if (acct) localStorage.setItem("pl_demo_acct", JSON.stringify(acct));
+            if (brand) localStorage.setItem("pl_demo_brand", JSON.stringify(brand));
+            localStorage.setItem("pl_demo_mode", "1");
+        } catch (e) { }
+        plTokenSet(""); // demo carries no server login — the gateway stays shut
+        saveCurrentUser(plDemoUser(brand, acct));
+        saveAuth(true);
+    } catch (e) { }
+    window.location.href = "/";
+}
+function plExitDemoSession() {
+    var prevNs = "potent", stash = null;
+    try { stash = JSON.parse(sessionStorage.getItem("pl_demo_stash") || "null"); } catch (e) { }
+    if (stash && stash.ns) prevNs = stash.ns;
+    try {
+        localStorage.removeItem("pl_demo_mode");
+        saveCurrentUser(null);
+        saveAuth(false);
+        plTokenSet("");
+        plSwapNamespace(prevNs); // parks demo data, restores the previous data space
+        try { localStorage.removeItem("pl_ns_snap_" + PL_DEMO_NS); } catch (e) { } // Clear: demo data is wiped, not kept
+        if (stash) {
+            if (stash.user) localStorage.setItem("pl_user", stash.user); else localStorage.removeItem("pl_user");
+            if (stash.auth) localStorage.setItem("pl3_auth", stash.auth); else localStorage.removeItem("pl3_auth");
+            if (stash.token) localStorage.setItem("pl_token", stash.token); else localStorage.removeItem("pl_token");
+            try { sessionStorage.removeItem("pl_demo_stash"); } catch (e) { }
+        }
+    } catch (e) { }
+    window.location.href = "/";
+}
 // "Continue with Google" button (renders nothing until GOOGLE_CLIENT_ID is set on the server)
 function GoogleBtn(props) {
     var ref = React.useRef(null);
@@ -362,6 +413,10 @@ var PL_GATED = ["user_display_names","fleet_vehicles","fleet_maintenance","drive
                 if (PL_GATED.indexOf(table) >= 0) {
                     init = init || {};
                     var method = (init.method || "GET").toUpperCase();
+                    // PUBLIC DEMO sandbox: a demo session never reaches the network for gated
+                    // tables — reads get an empty list, writes get an empty success. No real
+                    // org data can be read or written from the public demo.
+                    if (plDemoActive()) return Promise.resolve(new Response("[]", { status: 200, headers: { "Content-Type": "application/json" } }));
                     if (table === "b2b_pricing_settings" && method === "GET") return orig(input, init); // the price list stays publicly readable
                     // customer tracking page: public, one job, position only
                     var tm = table === "driver_locations" && method === "GET" && /(^|&)job_id=eq\.([^&]+)/.exec(query);
@@ -7796,6 +7851,9 @@ function AdminDashboard(props) {
     var tA = langObj.t;
     return React.createElement("div", { style: { minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
         props.currentUser && props.currentUser.assist && React.createElement(AssistBanner, { user: props.currentUser }),
+        props.currentUser && props.currentUser.demo && React.createElement("div", { style: { background: C.orange, color: "#000", padding: "8px 14px", fontSize: 12, fontWeight: 800, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 } },
+            React.createElement("span", null, "\uD83C\uDFAE DEMO MODE \u2014 " + ((props.currentUser.branding && props.currentUser.branding.companyName) || props.currentUser.name) + " \u00B7 sample data \u2014 nothing here is real"),
+            React.createElement("button", { onClick: function () { plExitDemoSession(); }, style: { background: "#000", color: C.orange, border: "none", borderRadius: 7, padding: "5px 11px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" } }, "Exit Demo")),
         React.createElement("div", { style: { borderBottom: "1px solid " + C.border, padding: "13px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: C.black, zIndex: 100 } },
             React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 7 } },
                 React.createElement(Logo, { size: 18 }),
@@ -8338,7 +8396,7 @@ function DemoStudio(props) {
     var saved = {}; try { saved = JSON.parse(localStorage.getItem("pl_demo_brand") || "{}"); } catch (e) { }
     var [b, setB] = React.useState(Object.assign({ name: props.bizName || "Your Company", tagline: "Fast, reliable freight", welcome: "Book a load in under a minute.", primary: "#F0E000", accent: "#C8962A", logo: "" }, saved));
     var [msg, setMsg] = React.useState("");
-    function upd(k, v) { var n = Object.assign({}, b); n[k] = v; setB(n); try { localStorage.setItem("pl_demo_brand", JSON.stringify(n)); } catch (e) { } }
+    function upd(k, v) { setB(function (prev) { var n = Object.assign({}, prev); n[k] = v; try { localStorage.setItem("pl_demo_brand", JSON.stringify(n)); } catch (e) { } return n; }); }
     function pick(e) { var f = e.target.files && e.target.files[0]; if (!f) return; if (!/^image\/(png|jpeg|webp)$/.test(f.type)) { setMsg("Use a PNG, JPG or WebP image."); return; } plLogoToDataUrl(f, function (u) { if (!u) setMsg("That image is too big. Try a smaller one."); else { setMsg(""); upd("logo", u); } }); }
     var ink = plLum(b.primary) > 0.4 ? "#000" : "#fff";
     var inp = { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, color: C.white, padding: "10px 12px", fontSize: 13, fontFamily: "inherit", marginBottom: 8, boxSizing: "border-box" };
@@ -8347,7 +8405,7 @@ function DemoStudio(props) {
     return React.createElement("div", { style: { minHeight: "100vh", background: C.black, color: C.white, padding: "20px 14px 60px", fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
         React.createElement("div", { style: { maxWidth: 520, margin: "0 auto" } },
             React.createElement("div", { style: { fontSize: 22, fontWeight: 900, textAlign: "center" } }, "🎨 Brand your POTENT OS"),
-            React.createElement("div", { style: { fontSize: 12, color: C.dim, textAlign: "center", marginBottom: 14, lineHeight: 1.6 } }, "Change anything below and watch your app update live. Nothing here is real."),
+            React.createElement("div", { style: { fontSize: 12, color: C.dim, textAlign: "center", marginBottom: 14, lineHeight: 1.6 } }, "Change anything below and watch your app update live \u2014 then tap Enter My Demo to walk the real POTENT OS with your brand on it, filled with sample jobs. Nothing here touches a real account."),
             // live preview
             React.createElement("div", { style: { border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden", marginBottom: 16, background: "#0b0b0b" } },
                 React.createElement("div", { style: { background: b.primary, color: ink, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10 } },
@@ -8372,6 +8430,8 @@ function DemoStudio(props) {
                 React.createElement("div", { style: { display: "flex", gap: 12 } },
                     React.createElement("div", { style: { flex: 1 } }, React.createElement("div", { style: lab }, "Main color"), React.createElement("input", { type: "color", value: b.primary, onChange: function (e) { upd("primary", e.target.value); }, style: { width: "100%", height: 40, border: "none", background: "none" } })),
                     React.createElement("div", { style: { flex: 1 } }, React.createElement("div", { style: lab }, "Accent color"), React.createElement("input", { type: "color", value: b.accent, onChange: function (e) { upd("accent", e.target.value); }, style: { width: "100%", height: 40, border: "none", background: "none" } })))),
+            React.createElement("button", { onClick: function () { var acct = null; try { acct = JSON.parse(localStorage.getItem("pl_demo_acct") || "null"); } catch (e) { } plStartDemoSession(b, acct); }, style: { display: "block", width: "100%", textAlign: "center", background: b.primary, color: ink, border: "none", borderRadius: 10, padding: "14px", fontWeight: 900, fontSize: 15, cursor: "pointer", fontFamily: "inherit", marginBottom: 10 } }, "\u25B6 Enter My Demo \u2014 walk the real app"),
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, textAlign: "center", lineHeight: 1.6, marginBottom: 12 } }, "The real POTENT OS, filled with sample jobs, drivers and loads \u2014 try every screen, including Load Analysis. Exit any time; nothing is saved to a real account."),
             React.createElement("a", { href: "?apply", style: { display: "block", textAlign: "center", background: b.primary, color: ink, borderRadius: 10, padding: "13px", fontWeight: 900, fontSize: 14, textDecoration: "none", marginBottom: 10 } }, "Like it? Get POTENT OS with this look →"),
             React.createElement("div", { style: { fontSize: 11, color: C.dim, textAlign: "center", lineHeight: 1.6 } }, "When you get POTENT OS, the same logo, name and colors go in under My Company and your whole app (portal, quotes, invoices) wears your brand."),
             React.createElement("div", { style: { textAlign: "center", marginTop: 12 } }, React.createElement("button", { onClick: function () { window.location.href = "/"; }, style: { background: "transparent", border: "1px solid " + C.border, color: C.dim, borderRadius: 8, padding: "8px 14px", fontSize: 12, cursor: "pointer", fontFamily: "inherit" } }, "Back to POTENT"))));
@@ -8398,7 +8458,7 @@ function DemoModeView(props) {
             React.createElement(TxtIn, { label: "Email", value: email, onChange: setEmail, type: "email", placeholder: "you@company.com" }),
             React.createElement(TxtIn, { label: "Or Phone", value: phone, onChange: setPhone, type: "tel", placeholder: "404-000-0000" }),
             React.createElement(TxtIn, { label: "Business Name", value: bizName, onChange: setBizName, placeholder: "Your company name" }),
-            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 16, lineHeight: 1.6 } }, "Next screen: upload your logo, pick colors and see your own branded app live."),
+            React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 16, lineHeight: 1.6 } }, "Next screen: upload your logo, pick your colors, then step inside the real app \u2014 sample loads included."),
             React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: C.white, marginBottom: 8 } }, "Add-ons"),
             React.createElement("div", {
                 onClick: function () { setWantAemni(!wantAemni); },
@@ -8654,7 +8714,7 @@ function PublicApp(props) {
                         React.createElement("img", { src: "/app-mockup.jpg", alt: "POTENT OS Ghost Mode offline dispatch screen", style: { width: "100%", borderRadius: 8, border: "1px solid " + C.border } })),
                     React.createElement("div", { style: { maxWidth: 500, margin: "24px auto 0", textAlign: "center" } },
                         React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" } },
-                            React.createElement("a", { href: "?apply#demo", style: { textDecoration: "none" } },
+                            React.createElement("a", { href: "?demo", style: { textDecoration: "none" } },
                                 React.createElement("button", { style: { background: "linear-gradient(180deg,#ffffff 0%,#c6ccd4 30%,#7d848e 49%,#e4e8ec 51%,#a3a9b2 78%,#f6f8fa 100%)", color: "#000", border: "none", borderRadius: 9, padding: "13px 26px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "\u25B6 Click here to see demo")),
                             React.createElement("a", { href: "?demo", style: { textDecoration: "none" } },
                                 React.createElement("button", { style: { background: C.orange, color: "#000", border: "none", borderRadius: 9, padding: "13px 26px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" } }, "\uD83D\uDD11 Sign Up for Demo Access"))),
@@ -9179,6 +9239,8 @@ function WaitlistPage() {
                     React.createElement("div", { style: { fontSize: 15, fontWeight: 900, color: C2.orange, marginBottom: 6 } }, "🎬 Demo Mode"),
                     React.createElement("div", { style: { fontSize: 13, color: C2.dim, lineHeight: 1.7 } }, "Want to click around before you decide? Demo Mode fills the app with sample jobs, drivers, carriers, brokers and expenses so you can try every screen. Nothing real is touched, and you can clear it in one tap.")),
                 React.createElement("div", { style: { display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" } },
+                    React.createElement("a", { href: "?demo", style: { textDecoration: "none" } },
+                        React.createElement("button", { style: { background: "#FFFFFF", color: "#000", border: "none", borderRadius: 9, padding: "14px 30px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: ff } }, "\uD83C\uDFAE Try the Demo \u2192")),
                     React.createElement("a", { href: "#free-tools", style: { textDecoration: "none" } },
                         React.createElement("button", { style: { background: C2.orange, color: "#000", border: "none", borderRadius: 9, padding: "14px 30px", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: ff } }, "📥 Get Free Tools")),
                     React.createElement("a", { href: "#apply", style: { textDecoration: "none" } },
@@ -10352,6 +10414,14 @@ function Root() {
                 saveJobs(backup);
             }
         }).catch(function () {});
+    }, []);
+    // PUBLIC DEMO: a demo session boots into its own (empty) demo namespace —
+    // fill it once with the shared sample dataset, same seed the staff Demo tab loads.
+    var _demoSeedRef = useRef(false);
+    useEffect(function () {
+        if (_demoSeedRef.current) return;
+        var _du = null; try { _du = loadCurrentUser(); } catch (e) { }
+        if (_du && _du.demo && jobs.length === 0) { _demoSeedRef.current = true; plSeedDemoData(addJob); }
     }, []);
     var [isAdmin, setIsAdmin] = useState(loadAuth);
     var [currentUser, setCurrentUser] = useState(function () { return loadCurrentUser(); });
@@ -12049,6 +12119,156 @@ function AIDocumentExtractor(props) {
 // ═══════════════════════════════════════════════════════════════════
 // DEMO DATA LOADER — OWNER ONLY (🎬 Demo tab)
 // ═══════════════════════════════════════════════════════════════════
+// ── DEMO DATASET + SEEDER — shared by the staff 🎬 Demo tab and the public Demo Mode ──
+// One dataset, one seeder: the public demo session fills its own demo namespace
+// with exactly what the staff loader puts into a live workspace.
+function plDemoDataset() {
+    var today = new Date();
+    function daysAgo(n) { var d = new Date(today); d.setDate(d.getDate() - n); return d.toISOString().split("T")[0]; }
+    // ── 12 REALISTIC JOBS ─────────────────────────────────────────
+    var demoJobs = [
+        { id: "PL-8842", customer: "Marcus Thompson", phone: "(404) 291-7733", email: "marcus@atl-realty.com", service: "delivery", serviceName: "Delivery", origin: "1234 Peachtree Rd NW, Atlanta, GA", destination: "5678 Roswell Rd, Sandy Springs, GA", zone: "local", speed: "standard", basePrice: 225, finalPrice: 225, payment: "card", date: daysAgo(0), status: "En Route", miles: 12, salesperson: "Dispatch 1", isBusiness: false, customerType: "residential", priceTier: "standard", weightTier: "medium", helperNeeded: false, paidOnline: true, notes: "Sectional sofa, 3 pieces", createdBy: "Dispatch 1" },
+        { id: "PL-8841", customer: "Apex Construction LLC", phone: "(770) 834-5512", email: "ops@apexconstruction.com", service: "junkremoval", serviceName: "Junk Removal", origin: "892 Industrial Blvd, Conyers, GA", destination: "892 Industrial Blvd, Conyers, GA", zone: "local", speed: "urgent", basePrice: 600, finalPrice: 780, payment: "card", date: daysAgo(0), status: "In Progress", miles: 0, salesperson: "Dispatch 2", isBusiness: true, companyName: "Apex Construction LLC", customerType: "commercial", priceTier: "standard", weightTier: "heavy", helperNeeded: true, paidOnline: true, notes: "Construction debris — drywall, lumber scraps", createdBy: "Dispatch 2" },
+        { id: "PL-8840", customer: "Priya Nair", phone: "(678) 445-9901", email: "pnair@gmail.com", service: "cleanout", serviceName: "Property Cleanout", origin: "317 Oak Street, Covington, GA", destination: "317 Oak Street, Covington, GA", zone: "local", speed: "standard", basePrice: 3500, finalPrice: 3500, payment: "cash", date: daysAgo(1), status: "Completed", miles: 0, salesperson: "POTENT", isBusiness: false, customerType: "residential", priceTier: "standard", weightTier: "heavy", helperNeeded: true, paidOnline: false, notes: "3-bedroom estate cleanout — full house contents", createdBy: "POTENT" },
+        { id: "PL-8839", customer: "DeShawn Williams Transport", phone: "(404) 667-2281", email: "dwilliams@dwtransport.com", service: "freight", serviceName: "Freight Transport", origin: "3300 Fulton Industrial Blvd, Atlanta, GA", destination: "7841 Broad St, Chattanooga, TN", zone: "longdist", speed: "standard", basePrice: 1500, finalPrice: 1500, payment: "net7", date: daysAgo(1), status: "Paid", miles: 118, salesperson: "Dispatch 1", isBusiness: true, companyName: "DeShawn Williams Transport", customerType: "commercial", priceTier: "standard", weightTier: "light", helperNeeded: false, paidOnline: false, notes: "Auto parts shipment — 2 pallets", createdBy: "Dispatch 1" },
+        { id: "PL-8838", customer: "Keisha Monroe", phone: "(770) 552-3849", email: "kmonroe@email.com", service: "delivery", serviceName: "Delivery", origin: "4521 Browns Bridge Rd, Gainesville, GA", destination: "1100 Commerce Dr, Buford, GA", zone: "regional", speed: "standard", basePrice: 337, finalPrice: 337, payment: "card", date: daysAgo(2), status: "Paid", miles: 75, salesperson: "Dispatch 2", isBusiness: false, customerType: "residential", priceTier: "standard", weightTier: "light", helperNeeded: false, paidOnline: true, notes: "Antique dresser — fragile", createdBy: "Dispatch 2" },
+        { id: "PL-8837", customer: "Atlanta Event Co.", phone: "(404) 991-0044", email: "events@atlantaeventco.com", service: "event", serviceName: "Event Drop-Off", origin: "100 Park Plaza Dr, Atlanta, GA", destination: "2200 Convention Center Dr, Columbus, GA", zone: "longdist", speed: "overnight", basePrice: 2700, finalPrice: 2700, payment: "card", date: daysAgo(2), status: "Completed", miles: 105, salesperson: "POTENT", isBusiness: true, companyName: "Atlanta Event Co.", customerType: "commercial", priceTier: "standard", weightTier: "medium", helperNeeded: true, paidOnline: true, notes: "Event staging equipment — 8 tables, 60 chairs, AV equipment", createdBy: "POTENT" },
+        { id: "PL-8836", customer: "Roberto Sanchez", phone: "(678) 229-4401", email: "rsanchez@outlook.com", service: "junkremoval", serviceName: "Junk Removal", origin: "889 Tara Blvd, Jonesboro, GA", destination: "889 Tara Blvd, Jonesboro, GA", zone: "local", speed: "standard", basePrice: 350, finalPrice: 315, payment: "cash", date: daysAgo(3), status: "Paid", miles: 0, salesperson: "Dispatch 1", isBusiness: false, customerType: "residential", priceTier: "loyal", weightTier: "medium", helperNeeded: false, paidOnline: false, notes: "Repeat customer — garage cleanout, mostly boxes and old furniture", createdBy: "Dispatch 1" },
+        { id: "PL-8835", customer: "Northside Medical Partners", phone: "(404) 881-7700", email: "facilities@northsidemedical.com", service: "discreet", serviceName: "Discreet / High-Value", origin: "1000 Johnson Ferry Rd NE, Atlanta, GA", destination: "4200 Hospital Pkwy, Tucker, GA", zone: "local", speed: "urgent", basePrice: 650, finalPrice: 650, payment: "card", date: daysAgo(4), status: "Paid", miles: 18, salesperson: "POTENT", isBusiness: true, companyName: "Northside Medical Partners", customerType: "commercial", priceTier: "standard", weightTier: "light", helperNeeded: false, paidOnline: true, notes: "Medical records transfer — confidential", createdBy: "POTENT" },
+        { id: "PL-8834", customer: "James & Linda Porter", phone: "(770) 338-8821", email: "porterfamily@gmail.com", service: "cleanout", serviceName: "Property Cleanout", origin: "2240 Sigman Rd, Conyers, GA", destination: "2240 Sigman Rd, Conyers, GA", zone: "local", speed: "standard", basePrice: 5000, finalPrice: 5000, payment: "card", date: daysAgo(5), status: "Paid", miles: 0, salesperson: "Dispatch 2", isBusiness: false, customerType: "residential", priceTier: "standard", weightTier: "heavy", helperNeeded: true, paidOnline: true, notes: "4-bedroom estate cleanout — deceased relative's home, contents to donation center", createdBy: "Dispatch 2" },
+        { id: "PL-8833", customer: "Bulldog Freight LLC", phone: "(706) 443-2219", email: "dispatch@bulldogfreight.com", service: "freight", serviceName: "Freight Transport", origin: "1700 Athens Hwy, Loganville, GA", destination: "5500 Peach State Blvd, Macon, GA", zone: "regional", speed: "standard", basePrice: 750, finalPrice: 750, payment: "net7", date: daysAgo(6), status: "Paid", miles: 87, salesperson: "Dispatch 1", isBusiness: true, companyName: "Bulldog Freight LLC", customerType: "commercial", priceTier: "standard", weightTier: "light", helperNeeded: false, paidOnline: false, notes: "Manufacturing components — 3 pallets", createdBy: "Dispatch 1" },
+        { id: "PL-8832", customer: "Tamika Brooks", phone: "(404) 772-5509", email: "tbrooks@yahoo.com", service: "delivery", serviceName: "Delivery", origin: "3801 Camp Creek Pkwy, East Point, GA", destination: "5555 New Peachtree Rd, Chamblee, GA", zone: "local", speed: "afterhours", basePrice: 288, finalPrice: 288, payment: "card", date: daysAgo(7), status: "Paid", miles: 16, salesperson: "Dispatch 2", isBusiness: false, customerType: "residential", priceTier: "standard", weightTier: "light", helperNeeded: false, paidOnline: true, notes: "After-hours delivery — customer works day shift", createdBy: "Dispatch 2" },
+        { id: "PL-8831", customer: "City of Conyers — Parks Dept", phone: "(770) 929-6300", email: "parks@conyersga.gov", service: "junkremoval", serviceName: "Junk Removal", origin: "1184 Scott St NE, Conyers, GA", destination: "1184 Scott St NE, Conyers, GA", zone: "local", speed: "standard", basePrice: 1000, finalPrice: 1000, payment: "net7", date: daysAgo(8), status: "Paid", miles: 0, salesperson: "POTENT", isBusiness: true, companyName: "City of Conyers", customerType: "institutional", priceTier: "standard", weightTier: "heavy", helperNeeded: true, paidOnline: false, notes: "Municipal debris removal — park renovation project", createdBy: "POTENT" },
+    ];
+    // ── 3 SAMPLE DRIVERS ──────────────────────────────────────────
+    var demoDrivers = [
+        { id: "d1", name: "Marcus J. Lewis", phone: "(470) 441-2233", email: "mlewis@email.com", pay_type: "per_load", pay_rate: 120, cdl_number: "GA-CDL-883821", cdl_expiry: daysAgo(-180), medical_card_expiry: daysAgo(-90), hire_date: daysAgo(365), status: "active", org_id: "potent-logistics" },
+        { id: "d2", name: "DeShawn Carter", phone: "(404) 556-7788", email: "dcarter@email.com", pay_type: "per_mile", pay_rate: 0.45, cdl_number: "GA-CDL-441209", cdl_expiry: daysAgo(-365), medical_card_expiry: daysAgo(-200), hire_date: daysAgo(180), status: "active", org_id: "potent-logistics" },
+        { id: "d3", name: "Terrence Washington", phone: "(678) 993-4421", email: "twash@email.com", pay_type: "percentage", pay_rate: 30, cdl_number: "GA-CDL-662847", cdl_expiry: daysAgo(25), medical_card_expiry: daysAgo(18), hire_date: daysAgo(90), status: "active", org_id: "potent-logistics" },
+    ];
+    // ── SETTLEMENTS ───────────────────────────────────────────────
+    var demoSettlements = [
+        { id: "s1", driver_id: "d1", driver_name: "Marcus J. Lewis", period_start: daysAgo(14), period_end: daysAgo(7), gross_pay: 480, fuel_advance: 40, damages: 0, insurance_deduction: 25, equipment_rental: 0, other_deductions: 0, net_pay: 415, status: "paid", paid_date: daysAgo(5), notes: "4 loads completed" },
+        { id: "s2", driver_id: "d2", driver_name: "DeShawn Carter", period_start: daysAgo(14), period_end: daysAgo(7), gross_pay: 360, fuel_advance: 50, damages: 0, insurance_deduction: 25, equipment_rental: 0, other_deductions: 0, net_pay: 285, status: "paid", paid_date: daysAgo(5), notes: "800 miles" },
+        { id: "s3", driver_id: "d1", driver_name: "Marcus J. Lewis", period_start: daysAgo(7), period_end: daysAgo(0), gross_pay: 600, fuel_advance: 0, damages: 0, insurance_deduction: 25, equipment_rental: 0, other_deductions: 0, net_pay: 575, status: "unpaid", notes: "5 loads this period" },
+        { id: "s4", driver_id: "d3", driver_name: "Terrence Washington", period_start: daysAgo(7), period_end: daysAgo(0), gross_pay: 390, fuel_advance: 60, damages: 0, insurance_deduction: 25, equipment_rental: 0, other_deductions: 0, net_pay: 305, status: "unpaid", notes: "30% of 3 loads" },
+    ];
+    // ── EXPENSES ──────────────────────────────────────────────────
+    var demoExpenses = [
+        { id: "e1", date: daysAgo(0), type: "fuel", amount: 87.42, note: "Fuel — Love's Travel Stop", jobId: "PL-8842", state: "GA" },
+        { id: "e2", date: daysAgo(1), type: "fuel", amount: 124.18, note: "Fuel — Pilot Flying J, Chattanooga", jobId: "PL-8839", state: "TN" },
+        { id: "e3", date: daysAgo(2), type: "tolls", amount: 12.50, note: "I-285 E-ZPass tolls", jobId: "PL-8838", state: "GA" },
+        { id: "e4", date: daysAgo(2), type: "fuel", amount: 98.75, note: "Fuel — Shell, Gainesville", jobId: "PL-8838", state: "GA" },
+        { id: "e5", date: daysAgo(3), type: "supplies", amount: 45.00, note: "Moving blankets and straps", jobId: "", state: "GA" },
+        { id: "e6", date: daysAgo(4), type: "fuel", amount: 76.30, note: "Fuel — BP, Marietta", jobId: "PL-8835", state: "GA" },
+        { id: "e7", date: daysAgo(5), type: "fuel", amount: 155.60, note: "Fuel — Pilot, Columbus", jobId: "PL-8834", state: "GA" },
+        { id: "e8", date: daysAgo(6), type: "tolls", amount: 8.75, note: "I-20 West tolls", jobId: "PL-8833", state: "GA" },
+        { id: "e9", date: daysAgo(7), type: "parking", amount: 22.00, note: "Parking — Chamblee delivery", jobId: "PL-8832", state: "GA" },
+        { id: "e10", date: daysAgo(8), type: "fuel", amount: 110.25, note: "Fuel — Love's Conyers", jobId: "PL-8831", state: "GA" },
+    ];
+    // ── CARRIERS ──────────────────────────────────────────────────
+    var demoCarriers = [
+        { id: "c1", name: "Southeast Express Carriers", mcNumber: "MC-882341", dotNumber: "DOT-3394821", phone: "(404) 441-9900", email: "dispatch@secarriers.com", address: "4500 Logistics Way, Atlanta, GA", insuranceExpiry: daysAgo(-90), insuranceCarrier: "Old Republic Insurance", rating: 4, notes: "Reliable for Atlanta-Nashville lane. Net 7 payer." },
+        { id: "c2", name: "Bulldog Freight Partners", mcNumber: "MC-441029", dotNumber: "DOT-2201847", phone: "(706) 229-3311", email: "ops@bulldogfreight.com", address: "800 Commerce Park Dr, Athens, GA", insuranceExpiry: daysAgo(25), insuranceCarrier: "Progressive Commercial", rating: 3, notes: "Good for Georgia intrastate. Sometimes slow on paperwork." },
+        { id: "c3", name: "Southern Star Logistics", mcNumber: "MC-993847", dotNumber: "DOT-4412098", phone: "(678) 552-8877", email: "sslogistics@email.com", address: "2200 Airport Blvd, Augusta, GA", insuranceExpiry: daysAgo(-180), insuranceCarrier: "Sentry Insurance", rating: 5, notes: "Best carrier for oversized loads. Premium rate but always delivers." },
+    ];
+    // ── BROKERS ───────────────────────────────────────────────────
+    var demoBrokers = [
+        { id: "b1", name: "Peach State Brokerage", mcNumber: "MC-334421", phone: "(404) 771-2200", email: "loads@peachstatebrokerage.com", creditScore: 82, creditLimit: 15000, daysToPay: 14, notes: "Good load volume on I-85 corridor" },
+        { id: "b2", name: "Highway Logistics Group", mcNumber: "MC-882039", phone: "(770) 448-9900", email: "dispatch@highwaylogistics.com", creditScore: 65, creditLimit: 8000, daysToPay: 21, notes: "Pays slow — watch credit limit closely" },
+        { id: "b3", name: "Cargo Connect Southeast", mcNumber: "MC-119384", phone: "(404) 882-3341", email: "carriers@cargoconnect.com", creditScore: 91, creditLimit: 25000, daysToPay: 7, notes: "Best broker in our network. Quick pay, consistent volume." },
+    ];
+    // ── CRM LEADS ────────────────────────────────────────────────
+    var demoLeads = [
+        { id: "l1", name: "Brandon Willis", company: "Willis Moving & Storage", phone: "(770) 334-8821", email: "bwillis@willismoving.com", service_type: "Freight / Trucking", stage: "quoted", estimated_value: 8500, source: "Referral", follow_up_date: daysAgo(-1), notes: "5-truck fleet, currently on Samsara + TruckingOffice. Paying $890/mo in subscriptions.", created_at: new Date().toISOString() },
+        { id: "l2", name: "Carmen Rodriguez", company: "CR Property Services", phone: "(404) 229-3318", email: "carmen@crproperty.com", service_type: "Property Services", stage: "contacted", estimated_value: 6500, source: "Google", follow_up_date: daysAgo(0), notes: "Property management company, needs recurring cleanout service", created_at: new Date().toISOString() },
+        { id: "l3", name: "Malik Johnson", company: "Johnson Bros Transport", phone: "(678) 441-7729", email: "malik@johnsonbrostransport.com", service_type: "Freight / Trucking", stage: "new", estimated_value: 12500, source: "Social Media", follow_up_date: daysAgo(-2), notes: "12-truck fleet. Saw our Instagram post about the Motive API situation.", created_at: new Date().toISOString() },
+        { id: "l4", name: "Sandra Lee", company: "Lee Commercial Real Estate", phone: "(770) 882-4401", email: "slee@leecommercial.com", service_type: "Multiple Services", stage: "won", estimated_value: 3500, source: "Referral", follow_up_date: daysAgo(-7), notes: "POTENT OS Starter plan sold. Onboarding scheduled.", created_at: new Date().toISOString() },
+        { id: "l5", name: "Tony Guerrero", company: "Guerrero Hauling", phone: "(404) 556-1188", email: "tony@guerrerohauling.com", service_type: "Freight / Trucking", stage: "contacted", estimated_value: 6500, source: "Cold Call", follow_up_date: daysAgo(-1), notes: "8-truck fleet. Currently using Excel + QuickBooks. Ready to move.", created_at: new Date().toISOString() },
+    ];
+    // ── LANES ────────────────────────────────────────────────────
+    var demoLanes = [
+        { key: "Atlanta→Chattanooga", origin: "Atlanta, GA", destination: "Chattanooga, TN", count: 6, totalRevenue: 9000, avgRevenue: 1500, lastDate: daysAgo(1) },
+        { key: "Conyers→Atlanta", origin: "Conyers, GA", destination: "Atlanta, GA", count: 18, totalRevenue: 4050, avgRevenue: 225, lastDate: daysAgo(0) },
+        { key: "Atlanta→Macon", origin: "Atlanta, GA", destination: "Macon, GA", count: 4, totalRevenue: 3000, avgRevenue: 750, lastDate: daysAgo(6) },
+        { key: "Gainesville→Buford", origin: "Gainesville, GA", destination: "Buford, GA", count: 3, totalRevenue: 1011, avgRevenue: 337, lastDate: daysAgo(2) },
+        { key: "Atlanta→Columbus", origin: "Atlanta, GA", destination: "Columbus, GA", count: 2, totalRevenue: 5400, avgRevenue: 2700, lastDate: daysAgo(2) },
+        { key: "Loganville→Macon", origin: "Loganville, GA", destination: "Macon, GA", count: 5, totalRevenue: 3750, avgRevenue: 750, lastDate: daysAgo(6) },
+    ];
+    return { jobs: demoJobs, drivers: demoDrivers, settlements: demoSettlements, expenses: demoExpenses, carriers: demoCarriers, brokers: demoBrokers, leads: demoLeads, lanes: demoLanes };
+}
+function plSeedDemoData(onAddJob) {
+    var _ds = plDemoDataset();
+    var demoJobs = _ds.jobs, demoExpenses = _ds.expenses, demoCarriers = _ds.carriers, demoBrokers = _ds.brokers, demoLeads = _ds.leads, demoLanes = _ds.lanes, demoSettlements = _ds.settlements, demoDrivers = _ds.drivers;
+    // ── SAVE EVERYTHING ───────────────────────────────────────────
+    try {
+        // Jobs — merge with existing
+        var existing = loadJobs();
+        var existingIds = existing.map(function (j) { return j.id; });
+        var newJobs = demoJobs.filter(function (j) { return existingIds.indexOf(j.id) === -1; });
+        saveJobs(newJobs.concat(existing));
+        // Expenses
+        var existingExp = loadExpenses();
+        var existingExpIds = existingExp.map(function (e) { return e.id; });
+        var newExp = demoExpenses.filter(function (e) { return existingExpIds.indexOf(e.id) === -1; });
+        saveExpenses(newExp.concat(existingExp));
+        // Carriers
+        var existingCarriers = loadCarriers();
+        var existingCIds = existingCarriers.map(function (c) { return c.id; });
+        var newCarriers = demoCarriers.filter(function (c) { return existingCIds.indexOf(c.id) === -1; });
+        saveCarriers(newCarriers.concat(existingCarriers));
+        // Brokers
+        var existingBrokers = loadBrokers();
+        var existingBIds = existingBrokers.map(function (b) { return b.id; });
+        var newBrokers = demoBrokers.filter(function (b) { return existingBIds.indexOf(b.id) === -1; });
+        saveBrokers(newBrokers.concat(existingBrokers));
+        // Leads
+        var existingLeads = [];
+        try {
+            var r = localStorage.getItem("pl_leads");
+            if (r)
+                existingLeads = JSON.parse(r);
+        }
+        catch (e) { }
+        var existingLIds = existingLeads.map(function (l) { return l.id; });
+        var newLeads = demoLeads.filter(function (l) { return existingLIds.indexOf(l.id) === -1; });
+        localStorage.setItem("pl_leads", JSON.stringify(newLeads.concat(existingLeads)));
+        // Lanes
+        var existingLanes = loadLanes();
+        var existingLaneKeys = existingLanes.map(function (l) { return l.key; });
+        var newLanes = demoLanes.filter(function (l) { return existingLaneKeys.indexOf(l.key) === -1; });
+        saveLanes(newLanes.concat(existingLanes));
+        // Settlements
+        var existingSettlements = [];
+        try {
+            var rs = localStorage.getItem("pl_settlements");
+            if (rs)
+                existingSettlements = JSON.parse(rs);
+        }
+        catch (e) { }
+        var existingSIds = existingSettlements.map(function (s) { return s.id; });
+        var newSettlements = demoSettlements.filter(function (s) { return existingSIds.indexOf(s.id) === -1; });
+        localStorage.setItem("pl_settlements", JSON.stringify(newSettlements.concat(existingSettlements)));
+        // Drivers
+        var existingDrivers = [];
+        try {
+            var rd = localStorage.getItem("pl_drivers");
+            if (rd)
+                existingDrivers = JSON.parse(rd);
+        }
+        catch (e) { }
+        var existingDIds = existingDrivers.map(function (d) { return d.id; });
+        var newDrivers = demoDrivers.filter(function (d) { return existingDIds.indexOf(d.id) === -1; });
+        localStorage.setItem("pl_drivers", JSON.stringify(newDrivers.concat(existingDrivers)));
+    }
+    catch (e) {
+        console.error("Demo data error:", e);
+    }
+    // Add jobs to React state
+    // Add jobs to React state
+    if (onAddJob) demoJobs.forEach(function (j) { onAddJob(j); });
+}
+
 function DemoDataLoader(props) {
     var [loaded, setLoaded] = useState(false);
     var [loading, setLoading] = useState(false);
@@ -12056,144 +12276,7 @@ function DemoDataLoader(props) {
     function loadDemoData() {
         setLoading(true);
         setTimeout(function () {
-            var today = new Date();
-            function daysAgo(n) { var d = new Date(today); d.setDate(d.getDate() - n); return d.toISOString().split("T")[0]; }
-            // ── 12 REALISTIC JOBS ─────────────────────────────────────────
-            var demoJobs = [
-                { id: "PL-8842", customer: "Marcus Thompson", phone: "(404) 291-7733", email: "marcus@atl-realty.com", service: "delivery", serviceName: "Delivery", origin: "1234 Peachtree Rd NW, Atlanta, GA", destination: "5678 Roswell Rd, Sandy Springs, GA", zone: "local", speed: "standard", basePrice: 225, finalPrice: 225, payment: "card", date: daysAgo(0), status: "En Route", miles: 12, salesperson: "Dispatch 1", isBusiness: false, customerType: "residential", priceTier: "standard", weightTier: "medium", helperNeeded: false, paidOnline: true, notes: "Sectional sofa, 3 pieces", createdBy: "Dispatch 1" },
-                { id: "PL-8841", customer: "Apex Construction LLC", phone: "(770) 834-5512", email: "ops@apexconstruction.com", service: "junkremoval", serviceName: "Junk Removal", origin: "892 Industrial Blvd, Conyers, GA", destination: "892 Industrial Blvd, Conyers, GA", zone: "local", speed: "urgent", basePrice: 600, finalPrice: 780, payment: "card", date: daysAgo(0), status: "In Progress", miles: 0, salesperson: "Dispatch 2", isBusiness: true, companyName: "Apex Construction LLC", customerType: "commercial", priceTier: "standard", weightTier: "heavy", helperNeeded: true, paidOnline: true, notes: "Construction debris — drywall, lumber scraps", createdBy: "Dispatch 2" },
-                { id: "PL-8840", customer: "Priya Nair", phone: "(678) 445-9901", email: "pnair@gmail.com", service: "cleanout", serviceName: "Property Cleanout", origin: "317 Oak Street, Covington, GA", destination: "317 Oak Street, Covington, GA", zone: "local", speed: "standard", basePrice: 3500, finalPrice: 3500, payment: "cash", date: daysAgo(1), status: "Completed", miles: 0, salesperson: "POTENT", isBusiness: false, customerType: "residential", priceTier: "standard", weightTier: "heavy", helperNeeded: true, paidOnline: false, notes: "3-bedroom estate cleanout — full house contents", createdBy: "POTENT" },
-                { id: "PL-8839", customer: "DeShawn Williams Transport", phone: "(404) 667-2281", email: "dwilliams@dwtransport.com", service: "freight", serviceName: "Freight Transport", origin: "3300 Fulton Industrial Blvd, Atlanta, GA", destination: "7841 Broad St, Chattanooga, TN", zone: "longdist", speed: "standard", basePrice: 1500, finalPrice: 1500, payment: "net7", date: daysAgo(1), status: "Paid", miles: 118, salesperson: "Dispatch 1", isBusiness: true, companyName: "DeShawn Williams Transport", customerType: "commercial", priceTier: "standard", weightTier: "light", helperNeeded: false, paidOnline: false, notes: "Auto parts shipment — 2 pallets", createdBy: "Dispatch 1" },
-                { id: "PL-8838", customer: "Keisha Monroe", phone: "(770) 552-3849", email: "kmonroe@email.com", service: "delivery", serviceName: "Delivery", origin: "4521 Browns Bridge Rd, Gainesville, GA", destination: "1100 Commerce Dr, Buford, GA", zone: "regional", speed: "standard", basePrice: 337, finalPrice: 337, payment: "card", date: daysAgo(2), status: "Paid", miles: 75, salesperson: "Dispatch 2", isBusiness: false, customerType: "residential", priceTier: "standard", weightTier: "light", helperNeeded: false, paidOnline: true, notes: "Antique dresser — fragile", createdBy: "Dispatch 2" },
-                { id: "PL-8837", customer: "Atlanta Event Co.", phone: "(404) 991-0044", email: "events@atlantaeventco.com", service: "event", serviceName: "Event Drop-Off", origin: "100 Park Plaza Dr, Atlanta, GA", destination: "2200 Convention Center Dr, Columbus, GA", zone: "longdist", speed: "overnight", basePrice: 2700, finalPrice: 2700, payment: "card", date: daysAgo(2), status: "Completed", miles: 105, salesperson: "POTENT", isBusiness: true, companyName: "Atlanta Event Co.", customerType: "commercial", priceTier: "standard", weightTier: "medium", helperNeeded: true, paidOnline: true, notes: "Event staging equipment — 8 tables, 60 chairs, AV equipment", createdBy: "POTENT" },
-                { id: "PL-8836", customer: "Roberto Sanchez", phone: "(678) 229-4401", email: "rsanchez@outlook.com", service: "junkremoval", serviceName: "Junk Removal", origin: "889 Tara Blvd, Jonesboro, GA", destination: "889 Tara Blvd, Jonesboro, GA", zone: "local", speed: "standard", basePrice: 350, finalPrice: 315, payment: "cash", date: daysAgo(3), status: "Paid", miles: 0, salesperson: "Dispatch 1", isBusiness: false, customerType: "residential", priceTier: "loyal", weightTier: "medium", helperNeeded: false, paidOnline: false, notes: "Repeat customer — garage cleanout, mostly boxes and old furniture", createdBy: "Dispatch 1" },
-                { id: "PL-8835", customer: "Northside Medical Partners", phone: "(404) 881-7700", email: "facilities@northsidemedical.com", service: "discreet", serviceName: "Discreet / High-Value", origin: "1000 Johnson Ferry Rd NE, Atlanta, GA", destination: "4200 Hospital Pkwy, Tucker, GA", zone: "local", speed: "urgent", basePrice: 650, finalPrice: 650, payment: "card", date: daysAgo(4), status: "Paid", miles: 18, salesperson: "POTENT", isBusiness: true, companyName: "Northside Medical Partners", customerType: "commercial", priceTier: "standard", weightTier: "light", helperNeeded: false, paidOnline: true, notes: "Medical records transfer — confidential", createdBy: "POTENT" },
-                { id: "PL-8834", customer: "James & Linda Porter", phone: "(770) 338-8821", email: "porterfamily@gmail.com", service: "cleanout", serviceName: "Property Cleanout", origin: "2240 Sigman Rd, Conyers, GA", destination: "2240 Sigman Rd, Conyers, GA", zone: "local", speed: "standard", basePrice: 5000, finalPrice: 5000, payment: "card", date: daysAgo(5), status: "Paid", miles: 0, salesperson: "Dispatch 2", isBusiness: false, customerType: "residential", priceTier: "standard", weightTier: "heavy", helperNeeded: true, paidOnline: true, notes: "4-bedroom estate cleanout — deceased relative's home, contents to donation center", createdBy: "Dispatch 2" },
-                { id: "PL-8833", customer: "Bulldog Freight LLC", phone: "(706) 443-2219", email: "dispatch@bulldogfreight.com", service: "freight", serviceName: "Freight Transport", origin: "1700 Athens Hwy, Loganville, GA", destination: "5500 Peach State Blvd, Macon, GA", zone: "regional", speed: "standard", basePrice: 750, finalPrice: 750, payment: "net7", date: daysAgo(6), status: "Paid", miles: 87, salesperson: "Dispatch 1", isBusiness: true, companyName: "Bulldog Freight LLC", customerType: "commercial", priceTier: "standard", weightTier: "light", helperNeeded: false, paidOnline: false, notes: "Manufacturing components — 3 pallets", createdBy: "Dispatch 1" },
-                { id: "PL-8832", customer: "Tamika Brooks", phone: "(404) 772-5509", email: "tbrooks@yahoo.com", service: "delivery", serviceName: "Delivery", origin: "3801 Camp Creek Pkwy, East Point, GA", destination: "5555 New Peachtree Rd, Chamblee, GA", zone: "local", speed: "afterhours", basePrice: 288, finalPrice: 288, payment: "card", date: daysAgo(7), status: "Paid", miles: 16, salesperson: "Dispatch 2", isBusiness: false, customerType: "residential", priceTier: "standard", weightTier: "light", helperNeeded: false, paidOnline: true, notes: "After-hours delivery — customer works day shift", createdBy: "Dispatch 2" },
-                { id: "PL-8831", customer: "City of Conyers — Parks Dept", phone: "(770) 929-6300", email: "parks@conyersga.gov", service: "junkremoval", serviceName: "Junk Removal", origin: "1184 Scott St NE, Conyers, GA", destination: "1184 Scott St NE, Conyers, GA", zone: "local", speed: "standard", basePrice: 1000, finalPrice: 1000, payment: "net7", date: daysAgo(8), status: "Paid", miles: 0, salesperson: "POTENT", isBusiness: true, companyName: "City of Conyers", customerType: "institutional", priceTier: "standard", weightTier: "heavy", helperNeeded: true, paidOnline: false, notes: "Municipal debris removal — park renovation project", createdBy: "POTENT" },
-            ];
-            // ── 3 SAMPLE DRIVERS ──────────────────────────────────────────
-            var demoDrivers = [
-                { id: "d1", name: "Marcus J. Lewis", phone: "(470) 441-2233", email: "mlewis@email.com", pay_type: "per_load", pay_rate: 120, cdl_number: "GA-CDL-883821", cdl_expiry: daysAgo(-180), medical_card_expiry: daysAgo(-90), hire_date: daysAgo(365), status: "active", org_id: "potent-logistics" },
-                { id: "d2", name: "DeShawn Carter", phone: "(404) 556-7788", email: "dcarter@email.com", pay_type: "per_mile", pay_rate: 0.45, cdl_number: "GA-CDL-441209", cdl_expiry: daysAgo(-365), medical_card_expiry: daysAgo(-200), hire_date: daysAgo(180), status: "active", org_id: "potent-logistics" },
-                { id: "d3", name: "Terrence Washington", phone: "(678) 993-4421", email: "twash@email.com", pay_type: "percentage", pay_rate: 30, cdl_number: "GA-CDL-662847", cdl_expiry: daysAgo(25), medical_card_expiry: daysAgo(18), hire_date: daysAgo(90), status: "active", org_id: "potent-logistics" },
-            ];
-            // ── SETTLEMENTS ───────────────────────────────────────────────
-            var demoSettlements = [
-                { id: "s1", driver_id: "d1", driver_name: "Marcus J. Lewis", period_start: daysAgo(14), period_end: daysAgo(7), gross_pay: 480, fuel_advance: 40, damages: 0, insurance_deduction: 25, equipment_rental: 0, other_deductions: 0, net_pay: 415, status: "paid", paid_date: daysAgo(5), notes: "4 loads completed" },
-                { id: "s2", driver_id: "d2", driver_name: "DeShawn Carter", period_start: daysAgo(14), period_end: daysAgo(7), gross_pay: 360, fuel_advance: 50, damages: 0, insurance_deduction: 25, equipment_rental: 0, other_deductions: 0, net_pay: 285, status: "paid", paid_date: daysAgo(5), notes: "800 miles" },
-                { id: "s3", driver_id: "d1", driver_name: "Marcus J. Lewis", period_start: daysAgo(7), period_end: daysAgo(0), gross_pay: 600, fuel_advance: 0, damages: 0, insurance_deduction: 25, equipment_rental: 0, other_deductions: 0, net_pay: 575, status: "unpaid", notes: "5 loads this period" },
-                { id: "s4", driver_id: "d3", driver_name: "Terrence Washington", period_start: daysAgo(7), period_end: daysAgo(0), gross_pay: 390, fuel_advance: 60, damages: 0, insurance_deduction: 25, equipment_rental: 0, other_deductions: 0, net_pay: 305, status: "unpaid", notes: "30% of 3 loads" },
-            ];
-            // ── EXPENSES ──────────────────────────────────────────────────
-            var demoExpenses = [
-                { id: "e1", date: daysAgo(0), type: "fuel", amount: 87.42, note: "Fuel — Love's Travel Stop", jobId: "PL-8842", state: "GA" },
-                { id: "e2", date: daysAgo(1), type: "fuel", amount: 124.18, note: "Fuel — Pilot Flying J, Chattanooga", jobId: "PL-8839", state: "TN" },
-                { id: "e3", date: daysAgo(2), type: "tolls", amount: 12.50, note: "I-285 E-ZPass tolls", jobId: "PL-8838", state: "GA" },
-                { id: "e4", date: daysAgo(2), type: "fuel", amount: 98.75, note: "Fuel — Shell, Gainesville", jobId: "PL-8838", state: "GA" },
-                { id: "e5", date: daysAgo(3), type: "supplies", amount: 45.00, note: "Moving blankets and straps", jobId: "", state: "GA" },
-                { id: "e6", date: daysAgo(4), type: "fuel", amount: 76.30, note: "Fuel — BP, Marietta", jobId: "PL-8835", state: "GA" },
-                { id: "e7", date: daysAgo(5), type: "fuel", amount: 155.60, note: "Fuel — Pilot, Columbus", jobId: "PL-8834", state: "GA" },
-                { id: "e8", date: daysAgo(6), type: "tolls", amount: 8.75, note: "I-20 West tolls", jobId: "PL-8833", state: "GA" },
-                { id: "e9", date: daysAgo(7), type: "parking", amount: 22.00, note: "Parking — Chamblee delivery", jobId: "PL-8832", state: "GA" },
-                { id: "e10", date: daysAgo(8), type: "fuel", amount: 110.25, note: "Fuel — Love's Conyers", jobId: "PL-8831", state: "GA" },
-            ];
-            // ── CARRIERS ──────────────────────────────────────────────────
-            var demoCarriers = [
-                { id: "c1", name: "Southeast Express Carriers", mcNumber: "MC-882341", dotNumber: "DOT-3394821", phone: "(404) 441-9900", email: "dispatch@secarriers.com", address: "4500 Logistics Way, Atlanta, GA", insuranceExpiry: daysAgo(-90), insuranceCarrier: "Old Republic Insurance", rating: 4, notes: "Reliable for Atlanta-Nashville lane. Net 7 payer." },
-                { id: "c2", name: "Bulldog Freight Partners", mcNumber: "MC-441029", dotNumber: "DOT-2201847", phone: "(706) 229-3311", email: "ops@bulldogfreight.com", address: "800 Commerce Park Dr, Athens, GA", insuranceExpiry: daysAgo(25), insuranceCarrier: "Progressive Commercial", rating: 3, notes: "Good for Georgia intrastate. Sometimes slow on paperwork." },
-                { id: "c3", name: "Southern Star Logistics", mcNumber: "MC-993847", dotNumber: "DOT-4412098", phone: "(678) 552-8877", email: "sslogistics@email.com", address: "2200 Airport Blvd, Augusta, GA", insuranceExpiry: daysAgo(-180), insuranceCarrier: "Sentry Insurance", rating: 5, notes: "Best carrier for oversized loads. Premium rate but always delivers." },
-            ];
-            // ── BROKERS ───────────────────────────────────────────────────
-            var demoBrokers = [
-                { id: "b1", name: "Peach State Brokerage", mcNumber: "MC-334421", phone: "(404) 771-2200", email: "loads@peachstatebrokerage.com", creditScore: 82, creditLimit: 15000, daysToPay: 14, notes: "Good load volume on I-85 corridor" },
-                { id: "b2", name: "Highway Logistics Group", mcNumber: "MC-882039", phone: "(770) 448-9900", email: "dispatch@highwaylogistics.com", creditScore: 65, creditLimit: 8000, daysToPay: 21, notes: "Pays slow — watch credit limit closely" },
-                { id: "b3", name: "Cargo Connect Southeast", mcNumber: "MC-119384", phone: "(404) 882-3341", email: "carriers@cargoconnect.com", creditScore: 91, creditLimit: 25000, daysToPay: 7, notes: "Best broker in our network. Quick pay, consistent volume." },
-            ];
-            // ── CRM LEADS ────────────────────────────────────────────────
-            var demoLeads = [
-                { id: "l1", name: "Brandon Willis", company: "Willis Moving & Storage", phone: "(770) 334-8821", email: "bwillis@willismoving.com", service_type: "Freight / Trucking", stage: "quoted", estimated_value: 8500, source: "Referral", follow_up_date: daysAgo(-1), notes: "5-truck fleet, currently on Samsara + TruckingOffice. Paying $890/mo in subscriptions.", created_at: new Date().toISOString() },
-                { id: "l2", name: "Carmen Rodriguez", company: "CR Property Services", phone: "(404) 229-3318", email: "carmen@crproperty.com", service_type: "Property Services", stage: "contacted", estimated_value: 6500, source: "Google", follow_up_date: daysAgo(0), notes: "Property management company, needs recurring cleanout service", created_at: new Date().toISOString() },
-                { id: "l3", name: "Malik Johnson", company: "Johnson Bros Transport", phone: "(678) 441-7729", email: "malik@johnsonbrostransport.com", service_type: "Freight / Trucking", stage: "new", estimated_value: 12500, source: "Social Media", follow_up_date: daysAgo(-2), notes: "12-truck fleet. Saw our Instagram post about the Motive API situation.", created_at: new Date().toISOString() },
-                { id: "l4", name: "Sandra Lee", company: "Lee Commercial Real Estate", phone: "(770) 882-4401", email: "slee@leecommercial.com", service_type: "Multiple Services", stage: "won", estimated_value: 3500, source: "Referral", follow_up_date: daysAgo(-7), notes: "POTENT OS Starter plan sold. Onboarding scheduled.", created_at: new Date().toISOString() },
-                { id: "l5", name: "Tony Guerrero", company: "Guerrero Hauling", phone: "(404) 556-1188", email: "tony@guerrerohauling.com", service_type: "Freight / Trucking", stage: "contacted", estimated_value: 6500, source: "Cold Call", follow_up_date: daysAgo(-1), notes: "8-truck fleet. Currently using Excel + QuickBooks. Ready to move.", created_at: new Date().toISOString() },
-            ];
-            // ── LANES ────────────────────────────────────────────────────
-            var demoLanes = [
-                { key: "Atlanta→Chattanooga", origin: "Atlanta, GA", destination: "Chattanooga, TN", count: 6, totalRevenue: 9000, avgRevenue: 1500, lastDate: daysAgo(1) },
-                { key: "Conyers→Atlanta", origin: "Conyers, GA", destination: "Atlanta, GA", count: 18, totalRevenue: 4050, avgRevenue: 225, lastDate: daysAgo(0) },
-                { key: "Atlanta→Macon", origin: "Atlanta, GA", destination: "Macon, GA", count: 4, totalRevenue: 3000, avgRevenue: 750, lastDate: daysAgo(6) },
-                { key: "Gainesville→Buford", origin: "Gainesville, GA", destination: "Buford, GA", count: 3, totalRevenue: 1011, avgRevenue: 337, lastDate: daysAgo(2) },
-                { key: "Atlanta→Columbus", origin: "Atlanta, GA", destination: "Columbus, GA", count: 2, totalRevenue: 5400, avgRevenue: 2700, lastDate: daysAgo(2) },
-                { key: "Loganville→Macon", origin: "Loganville, GA", destination: "Macon, GA", count: 5, totalRevenue: 3750, avgRevenue: 750, lastDate: daysAgo(6) },
-            ];
-            // ── SAVE EVERYTHING ───────────────────────────────────────────
-            try {
-                // Jobs — merge with existing
-                var existing = loadJobs();
-                var existingIds = existing.map(function (j) { return j.id; });
-                var newJobs = demoJobs.filter(function (j) { return existingIds.indexOf(j.id) === -1; });
-                saveJobs(newJobs.concat(existing));
-                // Expenses
-                var existingExp = loadExpenses();
-                var existingExpIds = existingExp.map(function (e) { return e.id; });
-                var newExp = demoExpenses.filter(function (e) { return existingExpIds.indexOf(e.id) === -1; });
-                saveExpenses(newExp.concat(existingExp));
-                // Carriers
-                var existingCarriers = loadCarriers();
-                var existingCIds = existingCarriers.map(function (c) { return c.id; });
-                var newCarriers = demoCarriers.filter(function (c) { return existingCIds.indexOf(c.id) === -1; });
-                saveCarriers(newCarriers.concat(existingCarriers));
-                // Brokers
-                var existingBrokers = loadBrokers();
-                var existingBIds = existingBrokers.map(function (b) { return b.id; });
-                var newBrokers = demoBrokers.filter(function (b) { return existingBIds.indexOf(b.id) === -1; });
-                saveBrokers(newBrokers.concat(existingBrokers));
-                // Leads
-                var existingLeads = [];
-                try {
-                    var r = localStorage.getItem("pl_leads");
-                    if (r)
-                        existingLeads = JSON.parse(r);
-                }
-                catch (e) { }
-                var existingLIds = existingLeads.map(function (l) { return l.id; });
-                var newLeads = demoLeads.filter(function (l) { return existingLIds.indexOf(l.id) === -1; });
-                localStorage.setItem("pl_leads", JSON.stringify(newLeads.concat(existingLeads)));
-                // Lanes
-                var existingLanes = loadLanes();
-                var existingLaneKeys = existingLanes.map(function (l) { return l.key; });
-                var newLanes = demoLanes.filter(function (l) { return existingLaneKeys.indexOf(l.key) === -1; });
-                saveLanes(newLanes.concat(existingLanes));
-                // Settlements
-                var existingSettlements = [];
-                try {
-                    var rs = localStorage.getItem("pl_settlements");
-                    if (rs)
-                        existingSettlements = JSON.parse(rs);
-                }
-                catch (e) { }
-                var existingSIds = existingSettlements.map(function (s) { return s.id; });
-                var newSettlements = demoSettlements.filter(function (s) { return existingSIds.indexOf(s.id) === -1; });
-                localStorage.setItem("pl_settlements", JSON.stringify(newSettlements.concat(existingSettlements)));
-                // Drivers
-                var existingDrivers = [];
-                try {
-                    var rd = localStorage.getItem("pl_drivers");
-                    if (rd)
-                        existingDrivers = JSON.parse(rd);
-                }
-                catch (e) { }
-                var existingDIds = existingDrivers.map(function (d) { return d.id; });
-                var newDrivers = demoDrivers.filter(function (d) { return existingDIds.indexOf(d.id) === -1; });
-                localStorage.setItem("pl_drivers", JSON.stringify(newDrivers.concat(existingDrivers)));
-            }
-            catch (e) {
-                console.error("Demo data error:", e);
-            }
-            // Add jobs to React state
-            demoJobs.forEach(function (j) { props.onAddJob(j); });
+            plSeedDemoData(props.onAddJob);
             setLoading(false);
             setLoaded(true);
         }, 800);
@@ -15309,6 +15392,8 @@ function LoginActivityView(){
 
 // Customer companies price with their own setup; POTENT keeps its hardcoded pricing.
 try { var _bootUser = loadCurrentUser(); if (_bootUser && _bootUser.orgId) { applyTenantPricing(_bootUser.pricing); plBrandApply(_bootUser.branding); } } catch (e) { }
+// Public demo: the demo user carries the prospect's brand (set at demo entry) — apply it the same way.
+try { var _demoBootUser = loadCurrentUser(); if (_demoBootUser && _demoBootUser.demo && _demoBootUser.branding) plBrandApply(_demoBootUser.branding); } catch (e) { }
 // ── A company's own public page: yoursite/?c=their-slug ──
 // Customers see that company's name, colors and prices, book under that company, and sign in to a portal that shows only that company's jobs.
 var PL_TENANT_ID = null, PL_TENANT_FAIL = false;
