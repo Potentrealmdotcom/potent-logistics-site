@@ -1241,7 +1241,7 @@ var SERVICES = [
         excludes: ["Hazardous materials", "Interior warehouse retrieval", "Unpacked fragile items"],
         rule: "Freight must be staged at ground level or dock access before arrival.",
         sizes: ["Single pallet", "Multi-pallet", "Full van load"] },
-    { id: "event", icon: "\u{1F3AA}", name: "Event Drop-Off", tagline: "Transport event gear, vendor goods & supplies", priceRange: "$1,000 flat under 150mi",
+    { id: "event", icon: "\u{1F3AA}", name: "Event Drop-Off", tagline: "Transport event gear, vendor goods & supplies", priceRange: "$350-$1,300",
         desc: "We transport your event materials and supplies to the venue. Drop-off only — no setup included.",
         includes: ["Tables, chairs, decor & displays", "Vendor product transport", "On-time scheduled delivery", "Local & regional routes"],
         excludes: ["Setup or installation", "Return pickup (separate job)", "Items not staged at pickup"],
@@ -4072,7 +4072,7 @@ var LEAD_EMAIL_TEMPLATES = {
         body: function (lead) {
             return "Hello " + (lead.name || "there") + ",\n\n" +
                 "I'm Tony Figueroa Mendes, owner of Potent Logistics here in Conyers. We don't just deliver for events — we run our own fashion and pop-up events, so we know event day from the inside: the load-in scramble, the booth runs, the teardown nobody wants to haul.\n\n" +
-                "For your event we bring the truck and the crew: event-day delivery, setup runs, merch and booth transport, and haul-off after it ends. One flat rate — $1,000 covers round trips up to 150 miles (past that it's just +$1 a mile), quoted up front before you book, no surprises on the day.\n\n" +
+                "For your event we bring the truck and the crew: event-day delivery, setup runs, merch and booth transport, and haul-off after it ends. Simple tiered pricing, quoted up front before you book: $350 local (0-50 miles), $700 regional (51-150 miles), $1,300 long-distance (150+ miles) — or a flat $1,000 for round trips up to 150 miles. No surprises on the day.\n\n" +
                 "Send me your event date and location and I'll lock in your quote. More events coming up after this one? We can talk about a standing rate.\n\n" +
                 "If it's not a fit, reply \"no thanks\" and I'll close the loop — no hard feelings.\n\n" +
                 "Thank you,\nTony Figueroa Mendes\nPotent Logistics (POTENT OPERATIONS LLC) — Conyers, GA\n" + PHONE_DISPLAY + " · Direct (470) 453-1616";
@@ -8824,7 +8824,7 @@ tr:nth-child(even){background:#f9f9f9;}
 <table><tr><th>Service</th><th>Pricing Model</th><th>Base Rate</th></tr>
 <tr><td>Delivery / Freight</td><td>Fixed zone (same price)</td><td>Local $400 · Regional $750 · Long Dist $1,500</td></tr>
 <tr><td>Single Item (truck move)</td><td>Flat</td><td>Scheduled $250 · Same-Day $225 · Rush $350</td></tr>
-<tr><td>Event Drop-Off</td><td>Flat + overage</td><td>$1,000 flat under 150mi · +$1/mi beyond</td></tr>
+<tr><td>Event Drop-Off</td><td>Tiered zones</td><td>$350 local (0-50mi) · $700 regional (51-150mi) · $1,300 long-distance (150+mi) · $1,000 flat round trip ≤150mi</td></tr>
 <tr><td>Discreet/High-Value</td><td>Fixed zone</td><td>Local $500 · Regional $900 · Long Dist $1,800</td></tr>
 <tr><td>Junk Removal</td><td>Load size</td><td>$179 / $250 / $350-400 / $500-600 / $750-850</td></tr>
 <tr><td>Property Cleanouts</td><td>Property size</td><td>$1,200–$8,000+ (Pending Quote)</td></tr></table>
@@ -9074,7 +9074,7 @@ function WaitlistPage() {
     var ff = "'DM Sans','Segoe UI',sans-serif";
     var ALL_FEATURES = [
         { cat: "📦 Booking & Dispatch", items: ["Public customer booking wizard (5-step)", "Admin phone quote panel", "Manual job creation", "Instant online quotes", "Save pending quote for follow-up", "13-step job status tracking", "Job search and filtering", "Job notes", "Job tagged with booking employee", "Extra stop tracking", "Helper needed tracking", "Item weight tracking (4 tiers)", "Custom Price Override", "Load cloning", "Bulk status changes", "Bulk assignment", "Multi-stop load planning", "Deadhead tracking", "Lane history"] },
-        { cat: "💲 Pricing Engine", items: ["6 service types with distinct pricing", "Fixed zone pricing (Delivery, Freight & Discreet)", "Single Item pricing ($250 / $225 same-day / $350 rush)", "Pop-Up Event flat pricing ($1,000 under 150mi, +$1/mi beyond)", "Load size pricing (Junk Removal)", "Property size pricing (Cleanouts)", "Extra stop fee (+$40)", "Pricing tiers (Standard/Loyalty/Floor)", "Cash discount (10%)", "Custom Price Override", "Live real-time quote updates", "Line-item quote breakdown", "Fuel cost shown in quote", "Quote-lock language (30-minute quote)"] },
+        { cat: "💲 Pricing Engine", items: ["6 service types with distinct pricing", "Fixed zone pricing (Delivery, Freight & Discreet)", "Single Item pricing ($250 / $225 same-day / $350 rush)", "Pop-Up Event tiered pricing ($350 / $700 / $1,300 by zone, $1,000 flat round trip under 150mi)", "Load size pricing (Junk Removal)", "Property size pricing (Cleanouts)", "Extra stop fee (+$40)", "Pricing tiers (Standard/Loyalty/Floor)", "Cash discount (10%)", "Custom Price Override", "Live real-time quote updates", "Line-item quote breakdown", "Fuel cost shown in quote", "Quote-lock language (30-minute quote)"] },
         { cat: "⛽ Fuel & Gas Tracking", items: ["Gas price updates every 5 minutes", "All 50 states coverage", "Live fuel cost per trip", "Fuel cost shown in customer quote", "Fuel cost feeds job profitability", "Automatic fuel cost calculation"] },
         { cat: "⏱ Stop Timer & Job Cost", items: ["Built-in job timer", "Start/Pause functionality", "Tracks total job time", "Feeds into job cost calculation", "True profit per job (revenue − fuel − labor − expenses)"] },
         { cat: "📅 Calendar & Anti-Overbooking", items: ["Monthly calendar view", "Color-coded availability", "Block/Unblock days", "Prevents overbooking", "Driver availability tracking", "Equipment availability tracking"] },

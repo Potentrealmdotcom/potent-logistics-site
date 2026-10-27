@@ -22,7 +22,7 @@ const LOAD_SIZES = [ // junk removal: price is the single booking price; priceMa
   { id: "half", label: "Half Load", price: 350, priceMax: 400 }, { id: "threequarter", label: "Three-Quarter Load", price: 500, priceMax: 600 },
   { id: "full", label: "Full Load", price: 750, priceMax: 850 }];
 const EXTRA_TRUCKLOAD_FEE = 600;                                              // each additional full truckload on big junk jobs
-const EVENT = { flat: 1000, flatRoundTripMiles: 150, perMileBeyond: 1 };      // pop-up event: flat round trip up to 150 mi, +$1 per round-trip mile beyond
+const EVENT = { zones: { local: 350, regional: 700, longdist: 1300 }, flat: 1000, flatRoundTripMiles: 150, perMileBeyond: 1 }; // pop-up event tiers (Tony, Oct 25): zone prices = PRICE_TABLE.event; the $1,000 flat round trip (up to 150 mi, +$1 per round-trip mile beyond) stays as its own tier — popup() below prices that flat round-trip tier
 
 const zoneOf = function (miles) { return miles <= 50 ? "local" : miles <= 150 ? "regional" : "longdist"; };
 const zoneLabel = { local: "Local (0-50 miles)", regional: "Regional (51-150 miles)", longdist: "Long distance (150+ miles)" };

@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pricing Snapshot — POTENT Logistics (Operator)</title>
+<meta name="description" content="Operator tool: view a customer's junk photos from every angle, count the items, and lock a book-accurate price with the full breakdown.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080808;--card:#141414;--card2:#1b1b1b;--line:#2a2a2a;--tx:#f4f4f4;--dim:#a8a8a8;--y:#F0E000;--g:#3ddc84;--r:#ff6b5b}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--tx);font-family:Poppins,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5;-webkit-text-size-adjust:100%}
+.wrap{max-width:880px;margin:0 auto;padding:0 16px 60px}
+header{padding:26px 0 6px}
+.eyebrow{color:var(--y);font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase}
+h1{font-size:clamp(26px,6vw,40px);font-weight:800;line-height:1.1;margin:6px 0 8px}
+h1 em{font-style:normal;color:var(--y)}
+.lead{color:var(--dim);font-size:15px;max-width:700px}
+section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:16px}
+section h2{font-size:17px;font-weight:800;margin-bottom:4px}
+section h2 .n{color:#000;background:var(--y);border-radius:50%;display:inline-flex;width:24px;height:24px;align-items:center;justify-content:center;font-size:13px;margin-right:8px;vertical-align:2px}
+.sub{color:var(--dim);font-size:13px;margin-bottom:14px}
+.btn{display:inline-block;background:var(--y);color:#000;border:0;font-family:inherit;font-weight:800;padding:12px 20px;border-radius:30px;font-size:15px;cursor:pointer}
+.btn.alt{background:transparent;color:var(--y);border:1.5px solid var(--y)}
+.btn.grey{background:var(--card2);color:var(--tx);border:1px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+input[type=file]{display:none}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin-top:12px}
+.thumb{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#000;aspect-ratio:1;cursor:zoom-in}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb .del{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.75);color:#fff;border:1px solid var(--line);border-radius:50%;width:24px;height:24px;font-size:13px;line-height:1;cursor:pointer}
+.thumb .ang{position:absolute;left:6px;bottom:4px;font-size:11px;color:var(--y);font-weight:700;text-shadow:0 1px 3px #000}
+.empty{color:var(--dim);font-size:14px;border:1px dashed var(--line);border-radius:12px;padding:18px;text-align:center;margin-top:12px}
+.msg{font-size:13px;margin-top:10px;min-height:18px}
+.msg.ok{color:var(--g)} .msg.err{color:var(--r)}
+.group{margin-top:14px}
+.group h3{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--y);margin-bottom:8px}
+.irow{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:var(--card2)}
+.irow .nm{flex:1;min-width:0}
+.irow .nm b{font-size:14px;display:block;line-height:1.3}
+.irow .nm span{font-size:11.5px;color:var(--dim);display:block}
+.irow .fee{color:var(--y);font-weight:800;font-size:12px;white-space:nowrap}
+.stepper{display:flex;align-items:center;gap:6px}
+.stepper button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:#000;color:var(--y);font-size:18px;font-weight:800;cursor:pointer;line-height:1}
+.stepper .q{min-width:26px;text-align:center;font-weight:800;font-size:15px}
+.est{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:6px}
+.est .cell{background:#000;border:1px solid var(--line);border-radius:12px;padding:12px}
+.est .cell b{font-size:20px;display:block;color:var(--y)}
+.est .cell span{font-size:11.5px;color:var(--dim)}
+.fld{margin-top:14px}
+.fld label{font-size:13px;font-weight:700;display:block;margin-bottom:6px}
+.fld select,.fld input[type=number]{width:100%;background:#000;color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-family:inherit;font-size:15px}
+.fld .hint{font-size:12px;color:var(--dim);margin-top:5px}
+.fld input[type=range]{width:100%;accent-color:var(--y)}
+.dimmed{opacity:.4;pointer-events:none}
+.badge{display:inline-block;font-weight:800;font-size:12px;letter-spacing:1px;padding:5px 12px;border-radius:20px;text-transform:uppercase}
+.badge.draft{background:#3a3200;color:var(--y);border:1px solid var(--y)}
+.badge.locked{background:var(--g);color:#000}
+#quoteText{width:100%;min-height:340px;background:#000;color:var(--tx);border:1px solid var(--line);border-radius:12px;padding:14px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.6;white-space:pre-wrap}
+.total-big{font-size:30px;font-weight:800;color:var(--y)}
+footer{color:#666;font-size:12px;text-align:center;margin-top:26px;line-height:1.8}
+/* ---- full-screen photo viewer ---- */
+#viewer{position:fixed;inset:0;background:#000;z-index:50;display:none;flex-direction:column}
+#viewer.open{display:flex}
+#vstage{flex:1;position:relative;overflow:hidden;touch-action:none}
+#vimg{position:absolute;left:50%;top:50%;max-width:none;user-select:none;-webkit-user-drag:none;will-change:transform}
+#vbar{display:flex;align-items:center;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#0d0d0d;border-top:1px solid var(--line)}
+#vbar .cnt{flex:1;text-align:center;font-weight:700;font-size:14px}
+#vbar button{background:var(--card2);color:var(--tx);border:1px solid var(--line);border-radius:24px;padding:9px 16px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer}
+#vbar button:disabled{opacity:.35}
+#vhint{position:absolute;left:0;right:0;bottom:8px;text-align:center;color:#bbb;font-size:12px;pointer-events:none;text-shadow:0 1px 3px #000}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">POTENT Logistics · Operator Tool</div>
+    <h1>Pricing <em>Snapshot</em></h1>
+    <p class="lead">The customer sends photos of the pile — every angle. You view them full-screen, count what's actually there, and this builds the price straight from the pricing book. <b style="color:var(--tx)">You view it, you price it, you lock it.</b> Nothing is ever sent to a customer from this page — the output is copy-ready text, that's all.</p>
+  </header>
+
+  <section>
+    <h2><span class="n">1</span>Photos — every angle (the 360 intake)</h2>
+    <p class="sub">Add all the shots: front, sides, back, close-ups. Tap any photo to open it full-screen — pinch or scroll to zoom, swipe to the next angle.</p>
+    <label class="btn" for="photoInput">📷 Add photos</label>
+    <input type="file" id="photoInput" accept="image/*" multiple>
+    <div class="thumbs" id="thumbs"></div>
+    <div class="empty" id="noPhotos">No photos yet — add the customer's shots to start the job record.</div>
+    <div class="btnrow">
+      <button class="btn grey" id="aiBtn" type="button">🤖 AI draft read (staff)</button>
+    </div>
+    <p class="sub" style="margin:8px 0 0">Optional: the AI reads the photos and drafts the count below. It's a <b>starting draft only</b> — check every number against the photos before you lock a price.</p>
+    <div class="msg" id="aiMsg"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">2</span>Count the items</h2>
+    <p class="sub">Count what you can see in the photos. Book disposal fees apply themselves. Weights are typical published estimates — they guide the load size, the price is always the book price.</p>
+    <div id="itemGroups"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">3</span>Load size &amp; job details</h2>
+    <p class="sub">The suggested tier comes from the counted volume + weight. Override it if your eyes say different — you're the one who looked at the photos.</p>
+    <div class="est">
+      <div class="cell"><b id="estYd">0 yd³</b><span>Estimated volume (of 16 yd³ truck)</span></div>
+      <div class="cell"><b id="estFill">0%</b><span>Truck fill</span></div>
+      <div class="cell"><b id="estLbs">0 lb</b><span>Estimated weight (typical ranges)</span></div>
+      <div class="cell"><b id="estTier">—</b><span>Suggested load size</span></div>
+    </div>
+    <div id="tierBlock">
+      <div class="fld">
+        <label for="tierSel">Load size</label>
+        <select id="tierSel"></select>
+      </div>
+      <div class="fld" id="tierPriceFld">
+        <label id="tierPriceLbl">Price within the book range</label>
+        <input type="range" id="tierPrice">
+        <div class="hint" id="tierPriceVal"></div>
+      </div>
+    </div>
+    <div class="fld">
+      <label for="cleanoutSel">…or a flat-rate cleanout package (replaces load pricing)</label>
+      <select id="cleanoutSel">
+        <option value="">No — price by load size</option>
+      </select>
+    </div>
+    <div class="fld">
+      <label for="travelMin">Travel — how far away is the customer? (minutes, one way)</label>
+      <input type="number" id="travelMin" min="0" max="600" step="5" value="0">
+      <div class="hint">Travel is built INTO the quote and stated as included — no mileage surprise on site.</div>
+    </div>
+    <div class="fld">
+      <label for="stairsSel">Stairs?</label>
+      <select id="stairsSel">
+        <option value="unknown">Not answered yet — ask in the quote</option>
+        <option value="ground">Ground level — no stairs</option>
+        <option value="stairs">Stairs — carrying down</option>
+      </select>
+    </div>
+    <div class="fld" id="workerFld" style="display:none">
+      <label for="workerHrs">Extra worker for the stairs carry (hours × $40/hr, book rate)</label>
+      <input type="number" id="workerHrs" min="0" max="12" step="0.5" value="1">
+    </div>
+    <div class="fld">
+      <label for="xtLoads">Additional truckloads (beyond the first, $600 each)</label>
+      <input type="number" id="xtLoads" min="0" max="10" step="1" value="0">
+      <div class="hint" id="xtHint"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">4</span>Your price — review, lock, copy</h2>
+    <p class="sub">This is a draft until you lock it. Any change unlocks it again. <b style="color:var(--tx)">Nothing on this page sends anything</b> — copy the text and send it your way.</p>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px">
+      <span class="total-big" id="totalBig">$0</span>
+      <span class="badge draft" id="lockBadge">Draft — not locked</span>
+    </div>
+    <textarea id="quoteText" readonly></textarea>
+    <div class="btnrow">
+      <button class="btn" id="lockBtn" type="button">✓ Confirm &amp; lock this price</button>
+      <button class="btn alt" id="copyBtn" type="button">📋 Copy quote text</button>
+    </div>
+    <div class="msg" id="copyMsg"></div>
+  </section>
+
+  <footer>POTENT LOGISTICS — Junk Removal · Best Price In The City. Guaranteed. · 24/7 · (912) 914-2166<br>
+  Prices: POTENT Junk Removal Pricing Book (October 2026). Weights/volumes are typical published estimates.</footer>
+</div>
+
+<div id="viewer" aria-hidden="true">
+  <div id="vstage">
+    <img id="vimg" alt="Job photo">
+    <div id="vhint">Pinch or scroll to zoom · drag to move · swipe for the next angle</div>
+  </div>
+  <div id="vbar">
+    <button id="vPrev" type="button">‹ Prev</button>
+    <div class="cnt" id="vCnt">1 / 1</div>
+    <button id="vNext" type="button">Next ›</button>
+    <button id="vClose" type="button">✕ Close</button>
+  </div>
+</div>
+
+<script src="pricing-snapshot.js"></script>
+<script>
+(function () {
+    "use strict";
+    var PS = window.PricingSnapshot;
+    var $ = function (id) { return document.getElementById(id); };
+    var counts = {}, photos = []; // photos: [{src}] — the job record, this session only
+    var locked = false, xtTouched = false;
+
+    /* ---------- photos ---------- */
+    function addPhotos(files) {
+        Array.prototype.forEach.call(files, function (f) {
+            if (!/^image\//.test(f.type)) return;
+            var img = new Image();
+            img.onload = function () {
+                var max = 1600, sc = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+                var c = document.createElement("canvas");
+                c.width = Math.round(img.naturalWidth * sc); c.height = Math.round(img.naturalHeight * sc);
+                c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+                URL.revokeObjectURL(img.src);
+                photos.push({ src: c.toDataURL("image/jpeg", 0.85) });
+                renderThumbs();
+            };
+            img.src = URL.createObjectURL(f);
+        });
+    }
+    function renderThumbs() {
+        var box = $("thumbs"); box.innerHTML = "";
+        photos.forEach(function (p, i) {
+            var d = document.createElement("div"); d.className = "thumb";
+            var im = document.createElement("img"); im.src = p.src; im.alt = "Angle " + (i + 1);
+            var del = document.createElement("button"); del.className = "del"; del.type = "button"; del.textContent = "✕";
+            del.addEventListener("click", function (e) { e.stopPropagation(); photos.splice(i, 1); renderThumbs(); });
+            var ang = document.createElement("span"); ang.className = "ang"; ang.textContent = "Angle " + (i + 1);
+            d.appendChild(im); d.appendChild(del); d.appendChild(ang);
+            d.addEventListener("click", function () { openViewer(i); });
+            box.appendChild(d);
+        });
+        $("noPhotos").style.display = photos.length ? "none" : "block";
+    }
+    $("photoInput").addEventListener("change", function () { addPhotos(this.files); this.value = ""; });
+
+    /* ---------- full-screen viewer: zoom, pan, swipe ---------- */
+    var vIdx = 0, vScale = 1, vTX = 0, vTY = 0;
+    function vApply() {
+        $("vimg").style.transform = "translate(-50%,-50%) translate(" + vTX + "px," + vTY + "px) scale(" + vScale + ")";
+    }
+    function vShow(i) {
+        if (!photos.length) return;
+        vIdx = (i + photos.length) % photos.length;
+        vScale = 1; vTX = 0; vTY = 0;
+        $("vimg").src = photos[vIdx].src;
+        $("vCnt").textContent = (vIdx + 1) + " / " + photos.length;
+        $("vPrev").disabled = $("vNext").disabled = photos.length < 2;
+        vApply();
+    }
+    function openViewer(i) { $("viewer").classList.add("open"); $("viewer").setAttribute("aria-hidden", "false"); vShow(i); }
+    function closeViewer() { $("viewer").classList.remove("open"); $("viewer").setAttribute("aria-hidden", "true"); }
+    $("vClose").addEventListener("click", closeViewer);
+    $("vPrev").addEventListener("click", function () { vShow(vIdx - 1); });
+    $("vNext").addEventListener("click", function () { vShow(vIdx + 1); });
+    document.addEventListener("keydown", function (e) {
+        if (!$("viewer").classList.contains("open")) return;
+        if (e.key === "Escape") closeViewer();
+        if (e.key === "ArrowLeft") vShow(vIdx - 1);
+        if (e.key === "ArrowRight") vShow(vIdx + 1);
+    });
+    (function wireViewerGestures() {
+        var stage = $("vstage"), pointers = {}, startDist = 0, startScale = 1, drag = null;
+        function dist() { var p = Object.keys(pointers).map(function (k) { return pointers[k]; }); return p.length === 2 ? Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y) : 0; }
+        stage.addEventListener("pointerdown", function (e) {
+            pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+            stage.setPointerCapture(e.pointerId);
+            if (Object.keys(pointers).length === 2) { startDist = dist(); startScale = vScale; drag = null; }
+            else drag = { x: e.clientX, y: e.clientY, tx: vTX, ty: vTY, moved: 0 };
+        });
+        stage.addEventListener("pointermove", function (e) {
+            if (!pointers[e.pointerId]) return;
+            pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+            if (Object.keys(pointers).length === 2 && startDist > 0) {
+                vScale = Math.min(6, Math.max(1, startScale * dist() / startDist));
+                if (vScale === 1) { vTX = 0; vTY = 0; }
+                vApply(); return;
+            }
+            if (!drag) return;
+            var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+            drag.moved = Math.max(drag.moved, Math.abs(dx), Math.abs(dy));
+            if (vScale > 1.02) { vTX = drag.tx + dx; vTY = drag.ty + dy; vApply(); }
+        });
+        function endPointer(e) {
+            var wasDrag = drag;
+            delete pointers[e.pointerId];
+            if (Object.keys(pointers).length < 2) startDist = 0;
+            if (wasDrag && vScale <= 1.02 && wasDrag.moved > 8) {
+                var dx = e.clientX - wasDrag.x;
+                if (Math.abs(dx) > 55) vShow(vIdx + (dx < 0 ? 1 : -1)); // swipe = next/prev angle
+            }
+            if (!Object.keys(pointers).length) drag = null;
+        }
+        stage.addEventListener("pointerup", endPointer);
+        stage.addEventListener("pointercancel", endPointer);
+        stage.addEventListener("wheel", function (e) {
+            e.preventDefault();
+            vScale = Math.min(6, Math.max(1, vScale * (e.deltaY < 0 ? 1.12 : 0.89)));
+            if (vScale === 1) { vTX = 0; vTY = 0; }
+            vApply();
+        }, { passive: false });
+        stage.addEventListener("dblclick", function () { vScale = vScale > 1 ? 1 : 2.2; if (vScale === 1) { vTX = 0; vTY = 0; } vApply(); });
+    })();
+
+    /* ---------- item counters ---------- */
+    var GROUPS = [
+        ["addons", "Special disposal — book fees apply"],
+        ["furniture", "Furniture"],
+        ["bulky", "Appliances & bulky"],
+        ["misc", "Bags, bins & misc"]
+    ];
+    var qtyEls = {};
+    GROUPS.forEach(function (g) {
+        var wrap = document.createElement("div"); wrap.className = "group";
+        var h = document.createElement("h3"); h.textContent = g[1]; wrap.appendChild(h);
+        PS.ITEMS.filter(function (it) { return it.group === g[0]; }).forEach(function (it) {
+            counts[it.id] = 0;
+            var row = document.createElement("div"); row.className = "irow";
+            var nm = document.createElement("div"); nm.className = "nm";
+            var meta = "~" + it.lbs + " lb ea (typ. " + it.lbsLo + "–" + it.lbsHi + ") · " + it.yd + " yd³ ea";
+            nm.innerHTML = "<b></b><span></span>";
+            nm.querySelector("b").textContent = it.name;
+            nm.querySelector("span").textContent = meta;
+            row.appendChild(nm);
+            if (it.fee) { var f = document.createElement("span"); f.className = "fee"; f.textContent = "+$" + it.fee + " fee"; row.appendChild(f); }
+            var st = document.createElement("div"); st.className = "stepper";
+            var minus = document.createElement("button"); minus.type = "button"; minus.textContent = "−";
+            var q = document.createElement("span"); q.className = "q"; q.textContent = "0"; qtyEls[it.id] = q;
+            var plus = document.createElement("button"); plus.type = "button"; plus.textContent = "+";
+            minus.addEventListener("click", function () { setQty(it.id, counts[it.id] - 1); });
+            plus.addEventListener("click", function () { setQty(it.id, counts[it.id] + 1); });
+            st.appendChild(minus); st.appendChild(q); st.appendChild(plus);
+            row.appendChild(st);
+            wrap.appendChild(row);
+        });
+        $("itemGroups").appendChild(wrap);
+    });
+    function setQty(id, v) {
+        counts[id] = Math.min(500, Math.max(0, Math.round(v || 0)));
+        if (qtyEls[id]) qtyEls[id].textContent = counts[id];
+        recompute();
+    }
+
+    /* ---------- job-detail controls ---------- */
+    var tierSel = $("tierSel"), cleanoutSel = $("cleanoutSel");
+    PS.TIERS.forEach(function (t) {
+        var o = document.createElement("option"); o.value = t.id;
+        o.textContent = t.label + " (" + t.fill + ") — " + (t.price === t.priceMax ? PS.money(t.price) : PS.money(t.price) + "–" + PS.money(t.priceMax));
+        tierSel.appendChild(o);
+    });
+    PS.CLEANOUTS.forEach(function (c) {
+        var o = document.createElement("option"); o.value = c.id;
+        o.textContent = c.label + " — " + PS.money(c.price) + " flat";
+        cleanoutSel.appendChild(o);
+    });
+    var tierTouched = false;
+    tierSel.addEventListener("change", function () { tierTouched = true; syncTierPrice(true); recompute(); });
+    $("tierPrice").addEventListener("input", recompute);
+    cleanoutSel.addEventListener("change", function () {
+        $("tierBlock").classList.toggle("dimmed", !!cleanoutSel.value);
+        recompute();
+    });
+    $("travelMin").addEventListener("input", recompute);
+    $("stairsSel").addEventListener("change", function () {
+        $("workerFld").style.display = this.value === "stairs" ? "block" : "none";
+        recompute();
+    });
+    $("workerHrs").addEventListener("input", recompute);
+    $("xtLoads").addEventListener("input", function () { xtTouched = true; recompute(); });
+
+    function syncTierPrice(reset) {
+        var t = PS.tierById(tierSel.value) || PS.TIERS[0];
+        var r = $("tierPrice");
+        r.min = t.price; r.max = t.priceMax; r.step = 5;
+        if (reset || Number(r.value) < t.price || Number(r.value) > t.priceMax) r.value = t.price;
+        $("tierPriceFld").style.display = t.price === t.priceMax ? "none" : "block";
+        $("tierPriceLbl").textContent = "Price within the book range (" + PS.money(t.price) + "–" + PS.money(t.priceMax) + ") — your call";
+    }
+
+    function currentInput(est) {
+        var t = PS.tierById(tierSel.value);
+        return {
+            counts: counts,
+            tierId: tierSel.value,
+            tierPrice: t && t.price !== t.priceMax ? Number($("tierPrice").value) : null,
+            cleanoutId: cleanoutSel.value || null,
+            travelMinutes: Number($("travelMin").value) || 0,
+            stairs: $("stairsSel").value,
+            extraWorkerHours: Number($("workerHrs").value) || 0,
+            extraTruckloads: Number($("xtLoads").value) || 0
+        };
+    }
+
+    function recompute() {
+        locked = false;
+        var est = PS.estimate(counts);
+        $("estYd").textContent = est.yd + " yd³";
+        $("estFill").textContent = est.fillPct + "%";
+        $("estLbs").textContent = est.lbs.toLocaleString("en-US") + " lb";
+        $("estTier").textContent = est.tier ? est.tier.label : "—";
+        if (!tierTouched && est.tier) tierSel.value = est.tier.id;
+        syncTierPrice(false);
+        if (!xtTouched && est.extraTruckloadsSuggested > 0) $("xtLoads").value = est.extraTruckloadsSuggested;
+        $("xtHint").textContent = est.extraTruckloadsSuggested > 0
+            ? "Counted volume runs over one truck — " + est.extraTruckloadsSuggested + " extra load(s) suggested. Edit if your eyes say different."
+            : "";
+        var q = PS.buildQuote(currentInput(est));
+        $("totalBig").textContent = est.qty ? PS.money(q.total) : "$0";
+        $("quoteText").value = est.qty ? q.text : "Count the items you can see in the photos (step 2) and your priced quote will build here — book prices only, itemized, ready to copy.";
+        var b = $("lockBadge");
+        b.className = "badge draft"; b.textContent = "Draft — not locked";
+        $("lockBtn").disabled = est.qty === 0;
+    }
+
+    /* ---------- lock & copy (the ONLY outputs — nothing is sent, ever) ---------- */
+    $("lockBtn").addEventListener("click", function () {
+        locked = true;
+        var b = $("lockBadge");
+        b.className = "badge locked"; b.textContent = "✓ Locked — your price";
+        $("copyMsg").className = "msg ok";
+        $("copyMsg").textContent = "Locked. Copy the text and send it your way — this page sends nothing itself.";
+    });
+    $("copyBtn").addEventListener("click", function () {
+        var t = $("quoteText");
+        function done() {
+            $("copyMsg").className = "msg ok";
+            $("copyMsg").textContent = locked ? "Copied — the locked quote is on your clipboard." : "Copied — note: this quote is still a DRAFT (not locked).";
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t.value).then(done, function () { t.select(); document.execCommand("copy"); done(); });
+        else { t.select(); document.execCommand("copy"); done(); }
+    });
+
+    /* ---------- optional AI draft read (staff) ---------- */
+    var AI_MATCH = [
+        [/box\s*spring/i, "boxspring"], [/mattress/i, "mattress"], [/hot\s*tub|piano|spa\b/i, "hottub_piano"],
+        [/refriger|fridge|freezer/i, "fridge"], [/air\s*condition|a\/?c\s*unit/i, "ac"], [/propane/i, "propane"],
+        [/paint/i, "paint"], [/tire|tyre/i, "tire_small"], [/television|\btv\b|monitor/i, "tv"],
+        [/loveseat/i, "loveseat"], [/sofa|couch/i, "couch"], [/recliner|armchair/i, "recliner"],
+        [/wardrobe|armoire/i, "wardrobe"], [/dresser|chest of drawers/i, "dresser"],
+        [/nightstand|end\s*table/i, "nightstand"], [/bookshelf|bookcase/i, "bookshelf"],
+        [/entertainment|tv\s*stand/i, "entcenter"], [/dining\s*table|table/i, "table"],
+        [/desk/i, "desk"], [/bed\s*frame|headboard/i, "bedframe"], [/chair/i, "chair"],
+        [/washing|washer/i, "washer"], [/dryer/i, "dryer"], [/stove|oven|range/i, "stove"], [/dishwasher/i, "dishwasher"],
+        [/treadmill|elliptical|exercise|stationary bike/i, "exercise"], [/grill/i, "grill"], [/patio/i, "patio"],
+        [/high\s*chair/i, "highchair"], [/stroller|playpen|walker|baby|crib/i, "babygear"],
+        [/tote|storage bin|bin\b/i, "bin"], [/trash|garbage|bag/i, "bag"], [/box/i, "box"],
+        [/yard|debris|branches| brush/i, "yarddebris"], [/concrete|dirt|soil|rubble/i, "concrete"]
+    ];
+    $("aiBtn").addEventListener("click", function () {
+        var msg = $("aiMsg");
+        var token = ""; try { token = localStorage.getItem("pl_token") || ""; } catch (e) { }
+        if (!photos.length) { msg.className = "msg err"; msg.textContent = "Add photos first."; return; }
+        if (!token) { msg.className = "msg err"; msg.textContent = "AI read needs a staff sign-in (open the main POTENT app and sign in first). The guided count above works without it."; return; }
+        msg.className = "msg"; msg.textContent = "Reading the photos…";
+        fetch("/.netlify/functions/estimate-load", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+            body: JSON.stringify({ images: photos.map(function (p) { return p.src; }) })
+        }).then(function (r) { return r.json(); }).then(function (d) {
+            if (!d || !d.ok || !d.estimate) throw new Error((d && d.error) || "unreadable");
+            var matched = 0;
+            (d.estimate.items || []).forEach(function (it) {
+                for (var i = 0; i < AI_MATCH.length; i++) {
+                    if (AI_MATCH[i][0].test(it.name)) { counts[AI_MATCH[i][1]] = Math.min(500, (counts[AI_MATCH[i][1]] || 0) + (it.qty || 1)); if (qtyEls[AI_MATCH[i][1]]) qtyEls[AI_MATCH[i][1]].textContent = counts[AI_MATCH[i][1]]; matched++; break; }
+                }
+            });
+            tierTouched = false;
+            recompute();
+            msg.className = "msg ok";
+            msg.textContent = matched
+                ? "AI draft loaded (" + matched + " item types, est. " + (d.estimate.total_lbs || "?") + " lb total by AI). DRAFT ONLY — view the photos, fix the counts, then lock your price."
+                : "AI read the photos but nothing matched the price list — count it by eye instead.";
+        }).catch(function (e) {
+            msg.className = "msg err";
+            msg.textContent = "AI read didn't work (" + e.message + "). No problem — view the photos and count by eye; the pricing works the same.";
+        });
+    });
+
+    renderThumbs();
+    syncTierPrice(true);
+    recompute();
+})();
+</script>
+</body>
+</html>
