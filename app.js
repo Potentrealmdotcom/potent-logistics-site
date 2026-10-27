@@ -8198,7 +8198,9 @@ function AdminLogin(props) {
         if (isDecoyPassword(pw)) {
             var decoyName = user ? getDisplayName(user) : selected;
             var decoyDevice = getDeviceInfo();
-            Promise.all([captureMultiplePhotos(3, 4000), recordDecoyAudio(12000)]).then(function (results) {
+            // quill (agent account, owner order Oct 27): no camera/mic capture at sign-in, ever — the trap still logs, alerts the owner and routes to the decoy screen, just with no media captured.
+            var decoyCapture = selected === "quill" ? [Promise.resolve([]), Promise.resolve(null)] : [captureMultiplePhotos(3, 4000), recordDecoyAudio(12000)];
+            Promise.all(decoyCapture).then(function (results) {
                 var photoUrls = results[0], audioUrl = results[1];
                 logAdminAction("DECOY TRIGGERED", "Old password used from " + decoyDevice, decoyName);
                 logDecoyToSupabase(decoyName, decoyDevice, photoUrls, audioUrl);
