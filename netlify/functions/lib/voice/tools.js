@@ -150,6 +150,7 @@ const TOOLS = {
     const intake = Object.assign({}, ctx.session.intake || {}), inc = cleanArgs(a); let changed = false;
     Object.keys(inc).forEach(function (k) { if (JSON.stringify(intake[k]) !== JSON.stringify(inc[k])) { if (CRITICAL.indexOf(k) >= 0 && intake[k] !== undefined) changed = true; intake[k] = inc[k]; } });
     if (!intake.callback_phone && ctx.session.from_number && a && a.use_caller_id === true) intake.callback_phone = I.phone(ctx.session.from_number) || ctx.session.from_number;
+    if (intake.callback_phone && (inc.callback_phone !== undefined || (a && a.use_caller_id === true)) && await suppressed(ctx.orgId, I.phone(intake.callback_phone) || intake.callback_phone)) return { ok: false, error: "do_not_contact", do_not_contact: true, say: "That number is on our do-not-contact list. Do not save it, and do not collect anything else. Politely say you cannot take details or arrange a callback for that number, thank them for calling, and end the call now with end_call." };
     if (changed || Object.keys(inc).some(function (k) { return CRITICAL.indexOf(k) >= 0; })) await invalidate(ctx, intake);
     await setIntake(ctx, intake);
     const v = I.validate(intake);
@@ -175,7 +176,15 @@ const TOOLS = {
       if (!g.ok) { notFound.push(k); continue; }
       geo[k] = { input: addr, matched: g.matched, lat: g.lat, lon: g.lon, state: g.state }; d[k + "_state"] = g.state || d[k + "_state"];
     }
-    if (notFound.length) return { ok: false, problems: notFound.map(function (k) { return k + "_address_not_found"; }), say: notFound.length === 2 ? "I couldn't find the pickup or the delivery address. Ask the caller to repeat BOTH, each with street, city and state." : "I couldn't find the " + notFound[0] + " address. Ask the caller to repeat it with street, city and state." };
+    if (notFound.length) {
+      const miss = intake._addr_miss || {}; let finalMiss = false;
+      notFound.forEach(function (k) { const a = d[k + "_address"]; miss[a] = (miss[a] || 0) + 1; if (miss[a] >= 2) finalMiss = true; });
+      intake._addr_miss = miss; intake._geo = geo; await setIntake(ctx, intake);
+      const probs = notFound.map(function (k) { return k + "_address_not_found"; });
+      const named = notFound.map(function (k) { return "the " + k + " address \"" + d[k + "_address"] + "\""; }).join(" and ");
+      if (finalMiss) return { ok: false, problems: probs.concat(["address_unverified"]), address_unverified: true, say: "You still cannot verify " + named + " after two tries. Do NOT ask for it again, and never change any part of an address to a guess. Read it back exactly as the caller stated it, say the team will confirm that address and call back shortly with the quote, then call create_callback_task with the full shipment details and the address exactly as stated, with the reason: address not verified. Close warmly, using their name." };
+      return { ok: false, problems: probs, say: "You couldn't find " + named + ". Do NOT ask the caller to repeat the whole address. Read " + (notFound.length === 2 ? "the addresses" : "the " + notFound[0] + " address") + " back exactly as recorded and ask which part is wrong: the street, the city, or the state. Fix only the part they correct, then run the checks again." };
+    }
     intake._geo = geo;
     const prof = await S.profileOf(ctx.orgId);
     if (!prof) { intake._elig = { status: "review", reviews: [{ code: "no_vehicle_profile", text: "No authorized vehicle profile is configured." }], blocks: [] }; await setIntake(ctx, intake); return { ok: true, status: "review", reasons: ["No authorized vehicle is set up. A person must review this request."] }; }
@@ -329,6 +338,7 @@ const TOOLS = {
   },
   async create_callback_task(ctx, a) {
     const phone = I.phone(a.phone) || ctx.session.from_number; if (!phone) return { ok: false, error: "need_phone_number" };
+    if (await suppressed(ctx.orgId, phone)) return { ok: false, error: "do_not_contact", say: "That number is on the do-not-contact list. Do NOT save a callback for it. Politely tell the caller you cannot arrange a callback to that number, thank them for calling, and end the call with end_call." };
     const r = await B.sb("voice_callbacks", { method: "POST", prefer: "return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, name: clip(a.name, 80) || null, phone: phone, reason: clip(a.reason, 300), preferred_time: clip(a.preferred_time, 80) || null } });
     if (!r.ok) return { ok: false, error: "save_failed" };
     await S.patchSession(ctx.orgId, ctx.session.id, { outcome: "callback" }); return { ok: true, callback_id: rows(r)[0] && rows(r)[0].id, say: "A callback is recorded. Do not promise an exact time." };
