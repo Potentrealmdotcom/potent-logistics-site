@@ -41,7 +41,11 @@ exports.handler = async function (event) {
             method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": key },
             body: JSON.stringify({ contents: [{ role: "user", parts: parts }], generationConfig: { temperature: 0.2, responseMimeType: "application/json", maxOutputTokens: 1500 } })
         });
-        if (!r.ok) return J(502, { ok: false, error: r.status === 429 ? "The free AI is busy. Try again in a minute." : "The AI could not read the photos." });
+        if (!r.ok) {
+            var gerr = ""; try { var ej = await r.json(); gerr = (ej && ej.error && (ej.error.status || ej.error.message)) || ""; } catch (e2) {}
+            console.error("estimate-load: Gemini refused", r.status, String(gerr).slice(0, 300));
+            return J(502, { ok: false, error: r.status === 429 ? "The free AI is busy. Try again in a minute." : "The AI could not read the photos. (Google said " + r.status + (gerr ? ": " + String(gerr).slice(0, 160) : "") + ")" });
+        }
         var d = await r.json();
         var txt = (((d.candidates || [])[0] || {}).content || {}).parts; txt = (txt || []).map(function (p) { return p.text || ""; }).join("");
         var o; try { o = JSON.parse(txt); } catch (e) { return J(502, { ok: false, error: "The AI answer was unreadable. Try again." }); }
