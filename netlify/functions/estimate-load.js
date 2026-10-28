@@ -37,14 +37,25 @@ exports.handler = async function (event) {
         "Reply with ONLY JSON: {\"items\":[{\"name\":\"\",\"qty\":1,\"lbs_each\":0,\"heavy\":false}],\"total_cu_yd\":0,\"total_lbs\":0,\"material\":\"mixed\",\"confidence\":\"low|medium|high\",\"hazards\":[],\"notes\":\"one short sentence\"}";
     parts.push({ text: prompt });
     try {
-        var r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + (process.env.AI_MODEL || "gemini-flash-latest") + ":generateContent", {
-            method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": key },
-            body: JSON.stringify({ contents: [{ role: "user", parts: parts }], generationConfig: { temperature: 0.2, responseMimeType: "application/json", maxOutputTokens: 1500 } })
-        });
-        if (!r.ok) {
-            var gerr = ""; try { var ej = await r.json(); gerr = (ej && ej.error && (ej.error.status || ej.error.message)) || ""; } catch (e2) {}
-            console.error("estimate-load: Gemini refused", r.status, String(gerr).slice(0, 300));
-            return J(502, { ok: false, error: r.status === 429 ? "The free AI is busy. Try again in a minute." : "The AI could not read the photos. (Google said " + r.status + (gerr ? ": " + String(gerr).slice(0, 160) : "") + ")" });
+        // Model chain: a pinned stable model first, then fallbacks. The floating
+        // "gemini-flash-latest" alias kept landing on an overloaded endpoint
+        // (Google 503 UNAVAILABLE, Oct 27 2026). AI_MODEL env overrides the head.
+        var MODELS = [process.env.AI_MODEL, "gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest"].filter(function (m, i, a) { return m && a.indexOf(m) === i; });
+        var payload = JSON.stringify({ contents: [{ role: "user", parts: parts }], generationConfig: { temperature: 0.2, responseMimeType: "application/json", maxOutputTokens: 1500 } });
+        var r = null, gerr = "", usedModel = "";
+        for (var mi = 0; mi < MODELS.length; mi++) {
+            r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + MODELS[mi] + ":generateContent", {
+                method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": key }, body: payload
+            });
+            if (r.ok) { usedModel = MODELS[mi]; break; }
+            gerr = ""; try { var ej = await r.json(); gerr = (ej && ej.error && (ej.error.status || ej.error.message)) || ""; } catch (e2) {}
+            console.error("estimate-load: Gemini refused on", MODELS[mi], r.status, String(gerr).slice(0, 200));
+            // Busy/overloaded (429/503) or an unknown model (404): fall through to the next model.
+            if ([429, 503, 404].indexOf(r.status) < 0) break;
+            if (mi < MODELS.length - 1) await new Promise(function (res) { setTimeout(res, 1200); });
+        }
+        if (!r || !r.ok) {
+            return J(502, { ok: false, error: r && r.status === 429 ? "The free AI is busy. Try again in a minute." : "The AI could not read the photos. (Google said " + (r ? r.status : "?") + (gerr ? ": " + String(gerr).slice(0, 160) : "") + ")" });
         }
         var d = await r.json();
         var txt = (((d.candidates || [])[0] || {}).content || {}).parts; txt = (txt || []).map(function (p) { return p.text || ""; }).join("");
