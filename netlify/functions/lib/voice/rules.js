@@ -2,7 +2,7 @@
 // Result: status "eligible" | "blocked" | "review". Blocked = a hard limit is exceeded. Review = a human must look (unknown, unverified or unusual).
 const DEFAULT_PROFILE = { // verified starting values for POTENT's current truck; an administrator maintains the real record (voice_vehicle_profiles)
   name: "2022 Ford E350 16-ft Morgan box truck", max_payload_lb: 4500, interior_l_in: 190, interior_w_in: 94, interior_h_in: 80, door_w_in: 86.5, door_h_in: 71,
-  equipment: { dock_height: true, liftgate: false, pallet_jack: false, blankets: true, e_track: true, load_bars: true }, service_area: { states: ["GA"] }, interstate_authorized: false, authorized: true };
+  equipment: { dock_height: true, liftgate: false, pallet_jack: false, crew_loads: true, blankets: true, e_track: true, load_bars: true }, service_area: { states: ["GA"] }, interstate_authorized: false, authorized: true };
 
 function pieceList(d) { const out = []; (d.pieces || []).forEach(function (p) { out.push(p); }); if (!out.length && d.total_dims) out.push(d.total_dims); return out; }
 // Fits if sorted dimensions fit the interior and the two smaller ones pass through the rear door.
@@ -28,8 +28,10 @@ function evaluate(d, v) {
   });
   if (d.needs_liftgate && !eq.liftgate) blocks.push({ code: "liftgate_required", text: "A liftgate is required and this vehicle has none." });
   if (d.needs_pallet_jack && !eq.pallet_jack && !d.site_has_pallet_jack) blocks.push({ code: "pallet_jack_required", text: "A pallet jack is required and neither the vehicle nor the site has one." });
-  if (d.pickup_dock === false && !d.forklift_pickup && !eq.liftgate) reviews.push({ code: "pickup_not_dock", text: "Pickup is not at dock height and has no forklift; loading method must be confirmed." });
-  if (d.delivery_dock === false && !d.forklift_delivery && !eq.liftgate) reviews.push({ code: "delivery_not_dock", text: "Delivery is not at dock height and has no forklift; unloading method must be confirmed." });
+  // A non-dock site only needs a human when THIS company has no ground-level way to load: no liftgate and no crew that hand-loads.
+  // A company whose crew hand-loads (equipment.crew_loads, set on its own vehicle profile) books ground-level work normally.
+  if (d.pickup_dock === false && !d.forklift_pickup && !eq.liftgate && !eq.crew_loads) reviews.push({ code: "pickup_not_dock", text: "Pickup is not at dock height and has no forklift; loading method must be confirmed." });
+  if (d.delivery_dock === false && !d.forklift_delivery && !eq.liftgate && !eq.crew_loads) reviews.push({ code: "delivery_not_dock", text: "Delivery is not at dock height and has no forklift; unloading method must be confirmed." });
   if (d.hazmat) blocks.push({ code: "hazmat", text: "Hazardous materials are not accepted by this booking system." });
   if (d.special_handling) reviews.push({ code: "special_handling", text: "Special handling requested: a person must approve it." });
   const states = (v.service_area && v.service_area.states) || [];

@@ -8,7 +8,7 @@ const SET = { onetime_min: 175, sameday_min: 225, rush_min: 350, recurring_min: 
   inside_delivery_min: 100, overnight_hold_nightly: 300, included_pickup_minutes: 30, included_delivery_minutes: 30, quote_expiration_minutes: 30, payload_limit_lbs: 4500, updated_at: "v1" };
 // ── intake ──
 let v = I.validate(good(), NOW); ok(v.ok && v.data.callback_phone === "+14045550142" && v.data.pickup_state === "GA", "complete intake passes and normalizes the phone");
-v = I.validate({}, NOW); ok(!v.ok && ["customer_name", "callback_phone", "pickup_address", "delivery_address", "service_date", "time_window", "freight_description", "piece_count", "total_weight_lb", "dimensions", "pickup_dock", "delivery_dock"].every(k => v.missing.includes(k)), "empty intake lists everything missing");
+v = I.validate({}, NOW); ok(!v.ok && ["customer_name", "callback_phone", "pickup_address", "delivery_address", "service_date", "time_window", "freight_description", "piece_count", "total_weight_lb", "dimensions"].every(k => v.missing.includes(k)), "empty intake lists everything missing");
 v = I.validate(Object.assign(good(), { pickup_address: "Peachtree" }), NOW); ok(!v.ok && v.problems.some(p => /pickup_address_ambiguous/.test(p)), "address without number is ambiguous");
 v = I.validate(Object.assign(good(), { delivery_address: "55 Roswell Rd" }), NOW); ok(v.problems.some(p => /delivery_address_ambiguous/.test(p)), "address without city/state is ambiguous");
 v = I.validate(Object.assign(good(), { delivery_address: good().pickup_address }), NOW); ok(v.problems.includes("pickup_and_delivery_are_the_same"), "same pickup and delivery is a conflict");
@@ -16,7 +16,7 @@ v = I.validate(Object.assign(good(), { service_date: "2026-10-01" }), NOW); ok(v
 v = I.validate(Object.assign(good(), { callback_phone: "555" }), NOW); ok(v.missing.includes("callback_phone"), "bad phone counts as missing");
 v = I.validate(Object.assign(good(), { total_weight_lb: 0 }), NOW); ok(v.missing.includes("total_weight_lb"), "missing weight is never defaulted");
 v = I.validate(Object.assign(good(), { pieces: [{ l: 48, w: 40, h: 50, qty: 4, weight_lb: 100 }] }), NOW); ok(v.problems.includes("piece_weights_do_not_match_total"), "piece weights that contradict the total are flagged");
-v = I.validate(Object.assign(good(), { pickup_dock: undefined }), NOW); ok(v.missing.includes("pickup_dock"), "loading method must be answered");
+v = I.validate(Object.assign(good(), { pickup_dock: undefined }), NOW); ok(!v.missing.includes("pickup_dock") && v.data.pickup_dock === null, "dock height is recorded when stated but never required");
 v = I.validate(Object.assign(good(), { pieces: [{ l: -1, w: 40, h: 50 }] }), NOW); ok(v.problems.includes("a_piece_has_bad_dimensions"), "negative dimension flagged");
 ok(I.phone("14045550142") === "+14045550142" && I.phone("0045550142") === null, "phone normalization");
 ok(I.stateOf("1 A St, Savannah, GA 31401") === "GA" && I.stateOf("1 A St, Columbia, SC 29201") === "SC" && I.stateOf("nothing") === null, "state extraction");
@@ -32,7 +32,10 @@ e = el({ needs_liftgate: true }); ok(e.status === "blocked" && e.blocks.some(b =
 e = el({ needs_pallet_jack: true }); ok(e.blocks.some(b => b.code === "pallet_jack_required"), "pallet jack required: blocked");
 e = el({ needs_pallet_jack: true, site_has_pallet_jack: true }); ok(e.status === "eligible", "site-provided pallet jack is accepted");
 e = el({ delivery_address: "9 Main St, Columbia, SC 29201" }); ok(e.status === "blocked" && e.blocks.some(b => b.code === "outside_service_area"), "South Carolina delivery is outside the Georgia area");
-e = el({ pickup_dock: false }); ok(e.status === "review" && e.reviews.some(r => r.code === "pickup_not_dock"), "no dock and no forklift needs a person");
+e = el({ pickup_dock: false }); ok(e.status === "eligible", "crew hand-loads (default profile): a non-dock pickup books normally");
+e = el({ delivery_dock: false }); ok(e.status === "eligible", "crew hand-loads (default profile): a non-dock delivery books normally");
+e = R.evaluate(I.validate(Object.assign(good(), { pickup_dock: false }), NOW).data, Object.assign({}, R.DEFAULT_PROFILE, { equipment: { dock_height: true, liftgate: false, pallet_jack: false, blankets: true, e_track: true, load_bars: true } })); ok(e.status === "review" && e.reviews.some(r => r.code === "pickup_not_dock"), "no dock, no forklift, no liftgate and no crew loading still needs a person");
+e = R.evaluate(I.validate(Object.assign(good(), { pickup_dock: false }), NOW).data, Object.assign({}, R.DEFAULT_PROFILE, { equipment: { dock_height: true, liftgate: true, pallet_jack: false, blankets: true, e_track: true, load_bars: true } })); ok(e.status === "eligible", "a liftgate truck books a non-dock pickup");
 e = el({ pickup_dock: false, forklift_pickup: true }); ok(e.status === "eligible", "forklift at a non-dock pickup is fine");
 e = el({ hazmat: true }); ok(e.status === "blocked", "hazmat blocked");
 e = el({ special_handling: "fragile glass" }); ok(e.status === "review", "special handling goes to a person");

@@ -83,7 +83,7 @@ async function saveProfile(orgId, p, actor) {
   const out = {}; const name = clip(p.name, 100); if (!p.id && !name) return { error: "Name the vehicle" }; if (name) out.name = name;
   for (const k of PROFILE_NUM) if (p[k] !== undefined) { const n = Number(p[k]); if (!(n > 0) || n > 100000) return { error: k + " must be a positive number" }; out[k] = k === "max_payload_lb" ? Math.floor(n) : n; }
   if (!p.id && !out.max_payload_lb) return { error: "Maximum payload is required" };
-  if (p.equipment !== undefined) { const e = {}; ["dock_height", "liftgate", "pallet_jack", "blankets", "e_track", "load_bars"].forEach(function (k) { e[k] = !!(p.equipment && p.equipment[k]); }); out.equipment = e; }
+  if (p.equipment !== undefined) { const e = {}; ["dock_height", "liftgate", "pallet_jack", "crew_loads", "blankets", "e_track", "load_bars"].forEach(function (k) { e[k] = !!(p.equipment && p.equipment[k]); }); out.equipment = e; }
   if (p.service_area) { const s = Array.isArray(p.service_area.states) ? p.service_area.states.map(function (x) { return String(x).toUpperCase(); }).filter(function (x) { return /^[A-Z]{2}$/.test(x); }) : null; if (!s || !s.length) return { error: "Service area needs state codes" }; out.service_area = { states: s }; }
   if (p.interstate_authorized !== undefined) out.interstate_authorized = p.interstate_authorized === true;
   if (p.kind !== undefined) out.kind = p.kind === "contractor" ? "contractor" : "company";

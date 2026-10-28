@@ -81,7 +81,9 @@ function validate(raw, now) {
   if (Array.isArray(raw.pieces) && raw.pieces.length && raw.pieces.map(dims).some(function (x) { return !x; })) prob.push("a_piece_has_bad_dimensions");
   const listed = d.pieces.reduce(function (a, p) { return a + p.qty; }, 0); if (d.pieces.length && d.piece_count && listed !== d.piece_count && d.pieces.every(function (p) { return p.qty >= 1; }) && listed > d.piece_count) prob.push("piece_dimensions_exceed_piece_count");
   const wl = d.pieces.filter(function (p) { return p.weight_lb; }); if (wl.length === d.pieces.length && d.pieces.length && d.total_weight_lb) { const s = d.pieces.reduce(function (a, p) { return a + p.weight_lb * p.qty; }, 0); if (Math.abs(s - d.total_weight_lb) > Math.max(25, d.total_weight_lb * 0.1)) prob.push("piece_weights_do_not_match_total"); }
-  ["pickup_dock", "delivery_dock"].forEach(function (k) { d[k] = bool(raw[k]); if (d[k] === null) miss.push(k); });
+  // Dock facts are recorded when the caller states them, but they are NEVER required: dock height must not gate or stall a booking.
+  // Eligibility only reviews an explicitly non-dock site, and only for a company with no ground-level loading method (see rules.js).
+  ["pickup_dock", "delivery_dock"].forEach(function (k) { d[k] = bool(raw[k]); });
   ["needs_liftgate", "needs_pallet_jack", "forklift_pickup", "forklift_delivery", "site_has_pallet_jack", "inside_delivery", "hazmat", "recurring"].forEach(function (k) { d[k] = bool(raw[k]) === true; });
   ["extra_stops", "labor_helpers", "expected_wait_minutes", "labor_hours", "holding_nights"].forEach(function (k) { const n = num(raw[k]); d[k] = n > 0 && n < 1000 ? n : 0; });
   d.special_handling = clip(raw.special_handling, 300); d.special_instructions = clip(raw.special_instructions, 400); d.po_number = clip(raw.po_number, 60);
