@@ -338,6 +338,9 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
     ok(/Do not announce that calls are recorded/.test(P1.build(rc, org)) && !/Tell the caller this call may be recorded/.test(P1.build(rc, org)), "the prompt no longer tells her to announce recording");
     ok(/may be recorded/.test(P1.greeting(rc, { name: "Acme", slug: "acme" }, "+14045550142")), "tenants keep their notice (the Georgia rule is stated for POTENT only)");
     const pb = P1.build(rc, org); ok(/Not sure who you think you're talking to/.test(pb) && /sassy but always very professional/.test(pb) && /use the end_call tool/.test(pb) && !/Certainly!\\\"/.test("x") && /REGULAR COMPANY, REGULAR PERSON/.test(pb), "regular-person realism + the professional-sass disrespect boundary are in her instructions");
+    ok(/THICK Southern accent/.test(pb) && /you ARE in Georgia/.test(pb) && /never a dumb country-bumpkin act/.test(pb), "persona: thick Georgia Southern accent, proper English, no bumpkin act");
+    ok(/laugh — a real, light laugh/.test(pb) && /yes, exactly/.test(pb) && /reactions to what THEY said/.test(pb), "persona: she laughs, feels things out loud, and tracks the caller with yes / yes exactly");
+    ok(/Georgia slang, country talk, street slang/.test(pb) && /never make a caller repeat themselves over slang or mumbling/.test(pb) && /a little muffly on me/.test(pb), "persona: she understands slang and mumbling; if words are truly lost she asks once, with wit");
     ok(!/DISRESPECT|REGULAR COMPANY/.test(P1.build({ agent_name: "X" }, { name: "Acme", slug: "acme" })), "tenants do not inherit POTENT's attitude lines");
     // end_call: logs, tells the owner, and the hangup action only works after it ran
     const ab = newSes({ provider_call_id: "CAEND1", state: "active" }); EXT.mail.length = 0; EXT.twilio.length = 0;
@@ -392,6 +395,8 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
     const PR2 = require("../netlify/functions/lib/voice/prompt.js");
     process.env.VOICE_LAYERS = "base"; const baseP = PR2.build({ agent_name: "Elevate" }, { name: "POTENT Logistics", slug: "potent-logistics" });
     ok(/NO DEAD AIR, AND NO NARRATION/.test(baseP) && /SAY EVERYTHING ONCE/.test(baseP) && !/Give me one moment while I pull that up/.test(baseP), "prompt (always on): no tool narration, nothing said twice");
+    ok(/Hold on while I check that for you/.test(baseP) && /never leave the caller hanging in silence/.test(baseP), "prompt (always on): before a check she says a hold-on line so the caller knows she is there");
+    ok(/YOUR VOICE NEVER CHANGES/.test(baseP) && /never deeper/.test(baseP), "prompt (always on): her voice and pitch never change mid-call");
     ok(/follow the REFUSAL PATH above/.test(baseP) && !/offer a person or a callback\. If the details change/.test(baseP), "prompt (always on): the booking flow points at the refusal path, not the old bare callback line");
     ok(/WEIGHT, TOTAL OR EACH/.test(baseP) && /LEAVE NO MONEY ON THE TABLE/.test(baseP) && /smaller booked job beats an empty truck/.test(baseP), "prompt (always on): ask total-or-each; work a short caller with real levers down to the tool's floor, never below it");
     ok(/WHEN A CALLER IS VENTING/.test(baseP) && /I totally understand/.test(baseP), "prompt (always on): a venting caller is heard like a human first");
