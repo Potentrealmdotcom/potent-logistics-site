@@ -34,7 +34,7 @@ exports.handler = async function (event) {
       // The same CallSid can arrive twice (provider retry). Reuse the session instead of making another.
       let ses = rows(await B.sb("voice_sessions?org_id=eq." + orgId + "&provider=eq.twilio&provider_call_id=eq." + encodeURIComponent(callSid) + "&select=*&limit=1"))[0];
       const human = cfg.human_available && cfg.transfer_number;
-      const reject = async function (state, why, say) { if (!ses) { const r = await B.sb("voice_sessions", { method: "POST", prefer: "resolution=ignore-duplicates,return=representation", body: { org_id: orgId, provider: "twilio", provider_call_id: callSid, direction: "inbound", from_number: from, to_number: to, state: state, end_reason: why, ended_at: new Date().toISOString(), seconds: 0 } }); ses = rows(r)[0]; await missed(orgId, ses && ses.id, from, "Missed call (" + why + ")"); } return xmlR(human ? TW.twimlDial(cfg.transfer_number, base() + "?a=dial&s=" + (ses ? ses.id : ""), say) : TW.twimlSay(say + " We will call you back.")); };
+      const reject = async function (state, why, say) { if (!ses) { const r = await B.sb("voice_sessions", { method: "POST", prefer: "resolution=ignore-duplicates,return=representation", body: { org_id: orgId, provider: "twilio", provider_call_id: callSid, direction: "inbound", from_number: from, to_number: to, state: state, end_reason: why, ended_at: new Date().toISOString(), seconds: 0 } }); ses = rows(r)[0]; await missed(orgId, ses && ses.id, from, "Missed call (" + why + ")"); } return xmlR(human ? TW.twimlDial(cfg.transfer_number, base() + "?a=dial&s=" + (ses ? ses.id : ""), say, to) : TW.twimlSay(say + " We will call you back.")); };
       if (ses) { if (ses.state !== "ringing" && ses.state !== "active") return xmlR(TW.twimlSay("Goodbye.")); }
       else {
         if (cfg.emergency_stop || cfg.ai_enabled === false) return reject("rejected", "ai_disabled", "Our assistant is unavailable right now.");
@@ -59,7 +59,7 @@ exports.handler = async function (event) {
       if (!ses) return xmlR(TW.twimlSay("We are having trouble. Please call back shortly."));
       const cfg = await S.cfgOf(ses.org_id);
       if ((ses.state === "active" || ses.state === "ringing") && !ses.ended_at) { await S.patchSession(ses.org_id, ses.id, { state: "failed", end_reason: "bridge_dropped" }); await health(ses.org_id, "bridge_dropped", false, ses.id); await missed(ses.org_id, ses.id, ses.from_number, "Call dropped (assistant connection lost)"); }
-      return xmlR(cfg.human_available && cfg.transfer_number ? TW.twimlDial(cfg.transfer_number, base() + "?a=dial&s=" + ses.id, "One moment, I am connecting you to a person.") : TW.twimlSay("Sorry, we lost our connection. We will call you back."));
+      return xmlR(cfg.human_available && cfg.transfer_number ? TW.twimlDial(cfg.transfer_number, base() + "?a=dial&s=" + ses.id, "One moment, I am connecting you to a person.", ses.to_number) : TW.twimlSay("Sorry, we lost our connection. We will call you back."));
     }
     if (a === "status") {
       const st = String(params.CallStatus || ""); if (["completed", "busy", "failed", "no-answer", "canceled"].indexOf(st) < 0) return xmlR("<Response/>");
@@ -79,7 +79,7 @@ exports.handler = async function (event) {
       const cfg = await S.cfgOf(ses.org_id), hand = rows(await B.sb("voice_handoffs?org_id=eq." + ses.org_id + "&session_id=eq." + ses.id + "&status=eq.requested&select=id&limit=1"))[0];
       if (!hand || !cfg.human_available || !cfg.transfer_number || cfg.emergency_stop) return xmlR(TW.twimlSay("Sorry, no one is available right now. We will call you back."));
       await S.patchSession(ses.org_id, ses.id, { state: "handoff" });
-      return xmlR(TW.twimlDial(cfg.transfer_number, base() + "?a=dial&s=" + ses.id, "Connecting you now."));
+      return xmlR(TW.twimlDial(cfg.transfer_number, base() + "?a=dial&s=" + ses.id, "Connecting you now.", ses.to_number));
     }
     if (a === "pay" || a === "payresult") {   // KEYPAD PAYMENT. The caller types the card straight to Stripe through Twilio; the amount is re-read from our database here, never from the request or the AI.
       const JP = require("./lib/voice/jobpay"), TL = require("./lib/voice/tools");
@@ -125,6 +125,9 @@ exports.handler = async function (event) {
         await B.sb("voice_handoffs?org_id=eq." + ses.org_id + "&session_id=eq." + ses.id + "&status=eq.requested", { method: "PATCH", prefer: "return=minimal", body: { status: good ? "completed" : "missed", resolved_at: new Date().toISOString(), resolved_by: "system:" + ds } });
         if (!good) await missed(ses.org_id, ses.id, ses.from_number, "Transfer to a person was not answered (" + (ds || "unknown") + ")");
       }
+      // A transfer that did not connect must never end in silence: the callback is already saved above,
+      // so close the call out loud. (The full hand-back to the assistant rides with the warm-transfer build.)
+      if (!good) return xmlR(TW.twimlSay("Sorry, no one could take the call. We will call you back."));
       return xmlR("<Response/>");
     }
     return xmlR("<Response/>", 400);

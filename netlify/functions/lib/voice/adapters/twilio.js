@@ -16,7 +16,7 @@ function twimlStream(wsUrl, params, action) { return xml("<Connect" + (action ? 
 // The amount, connector and description are set by us; the caller only types the card.
 const twimlPay = function (o) { return xml('<Pay chargeAmount="' + esc(o.amount) + '" currency="usd" paymentConnector="' + esc(o.connector) + '" action="' + esc(o.action) + '" method="POST" maxAttempts="3" timeout="20" paymentMethod="credit-card" tokenType="one-time" validCardTypes="visa mastercard amex discover" description="' + esc(String(o.description || "").slice(0, 100)) + '"/>'); };
 const twimlSay = function (t) { return xml(say(t) + "<Hangup/>"); };
-const twimlDial = function (num, cb, say1) { return xml((say1 ? say(say1) : "") + '<Dial timeout="20" answerOnBridge="true"' + (cb ? ' action="' + esc(cb) + '" method="POST"' : "") + "><Number>" + esc(num) + "</Number></Dial>" + say("Sorry, no one could take the call. We will call you back.") + "<Hangup/>"); };
+const twimlDial = function (num, cb, say1, callerId) { return xml((say1 ? say(say1) : "") + '<Dial timeout="20" answerOnBridge="true"' + (callerId ? ' callerId="' + esc(callerId) + '"' : "") + (cb ? ' action="' + esc(cb) + '" method="POST"' : "") + "><Number>" + esc(num) + "</Number></Dial>" + say("Sorry, no one could take the call. We will call you back.") + "<Hangup/>"); };
 async function api(path, form) {
   const sid = process.env.TWILIO_ACCOUNT_SID, tok = process.env.TWILIO_AUTH_TOKEN; if (!sid || !tok) return { ok: false, reason: "twilio_not_configured" };
   try {

@@ -22,6 +22,15 @@ live call records before reporting. Do not work from old checkouts or summaries.
   charges the real quote.
 - Do-not-contact: Fix 6 outcome `ended_do_not_contact`; Control Center has a
   working Remove button; the DNC list was emptied Oct 29.
+- Transfer fix (Fix 8, this push): `twimlDial` now takes a callerId and every
+  person-dial (xfer, fallback, rejected-call rescue) goes out under the number
+  the customer called (the org's own number) instead of defaulting to the
+  caller's number — Call 14's dials were refused in ~5s ("failed") because the
+  leg claimed the caller's Google Voice number. And a transfer that does not
+  connect no longer ends in silence: the dial-result handler speaks "Sorry, no
+  one could take the call. We will call you back." (callback already saved).
+  Full hand-back to the assistant after a missed transfer rides with the
+  warm-transfer build (next upgrade).
 
 ## Suites (all green at this state)
 voice 318 · voice-schema 648 · voicebridge 67 · elevate 52 · elevate-phone 34 ·
