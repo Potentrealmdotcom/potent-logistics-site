@@ -80,6 +80,8 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
   r = rig({ env: { VOICE_SILENCE_MS: "100" } }); r.start(); await sleep(40); r.ready(); await sleep(10); r.ai(audio(240)); r.ai(sc({ turnComplete: true }));
   const loudFrame = () => r.phone({ event: "media", media: { track: "inbound", payload: Buffer.alloc(160, 0x00).toString("base64"), timestamp: "5" } });
   for (let i = 0; i < 12; i++) loudFrame();
+  await sleep(1300); ok(!JSON.stringify(r.aiSock.sent).includes("The caller is waiting for your answer"), "loud background noise alone (a TV, running water) does NOT count as the caller speaking: no waiting nudge");
+  r.ai(sc({ inputTranscription: { text: "I need a truck" } })); r.ai(sc({ turnComplete: true })); // a real, transcribed caller turn — and the model stays silent
   await sleep(1300); ok(JSON.stringify(r.aiSock.sent).includes("The caller is waiting for your answer"), "caller spoke and she is silent: the model is told the caller is waiting");
   ok(r.calls.some(c => c.action === "health" && c.kind === "silence_nudge"), "each nudge is recorded in the health log");
   await sleep(1000); ok(JSON.stringify(r.aiSock.sent).includes("Still here, one second."), "still silent: she is made to say \"Still here, one second\"");
