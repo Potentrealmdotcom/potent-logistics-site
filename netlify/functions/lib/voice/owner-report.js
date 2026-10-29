@@ -12,7 +12,7 @@ const T = require("./tools");
 const PUSH = require("../push");
 const rows = S.rows;
 
-const LABELS = { booked: "Booked", booking_requested: "Booking requested", callback: "Callback saved", handoff_requested: "Handoff requested", handoff: "Transferred to a person", declined: "Could not take it", ended_abuse: "Ended (abusive caller)", info_only: "Information only" };
+const LABELS = { booked: "Booked", booking_requested: "Booking requested", callback: "Callback saved", handoff_requested: "Handoff requested", handoff: "Transferred to a person", declined: "Could not take it", ended_abuse: "Ended (abusive caller)", ended_do_not_contact: "Ended (do-not-contact)", info_only: "Information only" };
 function label(outcome) { const o = String(outcome || "info_only"); return LABELS[o] || (o.replace(/_/g, " ").replace(/^./, function (c) { return c.toUpperCase(); })); }
 function money(cents) { return cents == null || isNaN(Number(cents)) ? null : "$" + (Number(cents) / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function dur(sec) { const s = Math.max(0, Math.floor(Number(sec) || 0)); if (!s) return null; const m = Math.floor(s / 60), r = s % 60; return m ? (m + " min" + (r ? " " + r + " sec" : "")) : (r + " sec"); }

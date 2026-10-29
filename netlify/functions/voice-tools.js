@@ -47,9 +47,9 @@ async function knownCaller(ses) {
 // Whatever she said she would do ("someone will follow up"), the site makes it true: a callback on the caller-id number plus what we have, and the owner is emailed.
 async function unfinishedNet(ses, reason) {
   try {
-    if (!ses || ses.test_mode || ["pay_handoff", "ended_abuse"].indexOf(String(reason || "")) >= 0 || ses.outcome === "ended_abuse") return false;
+    if (!ses || ses.test_mode || ["pay_handoff", "ended_abuse", "ended_do_not_contact"].indexOf(String(reason || "")) >= 0 || ses.outcome === "ended_abuse" || ses.outcome === "ended_do_not_contact") return false;
     const sid = ses.id, fresh = rows(await B.sb("voice_sessions?id=eq." + sid + "&select=intake,outcome,from_number,end_reason&limit=1"))[0] || ses, i = fresh.intake || {};
-    if (["booked", "callback", "handoff", "ended_abuse"].indexOf(fresh.outcome) >= 0) return false;
+    if (["booked", "callback", "handoff", "ended_abuse", "ended_do_not_contact"].indexOf(fresh.outcome) >= 0) return false;
     const n = async function (q) { return rows(await B.sb(q + "&select=id&limit=1")).length; };
     if (await n("voice_bookings?session_id=eq." + sid) || await n("voice_callbacks?session_id=eq." + sid) || await n("voice_handoffs?session_id=eq." + sid)) return false;
     const say = rows(await B.sb("voice_transcripts?session_id=eq." + sid + "&role=eq.caller&select=text&order=seq.desc&limit=4")).map(function (x) { return String(x.text || "").trim(); }).filter(Boolean).reverse();

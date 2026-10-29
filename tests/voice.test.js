@@ -344,6 +344,9 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
     let hu = await vt({ action: "hangup", session_id: ab.id }); ok(hu.j.ok === false && !EXT.twilio.length, "hangup refused unless the agent used end_call");
     r = await runRaw(ab, "end_call", { reason: "cursed at her twice after a warning" }); ok(r.ok && r.end_call && T.voice_sessions.find(x => x.id === ab.id).outcome === "ended_abuse" && EXT.mail.some(m => /Call ended by Elevate/.test(JSON.stringify(m))), "end_call: logged as ended_abuse and the owner is told");
     hu = await vt({ action: "hangup", session_id: ab.id }); ok(hu.j.ok === true && EXT.twilio.some(t => /CAEND1/.test(t.url) && /Completed/i.test(t.body)), "hangup: the phone company is told to end the call");
+    // end_call kind do_not_contact: a listed number is NOT an abusive caller — its own outcome and owner wording
+    const dn = newSes({ provider_call_id: "CAEND2", state: "active" }); EXT.mail.length = 0;
+    r = await runRaw(dn, "end_call", { reason: "Caller's phone number is on the do-not-contact list.", kind: "do_not_contact" }); ok(r.ok && r.end_call && T.voice_sessions.find(x => x.id === dn.id).outcome === "ended_do_not_contact" && EXT.mail.some(m => /do-not-contact list/.test(JSON.stringify(m))) && !EXT.mail.some(m => /abusive/.test(JSON.stringify(m))), "end_call kind do_not_contact: logged as ended_do_not_contact and the owner email never says abusive");
   }
 
   // ---- call 2 fixes (Oct 23): payment wording can no longer tell the owner "dispatch will send instructions"; foreign-spelled yeses count

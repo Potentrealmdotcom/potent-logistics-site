@@ -73,7 +73,7 @@ function defs() {
     D("lookup_os_feature", "POTENT-only reference: look up whether POTENT OS has a feature, screen or control, and what it does, from the Master Inventory (200 features, 535 screens). Call it when the caller asks if OS can do something or you need the detail behind a feature. It answers only from the book; if nothing matches it says so and you offer to confirm. It has no prices.", obj({ query: { type: "string" } }, ["query"])),
     D("get_playbook", "Get the POTENT playbook script for the situation you are in: objections, junk removal, cleanouts, freight, pop-up events, recurring accounts and the wallet, closing, tracking and accounts. Call it when the caller pushes back, hesitates, or you are starting a service you need the questions for. It has no prices; prices only come from the quote tools.", obj({ topic: { type: "string", enum: PLAYBOOK.NAMES } }, ["topic"])),
     D("send_payment_link", "After a booking is CONFIRMED and the caller wants to pay by card, email them a secure Stripe payment link for the exact quoted total. The caller pays on Stripe's page; you never take or repeat card numbers. Needs the confirmed booking_id and an email read back and confirmed.", obj({ booking_id: str(""), email: str("their email exactly as the caller said it"), email_confirmed: { type: "boolean", description: "true only after you spelled it back and the caller said yes" } }, ["booking_id", "email"])),
-    D("end_call", "End the call because the caller kept being abusive or disrespectful AFTER you gave one firm warning. Never use it on someone who is merely upset, confused, sad or hard to understand, and never when someone is in danger. Say a short goodbye line first.", obj({ reason: str("what happened, one sentence") }, ["reason"])),
+    D("end_call", "End the call. kind 'abuse': ONLY because the caller kept being abusive or disrespectful AFTER you gave one firm warning — never use it on someone who is merely upset, confused, sad or hard to understand, and never when someone is in danger. kind 'do_not_contact': ONLY when a tool result told you the caller's number is on the do-not-contact list. Say a short goodbye line first.", obj({ reason: str("what happened, one sentence"), kind: { type: "string", enum: ["abuse", "do_not_contact"], description: "why the call is ending: abuse (default) or do_not_contact" } }, ["reason"])),
     D("take_card_payment", "After a booking is CONFIRMED, take the card payment ON THE CALL by phone keypad. The caller types the card on their keypad; you never hear, see, say or store it. The amount is the quoted total from our system. Needs the confirmed booking_id. After it says ok, say the one short sentence it gives you and then STOP TALKING until you are told the result.", obj({ booking_id: str("") }, ["booking_id"])),
     D("send_approved_confirmation", "Send the approved written confirmation or request-received notice for this call's booking.", obj({ booking_id: str(""), channel: { type: "string", enum: ["email", "sms"] }, email: str("only for email: exactly what the caller said"), email_confirmed: { type: "boolean", description: "true only after you spelled it back and the caller said yes" }, sms_consent: { type: "boolean", description: "caller agreed to a text message" } }, ["booking_id", "channel"])),
     D("look_up_booking_status", "Look up a booking. Needs the booking reference and the last 4 digits of the phone number on the booking.", obj({ reference: str(""), phone_last4: str("") }, ["reference", "phone_last4"])),
@@ -150,7 +150,7 @@ const TOOLS = {
     const intake = Object.assign({}, ctx.session.intake || {}), inc = cleanArgs(a); let changed = false;
     Object.keys(inc).forEach(function (k) { if (JSON.stringify(intake[k]) !== JSON.stringify(inc[k])) { if (CRITICAL.indexOf(k) >= 0 && intake[k] !== undefined) changed = true; intake[k] = inc[k]; } });
     if (!intake.callback_phone && ctx.session.from_number && a && a.use_caller_id === true) intake.callback_phone = I.phone(ctx.session.from_number) || ctx.session.from_number;
-    if (intake.callback_phone && (inc.callback_phone !== undefined || (a && a.use_caller_id === true)) && await suppressed(ctx.orgId, I.phone(intake.callback_phone) || intake.callback_phone)) return { ok: false, error: "do_not_contact", do_not_contact: true, say: "That number is on our do-not-contact list. Do not save it, and do not collect anything else. Politely say you cannot take details or arrange a callback for that number, thank them for calling, and end the call now with end_call." };
+    if (intake.callback_phone && (inc.callback_phone !== undefined || (a && a.use_caller_id === true)) && await suppressed(ctx.orgId, I.phone(intake.callback_phone) || intake.callback_phone)) return { ok: false, error: "do_not_contact", do_not_contact: true, say: "That number is on our do-not-contact list. Do not save it, and do not collect anything else. Politely say you cannot take details or arrange a callback for that number, thank them for calling, and end the call now with end_call using kind do_not_contact." };
     if (changed || Object.keys(inc).some(function (k) { return CRITICAL.indexOf(k) >= 0; })) await invalidate(ctx, intake);
     await setIntake(ctx, intake);
     const v = I.validate(intake);
@@ -295,8 +295,14 @@ const TOOLS = {
   },
   // Card payment on the call. The AI only asks for it; the bridge then moves the live call to Twilio <Pay> (see voice-tools "pay" and voice-webhook "pay"/"payresult").
   // Nothing here sees a card. The amount comes from the stored quote. "Paid" is only ever said after Stripe itself confirms the exact amount.
-  // Genuine abuse after a warning: log it, tell the owner, and let the bridge hang up once the goodbye has been spoken.
+  // Ending a call: log it, tell the owner, and let the bridge hang up once the goodbye has been spoken.
+  // A do-not-contact ending is NOT abuse: it gets its own outcome and owner wording, never the abusive-caller label.
   async end_call(ctx, a) {
+    if (a && a.kind === "do_not_contact") {
+      await S.patchSession(ctx.orgId, ctx.session.id, { outcome: "ended_do_not_contact" });
+      await notifyOwner(ctx.orgId, "Call ended by Elevate (number on do-not-contact list)", "Caller " + (ctx.session.from_number || "unknown") + ". Reason: " + clip(a.reason, 200) + ". See the transcript in Calls.");
+      return { ok: true, end_call: true, say: "Say ONE short, calm goodbye line now (no lecture, no apology), then stop talking. The call ends right after." };
+    }
     await S.patchSession(ctx.orgId, ctx.session.id, { outcome: "ended_abuse" });
     await notifyOwner(ctx.orgId, "Call ended by Elevate (caller abusive)", "Caller " + (ctx.session.from_number || "unknown") + ". Reason: " + clip(a.reason, 200) + ". See the transcript in Calls.");
     return { ok: true, end_call: true, say: "Say ONE short, calm goodbye line now (no lecture, no apology), then stop talking. The call ends right after." };
@@ -338,7 +344,7 @@ const TOOLS = {
   },
   async create_callback_task(ctx, a) {
     const phone = I.phone(a.phone) || ctx.session.from_number; if (!phone) return { ok: false, error: "need_phone_number" };
-    if (await suppressed(ctx.orgId, phone)) return { ok: false, error: "do_not_contact", say: "That number is on the do-not-contact list. Do NOT save a callback for it. Politely tell the caller you cannot arrange a callback to that number, thank them for calling, and end the call with end_call." };
+    if (await suppressed(ctx.orgId, phone)) return { ok: false, error: "do_not_contact", say: "That number is on the do-not-contact list. Do NOT save a callback for it. Politely tell the caller you cannot arrange a callback to that number, thank them for calling, and end the call with end_call using kind do_not_contact." };
     const r = await B.sb("voice_callbacks", { method: "POST", prefer: "return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, name: clip(a.name, 80) || null, phone: phone, reason: clip(a.reason, 300), preferred_time: clip(a.preferred_time, 80) || null } });
     if (!r.ok) return { ok: false, error: "save_failed" };
     await S.patchSession(ctx.orgId, ctx.session.id, { outcome: "callback" }); return { ok: true, callback_id: rows(r)[0] && rows(r)[0].id, say: "A callback is recorded. Do not promise an exact time." };
