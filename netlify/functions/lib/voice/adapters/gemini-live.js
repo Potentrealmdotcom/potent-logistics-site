@@ -33,11 +33,15 @@ function declarations(tools) {
 
 function create(opts) {
   opts = opts || {}; const model = opts.model || process.env.VOICE_AI_MODEL || DEFAULT_MODEL;
-  const seen = { top: {}, sc: {} }; let lastTextAt = 0, upPrev = 0, dnRest = [], callerBuf = "", agentBuf = "", n = 0, agentSpoke = false;
+  const seen = { top: {}, sc: {} }; let lastTextAt = 0, upPrev = 0, dnRest = [], callerBuf = "", agentBuf = "", n = 0, agentSpoke = false, turnChunks = 0;
   const flushCaller = function (ev) { if (callerBuf.trim()) ev.push({ kind: "caller_text", text: callerBuf.trim(), key: "c:" + (++n) }); callerBuf = ""; };
-  const flushAgent = function (ev) { if (agentBuf.trim()) ev.push({ kind: "agent_text", text: agentBuf.trim(), key: "a:" + (++n) }); agentBuf = ""; };
+  // chunks = how much audio this line actually generated, so the bridge can tell a spoken line from a
+  // text-only generation and can trim a cut-off line to what played (transcript fidelity, Oct 29, 2026).
+  // The count is spent only when text is actually handed over: her transcription can lag her audio by a
+  // message or two, and an interruption landing in that gap must not orphan the count from its line.
+  const flushAgent = function (ev, rescue) { if (agentBuf.trim()) { ev.push({ kind: "agent_text", text: agentBuf.trim(), key: "a:" + (++n), chunks: turnChunks, rescue: !!rescue }); turnChunks = 0; } agentBuf = ""; };
   return {
-    name: "gemini-live", version: "2026-10-23e",
+    name: "gemini-live", version: "2026-10-29a",
     setup: function (o) {
       const voice = DEFAULT_VOICE; // LOCKED: Elevate is always the same female voice (Leda), on every call and every reconnect. No config, env or caller can change it.
       const decl = declarations(o.tools);
@@ -56,7 +60,7 @@ function create(opts) {
     say: function (text) { return { clientContent: { turns: [{ role: "user", parts: [{ text: "Say exactly this to the caller, then wait: " + text }] }], turnComplete: true } }; },
     note: function (text) { return { clientContent: { turns: [{ role: "user", parts: [{ text: "[system notice, not the caller] " + text }] }], turnComplete: true } }; },
     // text heard so far that no event has flushed yet (call ended or garbled before a turn completed): hand it over instead of losing it
-    flush: function (idleMs) { if (idleMs && Date.now() - lastTextAt < idleMs) return []; const ev = []; flushCaller(ev); flushAgent(ev); return ev; },
+    flush: function (idleMs) { if (idleMs && Date.now() - lastTextAt < idleMs) return []; const ev = []; flushCaller(ev); flushAgent(ev, true); return ev; },
     // context only: added to the conversation WITHOUT asking the model to answer (turnComplete false), used for the language-lock reminder
     noteSilent: function (text) { return { clientContent: { turns: [{ role: "user", parts: [{ text: "[system reminder, do not reply to this] " + text }] }], turnComplete: false } }; },
     diag: function () { return JSON.parse(JSON.stringify(seen)); },   // which message types Gemini actually sent (proves whether transcripts were produced)
@@ -80,7 +84,7 @@ function create(opts) {
           const full = Math.floor(s.length / 3) * 3, out = Buffer.alloc(full / 3);
           for (let i = 0, j = 0; i < full; i += 3, j++) out[j] = mulawEnc(Math.round((s[i] + s[i + 1] + s[i + 2]) / 3));
           dnRest = s.slice(full);
-          if (out.length) ev.push({ kind: "audio", payload: out.toString("base64") });
+          if (out.length) { ev.push({ kind: "audio", payload: out.toString("base64") }); turnChunks++; }
         });
         if (c.turnComplete) { flushCaller(ev); flushAgent(ev); ev.push({ kind: "turn_done", spoke: agentSpoke }); agentSpoke = false; }
       }

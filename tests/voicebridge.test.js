@@ -143,5 +143,23 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
     const notes = q.aiSock.sent.filter(m => m.clientContent).map(m => JSON.stringify(m)).filter(t => /Still quiet|It has been quiet/.test(t));
     ok(q.aiSock === link && notes.length >= 4 && new Set(notes).size === notes.length, "quiet caller: several different check-ins, and the AI link is never rebuilt by the idle watchdog");
     ok(notes.some(t => /create_callback_task/.test(t)), "quiet caller: by the fourth check-in she saves a callback"); q.phone({ event: "stop" }); await sleep(20); }
+  // ---- TRANSCRIPT FIDELITY (Oct 29, 2026): the record holds only words the caller actually heard
+  { const q = rig(); q.start(); await sleep(40); q.ready(); await sleep(10); q.ai(sc({ turnComplete: true })); await sleep(5);
+    // a line with NO audio behind it (a text-only generation) is never recorded
+    q.ai(sc({ outputTranscription: { text: "I am right here, take your time" } })); q.ai(sc({ turnComplete: true })); await sleep(15);
+    ok(!q.calls.some(c => c.action === "transcript" && c.role === "agent"), "fidelity: a line with no audio behind it is not recorded");
+    // a line the caller talked over before ANY of it played is not recorded either
+    q.ai(audio(240)); q.ai(audio(240));
+    q.ai(sc({ outputTranscription: { text: "This whole sentence was cut off" } })); q.ai(sc({ interrupted: true })); await sleep(15);
+    ok(!q.calls.some(c => c.action === "transcript" && c.role === "agent"), "fidelity: a line cut off before any of it played is not recorded");
+    // a line partly played (1 of 4 chunks heard) is recorded only up to the part that played
+    q.ai(audio(240)); q.ai(audio(240)); q.ai(audio(240)); q.ai(audio(240)); q.phone({ event: "mark" });
+    q.ai(sc({ outputTranscription: { text: "Alpha bravo charlie delta echo foxtrot" } })); q.ai(sc({ interrupted: true })); await sleep(15);
+    const cutLine = q.calls.find(c => c.action === "transcript" && c.role === "agent");
+    ok(cutLine && cutLine.text === "Alpha", "fidelity: a cut-off line is stored only up to what played (got: " + (cutLine && cutLine.text) + ")");
+    // and a normal line is still recorded in full
+    q.ai(audio(240)); q.ai(sc({ outputTranscription: { text: "Full sentence, fully heard" } })); q.ai(sc({ turnComplete: true })); await sleep(15);
+    ok(q.calls.some(c => c.action === "transcript" && c.role === "agent" && c.text === "Full sentence, fully heard"), "fidelity: a normal line is recorded in full");
+    q.phone({ event: "stop" }); await sleep(20); }
 console.log("PASS: " + n + " assertions"); process.exit(0);
 })().catch(e => { console.error(e); process.exit(1); });

@@ -28,10 +28,30 @@ function createBridge(deps) {
     const nonce = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36), nk = function (k) { return k ? nonce + ":" + k : k; };
     const note = function (role, text, key) { if (ctx && text) api({ action: "transcript", session_id: ctx.session_id, role: role, text: text, key: nk(key) }, 8000); };
     const sysNote = function (text) { aiSend(prov.note(text)); };
+    // TRANSCRIPT FIDELITY (Tony, Oct 29, 2026: "the transcripts need to match the recording word for word —
+    // if it doesn't it isn't right"). Her lines are HELD until the turn's fate is known, because the AI's
+    // transcription also covers words that were generated but never heard: a line with no audio behind it
+    // (a text-only generation) is not recorded at all, and a line the caller talked over is recorded only
+    // up to the part that actually played — Twilio's playback marks (markQ = sent but not yet played)
+    // are the ground truth. The end-of-call rescue flush keeps its old keep-everything behaviour.
+    let pendingAgent = null;
+    const noteAgent = function (text, key) { if (/\b(goodbye|bye|have a (great|good|nice) (day|night|one)|take care)\b/i.test(String(text))) saidBye = true; hist.push({ role: "agent", text: String(text).slice(0, 400) }); note("agent", text, key); };
+    const flushPendingAgent = function (cut) {
+      if (!pendingAgent) return; const p = pendingAgent; pendingAgent = null;
+      if (p.rescue) { noteAgent(p.text, p.key); return; }
+      if (!p.chunks) return;   // no audio was generated for this line: it was never spoken, so it is not recorded
+      if (!cut) { noteAgent(p.text, p.key); return; }
+      const played = p.chunks - Math.min(markQ.length, p.chunks);
+      if (played <= 0) return;   // cut off before any of it played: the caller heard none of it
+      const keep = Math.floor(p.text.length * played / p.chunks); if (keep < 2) return;
+      const cutText = p.text.slice(0, keep).replace(/\s+\S*$/, "").trim();
+      if (cutText) noteAgent(cutText, p.key);
+    };
 
     async function finish(reason, closeTwilio) {
       if (done) return; done = true; timers.forEach(clearTimeout); if (flushTimer) clearInterval(flushTimer); if (langTimer) clearInterval(langTimer); if (wdTimer) clearInterval(wdTimer);
       const secs = Math.round((Date.now() - startedAt) / 1000);
+      flushPendingAgent(false);   // a held line from a finished turn is recorded before the rescue flush below
       if (ctx && prov && prov.flush) await Promise.all(prov.flush().map(function (e) { return api({ action: "transcript", session_id: ctx.session_id, role: e.kind === "caller_text" ? "caller" : "agent", text: e.text, key: nk(e.key) }, 6000); }));   // keep what was said even if the call ended mid-sentence
       if (ctx) {   // proof for the graders: did the AI produce transcripts, and which message types did it send
         const d = prov && prov.diag ? prov.diag() : {}, got = (kinds.caller_text || 0) + (kinds.agent_text || 0);
@@ -97,6 +117,7 @@ function createBridge(deps) {
 
     function onAi(e) {
       const t = e.kind; kinds[t] = (kinds[t] || 0) + 1;
+      if (t !== "agent_text" && t !== "interrupted") flushPendingAgent(false);   // any other event settles the held line as fully spoken
       if (t === "ready") onReady();
       else if (t === "audio") {
         if (!streamSid || !e.payload) return;
@@ -105,9 +126,10 @@ function createBridge(deps) {
         twSend({ event: "media", streamSid: streamSid, media: { payload: e.payload } });
         const name = "m" + (++marks); markQ.push(name); twSend({ event: "mark", streamSid: streamSid, mark: { name: name } });
       } else if (t === "interrupted") { // the caller talked over the assistant: stop its audio on the phone
+        flushPendingAgent(true);   // record only the part of her line that actually played (markQ still holds the unplayed chunks)
         if (markQ.length) { twSend({ event: "clear", streamSid: streamSid }); markQ = []; }
       } else if (t === "caller_text") { lastCallerTextAt = Date.now(); hist.push({ role: "caller", text: String(e.text).slice(0, 400) }); note("caller", e.text, e.key); }
-      else if (t === "agent_text") { if (/\b(goodbye|bye|have a (great|good|nice) (day|night|one)|take care)\b/i.test(String(e.text))) saidBye = true; hist.push({ role: "agent", text: String(e.text).slice(0, 400) }); note("agent", e.text, e.key); }
+      else if (t === "agent_text") { flushPendingAgent(false); pendingAgent = { text: String(e.text), key: e.key, chunks: e.chunks || 0, rescue: !!e.rescue }; if (pendingAgent.rescue) flushPendingAgent(false); }
       else if (t === "go_away") { log("ai says it will close soon", e.left); }
       else if (t === "tool") runTool(e);
       else if (t === "turn_done") { if (greetHold) { greetHold = false; clearTimeout(greetT); } if (transferPending && (spokeSinceTool || e.spoke)) { transferPending = false; doTransfer(); } }
@@ -140,7 +162,7 @@ function createBridge(deps) {
       if (!owed && !noGreeting && !closingAt && (!markQ.length || now - lastAgentAt > th * 8) && readyAt && lastAgentAt && now - lastAgentAt > th * 3 && now - Math.max(lastCallerAt, 0) > th * 3 && now - Math.max(idleAt, 0) > th * 3) { // dead-air backstop: whatever the cause, nobody has spoken for ~12s, so she checks in
         idleAt = now; kinds.idle_checkin = (kinds.idle_checkin || 0) + 1; api({ action: "health", provider: "bridge", kind: "silence_nudge", ok: false, detail: ("idle " + Math.round((now - lastAgentAt) / 1000) + "s").slice(0, 120) }, 4000);
         { const n = kinds.idle_checkin;   // normal check-ins that never repeat; no forced restart (a quiet caller is not a broken connection)
-          if (n === 1) sysNote("It has been quiet. Say warmly, in one short sentence, that you are right here and they can take their time.");
+          if (n === 1) sysNote("It has been quiet. In one short sentence, check in warmly: ask if they are still with you. Then stay quiet and wait.");   // matches her prompt's one allowed check-in; the old wording ordered the exact "I'm right here, take your time" narration her prompt bans
           else if (n === 2) sysNote("Still quiet. Say one short, different sentence: ask whether they would like to keep going or have someone call them back. Do not repeat your earlier words.");
           else if (n === 3) sysNote("Still quiet. In one short sentence, say you can write down what you have so far and have a person follow up on this number. Do not repeat your earlier words.");
           else if (n === 4) sysNote("Still quiet. Save what you have now (collect_shipment_details for anything said, then create_callback_task using the number they are calling from), and tell them in one short sentence that you saved it and someone will call them back. Do not repeat your earlier words.");
