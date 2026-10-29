@@ -143,6 +143,26 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
     const notes = q.aiSock.sent.filter(m => m.clientContent).map(m => JSON.stringify(m)).filter(t => /Still quiet|It has been quiet/.test(t));
     ok(q.aiSock === link && notes.length >= 4 && new Set(notes).size === notes.length, "quiet caller: several different check-ins, and the AI link is never rebuilt by the idle watchdog");
     ok(notes.some(t => /create_callback_task/.test(t)), "quiet caller: by the fourth check-in she saves a callback"); q.phone({ event: "stop" }); await sleep(20); }
+  // ---- DEAF LANE (Oct 29, 2026): the caller is talking (loud frames land after her line) but not one word is ever transcribed — her input side is dead.
+  // She must say she can't hear them fast, then get a fresh AI session, then save a callback — not sit in dead air (Call 13: 42 s, one check-in, nothing saved).
+  { const q = rig({ env: { VOICE_SILENCE_MS: "100" } }); q.start(); await sleep(40); q.ready(); await sleep(10); q.ai(audio(240)); q.ai(sc({ turnComplete: true })); await sleep(15);
+    const loud = () => q.phone({ event: "media", media: { track: "inbound", payload: Buffer.alloc(160, 0x00).toString("base64"), timestamp: "7" } });
+    for (let i = 0; i < 6; i++) loud();
+    await sleep(1400); ok(JSON.stringify(q.aiSock.sent).includes("can't seem to hear them"), "deaf lane: caller audible but never transcribed — she is told to say she can't hear them");
+    ok(q.calls.some(c => c.action === "health" && c.kind === "silence_nudge" && /deaf 1/.test(c.detail || "")), "deaf lane: the step is recorded in the health log");
+    for (let i = 0; i < 6; i++) loud();
+    const deafSock = q.aiSock; await sleep(1400);
+    ok(q.aiSock !== deafSock && q.tw.readyState === 1 && q.calls.some(c => c.action === "health" && c.kind === "ai_drop" && /caller_not_transcribed/.test(c.detail)), "deaf lane: still unheard — the AI link is rebuilt mid-call and the phone call stays up");
+    q.ready(); await sleep(10); q.ai(audio(240)); q.ai(sc({ turnComplete: true })); await sleep(15);
+    for (let i = 0; i < 6; i++) loud();
+    await sleep(1600); ok(JSON.stringify(q.aiSock.sent).includes("create_callback_task"), "deaf lane: still unheard after the rebuild — she is told to save a callback and close warmly");
+    q.phone({ event: "stop" }); await sleep(20); }
+  { const q = rig({ env: { VOICE_SILENCE_MS: "100" } }); q.start(); await sleep(40); q.ready(); await sleep(10); q.ai(audio(240)); q.ai(sc({ turnComplete: true })); await sleep(15);
+    const loud = () => q.phone({ event: "media", media: { track: "inbound", payload: Buffer.alloc(160, 0x00).toString("base64"), timestamp: "7" } });
+    for (let i = 0; i < 6; i++) loud();
+    q.ai(sc({ inputTranscription: { text: "can you hear me" } })); q.ai(sc({ turnComplete: true }));
+    await sleep(1400); ok(!JSON.stringify(q.aiSock.sent).includes("can't seem to hear them"), "deaf lane: once the caller's words are transcribed, the lane never fires");
+    q.phone({ event: "stop" }); await sleep(20); }
   // ---- TRANSCRIPT FIDELITY (Oct 29, 2026): the record holds only words the caller actually heard
   { const q = rig(); q.start(); await sleep(40); q.ready(); await sleep(10); q.ai(sc({ turnComplete: true })); await sleep(5);
     // a line with NO audio behind it (a text-only generation) is never recorded

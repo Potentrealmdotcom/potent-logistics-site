@@ -18,7 +18,7 @@ function createBridge(deps) {
   const sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
 
   function handle(tw) {
-    let saidBye = false, agentEnd = false, payPending = false, payStarted = false, idleAt = 0, closingAt = 0, closeNudges = 0, greetHold = true, greetT = null, lastCallerAt = 0, lastCallerTextAt = 0, lastAgentAt = 0, toolDoneAt = 0, toolBusy = 0, nudges = 0, burst = 0, readyAt = 0, wdTimer = null;
+    let saidBye = false, agentEnd = false, payPending = false, payStarted = false, idleAt = 0, closingAt = 0, closeNudges = 0, deafStage = 0, deafAt = 0, greetHold = true, greetT = null, lastCallerAt = 0, lastCallerTextAt = 0, lastAgentAt = 0, toolDoneAt = 0, toolBusy = 0, nudges = 0, burst = 0, readyAt = 0, wdTimer = null;
     let lang = "English", langTimer = null, flushTimer = null, retries = 0, reconnecting = false, timersSet = false, hist = [], streamSid = null, ctx = null, ai = null, prov = null, connectTimerRef = null, spokeSinceTool = false, toolAt = 0, done = false, aiReady = false, buffered = [], lastItem = null, assistStart = null, mediaTs = 0, marks = 0, markQ = [], transferPending = false, transferred = false, startedAt = Date.now(), timers = [], nm = 0;
     const timer = function (fn, ms) { const t = setTimeout(fn, ms); timers.push(t); return t; };
     const twSend = function (o) { if (tw.readyState === 1) tw.send(JSON.stringify(o)); };
@@ -154,6 +154,13 @@ function createBridge(deps) {
       if (done || !aiReady || toolBusy || transferPending || payPending || agentEnd || !ctx) return;
       const now = Date.now(), th = Number(env.VOICE_SILENCE_MS) || 4000;
       const owed = Math.max(lastCallerTextAt, toolDoneAt) > lastAgentAt, noGreeting = !lastAgentAt && !reconnecting && readyAt && now - readyAt > 2 * th;   // "owed" counts only REAL caller turns (transcribed speech) and finished tools — never raw loudness: a TV, running water or banging is loud too, and loudness alone used to make the watchdog prod her into answering the room
+      if (!lastCallerTextAt && !owed && !closingAt && lastAgentAt && lastCallerAt > lastAgentAt && now - lastCallerAt > th && now - lastAgentAt > th && now - deafAt > 2 * th) { // DEAF LANE: sound from the caller landed after her last line, yet not one word has ever been transcribed this call — her ears are the problem, not the caller. The silent-caller backstop below needs ~12 s between check-ins, so a talking-but-unheard caller gets dead air for a minute and hangs up first (Call 13, Oct 29 2026: 42 s, one check-in, nothing saved). Escalate fast: hearing line, then a fresh AI session, then a saved callback.
+        deafAt = now; deafStage++; kinds.deaf_check = (kinds.deaf_check || 0) + 1; api({ action: "health", provider: "bridge", kind: "silence_nudge", ok: false, detail: ("deaf " + deafStage).slice(0, 120) }, 4000);
+        if (deafStage === 1) { lastAgentAt = now; sysNote("You have not been able to hear anything the caller said on this call — the line may be bad. In one short warm sentence, tell the caller you can't seem to hear them and ask them to try again. Then wait."); }
+        else if (deafStage === 2) { aiDown("caller_not_transcribed", "caller audible but never transcribed"); }   // a fresh AI session is the proven cure for a wedged input pipeline; the reconnect recap carries the conversation over
+        else if (deafStage === 3) { lastAgentAt = now; sysNote("You still cannot hear the caller at all. Save a callback now: call create_callback_task for the number they are calling from, with the reason that you could not hear the caller (line problem). Then in one short warm sentence say someone will call them right back on this number, say goodbye, and stop."); }
+        return;
+      }
       if (closingAt && !saidBye && !owed && !noGreeting && closeNudges < 2 && lastAgentAt > closingAt && lastCallerAt <= lastAgentAt && now - lastAgentAt > th * 1.75) { // wrap-up done and the caller is quiet: never leave dead air, ask the close question
         closeNudges++; lastAgentAt = now; api({ action: "health", provider: "bridge", kind: "silence_nudge", ok: false, detail: ("close " + closeNudges).slice(0, 120) }, 4000);
         sysNote(closeNudges === 1 ? "The booking is done and the caller is quiet. Ask warmly: \"Is there anything else I can help you with?\"" : "The caller is still quiet. Thank them by name, give the job reference, and say a warm goodbye.");
