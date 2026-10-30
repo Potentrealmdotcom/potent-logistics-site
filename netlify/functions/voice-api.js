@@ -149,7 +149,25 @@ exports.handler = async function (event) {
       const ses = await S.session(orgId, bk.session_id), cfg = await S.cfgOf(orgId); if (!ses) return B.J(404, { error: "Call record missing" });
       const live = Object.assign({}, ses, { state: "active" }); const r = await T.TOOLS.confirm_eligible_booking({ orgId: orgId, session: live, cfg: cfg }, { booking_id: b.id }); await V.audit(orgId, actor, "booking_confirm_attempt", String(b.id), null, { confirmed: !!r.confirmed, reason: r.reason || r.error }); return B.J(200, r);
     }
-    if (act === "booking_cancel") { const g = need(op); if (g) return g; if (!UUID.test(String(b.id))) return bad("Bad request"); const own = rows(await B.sb("voice_bookings?org_id=eq." + orgId + "&id=eq." + b.id + "&select=id&limit=1"))[0]; if (!own) return B.J(404, { error: "Not found" }); const r = await B.rpc("voice_release_booking", { p_booking: b.id, p_reason: clip(b.reason, 200) || "Cancelled by " + actor }); await V.audit(orgId, actor, "booking_cancelled", b.id, null, null); return B.J(200, { ok: !!(r.ok && r.data && r.data.ok) }); }
+    if (act === "booking_cancel") { const g = need(op); if (g) return g; if (!UUID.test(String(b.id))) return bad("Bad request"); const bk = rows(await B.sb("voice_bookings?org_id=eq." + orgId + "&id=eq." + b.id + "&select=id,status,job_id&limit=1"))[0]; if (!bk) return B.J(404, { error: "Not found" });
+      const reason = clip(b.reason, 200) || "Cancelled by " + actor;
+      if (bk.status !== "cancelled") {
+        // Fast path: the atomic database function, same as the call flow uses. If that function is
+        // missing or failing in this database, do the same three org-scoped writes directly and
+        // VERIFY the booking actually flipped before reporting success — the old handler returned
+        // ok:false invisibly, the UI discarded it, and the button looked dead while the booking
+        // stayed confirmed and kept blocking the truck.
+        const r = await B.rpc("voice_release_booking", { p_booking: b.id, p_reason: reason });
+        let done = !!(r && r.ok && r.data && r.data.ok);
+        if (!done) {
+          await B.sb("voice_capacity_holds?org_id=eq." + orgId + "&booking_id=eq." + b.id + "&status=eq.held", { method: "PATCH", prefer: "return=minimal", body: { status: "released" } });
+          const up = rows(await B.sb("voice_bookings?org_id=eq." + orgId + "&id=eq." + b.id, { method: "PATCH", prefer: "return=representation", body: { status: "cancelled", review_reason: reason } }))[0];
+          done = !!(up && up.status === "cancelled");
+          if (done && bk.job_id) await B.sb("jobs?org_id=eq." + orgId + "&id=eq." + encodeURIComponent(bk.job_id), { method: "PATCH", prefer: "return=minimal", body: { status: "Cancelled" } });
+        }
+        if (!done) return B.J(502, { error: "That booking could not be cancelled — it is still on the board. Try again, and if it keeps failing, tell the owner." });
+      }
+      await V.audit(orgId, actor, "booking_cancelled", b.id, null, null); return B.J(200, { ok: true }); }
     if (act === "suppress_add") { const g = need(op); if (g) return g; const p = I.phone(b.phone); if (!p) return bad("Enter a 10-digit US number"); await B.sb("voice_suppression_records", { method: "POST", prefer: "resolution=ignore-duplicates,return=minimal", body: { org_id: orgId, phone: p, reason: clip(b.reason, 200) || "opt-out", source: "staff:" + actor } }); await B.sb("voice_consent_records", { method: "POST", prefer: "return=minimal", body: { org_id: orgId, phone: p, kind: "call", granted: false, source: "suppression" } }); await B.sb("voice_campaign_contacts?org_id=eq." + orgId + "&phone=eq." + encodeURIComponent(p) + "&status=eq.queued", { method: "PATCH", prefer: "return=minimal", body: { status: "suppressed" } }); return B.J(200, { ok: true }); }
     if (act === "consent_add") { const g = need(op); if (g) return g; const p = I.phone(b.phone); if (!p || ["call", "recording", "sms", "email"].indexOf(b.kind) < 0 || typeof b.granted !== "boolean") return bad("Bad request"); if (b.granted && rows(await B.sb("voice_suppression_records?org_id=eq." + orgId + "&phone=eq." + encodeURIComponent(p) + "&select=id&limit=1")).length) return B.J(409, { error: "This number opted out. Remove it from the opt-out list first (owner)." }); await B.sb("voice_consent_records", { method: "POST", prefer: "return=minimal", body: { org_id: orgId, phone: p, kind: b.kind, granted: b.granted, source: clip(b.source, 120) || "staff:" + actor } }); return B.J(200, { ok: true }); }
 

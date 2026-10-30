@@ -41,3 +41,16 @@ voiceengine 63 · voice-owner-report 35. Run them before and after any change.
   cannot fix Google's ears; recording-based transcripts are the parked cure.
 - Response latency during back-to-back tool calls is the open investigation;
   the hold-on line covers the caller's experience meanwhile.
+
+## Canonical transcripts (built Oct 30, 2026 — pending push)
+- Tony's rule: the transcript must be word for word or the product is pointless. The
+  parked cure is built: `lib/voice/canonical.js` parks the owner report when a Twilio
+  recording exists (bounded by CANONICAL_WAIT_MIN, default 10 min, live transcript as
+  fallback); the bridge-host worker in `server-kit/voice-bridge/transcriber/`
+  (faster-whisper, per-channel on dual-channel recordings, role-anchored on mono) posts
+  the recording's lines back, they REPLACE the live rows in voice_transcripts (same
+  {role, text, seq} shape), and only then does the report go out.
+- Proof on Call 16 (Oct 30): canonical caller line reads "1200 Peachtree Street" (live
+  storage had the agent's "1,500" mishearing saved as the caller's words), the callback
+  number line is complete ("ending in 1-6-1-6"), and the "St" / "tarde" / "¿Aló?"
+  artifacts are gone. Suite: tests/voice-canonical.test.js (11 assertions).

@@ -102,7 +102,7 @@ async function callerConfirmed(ctx) {
   return t.some(function (x) { return String(x.created_at) >= String(q.created_at) && AFFIRM.test(x.text) && !NEG.test(x.text); });
 }
 async function suppressed(orgId, phone) { return rows(await B.sb("voice_suppression_records?org_id=eq." + orgId + "&phone=eq." + encodeURIComponent(phone || "x") + "&select=id&limit=1")).length > 0; }
-async function notifyOwner(orgId, subject, text) { try { const o = rows(await B.sb("organizations?id=eq." + orgId + "&select=owner_email&limit=1"))[0]; if (o && o.owner_email) await require("../mail").send(o.owner_email, subject, text, "/voice/"); } catch (e) { /* best effort */ } }
+async function notifyOwner(orgId, subject, text, html) { try { const o = rows(await B.sb("organizations?id=eq." + orgId + "&select=owner_email&limit=1"))[0]; if (o && o.owner_email) await require("../mail").send(o.owner_email, subject, text, "/voice/", undefined, html); } catch (e) { /* best effort */ } }
 
 // Email read-back gate: the first call with an address only stores it and tells the model to spell it back; sending needs a second call with email_confirmed:true for the SAME address, so an address the caller never confirmed can never be used.
 async function emailGate(ctx, a, email) {

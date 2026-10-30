@@ -7,6 +7,7 @@ const S = require("./lib/voice/store");
 const V = require("./lib/voice/billing");
 const T = require("./lib/voice/tools");
 const OR = require("./lib/voice/owner-report");
+const CN = require("./lib/voice/canonical");
 const P = require("./lib/voice/prompt");
 const PR = require("./lib/voice/pricing");
 const EP = require("./lib/elevate-phone");   // Əlevate phone calls: separate table, separate rules
@@ -73,14 +74,16 @@ async function unfinishedNet(ses, reason) {
   } catch (e) { console.error("unfinishedNet", e && e.message); return false; }
 }
 async function finish(ses, reason, seconds) {
-  if (["ended", "failed", "rejected"].indexOf(ses.state) >= 0 && ses.ended_at) { if (ses.seconds == null && seconds) await V.recordUsage(ses.org_id, ses.id, seconds, ses.direction === "outbound" ? "outbound" : "call", ses.started_at); await OR.reportCall(ses.org_id, ses.id); return { ok: true, already: true }; }
+  if (["ended", "failed", "rejected"].indexOf(ses.state) >= 0 && ses.ended_at) { if (ses.seconds == null && seconds) await V.recordUsage(ses.org_id, ses.id, seconds, ses.direction === "outbound" ? "outbound" : "call", ses.started_at); await CN.settleReport(ses.org_id, ses.id); return { ok: true, already: true }; }
   const secs = seconds != null ? Math.max(0, Math.floor(seconds)) : Math.max(0, Math.round((Date.now() - new Date(ses.answered_at || ses.started_at).getTime()) / 1000));
   await S.patchSession(ses.org_id, ses.id, { state: "ended", ended_at: new Date().toISOString(), seconds: secs, end_reason: String(reason || "hangup").slice(0, 60), summary: summarize(ses), outcome: ses.outcome || "info_only" });
   if (secs > 0) await V.recordUsage(ses.org_id, ses.id, secs, ses.direction === "outbound" ? "outbound" : "call", ses.started_at);
   const saved = ses.direction === "outbound" ? false : await unfinishedNet(ses, reason);
   // The owner's copy of the call (summary + full transcript email + push). Runs AFTER the safety net so
-  // the report sees the final outcome; reportCall is once-per-session, so the status callback can't re-send it.
-  await OR.reportCall(ses.org_id, ses.id);
+  // the report sees the final outcome. settleReport sends it now — or, when a Twilio recording exists,
+  // parks it until the canonical (recording-based, word-for-word) transcript lands, bounded by
+  // CANONICAL_WAIT_MIN, with the live transcript as the fallback. Once-per-session either way.
+  await CN.settleReport(ses.org_id, ses.id);
   return { ok: true, seconds: secs, auto_callback: saved || undefined };
 }
 exports.handler = async function (event) {
@@ -114,7 +117,10 @@ exports.handler = async function (event) {
       }
       return B.J(200, { resume: resume, session_id: ses.id, org_id: ses.org_id, call_sid: ses.provider_call_id, instructions: P.build(cfg, org, await knownCaller(ses)), greeting: P.greeting(cfg, org, ses.from_number), voice: cfg.voice || "marin", tools: allowed, max_seconds: cap, recording: rec });
     }
+    if (act === "canonical_jobs") return B.J(200, { jobs: await CN.jobs(20) });   // work list for the bridge-host transcriber (canonical transcripts)
     const ses = await sessionById(b.session_id); if (!ses) return B.J(404, { error: "No such call" });
+    if (act === "canonical_transcript") return B.J(200, await CN.store(ses.org_id, ses.id, b.lines, { engine: b.engine, source: b.source }));
+    if (act === "canonical_giveup") return B.J(200, await CN.giveUp(ses.org_id, ses.id, b.why));
     if (act === "tool") {
       const used = rows(await B.sb("voice_tool_executions?session_id=eq." + ses.id + "&select=id&limit=100")).length;
       if (used >= 80) return B.J(429, { ok: false, error: "too_many_tool_calls" });

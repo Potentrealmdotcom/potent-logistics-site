@@ -5,6 +5,7 @@ const TW = require("./lib/voice/adapters/twilio");
 const S = require("./lib/voice/store");
 const V = require("./lib/voice/billing");
 const OR = require("./lib/voice/owner-report");
+const CN = require("./lib/voice/canonical");
 const rows = S.rows;
 const xmlR = function (xml, s) { return { statusCode: s || 200, headers: { "Content-Type": "text/xml", "Cache-Control": "no-store" }, body: xml }; };
 const base = function () { return process.env.VOICE_WEBHOOK_URL || ((process.env.URL || B.SITE) + "/.netlify/functions/voice-webhook"); };
@@ -69,9 +70,10 @@ exports.handler = async function (event) {
       await S.patchSession(r.org_id, r.id, { state: wasLive ? (st === "completed" ? "ended" : "failed") : r.state, ended_at: r.ended_at || new Date().toISOString(), seconds: secs, end_reason: r.end_reason || st });
       if (secs > 0 && r.state !== "rejected") await V.recordUsage(r.org_id, r.id, secs, r.direction === "outbound" ? "outbound" : "call", r.started_at);
       // Backstop for the owner's per-call report: if the bridge's own end (voice-tools finish) never ran
-      // (bridge died, call dropped), this status callback is what finalizes the session. reportCall is
-      // once-per-session, so when finish() already reported, this is a no-op.
-      if (wasLive || r.ended_at) { try { await OR.reportCall(r.org_id, r.id); } catch (e) { /* best effort */ } }
+      // (bridge died, call dropped), this status callback is what finalizes the session. settleReport
+      // defers to the canonical transcript when a recording exists (bounded wait, live fallback) and
+      // is once-per-session, so when finish() already reported, this is a no-op.
+      if (wasLive || r.ended_at) { try { await CN.settleReport(r.org_id, r.id); } catch (e) { /* best effort */ } }
       return xmlR("<Response/>");
     }
     if (a === "xfer") { // TwiML that Twilio fetches after we asked it to move the call; the number comes from saved settings, never from the request

@@ -143,5 +143,31 @@ const hook = async (a, params) => { const url = "https://hooks.test/voice?a=" + 
   ok(res.statusCode === 200, "server-to-server callers can use the internal secret header");
   delete process.env.PUSH_INTERNAL_SECRET;
 
+  // ── 9. Callback call: the name lives on the callback record, not the session intake — the report
+  // must resolve it from there (it used to print "name not given"), and the email must be multipart:
+  // the plain-text part unchanged, plus the approved ƏLEVATE HTML design with hosted image URLs ──
+  const s9 = newSes({ outcome: "callback", intake: {}, seconds: 69, started_at: "2026-10-29T17:17:00.000Z", from_number: "+14704531616" });
+  T.voice_callbacks.push({ id: "cb9", org_id: OA, session_id: s9.id, name: "Anthony Mendes", phone: "+14704531616", reason: "Caller requested to speak to a real person.", status: "open" });
+  T.voice_handoffs.push({ id: "ho9", org_id: OA, session_id: s9.id, status: "callback", reason: "transfer not answered" });
+  say(s9, [["caller", "Can I talk to a person?"], ["agent", "I can definitely help with that. What were you hoping to discuss?"], ["caller", "Yes, it's Anthony Mendes."]]);
+  const rep9 = await OR.buildReport(OA, s9);
+  ok(rep9.subject === "Elevate call: Callback saved — Anthony Mendes", "callback report names the caller from the callback record, not 'name not given'");
+  ok(!/name not given/.test(rep9.text) && rep9.text.includes("Anthony Mendes"), "text part carries the resolved name too");
+  ok(rep9.html.includes("ƏLEVATE") && rep9.html.includes("She answers. She books. She follows up."), "html part carries the Elevate header with the upside-down e");
+  ok(rep9.html.includes("https://potentoperations.netlify.app/voice/img/elevate-mail/coin-banner.png"), "html hero is the hosted coin-editions banner URL");
+  ok(rep9.html.includes("https://potentoperations.netlify.app/voice/img/elevate-mail/mouth.png") && rep9.html.includes("Here&rsquo;s what she said"), "html transcript section carries the hosted pink-diamond mouth");
+  ok(rep9.html.includes("https://potentoperations.netlify.app/voice/img/elevate-mail/globe.png") && rep9.html.includes("no marketing, just the call"), "html footer carries the hosted gold globe and the no-marketing line");
+  ok(rep9.html.includes("Callback saved") && rep9.html.includes("(470) 453-1616") && rep9.html.includes("1 min 9 sec"), "summary card: outcome badge, formatted number, length");
+  ok(rep9.html.includes("Thu, Oct 29, 2026") && rep9.html.includes("1:17 PM"), "summary card: the call's date and time");
+  ok(rep9.html.includes("Callback saved — someone will call back on the number they confirmed."), "summary card: next step derived from the saved callback");
+  ok(rep9.html.includes("Can I talk to a person?") && rep9.html.includes("VIEW IN YOUR ELEVATE DASHBOARD") && rep9.html.includes('href="https://potentoperations.netlify.app/voice/"'), "html carries the transcript lines and the dashboard button");
+  ok(rep9.html.includes("Session " + s9.id.slice(0, 8)) && rep9.html.includes("POTENT Logistics"), "footer session line uses the real session id and the org's own name");
+  const s10 = newSes({ outcome: "callback", intake: {} });
+  T.voice_callbacks.push({ id: "cb10", org_id: OA, session_id: s10.id, name: "Anthony Mendes", phone: "+14704531616", reason: "Asked for a person.", status: "open" });
+  say(s10, [["caller", "I want to talk to a real person."]]);
+  const rr10 = await OR.reportCall(OA, s10.id);
+  const mail10 = reports()[reports().length - 1];
+  ok(rr10.ok && rr10.emailed && mail10 && mail10.text.includes("FULL TRANSCRIPT") && typeof mail10.html === "string" && mail10.html.includes("coin-banner.png"), "sent report email is multipart: text part intact, html part is the approved design");
+
   console.log("voice owner report: " + n + " assertions PASS");
 })().catch(e => { console.error("FAIL", e); process.exit(1); });

@@ -13,7 +13,7 @@ module.exports = function make(seed) {
     voice_handoffs: () => ({ status: "requested", requested_at: new Date().toISOString() }), voice_knowledge_documents: () => ({ version: 1, status: "draft" }), voice_campaigns: () => ({ status: "draft", max_attempts: 2, call_window: { start: "09:00", end: "17:00", tz: "America/New_York" } }),
     voice_campaign_contacts: () => ({ status: "queued", attempts: 0 }), voice_usage_records: () => ({ started_at: new Date().toISOString(), kind: "call" }), voice_capacity_holds: () => ({ status: "held" }), voice_vehicle_profiles: () => ({ active: true, authorized: false, version: 1, kind: "company", updated_at: new Date().toISOString() }),
     voice_provider_health: () => ({}), voice_consent_records: () => ({}), voice_agent_config: () => ({ version: 1, settings: {}, ai_enabled: true, emergency_stop: false }), voice_subscriptions: () => ({ status: "none" }) };
-  const EXT = { calls: [], census: null, osrm: null, twilio: [], mail: [], twilioFail: false, mailFail: false, censusDown: false, osrmDown: false, failJob: false };
+  const EXT = { calls: [], census: null, osrm: null, twilio: [], mail: [], twilioFail: false, mailFail: false, censusDown: false, osrmDown: false, failJob: false, failRelease: false };
   const num = v => v !== "" && v != null && isFinite(Number(v)) && !/[-:T]/.test(String(v));
   const cmp = (a, b) => (num(a) && num(b) ? Number(a) - Number(b) : String(a) < String(b) ? -1 : String(a) > String(b) ? 1 : 0);
   function leaf(r, k, v) {
@@ -47,7 +47,7 @@ module.exports = function make(seed) {
       T.jobs.push(Object.assign({ id: a.p_job_id, org_id: b.org_id, status: "Confirmed", date: a.p_job.date }, a.p_job, { status: "Confirmed", scheduled_time: b.window_start }));
       b.status = "confirmed"; b.job_id = a.p_job_id; b.confirmed_at = new Date().toISOString(); b.review_reason = null; return { ok: true, job_id: a.p_job_id };
     }
-    if (fn === "voice_release_booking") { const b = T.voice_bookings.find(x => x.id === a.p_booking); if (!b) return { ok: false, error: "not_found" }; T.voice_capacity_holds.filter(h => h.booking_id === b.id).forEach(h => { h.status = "released"; }); b.status = "cancelled"; b.review_reason = a.p_reason; if (b.job_id) { const j = T.jobs.find(x => x.id === b.job_id); if (j) j.status = "Cancelled"; } return { ok: true }; }
+    if (fn === "voice_release_booking") { if (EXT.failRelease) return null; const b = T.voice_bookings.find(x => x.id === a.p_booking); if (!b) return { ok: false, error: "not_found" }; T.voice_capacity_holds.filter(h => h.booking_id === b.id).forEach(h => { h.status = "released"; }); b.status = "cancelled"; b.review_reason = a.p_reason; if (b.job_id) { const j = T.jobs.find(x => x.id === b.job_id); if (j) j.status = "Cancelled"; } return { ok: true }; }
     return null;
   }
   const H = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
