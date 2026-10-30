@@ -1,5 +1,6 @@
-// POTENT OS Service Worker — v8 cache bust (push tap now navigates to the notification's page) — real push notifications added
-var CACHE = "potent-os-v8";
+// POTENT OS Service Worker — v9: never cache the Voice Control Center or function responses
+// (a stale cached /voice/ shell once masked a shipped fix); push tap navigates to the page.
+var CACHE = "potent-os-v9";
 var ASSETS = ["/", "/index.html", "/app.js", "/manifest.json"];
 
 self.addEventListener("install", function(e){
@@ -22,6 +23,8 @@ keys.filter(function(k){ return k !== CACHE; })
 
 self.addEventListener("fetch", function(e){
 if(e.request.method !== "GET") return;
+var p = new URL(e.request.url).pathname;
+if(p.indexOf("/voice/") === 0 || p.indexOf("/.netlify/functions/") === 0) return;
 e.respondWith(
 fetch(e.request).then(function(res){
 var clone = res.clone();
