@@ -25,9 +25,42 @@ async function api(path, form) {
   } catch (e) { return { ok: false, reason: "twilio_unreachable" }; }
 }
 // Move a live call to the human line. The TwiML is fetched from our own signed URL, never supplied by the model.
+async function apiGet(path) {
+  const sid = process.env.TWILIO_ACCOUNT_SID, tok = process.env.TWILIO_AUTH_TOKEN; if (!sid || !tok) return { ok: false, reason: "twilio_not_configured" };
+  try {
+    const r = await fetch("https://api.twilio.com/2010-04-01/Accounts/" + sid + path, { headers: { Authorization: "Basic " + Buffer.from(sid + ":" + tok).toString("base64") }, signal: AbortSignal.timeout(15000) });
+    const d = await r.json().catch(function () { return {}; }); return r.ok ? { ok: true, data: d } : { ok: false, reason: "twilio_" + r.status, detail: d.message };
+  } catch (e) { return { ok: false, reason: "twilio_unreachable" }; }
+}
+// The recording the canonical transcriber should use for a call: a completed one, dual-channel
+// preferred (caller/agent on separate channels, so the words land on the right person), then newest.
+async function callRecording(callSid) {
+  const r = await apiGet("/Calls/" + encodeURIComponent(callSid) + "/Recordings.json");
+  if (!r.ok) return r;
+  const recs = (r.data.recordings || []).filter(function (x) { return x.status === "completed"; });
+  if (!recs.length) return { ok: false, reason: "recording_not_ready" };
+  recs.sort(function (a, b) { return (Number(b.channels || 1) - Number(a.channels || 1)) || String(b.date_created || "").localeCompare(String(a.date_created || "")); });
+  return { ok: true, recording: recs[0] };
+}
+// One byte range of a recording's WAV, bytes exactly as Twilio stored them (dual-channel as-is).
+// partial=true when Twilio honoured the Range (status 206); on a plain 200 the whole file came
+// back and the caller slices it. total is the full media size when Twilio reports it.
+async function recordingRange(recordingSid, start, end) {
+  const sid = process.env.TWILIO_ACCOUNT_SID, tok = process.env.TWILIO_AUTH_TOKEN; if (!sid || !tok) return { ok: false, reason: "twilio_not_configured" };
+  try {
+    const r = await fetch("https://api.twilio.com/2010-04-01/Accounts/" + sid + "/Recordings/" + encodeURIComponent(recordingSid) + ".wav", { headers: { Authorization: "Basic " + Buffer.from(sid + ":" + tok).toString("base64"), Range: "bytes=" + start + "-" + end }, signal: AbortSignal.timeout(60000) });
+    if (!r.ok) return { ok: false, reason: "twilio_" + r.status };
+    const buf = Buffer.from(await r.arrayBuffer());
+    let total = null;
+    const cr = r.headers && r.headers.get ? r.headers.get("content-range") : null, mm = cr && /\/(\d+)\s*$/.exec(cr);
+    if (mm) total = Number(mm[1]);
+    if (total == null && r.status === 200) { const cl = r.headers && r.headers.get ? r.headers.get("content-length") : null; total = cl ? Number(cl) : buf.length; }
+    return { ok: true, partial: r.status === 206, buf: buf, total: total };
+  } catch (e) { return { ok: false, reason: "twilio_unreachable" }; }
+}
 const transfer = function (callSid, twimlUrl) { return api("/Calls/" + encodeURIComponent(callSid) + ".json", { Url: twimlUrl, Method: "POST" }); };
 const hangup = function (callSid) { return api("/Calls/" + encodeURIComponent(callSid) + ".json", { Status: "completed" }); };
 const startRecording = function (callSid, cb) { return api("/Calls/" + encodeURIComponent(callSid) + "/Recordings.json", cb ? { RecordingStatusCallback: cb } : {}); };
 const sms = function (to, body) { if (!process.env.TWILIO_SMS_FROM) return Promise.resolve({ ok: false, reason: "sms_not_configured" }); return api("/Messages.json", { To: to, From: process.env.TWILIO_SMS_FROM, Body: String(body).slice(0, 600) }); };
 const configured = function () { return !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN); };
-module.exports = { name: "twilio", signature, validate, parseForm, twimlStream, twimlSay, twimlPay, twimlDial, streamToken, readStreamToken, transfer, hangup, startRecording, sms, configured, esc };
+module.exports = { name: "twilio", signature, validate, parseForm, twimlStream, twimlSay, twimlPay, twimlDial, streamToken, readStreamToken, transfer, hangup, startRecording, sms, configured, esc, callRecording, recordingRange };

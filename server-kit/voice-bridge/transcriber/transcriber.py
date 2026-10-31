@@ -7,14 +7,17 @@ must be word for word or the product is pointless. Calls are recorded on Twilio 
 recording is on; this worker turns that recording into the session's canonical transcript.
 
 Loop: poll the site (voice-tools, bridge secret) for canonical_jobs -> for each job, fetch the
-call's Twilio recording -> transcribe with faster-whisper -> POST canonical_transcript, which
-replaces the live rows and releases the owner report. Dual-channel recordings are transcribed
-per channel, so caller/agent separation is exact. A mono recording is role-anchored against
-the live transcript's turn order (text from the recording, roles from the live skeleton).
-If the recording never completes or transcription fails, POST canonical_giveup before the
-job's deadline so the owner report still goes out with the live transcript.
+call's recording THROUGH THE SITE (the canonical_recording action: the site holds the Twilio
+credentials and proxies the media to this bridge-secret caller in chunks — this host never
+talks to Twilio and carries no Twilio credentials) -> transcribe with faster-whisper -> POST
+canonical_transcript, which replaces the live rows and releases the owner report.
+Dual-channel recordings are transcribed per channel, so caller/agent separation is exact.
+A mono recording is role-anchored against the live transcript's turn order (text from the
+recording, roles from the live skeleton). If the recording never completes or transcription
+fails, POST canonical_giveup before the job's deadline so the owner report still goes out
+with the live transcript.
 
-Env: SITE_URL, VOICE_BRIDGE_SECRET, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,
+Env: SITE_URL, VOICE_BRIDGE_SECRET,
      WHISPER_MODEL (default "small"), CANONICAL_POLL_SEC (default 15),
      TWILIO_CALLER_CHANNEL (0 or 1; default: auto — the agent greets first, so the channel
      whose speech starts first is the agent's).
@@ -61,19 +64,9 @@ def http_json(url, data=None, headers=None, timeout=30):
         return json.loads(r.read().decode("utf-8") or "{}")
 
 
-def http_bytes(url, headers=None, timeout=120):
-    req = urllib.request.Request(url, headers=headers or {})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return r.read()
-
-
 def site(body):
     return http_json(os.environ["SITE_URL"].rstrip("/") + "/.netlify/functions/voice-tools",
                      data=body, headers={"Authorization": "Bearer " + os.environ["VOICE_BRIDGE_SECRET"]}, timeout=30)
-
-
-def twilio_auth():
-    return {"Authorization": "Basic " + base64.b64encode((os.environ["TWILIO_ACCOUNT_SID"] + ":" + os.environ["TWILIO_AUTH_TOKEN"]).encode()).decode()}
 
 
 # ---------- transcription ----------
@@ -186,17 +179,24 @@ def lines_from_file(path, live_lines):
 
 # ---------- job processing ----------
 
-def fetch_recording(call_sid):
-    sid = os.environ["TWILIO_ACCOUNT_SID"]
-    url = "https://api.twilio.com/2010-04-01/Accounts/%s/Calls/%s/Recordings.json" % (sid, call_sid)
-    d = http_json(url, headers=twilio_auth())
-    recs = [r for r in d.get("recordings", []) if r.get("status") == "completed"]
-    if not recs:
-        return None, False
-    recs.sort(key=lambda r: (int(r.get("channels") or 1), r.get("date_created") or ""), reverse=True)
-    rec = recs[0]
-    media = "https://api.twilio.com/2010-04-01/Accounts/%s/Recordings/%s.wav" % (sid, rec["sid"])
-    return (rec, http_bytes(media, headers=twilio_auth())), True
+def fetch_recording(job):
+    """The session's recording, fetched through the site in chunks (the site picks the best
+    completed recording and proxies the media; dual-channel bytes arrive untouched).
+    Returns (wav_bytes, True), or (None, False) while Twilio has no completed recording
+    yet — the caller retries on the next poll until the deadline giveup."""
+    chunks, offset = [], 0
+    while True:
+        r = site({"action": "canonical_recording", "session_id": job["session_id"], "offset": offset})
+        if not r.get("ok"):
+            if r.get("retry"):
+                return None, False
+            raise RuntimeError("canonical_recording refused: " + str(r.get("error") or r))
+        data = base64.b64decode(r.get("data_b64") or "")
+        chunks.append(data)
+        offset += len(data)
+        if not data or r.get("next_offset") is None or offset >= int(r.get("total") or 0):
+            break
+    return b"".join(chunks), True
 
 
 def process(job):
@@ -212,18 +212,17 @@ def process(job):
                 return
         except Exception:
             pass
-    payload, ready = fetch_recording(job["call_sid"])
+    wav_bytes, ready = fetch_recording(job)
     if not ready:
         log("recording not ready", sid)   # retried on the next poll until the deadline giveup above
         return
-    rec, wav_bytes = payload
-    with open("/tmp/rec-%s.wav" % rec["sid"], "wb") as f:
+    with open("/tmp/rec-%s.wav" % sid, "wb") as f:
         f.write(wav_bytes)
     chans = split_wav_channels(wav_bytes)
     if chans and len(chans) >= 2:
         lines, source = lines_from_dual(chans)
     else:
-        lines, source = lines_from_file("/tmp/rec-%s.wav" % rec["sid"], job.get("live_lines") or [])
+        lines, source = lines_from_file("/tmp/rec-%s.wav" % sid, job.get("live_lines") or [])
     if not lines:
         site({"action": "canonical_giveup", "session_id": sid, "why": "empty_transcription"})
         log("giveup (empty)", sid)

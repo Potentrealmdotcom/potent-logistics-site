@@ -13,7 +13,7 @@ module.exports = function make(seed) {
     voice_handoffs: () => ({ status: "requested", requested_at: new Date().toISOString() }), voice_knowledge_documents: () => ({ version: 1, status: "draft" }), voice_campaigns: () => ({ status: "draft", max_attempts: 2, call_window: { start: "09:00", end: "17:00", tz: "America/New_York" } }),
     voice_campaign_contacts: () => ({ status: "queued", attempts: 0 }), voice_usage_records: () => ({ started_at: new Date().toISOString(), kind: "call" }), voice_capacity_holds: () => ({ status: "held" }), voice_vehicle_profiles: () => ({ active: true, authorized: false, version: 1, kind: "company", updated_at: new Date().toISOString() }),
     voice_provider_health: () => ({}), voice_consent_records: () => ({}), voice_agent_config: () => ({ version: 1, settings: {}, ai_enabled: true, emergency_stop: false }), voice_subscriptions: () => ({ status: "none" }) };
-  const EXT = { calls: [], census: null, osrm: null, twilio: [], mail: [], twilioFail: false, mailFail: false, censusDown: false, osrmDown: false, failJob: false, failRelease: false };
+  const EXT = { calls: [], census: null, osrm: null, twilio: [], mail: [], twilioFail: false, mailFail: false, censusDown: false, osrmDown: false, failJob: false, failRelease: false, twilioRecordings: null, twilioMedia: null };
   const num = v => v !== "" && v != null && isFinite(Number(v)) && !/[-:T]/.test(String(v));
   const cmp = (a, b) => (num(a) && num(b) ? Number(a) - Number(b) : String(a) < String(b) ? -1 : String(a) > String(b) ? 1 : 0);
   function leaf(r, k, v) {
@@ -57,7 +57,12 @@ module.exports = function make(seed) {
     if (u.startsWith("https://geocoding.geo.census.gov")) { EXT.calls.push("census"); if (EXT.censusDown) throw new Error("down"); const addr = decodeURIComponent(u.match(/address=([^&]*)/)[1]); if (/NOWHERE|BADSTREET/i.test(addr)) return R({ result: { addressMatches: [] } });
       const st = (addr.match(/,\s*([A-Z]{2})\b/) || [])[1] || "GA", city = (addr.split(",")[1] || "").trim(), c = CITY[city.toLowerCase()] || CITY.atlanta; return R({ result: { addressMatches: [{ matchedAddress: addr.toUpperCase(), coordinates: { x: c[1], y: c[0] }, addressComponents: { state: st, city: city.toUpperCase(), zip: "30303" } }] } }); }
     if (u.startsWith("https://osrm.test")) { EXT.calls.push("osrm"); if (EXT.osrmDown) throw new Error("down"); const mm = u.match(/driving\/([-\d.]+),([-\d.]+);([-\d.]+),([-\d.]+)/); const d = H([+mm[2], +mm[1]], [+mm[4], +mm[3]]) * 69 * 1.3 * 1609.344; return R({ routes: [{ distance: d, duration: d / 1609.344 * 90 }] }); }
-    if (u.startsWith("https://api.twilio.com")) { EXT.twilio.push({ url: u, body: o.body }); return EXT.twilioFail ? R({ message: "nope" }, 500) : R({ sid: "SM1" }, 201); }
+    if (u.startsWith("https://api.twilio.com")) { EXT.twilio.push({ url: u, body: o.body }); if (EXT.twilioFail) return R({ message: "nope" }, 500);
+      if (m === "GET" && /\/Recordings\.json/.test(u)) return R({ recordings: EXT.twilioRecordings || [] });
+      if (m === "GET" && /\/Recordings\/[A-Za-z0-9]+\.wav/.test(u)) { const buf = EXT.twilioMedia || Buffer.alloc(0), hd = o.headers || {}, rg = hd.Range || hd.range, mm = rg && /^bytes=(\d+)-(\d+)$/.exec(rg);
+        if (mm) { const a = +mm[1], b = Math.min(+mm[2], buf.length - 1), part = buf.slice(a, b + 1); return { ok: true, status: 206, headers: { get: (h) => String(h).toLowerCase() === "content-range" ? "bytes " + a + "-" + b + "/" + buf.length : null }, arrayBuffer: async () => part.buffer.slice(part.byteOffset, part.byteOffset + part.byteLength), json: async () => ({}), text: async () => "" }; }
+        return { ok: true, status: 200, headers: { get: (h) => String(h).toLowerCase() === "content-length" ? String(buf.length) : null }, arrayBuffer: async () => buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength), json: async () => ({}), text: async () => "" }; }
+      return R({ sid: "SM1" }, 201); }
     if (u.startsWith("https://api.resend.com")) { EXT.mail.push(JSON.parse(o.body)); return EXT.mailFail ? R({}, 500) : R({ id: "re_1" }); }
     if (u.includes("/rest/v1/rpc/")) { const fn = u.split("/rpc/")[1]; const out = rpc(fn, JSON.parse(o.body)); return out === null ? R({ message: "db error" }, 500) : R(out); }
     const t = (u.match(/rest\/v1\/([a-z_0-9]+)/) || [])[1], q = u.split("?")[1] || "", pref = (o.headers && o.headers.Prefer) || ""; if (!t || !T[t]) return R([]);

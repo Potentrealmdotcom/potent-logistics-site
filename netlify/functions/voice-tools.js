@@ -121,6 +121,7 @@ exports.handler = async function (event) {
     const ses = await sessionById(b.session_id); if (!ses) return B.J(404, { error: "No such call" });
     if (act === "canonical_transcript") return B.J(200, await CN.store(ses.org_id, ses.id, b.lines, { engine: b.engine, source: b.source }));
     if (act === "canonical_giveup") return B.J(200, await CN.giveUp(ses.org_id, ses.id, b.why));
+    if (act === "canonical_recording") { const r = await CN.recording(ses.org_id, ses.id, b.offset); return B.J(r.ok || r.retry ? 200 : 403, r); }   // the site proxies the Twilio recording to the transcriber in chunks, so the bridge host needs no Twilio credentials; queue-gated inside CN.recording
     if (act === "tool") {
       const used = rows(await B.sb("voice_tool_executions?session_id=eq." + ses.id + "&select=id&limit=100")).length;
       if (used >= 80) return B.J(429, { ok: false, error: "too_many_tool_calls" });

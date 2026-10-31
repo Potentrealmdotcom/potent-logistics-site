@@ -69,5 +69,32 @@ const ownerMail = () => EXT.mail.filter(m => /owner@potent.test/.test(JSON.strin
   const d5 = await CN.settleReport(OA, s5.id);
   ok(!d5.deferred, "a call that never reached the bridge is never parked on transcription");
 
+  // ── 7. the recording is proxied THROUGH THE SITE: the bridge host needs no Twilio credentials ──
+  // The site serves the queued session's recording in chunks; the bytes are Twilio's untouched.
+  const CHUNK = 3 * 1024 * 1024, wav = Buffer.alloc(CHUNK + 9999); for (let i = 0; i < wav.length; i++) wav[i] = i % 251;
+  EXT.twilioRecordings = [{ sid: "RE0001", status: "completed", channels: 2, date_created: "2026-10-30T15:02:00Z" }];
+  EXT.twilioMedia = wav;
+  const s6 = endedSes(); liveLine(s6, "caller", "a recorded call");
+  ok((await CN.settleReport(OA, s6.id)).deferred === true, "recording-fetch session is parked in the canonical queue");
+  const bad = await VT.handler({ httpMethod: "POST", headers: { authorization: "Bearer wrongsecret" }, body: JSON.stringify({ action: "canonical_recording", session_id: s6.id, offset: 0 }) });
+  ok(bad.statusCode === 401, "recording fetch refuses a wrong bridge secret");
+  const s6x = endedSes();   // exists, but was never parked: not in the queue
+  const nq = await vt({ action: "canonical_recording", session_id: s6x.id, offset: 0 });
+  ok(nq.s === 403 && nq.j.ok === false && nq.j.error === "not_queued" && !nq.j.data_b64, "a session outside the canonical queue gets no recording");
+  const c1 = await vt({ action: "canonical_recording", session_id: s6.id, offset: 0 });
+  ok(c1.j.ok && c1.j.total === wav.length && c1.j.bytes === CHUNK && c1.j.next_offset === CHUNK && c1.j.recording_sid === "RE0001", "first chunk: full size reported, one bounded chunk served");
+  const c2 = await vt({ action: "canonical_recording", session_id: s6.id, offset: c1.j.next_offset });
+  ok(c2.j.ok && c2.j.bytes === 9999 && c2.j.next_offset === null, "final chunk: the remainder, no next offset");
+  ok(Buffer.concat([Buffer.from(c1.j.data_b64, "base64"), Buffer.from(c2.j.data_b64, "base64")]).equals(wav), "reassembled chunks ARE the recording, byte for byte (dual-channel WAV untouched)");
+  EXT.twilioRecordings = [];
+  const s7 = endedSes(); liveLine(s7, "caller", "still processing");
+  await CN.settleReport(OA, s7.id);
+  const nr = await vt({ action: "canonical_recording", session_id: s7.id, offset: 0 });
+  ok(nr.s === 200 && nr.j.ok === false && nr.j.error === "recording_not_ready" && nr.j.retry === true, "no completed recording yet: a retry signal, not a refusal and not audio");
+  EXT.twilioRecordings = [{ sid: "RE0001", status: "completed", channels: 2, date_created: "2026-10-30T15:02:00Z" }];
+  await vt({ action: "canonical_transcript", session_id: s6.id, lines: [{ role: "caller", text: "a recorded call" }], engine: "faster-whisper-small", source: "twilio-dual:caller_ch0" });
+  const after = await vt({ action: "canonical_recording", session_id: s6.id, offset: 0 });
+  ok(after.s === 403 && after.j.error === "not_queued", "once the canonical transcript is stored, the recording is no longer fetchable");
+
   console.log("voice-canonical: " + n + " assertions PASS");
 })().catch(e => { console.error("FAIL", e); process.exit(1); });

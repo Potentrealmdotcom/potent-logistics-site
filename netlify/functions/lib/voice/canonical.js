@@ -3,8 +3,10 @@
 // the CALLER as saying "1,500 Peachtree Street" when he said 1200 (the agent's mishearing saved
 // as his words), dropped digits mid-line, and kept stray fragments. Calls are recorded on Twilio
 // whenever recording is on (setting + consent + plan entitlement, the same gate that starts the
-// recording in voice-tools "context"). After the call, the bridge-host transcriber downloads the
-// recording, transcribes it with faster-whisper per channel (caller vs agent), and posts the lines
+// recording in voice-tools "context"). After the call, the bridge-host transcriber fetches the
+// recording THROUGH THIS MODULE (the canonical_recording action below: the site holds the Twilio
+// credentials and proxies the media, so the bridge host never carries the account-wide Twilio
+// token), transcribes it with faster-whisper per channel (caller vs agent), and posts the lines
 // here; they REPLACE the live rows in voice_transcripts, in the same {role, text, seq} shape every
 // reader (dashboard, owner email) already uses, so nobody downstream changes.
 //
@@ -17,6 +19,7 @@ const B = require("../beats");
 const S = require("./store");
 const V = require("./billing");
 const OR = require("./owner-report");
+const TW = require("./adapters/twilio");
 const rows = S.rows;
 
 const waitMs = function () { const m = Number(process.env.CANONICAL_WAIT_MIN); return (isFinite(m) && m > 0 ? m : 10) * 60000; };
@@ -74,6 +77,33 @@ async function jobs(limit) {
   return out;
 }
 
+// The recording itself, proxied to the bridge-secret caller. The gate is queue membership —
+// the exact set jobs() hands out: the session's report is parked (canonical_pending claimed)
+// and no canonical transcript is stored yet. Anyone else, and any other session, is refused:
+// there is no public or guessable URL for a recording, ever. The media is served in bounded
+// chunks (base64 JSON), because a whole dual-channel WAV for a long call exceeds what one
+// function response may carry; the caller reassembles it byte for byte, channels untouched.
+const CHUNK = 3 * 1024 * 1024;
+let mediaCache = { key: "", buf: null, at: 0 };   // warm-function best-effort: only used when Twilio ignores the Range and sends the whole file
+async function mediaSlice(recSid, off) {
+  if (mediaCache.buf && mediaCache.key === recSid && Date.now() - mediaCache.at < 600000) return { ok: true, buf: mediaCache.buf.slice(off, off + CHUNK), total: mediaCache.buf.length };
+  const r = await TW.recordingRange(recSid, off, off + CHUNK - 1);
+  if (!r.ok) return r;
+  if (r.partial) return { ok: true, buf: r.buf, total: r.total != null ? r.total : off + r.buf.length };
+  if (r.buf.length <= 96 * 1024 * 1024) mediaCache = { key: recSid, buf: r.buf, at: Date.now() };
+  return { ok: true, buf: r.buf.slice(off, off + CHUNK), total: r.total != null ? r.total : r.buf.length };
+}
+async function recording(orgId, sessionId, offset) {
+  const ses = await S.session(orgId, sessionId);
+  if (!ses) return { ok: false, error: "no_session" };
+  if (ses.provider !== "twilio" || !ses.provider_call_id || !(await hasEvent(orgId, sessionId, "canonical_pending")) || (await hasEvent(orgId, sessionId, "canonical"))) return { ok: false, error: "not_queued" };
+  const best = await TW.callRecording(ses.provider_call_id);
+  if (!best.ok) { await health(orgId, "canonical_recording", false, sessionId + " " + best.reason); return { ok: false, error: best.reason === "recording_not_ready" ? "recording_not_ready" : "twilio_error", retry: true, detail: best.detail || best.reason }; }
+  const off = Math.max(0, Math.floor(Number(offset) || 0)), sl = await mediaSlice(best.recording.sid, off);
+  if (!sl.ok) { await health(orgId, "canonical_recording", false, sessionId + " " + sl.reason); return { ok: false, error: "twilio_error", retry: true, detail: sl.reason }; }
+  return { ok: true, session_id: sessionId, recording_sid: best.recording.sid, offset: off, total: sl.total, bytes: sl.buf.length, data_b64: sl.buf.toString("base64"), next_offset: off + sl.buf.length < sl.total ? off + sl.buf.length : null };
+}
+
 // Replace the session's live transcript rows with the canonical lines, then send the owner report.
 // Idempotent: the first delivery claims the session; later ones are duplicates and change nothing.
 async function store(orgId, sessionId, lines, meta) {
@@ -99,4 +129,4 @@ async function giveUp(orgId, sessionId, why) {
   return { ok: true, report: rep };
 }
 
-module.exports = { settleReport, jobs, store, giveUp, recordingExpected, waitMs };
+module.exports = { settleReport, jobs, store, giveUp, recordingExpected, waitMs, recording };
