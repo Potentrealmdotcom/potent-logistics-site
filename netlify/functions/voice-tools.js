@@ -115,7 +115,8 @@ exports.handler = async function (event) {
         const tr = rows(await B.sb("voice_transcripts?session_id=eq." + ses.id + "&role=in.(caller,agent)&select=role,text,seq&order=seq.desc&limit=24")).reverse();
         resume = { code: String(tok.r).slice(0, 80), recap: tr.map(function (t) { return (t.role === "caller" ? "Caller: " : "You: ") + t.text; }).join("\n").slice(0, 3000) };
       }
-      return B.J(200, { resume: resume, session_id: ses.id, org_id: ses.org_id, call_sid: ses.provider_call_id, instructions: P.build(cfg, org, await knownCaller(ses)), greeting: P.greeting(cfg, org, ses.from_number), voice: cfg.voice || "marin", tools: allowed, max_seconds: cap, recording: rec });
+      const known = await knownCaller(ses);
+      return B.J(200, { resume: resume, session_id: ses.id, org_id: ses.org_id, call_sid: ses.provider_call_id, instructions: P.build(cfg, org, known), greeting: P.greeting(cfg, org, ses.from_number, known), voice: cfg.voice || "marin", tools: allowed, max_seconds: cap, recording: rec });
     }
     if (act === "canonical_jobs") return B.J(200, { jobs: await CN.jobs(20) });   // work list for the bridge-host transcriber (canonical transcripts)
     const ses = await sessionById(b.session_id); if (!ses) return B.J(404, { error: "No such call" });

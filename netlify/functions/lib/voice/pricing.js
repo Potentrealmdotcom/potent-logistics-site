@@ -31,7 +31,7 @@ function quote(d, miles, S, cfg, o) {
   if (d.holding_nights) L("holding", d.holding_nights + " night(s) holding", Math.round(d.holding_nights) * cents(S.overnight_hold_nightly));
   const incl = (Number(S.included_pickup_minutes) || 0) + (Number(S.included_delivery_minutes) || 0);
   if (d.expected_wait_minutes > incl) L("waiting", "Expected waiting beyond " + incl + " min included", Math.round(Math.ceil((d.expected_wait_minutes - incl) / 15) * cents(S.wait_detention_hourly) / 4));
-  excl.push("Waiting beyond the included time is billed at $" + Number(S.wait_detention_hourly).toFixed(2) + "/hour.", "Extra labor is $" + Number(S.additional_labor_hourly).toFixed(2) + "/hour per person; breakdown service is $" + Number(S.breakdown_hourly).toFixed(2) + "/hour.", "Changes to the pickup, delivery, freight or access may change the price.");
+  excl.push("Extra labor is $" + Number(S.additional_labor_hourly).toFixed(2) + "/hour per person; breakdown service is $" + Number(S.breakdown_hourly).toFixed(2) + "/hour.", "Changes to the pickup, delivery, freight or access may change the price.");
   let sub = lines.reduce(function (a, l) { return a + l.cents; }, 0);
   // Discounts and overrides only with a named authorizer; the model cannot supply either.
   if (o.discount_cents) { if (!o.authorized_by) return { ok: false, needs_review: true, reason: "A discount needs an authorized person." }; lines.push({ code: "discount", label: "Approved discount (" + o.authorized_by + ")", cents: -Math.min(Math.round(o.discount_cents), sub) }); sub = lines.reduce(function (a, l) { return a + l.cents; }, 0); }
