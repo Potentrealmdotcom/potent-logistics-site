@@ -61,6 +61,7 @@ const hook = async (a, params) => { const url = "https://hooks.test/voice?a=" + 
   const rep1 = reports()[0];
   ok(rep1.subject === "Elevate call: Booked — Pat Lee", "report subject: outcome + caller, distinct from outcome notices");
   ok(rep1.text.includes("FULL TRANSCRIPT") && rep1.text.includes("PV-TEST1") && rep1.text.includes("$400.00"), "report carries the booking reference and the quote");
+  ok(rep1.html.includes("PV-TEST1") && rep1.html.includes("PL-1"), "summary card carries the booking reference AND the job reference");
   ok(rep1.text.indexOf("I need tile moved") < rep1.text.indexOf("Thanks for calling") && rep1.text.indexOf("Thanks for calling") < rep1.text.indexOf("Yes, book it."), "transcript lines are in seq order, not insertion order");
   const hit1 = caps.slice(c0);
   ok(hit1.length === 2 && hit1.every(h => h.payload.title === "Elevate just took a call" && h.payload.url === "/voice/"), "push went to exactly the owner's two devices");
@@ -168,6 +169,29 @@ const hook = async (a, params) => { const url = "https://hooks.test/voice?a=" + 
   const rr10 = await OR.reportCall(OA, s10.id);
   const mail10 = reports()[reports().length - 1];
   ok(rr10.ok && rr10.emailed && mail10 && mail10.text.includes("FULL TRANSCRIPT") && typeof mail10.html === "string" && mail10.html.includes("coin-banner.png"), "sent report email is multipart: text part intact, html part is the approved design");
+
+  // ── 10. Tony's Nov 1 test call, rebuilt as a fixture: booked, caller deferred payment. The ONE
+  // report email must carry booking + job refs in the summary, the booking facts, the total, and a
+  // NEXT STEP that tells the payment truth — the plain "Voice booking CONFIRMED" stub is dead ──
+  const s11 = newSes({ outcome: "booked", seconds: 180, started_at: "2026-11-01T19:06:01.000Z", from_number: "+14704531616", intake: { customer_name: "Tony", callback_phone: "+14704531616", pickup_address: "1200 Peachtree Street, Atlanta", delivery_address: "500 Roswell Street, Marietta", service_date: "2026-11-01", time_window: "evening", freight_description: "five boxes of clothing", piece_count: 5, total_weight_lb: 500, _quote: { total_cents: 40000, number: "Q-261101-RC3J" } } });
+  T.voice_bookings.push({ id: "bk11", org_id: OA, session_id: s11.id, reference: "PV-261101-YSGA", status: "confirmed", job_id: "PL-261101-SKKL", customer_name: "Tony" });
+  T.jobs.push({ id: "PL-261101-SKKL", org_id: OA, payment_status: "unpaid" });
+  T.voice_callbacks.push({ id: "cb11", org_id: OA, session_id: s11.id, name: "Tony", phone: "+14704531616", reason: "Take payment for PV-261101-YSGA", status: "open" });
+  say(s11, [["agent", "Your booking is confirmed! To lock it in, I can take your card right now, over the phone keypad."], ["caller", "I'll take care of the payment after"]]);
+  const rep11 = await OR.buildReport(OA, s11);
+  ok(rep11.subject === "Elevate call: Booked — Tony", "deferred booking: the report subject outcome is Booked");
+  ok(rep11.html.includes("PV-261101-YSGA") && rep11.html.includes("PL-261101-SKKL"), "summary card carries the booking reference AND the job reference (they were nowhere in the email before)");
+  ok(rep11.html.includes("1200 Peachtree Street, Atlanta") && rep11.html.includes("500 Roswell Street, Marietta") && rep11.html.includes("2026-11-01") && rep11.html.includes("evening") && rep11.html.includes("$400.00"), "summary card carries the route, the job date/window and the total");
+  ok(/Payment deferred on the call/.test(rep11.html) && /Take payment for PV-261101-YSGA/.test(rep11.html), "NEXT STEP tells the payment truth: deferred on the call, owner to take payment");
+  ok(/Payment: deferred on the call/.test(rep11.text) && /Owner to take payment for PV-261101-YSGA/.test(rep11.text), "text part carries the same payment truth");
+  ok(rep11.text.includes("I'll take care of the payment after") && rep11.html.includes("I&#39;ll take care of the payment after"), "both parts carry the word-for-word transcript, including the deferral line (apostrophe escaped in html, as the design escapes text)");
+  // paid on the call: the next step must say that instead
+  const s12 = newSes({ outcome: "booked", intake: { customer_name: "Paid Pam", pickup_address: "1 A St, Atlanta, GA", delivery_address: "2 B St, Marietta, GA", service_date: "2026-11-02", time_window: "morning", _quote: { total_cents: 25000, number: "Q-PAID1" } } });
+  T.voice_bookings.push({ id: "bk12", org_id: OA, session_id: s12.id, reference: "PV-PAID1", status: "confirmed", job_id: "PL-PAID1", customer_name: "Paid Pam" });
+  T.jobs.push({ id: "PL-PAID1", org_id: OA, payment_status: "paid" });
+  const rep12 = await OR.buildReport(OA, s12);
+  ok(/Payment taken on the call/.test(rep12.html) && /Payment: taken on the call/.test(rep12.text), "paid booking: NEXT STEP and text both say the payment was taken on the call");
+  ok(rep12.html.includes("PV-PAID1") && rep12.html.includes("PL-PAID1") && rep12.html.includes("$250.00"), "paid booking: summary card carries refs and total too");
 
   console.log("voice owner report: " + n + " assertions PASS");
 })().catch(e => { console.error("FAIL", e); process.exit(1); });

@@ -34,14 +34,15 @@ function summarize(ses) {
   bits.push("outcome: " + (ses.outcome || "information only"));
   return bits.join(". ").slice(0, 900);
 }
-// A returning customer: the number matches a saved customer or a confirmed booking on this line. Only the first name is used (warmth), never any job detail: caller ID is not proof of identity.
+// A returning customer: the number matches a saved customer or a confirmed booking on this line. Only the first name is spoken (warmth); the full name is returned too so it can seed the booking intake (see context) — never any job detail: caller ID is not proof of identity.
 async function knownCaller(ses) {
   try {
     const want = String(ses.from_number || "").replace(/\D/g, "").slice(-10); if (want.length < 10) return null;
     const hit = rows(await B.sb("customers?org_id=eq." + ses.org_id + "&select=name,phone&limit=500")).find(function (x) { return String(x.phone || "").replace(/\D/g, "").slice(-10) === want; })
       || rows(await B.sb("voice_bookings?org_id=eq." + ses.org_id + "&status=eq.confirmed&customer_phone=like.*" + want + "&select=customer_name&limit=1"))[0];
-    const nm = hit && String(hit.name || hit.customer_name || "").trim().split(/\s+/)[0];
-    return nm ? { first: nm.slice(0, 24) } : null;
+    const fullName = hit && String(hit.name || hit.customer_name || "").trim();
+    const nm = fullName && fullName.split(/\s+/)[0];
+    return nm ? { first: nm.slice(0, 24), full: fullName.slice(0, 80) } : null;
   } catch (e) { return null; }
 }
 // SAFETY NET: a call that ends holding something from the caller but no booking, callback or handoff must never vanish.
@@ -116,6 +117,10 @@ exports.handler = async function (event) {
         resume = { code: String(tok.r).slice(0, 80), recap: tr.map(function (t) { return (t.role === "caller" ? "Caller: " : "You: ") + t.text; }).join("\n").slice(0, 3000) };
       }
       const known = await knownCaller(ses);
+      if (known && known.full && !(ses.intake && ses.intake.customer_name)) {   // seed the booking name from caller ID so she confirms it instead of asking cold; a different name given on the call overwrites it via collect_shipment_details
+        const seeded = Object.assign({}, ses.intake || {}, { customer_name: known.full });
+        await S.patchSession(ses.org_id, ses.id, { intake: seeded }); ses.intake = seeded;
+      }
       return B.J(200, { resume: resume, session_id: ses.id, org_id: ses.org_id, call_sid: ses.provider_call_id, instructions: P.build(cfg, org, known), greeting: P.greeting(cfg, org, ses.from_number, known), voice: cfg.voice || "marin", tools: allowed, max_seconds: cap, recording: rec });
     }
     if (act === "canonical_jobs") return B.J(200, { jobs: await CN.jobs(20) });   // work list for the bridge-host transcriber (canonical transcripts)

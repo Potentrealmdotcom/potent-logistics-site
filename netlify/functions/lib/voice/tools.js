@@ -116,7 +116,7 @@ async function emailGate(ctx, a, email) {
 // Payment wording the model sees. POTENT takes the card on the call by keypad when it is switched on, so no tool result may tell her "dispatch will send instructions" (call 2: that line made her tell the owner he did not have to pay).
 const payOn = function () { return process.env.VOICE_PAY === "on" && !!process.env.VOICE_PAY_CONNECTOR; };
 const PAY_HINT = "We take the card right on this call, over the phone keypad, once the booking is confirmed (take_card_payment).";
-const PAY_SAY = "Booking confirmed. NEXT, offer to take the card right now over the keypad (take_card_payment). If they say they do not need to pay now or hesitate, do NOT say dispatch will send instructions: work it with the 3 A's (Acknowledge, Associate, Ask), mention it takes about a minute and locks the slot; if they still decline, ask 'When would be a good time for us to reconnect?', then use create_callback_task with that time and create_or_update_lead with the note, and say you will follow up.";
+const PAY_SAY = "Booking confirmed and locked in. NEXT, offer to take the card right now over the keypad (take_card_payment): it takes about a minute and you never hear the number. If they only hesitate or ask whether they have to pay now, that one gentle offer is enough — do NOT say dispatch will send instructions. If they clearly say they'll take care of the payment after or later, accept warmly right away: \"Of course — your booking is locked in,\" then use create_callback_task with the reason 'Take payment for ' plus this booking's reference, and close warmly. A stated deferral ends the payment topic: no arguing, no 3 A's, no asking when to reconnect, no stalling. Never say it is paid until Stripe confirms it.";
 const TOOLS = {
   async lookup_customer(ctx) {
     const n = last4(ctx.session.from_number); if (!ctx.session.from_number || !n) return { ok: true, known: false };
@@ -224,6 +224,7 @@ const TOOLS = {
     if (!av) return { ok: false, error: "check_availability_first" };
     if (!(await callerConfirmed(ctx))) return { ok: false, error: "caller_has_not_confirmed", say: "Read the details and total back, then ask the caller to confirm. Do not proceed until they clearly say yes." };
     const d = I.validate(intake).data, idem = ctx.session.id + ":" + q.number;
+    if (!d.email) return { ok: false, error: "email_required", say: "You do not have the caller's email for the written confirmation, and a booking cannot be created without it. Ask for it now, spell it back letter by letter (EMAIL CAPTURE), save it with collect_shipment_details, then create the booking." };
     const reason = av.verified && av.available ? null : !av.verified ? "Availability could not be verified: " + (av.reasons || []).join(", ") : "Requested window is not available";
     const body = { org_id: ctx.orgId, session_id: ctx.session.id, quote_id: q.id, idem_key: idem, reference: S.ref("PV"), status: "pending_review", review_reason: reason, vehicle_profile_id: el.profile_id, window_start: av.start, window_end: av.end,
       customer_name: d.customer_name, customer_phone: d.callback_phone, customer_email: d.email || null, snapshot: { intake: d, quote: q, eligibility: el, availability: av } };
@@ -231,7 +232,9 @@ const TOOLS = {
     let row = rows(ins)[0]; if (!row) row = rows(await B.sb("voice_bookings?org_id=eq." + ctx.orgId + "&idem_key=eq." + encodeURIComponent(idem) + "&select=*&limit=1"))[0];
     if (!row) return { ok: false, error: "save_failed" };
     await S.patchSession(ctx.orgId, ctx.session.id, { confirmed_by_caller: true, outcome: "booking_requested" });
-    await notifyOwner(ctx.orgId, "New voice booking request " + row.reference, d.customer_name + " " + d.callback_phone + ": " + d.pickup_address + " to " + d.delivery_address + " on " + d.service_date + ". Total " + P.money(q.total_cents) + ". " + (reason ? "Needs review: " + reason : "Ready to confirm."));
+    // No owner email here (Tony, Nov 1, 2026: EVERY owner email is the full Elevate design or it
+    // does not go out). The old plain "New voice booking request" stub is gone: this request's
+    // facts ride in the ONE full-design owner call report sent at call end (owner-report.js).
     return { ok: true, booking_id: row.id, reference: row.reference, status: row.status, ready_to_confirm: !reason, say: reason ? "Saved as a REQUEST that a person will review. It is not confirmed." : "Saved. Next call confirm_eligible_booking." };
   },
   async confirm_eligible_booking(ctx, a) {
@@ -259,7 +262,9 @@ const TOOLS = {
     if (!res || !res.ok) return fail("Could not save the booking: " + (res && res.error || "database error"), "Something failed while saving. It is NOT confirmed; a person will follow up.");
     await B.sb("voice_quotes?id=eq." + q.id, { method: "PATCH", prefer: "return=minimal", body: { status: "accepted" } });
     await S.patchSession(ctx.orgId, ctx.session.id, { outcome: "booked" });
-    await notifyOwner(ctx.orgId, "Voice booking CONFIRMED " + bk.reference, d.customer_name + " " + d.callback_phone + ": " + d.pickup_address + " to " + d.delivery_address + " on " + d.service_date + " (" + d.time_window + "). Job " + res.job_id + ".");
+    // No owner email here either (Tony, Nov 1, 2026): the old plain "Voice booking CONFIRMED"
+    // stub is gone. The booking + job references, total and the real payment state ride in the
+    // ONE full-design owner call report at call end (owner-report.js) — one email per call.
     return { ok: true, confirmed: true, reference: bk.reference, job_id: res.job_id, duplicate: !!res.duplicate, say: (await isPotentOrg(ctx)) && payOn() ? PAY_SAY : undefined };
   },
   async book_demo(ctx, a) {

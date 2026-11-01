@@ -67,6 +67,7 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
   r = await runRaw(s, "send_approved_confirmation", { booking_id: BID, channel: "email", email: "other@example.com", email_confirmed: true }); ok(!r.ok && r.error === "read_back_required" && EXT.mail.length === 0, "email gate: a confirmed flag for a different address than the one read back is refused");
   EXT.mail.length = 0; r = await run(s, "send_approved_confirmation", { booking_id: BID, channel: "email", email: "pat@example.com" }); ok(r.sent && r.kind === "request_received_not_confirmed" && /NOT yet confirmed/.test(EXT.mail[0].text), "a pending request gets a 'not yet confirmed' notice, never a confirmation");
   r = await run(s, "confirm_eligible_booking", { booking_id: BID }); ok(r.ok && r.confirmed && r.job_id && T.jobs.length === 1 && T.jobs[0].status === "Confirmed" && T.jobs[0].org_id === OA && T.voice_capacity_holds.length === 1, "all checks pass -> confirmed, job + capacity hold created");
+  ok(!EXT.mail.some(m => /^(New voice booking request|Voice booking CONFIRMED)/.test(m.subject || "")), "no plain booking stub emails (Tony, Nov 1, 2026): the booking rides in the one full-design owner call report, not a one-line stub");
   ok(T.jobs[0].final_price === 400 && /Booked by POTENT VOICE/.test(T.jobs[0].notes) && T.jobs[0].date === DATE, "the job carries the quoted price, date and a voice-booking note");
   const callsBefore = T.voice_tool_executions.length; r = await run(s, "confirm_eligible_booking", { booking_id: BID }); ok(r.confirmed && r.duplicate && T.jobs.length === 1 && T.voice_capacity_holds.length === 1, "confirming twice never creates a second job or hold");
   r = await run(s, "confirm_eligible_booking", { booking_id: BID }, "same-key"); const again = await run(s, "confirm_eligible_booking", { booking_id: BID }, "same-key"); ok(again.duplicate === true && T.jobs.length === 1, "a repeated provider event (same call id) returns the saved result");
@@ -364,7 +365,7 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
     const px = newSes(); await toQuote(px, {}); const q2 = await run(px, "calculate_quote"); ok(/keypad/.test(q2.payment || "") && !/dispatch will send/i.test(JSON.stringify(q2)), "quote result no longer says dispatch will send payment instructions when the keypad is on");
     delete process.env.VOICE_PAY; delete process.env.VOICE_PAY_CONNECTOR; const px2 = newSes(); await toQuote(px2, {}); const q3 = await run(px2, "calculate_quote"); ok(/dispatch/i.test(q3.payment || ""), "with the keypad off the old wording stays");
     const P2 = require("../netlify/functions/lib/voice/prompt.js").build({ agent_name: "Elevate" }, { name: "POTENT Logistics", slug: "potent-logistics" });
-    ok(/do I have to pay now/.test(P2) && /never answer that dispatch will send instructions/.test(P2) && /NEVER GUESS A MEASUREMENT/.test(P2), "prompt: pay-now question gets the 3 A's + callback, and no measurement is ever guessed");
+    ok(/do I have to pay now/.test(P2) && /never answer that dispatch will send instructions/.test(P2) && /NEVER GUESS A MEASUREMENT/.test(P2), "prompt: pay-now question is answered plainly, the dispatch-instructions line is banned, and no measurement is ever guessed");
     const gx = newSes({ intake: {} }); const ge = await runRaw(gx, "send_approved_confirmation", { booking_id: "00000000-0000-4000-8000-000000000000", channel: "email", email: "a@b.co", email_confirmed: true }); ok(ge.error === "read_back_required" ? ge.gate === "no_pending" : true, "gate bounce now says why (no_pending / pending_mismatch) so the next call shows the cause"); }
   // ---- reference library (Oct 23): Master Inventory behind a POTENT-only lookup, Demo book flow as a playbook topic
   { const inv = require("../netlify/functions/lib/voice/osinventory.json"), raw = JSON.stringify(inv), PB = require("../netlify/functions/lib/voice/playbook.js");
@@ -396,7 +397,7 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
     const a3 = mk({}); T.voice_sessions.push(a3); await vt({ action: "end", session_id: a3.id, reason: "caller_hangup", seconds: 3 }); ok(T.voice_callbacks.filter(c => c.session_id === a3.id).length === 0, "safety net: a hang-up before anyone said anything saves nothing");
     const a4 = mk({ intake: { pickup_address: "x" } }); T.voice_sessions.push(a4); T.voice_callbacks.push({ id: "cbx" + sn, org_id: a4.org_id, session_id: a4.id, phone: a4.from_number, reason: "she made one" }); await vt({ action: "end", session_id: a4.id, reason: "caller_hangup", seconds: 30 }); ok(T.voice_callbacks.filter(c => c.session_id === a4.id).length === 1, "safety net: she already took a callback, so no second one");
     const a5 = mk({ intake: { pickup_address: "x" } }); T.voice_sessions.push(a5); await vt({ action: "end", session_id: a5.id, reason: "pay_handoff", seconds: 30 }); ok(T.voice_callbacks.filter(c => c.session_id === a5.id).length === 0, "safety net: a keypad handoff is not an unfinished call");
-    ok(/SAVE EVERY DETAIL THE MOMENT IT IS SAID/.test(require("../netlify/functions/lib/voice/prompt.js").build({ agent_name: "Elevate" }, { name: "POTENT Logistics", slug: "potent-logistics" })), "prompt: save every detail the moment it is said");
+    ok(/SAVE EVERY DETAIL — ONE SAVE PER ANSWER/.test(require("../netlify/functions/lib/voice/prompt.js").build({ agent_name: "Elevate" }, { name: "POTENT Logistics", slug: "potent-logistics" })) && /never re-ask a question you already asked before the tool ran/.test(require("../netlify/functions/lib/voice/prompt.js").build({ agent_name: "Elevate" }, { name: "POTENT Logistics", slug: "potent-logistics" })), "prompt: every detail is saved in one batched save per answer, and a question already asked is never re-asked after a tool runs");
     const PR2 = require("../netlify/functions/lib/voice/prompt.js");
     process.env.VOICE_LAYERS = "base"; const baseP = PR2.build({ agent_name: "Elevate" }, { name: "POTENT Logistics", slug: "potent-logistics" });
     ok(/NO DEAD AIR, AND NO NARRATION/.test(baseP) && /SAY EVERYTHING ONCE/.test(baseP) && !/Give me one moment while I pull that up/.test(baseP), "prompt (always on): no tool narration, nothing said twice");
@@ -427,6 +428,30 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
     ok(T.voice_callbacks.filter(c => c.session_id === b1.id).length === 0 && T.voice_sessions.find(q => q.id === b1.id).outcome === "declined" && EXT.mail.some(m => /Job we could not take/.test(m.subject)), "blocked job + caller declined a follow-up: no callback they refused, the owner still hears about the lost job");
     const b2 = newSes(bl); T.voice_sessions.push(b2); T.voice_transcripts.push({ id: "tb" + (++sn), org_id: b2.org_id, session_id: b2.id, seq: 9102, role: "caller", text: "Okay.", created_at: new Date().toISOString() });
     await vt({ action: "end", session_id: b2.id, reason: "caller_hangup", seconds: 160 }); ok(T.voice_callbacks.some(c => c.session_id === b2.id && /AUTO-SAVED LEAD \(we could not take it/.test(c.reason)), "blocked job and no refusal of follow-up: saved as a lead so the list is never empty"); }
+  // ---- Nov 1 retest fixes: email hard gate at booking, known-caller name seeding, deferral wording
+  { // email gate: a booking cannot be created until an email is on the intake; quotes/callbacks are unaffected
+    const eg = newSes(); const noEm = full({ service_date: days(13) }); delete noEm.email;
+    await run(eg, "collect_shipment_details", noEm); const egEl = await run(eg, "validate_shipment_eligibility"); ok(egEl.ok && egEl.status === "eligible", "email gate: eligibility and quote still run with no email on file");
+    const egQ = await run(eg, "calculate_quote"); ok(egQ.ok, "email gate: a quote is still given before email capture");
+    await run(eg, "check_live_availability"); await say(eg, "caller", "yes book it");
+    const egB = await run(eg, "create_pending_booking"); ok(!egB.ok && egB.error === "email_required" && /spell it back letter by letter/.test(egB.say || "") && !T.voice_bookings.some(b => b.session_id === eg.id), "email gate: create_pending_booking refuses with email_required and saves nothing until an email is captured");
+    await run(eg, "collect_shipment_details", { email: "pat@example.com" }); const egB2 = await run(eg, "create_pending_booking"); ok(egB2.ok && egB2.reference && T.voice_bookings.some(b => b.session_id === eg.id && b.customer_email === "pat@example.com"), "email gate: once the email is saved the booking is created with it");
+    // deferral wording (server-injected PAY_SAY): a stated 'pay after' is accepted warmly and flagged, never argued with
+    process.env.VOICE_PAY = "on"; process.env.VOICE_PAY_CONNECTOR = "CNtest";
+    const egC = await run(eg, "confirm_eligible_booking", { booking_id: egB2.booking_id }); ok(egC.confirmed && /Take payment for/.test(egC.say || "") && /accept warmly/.test(egC.say || "") && !/good time for us to reconnect/.test(egC.say || "") && !/work it with the 3 A's/.test(egC.say || ""), "deferral: the confirmed-booking say accepts a stated deferral warmly, flags 'Take payment for <reference>' and drops the pushback script");
+    ok(!EXT.mail.some(m => /^(New voice booking request|Voice booking CONFIRMED)/.test(m.subject || "")), "owner email: across every booking flow in this whole run, no plain stub ever went out — one full-design report per call");
+    delete process.env.VOICE_PAY; delete process.env.VOICE_PAY_CONNECTOR;
+    const PD = require("../netlify/functions/lib/voice/prompt.js").build({ agent_name: "Elevate" }, { name: "POTENT Logistics", slug: "potent-logistics" });
+    ok(/take care of the payment after or later/.test(PD) && /A stated deferral ends the payment topic immediately/.test(PD) && !/work any hesitation with the 3 A's/.test(PD), "deferral: the prompt accepts a clear pay-later warmly and the old 3 A's pushback is gone");
+    // known-caller seeding: the context seeds intake.customer_name from caller ID, so validate stops reporting it missing
+    T.customers.push({ id: "cseed", org_id: OA, name: "Seed Person", phone: "(404) 555-0199" });
+    const sd = newSes({ provider_call_id: "CAseed1", state: "ringing", answered_at: null, from_number: "+14045550199" });
+    const sc = await vt({ action: "context", token: TW.streamToken("bridgesecret", "CAseed1", OA, Date.now() + 60000) });
+    const sdRow = T.voice_sessions.find(z => z.id === sd.id);
+    ok(sc.s === 200 && sdRow.intake && sdRow.intake.customer_name === "Seed Person", "seeding: a known caller's full name is seeded into the session intake at context");
+    const sdC = await run(sd, "collect_shipment_details", { freight_description: "boxes" }); ok(sdC.ok && !sdC.missing.includes("customer_name"), "seeding: customer_name is no longer reported missing for a known caller");
+    ok(/already saved from the number they are calling from/.test(sc.j.instructions) && /down for the booking — is that right/.test(sc.j.instructions), "seeding: the prompt tells her to confirm the saved name, not ask for it cold");
+  }
   console.log("PASS: " + n + " assertions");
 })().catch(e => { console.error(e); process.exit(1); });
 

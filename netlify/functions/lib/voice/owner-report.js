@@ -26,8 +26,13 @@ const IMG = function (f) { return SITE() + "/voice/img/elevate-mail/" + f; };
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 function phoneFmt(n) { const d = String(n || "").replace(/\D/g, ""); const ten = d.length === 11 && d[0] === "1" ? d.slice(1) : d; return ten.length === 10 ? "(" + ten.slice(0, 3) + ") " + ten.slice(3, 6) + "-" + ten.slice(6) : (n ? String(n) : null); }
 function whenFmt(iso) { const d = new Date(iso || ""); if (isNaN(d)) return null; const p = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }).formatToParts(d).reduce(function (o, x) { o[x.type] = x.value; return o; }, {}); return p.weekday + ", " + p.month + " " + p.day + ", " + p.year + " · " + p.hour + ":" + p.minute + " " + p.dayPeriod; }
-function nextStep(ses, callbacks, handoffs) {
+function nextStep(ses, callbacks, handoffs, bk) {
   if (handoffs.some(function (h) { return h.status === "completed"; })) return "Transferred to a person on your team during the call.";
+  // A confirmed booking's next step must tell the payment truth (Tony, Nov 1, 2026): paid on the
+  // call, deferred (owner to take it), or not taken — never a bare "booking confirmed".
+  if (bk && bk.state === "paid") return "Payment taken on the call — the booking is confirmed and paid.";
+  if (bk && bk.state === "deferred") return "Payment deferred on the call — no payment was taken. Take payment for " + bk.ref + "; the follow-up is saved.";
+  if (bk && bk.state === "open") return "Booking confirmed — no payment was taken on the call. Follow up to take payment for " + bk.ref + ".";
   if (callbacks.length) return (ses.outcome === "handoff_requested" ? "Handoff" : "Callback") + " saved — someone will call back on the number they confirmed.";
   switch (ses.outcome) {
     case "booked": return "Booking confirmed — the job is saved in your Elevate dashboard.";
@@ -65,6 +70,11 @@ function buildHtml(r) {
     + srow("Number", esc(phoneFmt(r.callerNumber) || "—"))
     + srow("When", esc(r.when || "—"))
     + srow("Length", esc(r.length || "—"))
+    + (r.booking ? srow("Booking", esc(r.booking.ref) + (r.booking.job ? " &middot; Job " + esc(r.booking.job) : "")) : "")
+    + (r.booking && r.booking.route ? srow("Route", esc(r.booking.route)) : "")
+    + (r.booking && r.booking.date ? srow("Date", esc(r.booking.date)) : "")
+    + (r.booking && r.booking.freight ? srow("Freight", esc(r.booking.freight)) : "")
+    + (r.booking && r.booking.total ? srow("Total", esc(r.booking.total)) : "")
     + srow("Next step", esc(r.next), true)
     + "</table>"
     + '<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:30px;"><tr><td><img src="' + IMG("mouth.png") + '" width="52" height="38" alt="" style="display:block;width:52px;height:38px;"></td><td style="font-size:16px;letter-spacing:2px;text-transform:uppercase;font-weight:bold;color:#000000;padding-left:8px;">Here&rsquo;s what she said</td></tr></table>'
@@ -79,7 +89,7 @@ function buildHtml(r) {
 async function buildReport(orgId, ses) {
   const i = ses.intake || {}, inbound = ses.direction !== "outbound";
   const bookings = rows(await B.sb("voice_bookings?org_id=eq." + orgId + "&session_id=eq." + ses.id + "&select=reference,status,job_id,customer_name&order=created_at.asc&limit=5"));
-  const callbacks = rows(await B.sb("voice_callbacks?org_id=eq." + orgId + "&session_id=eq." + ses.id + "&select=id,name,phone&order=created_at.asc&limit=5"));
+  const callbacks = rows(await B.sb("voice_callbacks?org_id=eq." + orgId + "&session_id=eq." + ses.id + "&select=id,name,phone,reason&order=created_at.asc&limit=5"));
   const handoffs = rows(await B.sb("voice_handoffs?org_id=eq." + orgId + "&session_id=eq." + ses.id + "&select=status&limit=5"));
   const org = rows(await B.sb("organizations?id=eq." + orgId + "&select=name&limit=1"))[0];
   const tr = rows(await B.sb("voice_transcripts?session_id=eq." + ses.id + "&select=role,text,seq&order=seq.asc&limit=600"));
@@ -92,14 +102,38 @@ async function buildReport(orgId, ses) {
   const callerName = i.customer_name || cbName || bkName || null;
   const callerNumber = (inbound ? ses.from_number : ses.to_number) || i.callback_phone || (callbacks.find(function (c) { return c && c.phone; }) || {}).phone || null;
 
+  // The booking is the headline of a booked call, whatever the session outcome ended as (a
+  // payment-deferral callback saved after confirmation rewrites the outcome to "callback").
+  // This report is now the ONLY owner email for a booking (Tony, Nov 1, 2026 — the plain
+  // mid-call stubs in tools.js are gone), so it carries the booking + job references, the
+  // booking facts, and the real payment state.
+  const bk0 = bookings.find(function (b) { return b.status === "confirmed"; }) || bookings[0] || null;
+  let payState = null;   // null = no confirmed booking; else "paid" | "deferred" | "open"
+  if (bk0 && bk0.status === "confirmed") {
+    payState = "open";
+    if (bk0.job_id) { const job = rows(await B.sb("jobs?id=eq." + encodeURIComponent(bk0.job_id) + "&select=payment_status&limit=1"))[0]; if (job && job.payment_status === "paid") payState = "paid"; }
+    if (payState !== "paid" && callbacks.some(function (c) { return /Take payment for/i.test(String(c.reason || "")); })) payState = "deferred";
+  }
+  const outLabel = bk0 ? (bk0.status === "confirmed" ? "Booked" : "Booking requested") : label(ses.outcome);
+  const bkFacts = bk0 ? {
+    ref: bk0.reference, job: bk0.job_id || null,
+    route: (i.pickup_address || i.delivery_address) ? (i.pickup_address || "?") + " → " + (i.delivery_address || "?") : null,
+    date: i.service_date ? i.service_date + (i.time_window ? " (" + i.time_window + ")" : "") : null,
+    freight: [i.freight_description, i.piece_count && i.piece_count + " pieces", i.total_weight_lb && i.total_weight_lb + " lb"].filter(Boolean).join(", ") || null,
+    total: i._quote && i._quote.total_cents != null ? money(i._quote.total_cents) : null
+  } : null;
+
   const L = [];
-  L.push("Elevate " + (inbound ? "took a call" : "made a call") + " — outcome: " + label(ses.outcome) + ".");
+  L.push("Elevate " + (inbound ? "took a call" : "made a call") + " — outcome: " + outLabel + ".");
   L.push("Caller: " + (callerName || "name not given") + (callerNumber ? " — " + callerNumber : "") + (i.company ? " (" + i.company + ")" : ""));
   const d = dur(ses.seconds); if (d) L.push("Length: " + d + ".");
   if (i.pickup_address || i.delivery_address) L.push("Trip: " + (i.pickup_address || "?") + " to " + (i.delivery_address || "?") + (i.service_date ? " on " + i.service_date : "") + (i.time_window ? " (" + i.time_window + ")" : "") + ".");
   if (i.freight_description || i.piece_count || i.total_weight_lb) L.push("Freight: " + [i.freight_description, i.piece_count && i.piece_count + " pieces", i.total_weight_lb && i.total_weight_lb + " lb"].filter(Boolean).join(", ") + ".");
   if (i._quote && i._quote.total_cents != null) L.push("Quote given: " + money(i._quote.total_cents) + (i._quote.number ? " (" + i._quote.number + ")" : "") + ".");
   bookings.forEach(function (b) { L.push("Booking " + b.reference + ": " + b.status + (b.job_id ? " — job " + b.job_id : "") + "."); });
+  if (payState === "paid") L.push("Payment: taken on the call.");
+  else if (payState === "deferred") L.push("Payment: deferred on the call — no payment taken. Owner to take payment for " + bk0.reference + ".");
+  else if (payState === "open") L.push("Payment: not taken on the call.");
   if (callbacks.length) L.push("A callback was saved for follow-up.");
   handoffs.forEach(function (h) { L.push("Handoff to a person: " + h.status + "."); });
   if (ses.end_reason) L.push("How it ended: " + String(ses.end_reason).replace(/_/g, " ") + ".");
@@ -112,17 +146,17 @@ async function buildReport(orgId, ses) {
   if (transcript.length > 38000) { transcript = transcript.slice(0, 38000) + "\n[Transcript cut here — the full transcript is in the app under Voice → Calls.]"; let acc = 0; htmlRows = tRows.filter(function (t) { acc += t.text.length + 10; return acc < 38000; }); }
 
   const who = callerName || callerNumber || "unknown caller";
-  const subject = "Elevate call: " + label(ses.outcome) + " — " + who;
+  const subject = "Elevate call: " + outLabel + " — " + who;
   const text = L.join("\n") + "\n\nFULL TRANSCRIPT\n" + transcript + "\n\nSession " + ses.id + ".";
 
   // One line for the phone lock screen.
-  let one = label(ses.outcome);
-  if (ses.outcome === "booked" || ses.outcome === "booking_requested") {
+  let one = outLabel;
+  if (bk0) {
     const q = i._quote && i._quote.total_cents != null ? money(i._quote.total_cents) : null;
-    one = label(ses.outcome) + ": " + (city(i.pickup_address) || "pickup") + " → " + (city(i.delivery_address) || "drop-off") + (i.service_date ? ", " + i.service_date : "") + (i.time_window ? " " + i.time_window : "") + (q ? ", " + q : "");
+    one = outLabel + ": " + (city(i.pickup_address) || "pickup") + " → " + (city(i.delivery_address) || "drop-off") + (i.service_date ? ", " + i.service_date : "") + (i.time_window ? " " + i.time_window : "") + (q ? ", " + q : "");
   } else if (ses.outcome === "info_only") one = "Question call — no booking (" + who + ")";
-  else one = label(ses.outcome) + " — " + who;
-  const html = buildHtml({ outcome: label(ses.outcome), callerName: callerName, callerNumber: callerNumber, when: whenFmt(ses.started_at), length: dur(ses.seconds), next: nextStep(ses, callbacks, handoffs), rows: htmlRows, sessionId: ses.id, orgName: (org && org.name) || "" });
+  else one = outLabel + " — " + who;
+  const html = buildHtml({ outcome: outLabel, callerName: callerName, callerNumber: callerNumber, when: whenFmt(ses.started_at), length: dur(ses.seconds), next: nextStep(ses, callbacks, handoffs, bk0 ? { ref: bk0.reference, state: payState } : null), booking: bkFacts, rows: htmlRows, sessionId: ses.id, orgName: (org && org.name) || "" });
   return { subject: subject.slice(0, 150), text: text, html: html, oneLiner: one.slice(0, 140), transcriptLines: lines.length };
 }
 
