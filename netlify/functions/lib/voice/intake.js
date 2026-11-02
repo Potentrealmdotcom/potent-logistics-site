@@ -80,7 +80,16 @@ function validate(raw, now) {
   if (!d.pieces.length && !d.total_dims) miss.push("dimensions");
   if (Array.isArray(raw.pieces) && raw.pieces.length && raw.pieces.map(dims).some(function (x) { return !x; })) prob.push("a_piece_has_bad_dimensions");
   const listed = d.pieces.reduce(function (a, p) { return a + p.qty; }, 0); if (d.pieces.length && d.piece_count && listed !== d.piece_count && d.pieces.every(function (p) { return p.qty >= 1; }) && listed > d.piece_count) prob.push("piece_dimensions_exceed_piece_count");
-  const wl = d.pieces.filter(function (p) { return p.weight_lb; }); if (wl.length === d.pieces.length && d.pieces.length && d.total_weight_lb) { const s = d.pieces.reduce(function (a, p) { return a + p.weight_lb * p.qty; }, 0); if (Math.abs(s - d.total_weight_lb) > Math.max(25, d.total_weight_lb * 0.1)) prob.push("piece_weights_do_not_match_total"); }
+  const wl = d.pieces.filter(function (p) { return p.weight_lb; }); if (wl.length === d.pieces.length && d.pieces.length && d.total_weight_lb) { const s = d.pieces.reduce(function (a, p) { return a + p.weight_lb * p.qty; }, 0); if (Math.abs(s - d.total_weight_lb) > Math.max(25, d.total_weight_lb * 0.1)) {
+    // The total-or-each question has a STICKY answer (Tony, Nov 2, 2026: asked twice back-to-back on a live
+    // call after the caller had already answered "Total"). Once the basis is settled it never re-opens:
+    // "total" — the stated total is authoritative (it is the field pricing uses); per-piece weights that
+    // contradict it are a recording artifact, so they are dropped from the normalized record entirely.
+    // "each" — the per-piece weights are authoritative and the total is their sum.
+    if (raw._weight_basis === "total") { d.pieces = d.pieces.map(function (p) { return Object.assign({}, p, { weight_lb: null }); }); }
+    else if (raw._weight_basis === "each") { d.total_weight_lb = s; }
+    else prob.push("piece_weights_do_not_match_total");
+  } }
   // Dock facts are recorded when the caller states them, but they are NEVER required: dock height must not gate or stall a booking.
   // Eligibility only reviews an explicitly non-dock site, and only for a company with no ground-level loading method (see rules.js).
   ["pickup_dock", "delivery_dock"].forEach(function (k) { d[k] = bool(raw[k]); });

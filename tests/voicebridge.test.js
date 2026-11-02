@@ -9,7 +9,7 @@ function rig(opts) {
   opts = opts || {}; const calls = []; let aiSock = null;
   const fetch = async (url, o) => { const b = JSON.parse(o.body); calls.push(b); if (opts.apiDown) throw new Error("down"); let data = {}, status = 200;
     if (b.action === "context") { if (opts.ctxStatus) { status = opts.ctxStatus; data = { error: "x" }; } else data = { session_id: "S1", instructions: "be nice", tools: [{ type: "function", name: "t", description: "d", parameters: { type: "object", properties: { a: { type: "string" } }, additionalProperties: false } }], voice: "alloy", greeting: "Hello", max_seconds: opts.maxSeconds || 1800, resume: opts.resume || null }; }
-    if (b.action === "tool") data = { result: opts.toolResult || { ok: true } }; if (b.action === "hangup") data = { ok: true }; if (b.action === "pay") data = opts.payFail ? { ok: false, error: "keypad_not_live" } : { ok: true }; if (b.action === "transfer") data = opts.transferFail ? { ok: false, error: "no_one_available" } : { ok: true, requested: true };
+    if (b.action === "tool") { if (opts.toolDown) throw new Error("tool down"); if (opts.toolDelay) await sleep(opts.toolDelay); data = { result: opts.toolResult || { ok: true } }; } if (b.action === "hangup") data = { ok: true }; if (b.action === "pay") data = opts.payFail ? { ok: false, error: "keypad_not_live" } : { ok: true }; if (b.action === "transfer") data = opts.transferFail ? { ok: false, error: "no_one_available" } : { ok: true, requested: true };
     return { status, json: async () => data }; };
   class W extends Sock { constructor(url, o) { super(); aiSock = this; this.url = url; this.headers = o.headers; if (!opts.aiNeverOpens) setTimeout(() => this.emit("open"), 5); } }
   const b = createBridge({ env: Object.assign({ SITE_URL: "https://site.test/", VOICE_BRIDGE_SECRET: "sec", GEMINI_API_KEY: "gk-x" }, opts.env || {}), WebSocket: W, fetch, log() {} });
@@ -181,5 +181,47 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
     q.ai(audio(240)); q.ai(sc({ outputTranscription: { text: "Full sentence, fully heard" } })); q.ai(sc({ turnComplete: true })); await sleep(15);
     ok(q.calls.some(c => c.action === "transcript" && c.role === "agent" && c.text === "Full sentence, fully heard"), "fidelity: a normal line is recorded in full");
     q.phone({ event: "stop" }); await sleep(20); }
+
+  // ── HOLD-ON LINES WHILE A TOOL RUNS (Nov 2, 2026: she said a hold-on fragment as model speech, the
+  // tool round trip hung, and the call went totally dead — the watchdog never fires mid-tool). The bridge
+  // itself now speaks during long tools and speaks the recovery on a tool failure. Watchdog scaled off
+  // here (VOICE_SILENCE_MS huge) so only the tool-window mechanism is under test.
+  { const HOLDENV = { VOICE_TOOL_HOLD_MS: "60", VOICE_TOOL_HOLD2_MS: "400", VOICE_SILENCE_MS: "100000" };
+    const holdSays = (r, frag) => r.aiSock.sent.filter(m => m.clientContent && JSON.stringify(m).includes(frag));
+    const toolResp = r => r.aiSock.sent.filter(m => m.toolResponse);
+    // (a) a fast tool: NO hold-on line, result delivered as before
+    let r = rig({ env: HOLDENV }); r.start(); await sleep(40); r.ready();
+    r.ai({ toolCall: { functionCalls: [{ id: "f1", name: "lookup_customer", args: {} }] } }); await sleep(180);
+    ok(holdSays(r, "checking that for you").length === 0 && holdSays(r, "taking longer than it should").length === 0, "hold-on: a tool that resolves quickly triggers NO hold-on line");
+    ok(toolResp(r).length === 1, "hold-on: the fast tool's result is handed to the model as before");
+    r.phone({ event: "stop" }); await sleep(10);
+    // (b) a slow tool: exactly ONE hold-on line past the threshold, then the turn completes from the result
+    r = rig({ env: HOLDENV, toolDelay: 180 }); r.start(); await sleep(40); r.ready();
+    r.ai({ toolCall: { functionCalls: [{ id: "s1", name: "lookup_customer", args: {} }] } }); await sleep(320);
+    ok(holdSays(r, "checking that for you").length === 1, "hold-on: a tool past the threshold triggers exactly one hold-on line");
+    ok(toolResp(r).length === 1, "hold-on: when the slow tool lands, its result is handed to the model and the turn resumes from it");
+    await sleep(250); ok(holdSays(r, "checking that for you").length === 1 && holdSays(r, "still checking on that").length === 0, "hold-on: no repeat lines after the tool has landed");
+    r.ai(audio(240)); ok(r.tw.sent.some(m => m.event === "media"), "hold-on: the conversation continues normally after the held tool (model audio reaches the caller)");
+    r.phone({ event: "stop" }); await sleep(10);
+    // (c) a very long tool: at most one repeat, near the timeout end of the window
+    r = rig({ env: Object.assign({}, HOLDENV, { VOICE_TOOL_HOLD2_MS: "200" }), toolDelay: 450 }); r.start(); await sleep(40); r.ready();
+    r.ai({ toolCall: { functionCalls: [{ id: "s2", name: "lookup_customer", args: {} }] } }); await sleep(560);
+    ok(holdSays(r, "checking that for you").length === 1 && holdSays(r, "still checking on that").length === 1, "hold-on: a very long tool gets the first line plus at most one repeat");
+    ok(toolResp(r).length === 1, "hold-on: the very long tool's result still completes the turn");
+    r.phone({ event: "stop" }); await sleep(10);
+    // (d) a tool that FAILS (the Nov 2 hang shape): the BRIDGE speaks the recovery and the session is not stranded
+    r = rig({ env: HOLDENV, toolDown: true }); r.start(); await sleep(40); r.ready();
+    r.ai({ toolCall: { functionCalls: [{ id: "d1", name: "collect_shipment_details", args: {} }] } }); await sleep(150);
+    ok(holdSays(r, "taking longer than it should").length === 1, "tool failure: the bridge itself speaks a recovery line — recovery does not depend on the model resuming");
+    ok(toolResp(r).length === 1 && JSON.stringify(toolResp(r)[0]).includes("tool_unreachable"), "tool failure: the error result is still handed to the model like any other result");
+    await sleep(200); ok(holdSays(r, "taking longer than it should").length === 1, "tool failure: the recovery line is spoken once, not looped");
+    r.ai(audio(240)); ok(r.tw.sent.some(m => m.event === "media"), "tool failure: the session continues after the failure (not stranded silent)");
+    r.phone({ event: "stop" }); await sleep(10);
+    // (e) she is already talking while the tool runs: no hold-on line talks over her
+    r = rig({ env: HOLDENV, toolDelay: 220 }); r.start(); await sleep(40); r.ready();
+    r.ai({ toolCall: { functionCalls: [{ id: "s3", name: "lookup_customer", args: {} }] } }); await sleep(20); r.ai(audio(240)); await sleep(300);
+    ok(holdSays(r, "checking that for you").length === 0, "hold-on: agent audio during the tool suppresses the hold-on line (never talks over her)");
+    ok(toolResp(r).length === 1, "hold-on: the result is still delivered when she was speaking");
+    r.phone({ event: "stop" }); await sleep(10); }
 console.log("PASS: " + n + " assertions"); process.exit(0);
 })().catch(e => { console.error(e); process.exit(1); });

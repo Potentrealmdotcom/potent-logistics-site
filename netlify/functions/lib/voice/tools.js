@@ -4,6 +4,7 @@ const B = require("../beats");
 const S = require("./store"), I = require("./intake"), R = require("./rules"), P = require("./pricing"), RT = require("./route"), AV = require("./availability"), V = require("./billing"), TW = require("./adapters/twilio");
 const rows = S.rows;
 const PLAYBOOK = require("./playbook.js");
+const ALERT_MAIL = require("./alert-mail");   // the full Elevate design for owner alert emails (standalone module: no require cycle with owner-report.js)
 const CALL_LANGS = { en: "English", es: "Spanish", pt: "Portuguese", kk: "Kazakh", ru: "Russian", fr: "French", zh: "Chinese (Mandarin)", ko: "Korean", vi: "Vietnamese", ar: "Arabic", hi: "Hindi", ht: "Haitian Creole", pl: "Polish", de: "German" };
 // The speech engine sometimes turns a stray English syllable into a foreign word ("Ja.", "bien", "anhelo"). Switching the whole call's language on that is how an English call ended in Spanish.
 // Switch only on real evidence in what the caller said: an explicit request, two or more words of that language, or that language's own script.
@@ -51,6 +52,7 @@ function defs() {
       pickup_contact_name: str(""), pickup_contact_phone: str(""), delivery_contact_name: str(""), delivery_contact_phone: str(""), service_date: str("YYYY-MM-DD"), time_window: str("early|morning|afternoon|evening|all_day or HH:MM 24h"),
       service_level: { type: "string", enum: ["standard", "same_day", "rush", "recurring", "savannah_early", "savannah_full"] }, freight_description: str(""), piece_count: { type: "integer" }, total_weight_lb: { type: "number" },
       pieces: { type: "array", items: obj({ l: { type: "number" }, w: { type: "number" }, h: { type: "number" }, qty: { type: "integer" }, weight_lb: { type: "number" } }, ["l", "w", "h"]) }, total_dims: obj({ l: { type: "number" }, w: { type: "number" }, h: { type: "number" } }, ["l", "w", "h"]),
+      weight_basis: { type: "string", enum: ["total", "each"], description: "the caller's settled answer on weight: 'total' when the weight they gave is the total for everything (including when they say it as a total in the same breath, e.g. '500 pounds total'), 'each' when it is per piece. Set it the moment they answer; once set it never re-opens." },
       pickup_dock: { type: "boolean", description: "pickup has dock-height loading" }, delivery_dock: { type: "boolean", description: "delivery has dock-height unloading" }, needs_liftgate: { type: "boolean" }, needs_pallet_jack: { type: "boolean" }, site_has_pallet_jack: { type: "boolean" },
       forklift_pickup: { type: "boolean" }, forklift_delivery: { type: "boolean" }, inside_delivery: { type: "boolean" }, hazmat: { type: "boolean" }, special_handling: str(""), special_instructions: str(""), po_number: str(""),
       extra_stops: { type: "integer" }, labor_helpers: { type: "integer" }, labor_hours: { type: "number" }, expected_wait_minutes: { type: "number" }, holding_nights: { type: "integer" }, recurring: { type: "boolean" } })),
@@ -102,7 +104,11 @@ async function callerConfirmed(ctx) {
   return t.some(function (x) { return String(x.created_at) >= String(q.created_at) && AFFIRM.test(x.text) && !NEG.test(x.text); });
 }
 async function suppressed(orgId, phone) { return rows(await B.sb("voice_suppression_records?org_id=eq." + orgId + "&phone=eq." + encodeURIComponent(phone || "x") + "&select=id&limit=1")).length > 0; }
-async function notifyOwner(orgId, subject, text, html) { try { const o = rows(await B.sb("organizations?id=eq." + orgId + "&select=owner_email&limit=1"))[0]; if (o && o.owner_email) await require("../mail").send(o.owner_email, subject, text, "/voice/", undefined, html); } catch (e) { /* best effort */ } }
+// EVERY owner email carries the full Elevate design (Tony, Nov 1–2, 2026 — stated three times).
+// Callers that already built design html (the end-of-call report in owner-report.js) pass it through
+// unchanged; every other sender — present and future — gets the alert design rendered HERE, at the
+// one choke point they all flow through, from its own subject + text. There is no text-only path.
+async function notifyOwner(orgId, subject, text, html) { try { const o = rows(await B.sb("organizations?id=eq." + orgId + "&select=owner_email,name&limit=1"))[0]; if (o && o.owner_email) await require("../mail").send(o.owner_email, subject, text, "/voice/", undefined, html || ALERT_MAIL.render(subject, text, { orgName: o.name })); } catch (e) { /* best effort */ } }
 
 // Email read-back gate: the first call with an address only stores it and tells the model to spell it back; sending needs a second call with email_confirmed:true for the SAME address, so an address the caller never confirmed can never be used.
 async function emailGate(ctx, a, email) {
@@ -151,17 +157,43 @@ const TOOLS = {
     Object.keys(inc).forEach(function (k) { if (JSON.stringify(intake[k]) !== JSON.stringify(inc[k])) { if (CRITICAL.indexOf(k) >= 0 && intake[k] !== undefined) changed = true; intake[k] = inc[k]; } });
     if (!intake.callback_phone && ctx.session.from_number && a && a.use_caller_id === true) intake.callback_phone = I.phone(ctx.session.from_number) || ctx.session.from_number;
     if (intake.callback_phone && (inc.callback_phone !== undefined || (a && a.use_caller_id === true)) && await suppressed(ctx.orgId, I.phone(intake.callback_phone) || intake.callback_phone)) return { ok: false, error: "do_not_contact", do_not_contact: true, say: "That number is on our do-not-contact list. Do not save it, and do not collect anything else. Politely say you cannot take details or arrange a callback for that number, thank them for calling, and end the call now with end_call using kind do_not_contact." };
+    if (a && (a.weight_basis === "total" || a.weight_basis === "each") && intake._weight_basis !== a.weight_basis) { intake._weight_basis = a.weight_basis; changed = true; }   // the caller's settled answer on weight, kept server-side so the question can never re-open
     if (changed || Object.keys(inc).some(function (k) { return CRITICAL.indexOf(k) >= 0; })) await invalidate(ctx, intake);
     await setIntake(ctx, intake);
-    const v = I.validate(intake);
+    let v = I.validate(intake), wqSettled = false;
+    // TOTAL-OR-EACH, AT MOST ONCE (Tony, Nov 2, 2026: asked twice back-to-back live after the caller had
+    // already answered "Total", because the model's re-save kept re-surfacing the mismatch). The first
+    // collect that surfaces the mismatch arms the one allowed ask; any later collect that would surface
+    // it again is settled HERE instead: the stated total is authoritative (it is the priced field and the
+    // one the caller keeps restating), per-piece weights are dropped, and the problem can never return.
+    if (v.problems.indexOf("piece_weights_do_not_match_total") >= 0) {
+      if (intake._wq_asked || intake._weight_basis) {
+        intake._weight_basis = "total";
+        if (Array.isArray(intake.pieces)) intake.pieces = intake.pieces.map(function (p) { const q = Object.assign({}, p); delete q.weight_lb; return q; });
+        await setIntake(ctx, intake); v = I.validate(intake); wqSettled = true;
+      } else { intake._wq_asked = true; await setIntake(ctx, intake); }
+    }
     let heavy;
     if (inc.total_weight_lb !== undefined && Number(intake.total_weight_lb) > 0) {   // flag an overweight load the moment the weight is said, so she does not keep collecting details for a job we cannot take
       const pr = rows(await B.sb("voice_vehicle_profiles?org_id=eq." + ctx.orgId + "&active=eq.true&authorized=eq.true&select=max_payload_lb&limit=20")).map(function (x) { return Number(x.max_payload_lb) || 0; }), cap = pr.length ? Math.max.apply(null, pr) : 0;
       if (cap && Number(intake.total_weight_lb) > cap) heavy = "That weight is over our limit of " + cap + " pounds. Do not keep collecting dimensions. Follow the REFUSAL PATH now: kindly say so and name the limit, offer the other ways POTENT can help, and ask to add them to the follow-up list.";
     }
     const l4 = a && a.use_caller_id === true && intake.callback_phone ? String(intake.callback_phone).replace(/\D/g, "").slice(-4) : undefined;
-    const res = { ok: true, complete: v.ok, missing: v.missing, problems: v.problems, number_ends_in: l4, say: heavy || (l4 ? "Read it back now in one short phrase, digit by digit: the number ending in " + l4.split("").join(" ") + ". Then move on." : undefined), reset: changed ? "Details changed, so earlier checks and any quote were cleared. Re-run validation and quote." : undefined };
-    if (!res.say && v.problems.indexOf("piece_weights_do_not_match_total") >= 0) res.say = "The piece weights and the total weight do not agree. Do NOT change either number yourself. Ask the caller once: \"Is that weight the total for everything, or for each piece?\" Then record only what they answer.";
+    let l4say;
+    if (l4 && !intake._cb_said) {   // the callback number is stated ONCE, as a fact — never confirmed twice (Tony, Nov 2, 2026: she locked it in, then confirmed it again as a question and made him answer twice)
+      intake._cb_said = true; await setIntake(ctx, intake);
+      l4say = "Say it ONCE, as a plain statement — not a question, and do not wait for an answer: \"I'll use the number you're calling from, ending in " + l4.split("").join(" ") + ".\" Then ask the next thing you still need in the same turn. Never raise the callback number again unless the caller changes it.";
+    }
+    const res = { ok: true, complete: v.ok, missing: v.missing, problems: v.problems, number_ends_in: l4, say: heavy || l4say, reset: changed ? "Details changed, so earlier checks and any quote were cleared. Re-run validation and quote." : undefined };
+    if (!res.say && wqSettled) res.say = "Weight settled: " + intake.total_weight_lb + " lb is the total for everything. The total-or-each question is CLOSED — never ask it again on this call. Move on to the next thing you still need.";
+    if (!res.say && v.problems.indexOf("piece_weights_do_not_match_total") >= 0) res.say = "The piece weights and the total weight do not agree. Do NOT change either number yourself. Ask the caller once: \"Is that weight the total for everything, or for each piece?\" When they answer, record it with weight_basis ('total' or 'each') in your next collect_shipment_details call. Never ask it a second time.";
+    // What is already answered rides in EVERY result, named, so a suspended/resumed turn can never drift
+    // back over settled ground (the Nov 1 prompt-only version of this rule did not hold live).
+    const have = ["customer_name", "callback_phone", "email", "pickup_address", "delivery_address", "service_date", "time_window", "freight_description", "piece_count", "total_weight_lb"].filter(function (k) { return v.missing.indexOf(k) < 0 && !!v.data[k]; });
+    if ((v.data.pieces && v.data.pieces.length) || v.data.total_dims) have.push("dimensions");
+    if (intake._weight_basis) have.push("weight_basis (" + intake._weight_basis + ")");
+    res.already_have = have; res.ask_only = v.missing.length ? v.missing[0] : null;
+    if (have.length) res.do_not_reask = "Already answered and recorded: " + have.join(", ") + ". NEVER ask about any of those again on this call and never re-confirm them as a question. Ask only about what is still missing, one thing at a time, starting with " + (res.ask_only || "nothing — everything is recorded") + ".";
     return res;
   },
   async validate_shipment_eligibility(ctx) {

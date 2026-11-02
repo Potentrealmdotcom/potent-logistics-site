@@ -16,10 +16,23 @@ function createBridge(deps) {
     try { const b = Buffer.from(b64, "base64"); if (!b.length) return false; let sum = 0; for (let i = 0; i < b.length; i++) { const u = ~b[i] & 0xff, e = (u >> 4) & 7, m = u & 15; sum += (((m << 3) + 0x84) << e) - 0x84; } return sum / b.length > 320; } catch (e) { return false; }
   }
   const sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+  // HOLD-ON LINES WHILE A TOOL RUNS (Tony, Nov 2, 2026: on the morning call she said a hold-on fragment
+  // as model speech and then went totally dead — a tool round trip hung and nothing ever spoke again).
+  // Tool calls are BLOCKING bridge→site round trips (15 s timeout) and the silence watchdog below never
+  // fires while a tool is running, by design. So the bridge itself — not the model — owns the caller's
+  // ear during a tool: past TOOL_HOLD_MS of tool time with no agent audio, it speaks ONE short hold-on
+  // line through the same say() channel the watchdog's canned line uses; past TOOL_HOLD2_MS, at most one
+  // more. If the tool call FAILS (timeout / unreachable / no result), the bridge speaks a recovery line
+  // itself and still hands the error result to the model like any other result — recovery never depends
+  // on the model choosing to resume. Tenant-generic wording only: the bridge holds no business content.
+  const TOOL_HOLD_MS = Math.max(20, Number(env.VOICE_TOOL_HOLD_MS) || 2500);
+  const TOOL_HOLD2_MS = Math.max(TOOL_HOLD_MS + 100, Number(env.VOICE_TOOL_HOLD2_MS) || 10000);
+  const HOLD_LINES = ["One second — I'm checking that for you.", "Just a moment — still checking on that for you.", "Hang tight one more second — I'm pulling that up for you."];
+  const HOLD_RECOVERY = "I'm so sorry — that check is taking longer than it should on my end. Let's keep right on going; I have everything you've told me so far.";
 
   function handle(tw) {
     let saidBye = false, agentEnd = false, payPending = false, payStarted = false, idleAt = 0, closingAt = 0, closeNudges = 0, deafStage = 0, deafAt = 0, greetHold = true, greetT = null, lastCallerAt = 0, lastCallerTextAt = 0, lastAgentAt = 0, toolDoneAt = 0, toolBusy = 0, nudges = 0, burst = 0, readyAt = 0, wdTimer = null;
-    let lang = "English", langTimer = null, flushTimer = null, retries = 0, reconnecting = false, timersSet = false, hist = [], streamSid = null, ctx = null, ai = null, prov = null, connectTimerRef = null, spokeSinceTool = false, toolAt = 0, done = false, aiReady = false, buffered = [], lastItem = null, assistStart = null, mediaTs = 0, marks = 0, markQ = [], transferPending = false, transferred = false, startedAt = Date.now(), timers = [], nm = 0;
+    let lang = "English", langTimer = null, flushTimer = null, retries = 0, reconnecting = false, timersSet = false, hist = [], streamSid = null, ctx = null, ai = null, prov = null, connectTimerRef = null, spokeSinceTool = false, toolAt = 0, lastHoldAt = 0, done = false, aiReady = false, buffered = [], lastItem = null, assistStart = null, mediaTs = 0, marks = 0, markQ = [], transferPending = false, transferred = false, startedAt = Date.now(), timers = [], nm = 0;
     const timer = function (fn, ms) { const t = setTimeout(fn, ms); timers.push(t); return t; };
     const twSend = function (o) { if (tw.readyState === 1) tw.send(JSON.stringify(o)); };
     const aiSend = function (o) { if (o && ai && ai.readyState === 1) ai.send(JSON.stringify(o)); };
@@ -138,8 +151,24 @@ function createBridge(deps) {
 
     async function runTool(m) {
       let result; toolBusy++;
+      const toolStart = Date.now(), holdTimers = [];
+      const holdFire = function (idx) {
+        if (done || !aiReady || payPending || transferPending || agentEnd || toolBusy <= 0) return;   // the tool already landed, or the call moved on
+        if (lastAgentAt >= toolStart) return;   // she is already talking (e.g. her own hold-on line before the call): never talk over her
+        if (Date.now() - lastHoldAt < TOOL_HOLD_MS) return;   // overlapping tools share one voice
+        lastHoldAt = Date.now(); aiSend(prov.say(HOLD_LINES[idx % HOLD_LINES.length]));
+      };
+      holdTimers.push(setTimeout(function () { holdFire(0); }, TOOL_HOLD_MS));
+      holdTimers.push(setTimeout(function () { holdFire(1); }, TOOL_HOLD2_MS));
       const r = await api({ action: "tool", session_id: ctx.session_id, name: m.name, args: m.args, call_key: nk(m.id) }, 15000);
+      holdTimers.forEach(clearTimeout);
+      const unreachable = !r || !r.status || !!r.error || !(r.data && r.data.result);
       result = (r.data && r.data.result) || { ok: false, error: "tool_unreachable", say: "The system did not answer. Offer a callback; do not guess." };
+      // A timed-out / unreachable tool used to be able to strand the call in silence: the error result went
+      // to the model and if the model produced nothing, nothing was ever said again (Nov 2, session
+      // 86ac437e). The bridge now speaks the recovery line ITSELF, then hands the error result to the model
+      // like any other result; the watchdog is also armed again the moment toolBusy drops below.
+      if (unreachable && !done && aiReady && !payPending && !agentEnd) aiSend(prov.say(HOLD_RECOVERY));
       if (m.name === "request_human_handoff" && result.transfer_possible) { transferPending = true; spokeSinceTool = false; toolAt = Date.now(); timer(function () { if (transferPending) { transferPending = false; doTransfer(); } }, 20000); }
       if (m.name === "end_call" && result.ok && result.end_call) { agentEnd = true; doEnd(); }   // abuse after a warning: let her say goodbye, then hang up
       if (m.name === "take_card_payment" && result.ok && result.pay_handoff) { payPending = true; spokeSinceTool = false; doPay(result.booking_id); }   // the card is never spoken: after one sentence the live call moves to the keypad
@@ -148,6 +177,7 @@ function createBridge(deps) {
       toolBusy = Math.max(0, toolBusy - 1); toolDoneAt = Date.now(); if (["send_approved_confirmation", "book_demo", "create_callback_task"].indexOf(m.name) >= 0 && result && result.ok !== false) closingAt = Date.now();
     }
     // SILENCE WATCHDOG. Dead air must be impossible: if the caller (or a finished tool) is waiting on her and she has said nothing for ~4 s,
+    // (the window WHILE a tool runs belongs to runTool's own hold-on lines above — this watchdog still never fires mid-tool, unchanged)
     // 1st: tell the model the caller is waiting; 2nd: make her say "Still here, one second"; 3rd: drop and rebuild the AI link (the reconnect path with the conversation recap).
     // Also covers a greeting that never played. VOICE_SILENCE_MS changes the 4 s.
     function watchdog() {
