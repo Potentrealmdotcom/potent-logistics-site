@@ -16,23 +16,115 @@ function createBridge(deps) {
     try { const b = Buffer.from(b64, "base64"); if (!b.length) return false; let sum = 0; for (let i = 0; i < b.length; i++) { const u = ~b[i] & 0xff, e = (u >> 4) & 7, m = u & 15; sum += (((m << 3) + 0x84) << e) - 0x84; } return sum / b.length > 320; } catch (e) { return false; }
   }
   const sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
-  // HOLD-ON LINES WHILE A TOOL RUNS (Tony, Nov 2, 2026: on the morning call she said a hold-on fragment
-  // as model speech and then went totally dead — a tool round trip hung and nothing ever spoke again).
-  // Tool calls are BLOCKING bridge→site round trips (15 s timeout) and the silence watchdog below never
-  // fires while a tool is running, by design. So the bridge itself — not the model — owns the caller's
-  // ear during a tool: past TOOL_HOLD_MS of tool time with no agent audio, it speaks ONE short hold-on
-  // line through the same say() channel the watchdog's canned line uses; past TOOL_HOLD2_MS, at most one
-  // more. If the tool call FAILS (timeout / unreachable / no result), the bridge speaks a recovery line
-  // itself and still hands the error result to the model like any other result — recovery never depends
-  // on the model choosing to resume. Tenant-generic wording only: the bridge holds no business content.
+  // HOLD-ON LINES WHILE A TOOL RUNS — THE BRIDGE IS THE ONLY OWNER (Tony, Nov 2, 2026, two rulings the
+  // same day: the morning call first went totally dead when a tool hung after her own hold-on fragment,
+  // so the bridge took over the caller's ear during tools; the confirmation call then proved the cost of
+  // TWO owners — the prompt still REQUIRED her to speak a hold-on before every slow step while the bridge
+  // spoke its own, and at lock-in (three slow steps back to back) the caller heard two near-identical
+  // "One second — I'm checking that for you" lines ~4 s apart, the second cut off mid-word by the payment
+  // result). The split is now total: her prompt forbids her to say ANY hold-on around a tool (she runs it
+  // in silence and speaks the result the moment it lands); the bridge alone speaks fillers, and only here:
+  // past TOOL_HOLD_MS of tool time with no agent audio, ONE short line; past TOOL_HOLD2_MS, at most one
+  // more, for that same tool only. And because a booking runs several slow steps in a row, a filler also
+  // starts a quiet period (TOOL_HOLD_GAP_MS): no new step may speak another filler inside it — a chain of
+  // steps shares one voice, never a stack of hold-ons. If the tool call FAILS (timeout / unreachable /
+  // no result), the bridge speaks a recovery line itself and still hands the error result to the model
+  // like any other result — recovery never depends on the model choosing to resume. Tenant-generic
+  // wording only: the bridge holds no business content.
   const TOOL_HOLD_MS = Math.max(20, Number(env.VOICE_TOOL_HOLD_MS) || 2500);
   const TOOL_HOLD2_MS = Math.max(TOOL_HOLD_MS + 100, Number(env.VOICE_TOOL_HOLD2_MS) || 10000);
+  const TOOL_HOLD_GAP_MS = Math.max(0, Number(env.VOICE_TOOL_HOLD_GAP_MS) != null && env.VOICE_TOOL_HOLD_GAP_MS !== "" ? Number(env.VOICE_TOOL_HOLD_GAP_MS) : 12000);
   const HOLD_LINES = ["One second — I'm checking that for you.", "Just a moment — still checking on that for you.", "Hang tight one more second — I'm pulling that up for you."];
   const HOLD_RECOVERY = "I'm so sorry — that check is taking longer than it should on my end. Let's keep right on going; I have everything you've told me so far.";
 
+  // AMBIENCE — THE ROOM SHE SITS IN (Tony, Nov 2, 2026; restored and generalized). The Bland benchmark
+  // call sounded real partly because the room was in it: whatever trade the company is in, she should
+  // sound like she is sitting in it. A quiet workplace bed is mixed UNDER her voice on its way to the
+  // phone for the whole call — in the pauses too, not only while she talks. History: an office-only
+  // version of this shipped Oct 22, 2026 and was switched off the same day (VOICE_AMBIENCE=off in the
+  // deployment env); the mixing station below is that proven design, generalized from one office to a
+  // library of rooms. Every bed is SYNTHESIZED right here from noise, murmur and room events — no audio
+  // files, nothing bought, nothing licensed: free by construction.
+  // WHICH ROOM: the site resolves the company's trade to a bed key at call setup (the industry->bed
+  // map lives in netlify/functions/lib/voice/ambience.js — data-driven, one line per trade) and sends
+  // ctx.ambience_bed; ctx.ambience="off" means NO room (the owner's own calls stay natural — Tony's
+  // standing rule — and a company can switch its room off). VOICE_AMBIENCE is the deployment default
+  // and the kill switch: "off" silences every room; a bed key names the default room; "on"/unset means
+  // the dispatch office. VOICE_AMBIENCE_GAIN sets the level (default 0.4, clamped 0.01..0.6). If the
+  // adapter's mu-law codec is missing, calls pass through untouched.
+  const AMBIENCE_BEDS = {
+    //            voices murmur rumble lp     tickEvery(samples)      tickAmp tickLen  event: {type,freq,every(samples),len,amp}   hum
+    dispatch_office: { voices: 3, murmur: 5200, rumble: 2400, lp: 0.08, tick: [6000, 26000], tickAmp: 420, tickLen: 90, event: { type: "ring", every: [160000, 360000], len: 6000, amp: 1500 } },
+    restaurant: { voices: 5, murmur: 6500, rumble: 1800, lp: 0.08, tick: [2000, 9000], tickAmp: 500, tickLen: 60 },
+    auto_shop: { voices: 1, murmur: 2200, rumble: 3400, lp: 0.05, tick: [24000, 70000], tickAmp: 2600, tickLen: 500 },
+    office_phones: { voices: 3, murmur: 4200, rumble: 1600, lp: 0.08, tick: [8000, 20000], tickAmp: 300, tickLen: 70, event: { type: "ring", every: [96000, 240000], len: 6000, amp: 1700 } },
+    construction: { voices: 1, murmur: 1500, rumble: 3800, lp: 0.04, tick: [30000, 80000], tickAmp: 3200, tickLen: 1500 },
+    salon: { voices: 2, murmur: 3200, rumble: 1200, lp: 0.08, tick: null, hum: 220 },
+    retail: { voices: 3, murmur: 3800, rumble: 1500, lp: 0.08, tick: [12000, 30000], tickAmp: 300, tickLen: 70, event: { type: "beep", freq: 2000, every: [120000, 320000], len: 700, amp: 1300 } },
+    clinic: { voices: 1, murmur: 1200, rumble: 700, lp: 0.08, tick: null, event: { type: "beep", freq: 880, every: [240000, 560000], len: 500, amp: 800 } },
+    warehouse: { voices: 1, murmur: 1800, rumble: 3000, lp: 0.05, tick: [20000, 60000], tickAmp: 1500, tickLen: 300, event: { type: "beep", freq: 1200, every: [144000, 360000], len: 1000, amp: 1400 } },
+    generic_office: { voices: 2, murmur: 3000, rumble: 1400, lp: 0.08, tick: [10000, 30000], tickAmp: 300, tickLen: 80 }
+  };
+  const bedCache = {};
+  function synthBed(key) { // one seamless 24 s loop per room, generated once and cached: brown-noise rumble, filtered murmur "voices", ticks/clatter, and the room's signature event (a distant phone ring, a till beep)
+    if (bedCache[key]) return bedCache[key];
+    const p = AMBIENCE_BEDS[key]; if (!p) return null;
+    const SR = 8000, LEN = SR * 24, buf = new Int16Array(LEN);
+    let seed = 987654321 + key.length * 131; const rnd = function () { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    let brown = 0, lp = 0, tick = 4000, evt = p.event ? Math.floor(p.event.every[0] + rnd() * (p.event.every[1] - p.event.every[0])) : -1;
+    const voices = []; for (let vi = 0; vi < p.voices; vi++) voices.push({ lp1: 0, lp2: 0, env: 0, target: 0, left: 0, f: 0.04 + rnd() * 0.11 });
+    for (let i = 0; i < LEN; i++) {
+      const w = rnd() * 2 - 1;
+      brown = (brown + 0.02 * w) / 1.02; lp += p.lp * (brown * 3.5 - lp);
+      let s = lp * p.rumble + (p.hum ? p.hum * Math.sin(i / (SR / 180) * 6.2832) : 0);
+      for (let vi = 0; vi < voices.length; vi++) { const v = voices[vi], n = rnd() * 2 - 1;
+        if (--v.left <= 0) { v.target = rnd() < 0.45 ? 0 : 0.35 + rnd() * 0.65; v.left = 500 + Math.floor(rnd() * 1100); }
+        v.env += (v.target - v.env) * 0.004;
+        v.lp1 += v.f * (n - v.lp1); v.lp2 += v.f * (v.lp1 - v.lp2);
+        s += v.lp2 * v.env * p.murmur;
+      }
+      if (p.tick && --tick <= 0) { tick = Math.floor(p.tick[0] + rnd() * (p.tick[1] - p.tick[0])); for (let j = 0; j < p.tickLen && i + j < LEN; j++) buf[i + j] += Math.round((rnd() * 2 - 1) * p.tickAmp * (1 - j / p.tickLen)); }
+      if (p.event && --evt <= 0) { evt = Math.floor(p.event.every[0] + rnd() * (p.event.every[1] - p.event.every[0])); const ev = p.event;
+        for (let j = 0; j < ev.len && i + j < LEN; j++) { const ph = j / SR; const tone = ev.type === "ring" ? (Math.sin(ph * 440 * 6.2832) + Math.sin(ph * 480 * 6.2832)) / 2 : Math.sin(ph * (ev.freq || 1000) * 6.2832); buf[i + j] += Math.round(tone * ev.amp * Math.min(1, j / 300) * Math.min(1, (ev.len - j) / 600)); } }
+      buf[i] += Math.max(-11000, Math.min(11000, Math.round(s)));
+    }
+    for (let i = 0; i < 800; i++) { const a = i / 800; buf[i] = Math.round(buf[i] * a + buf[LEN - 800 + i] * (1 - a)); }   // seamless loop seam
+    let peak = 1; for (let i = 0; i < LEN; i++) { const a = Math.abs(buf[i]); if (a > peak) peak = a; }   // normalize to a known level; the gain decides how much rides under her voice
+    const norm = 10000 / peak; for (let i = 0; i < LEN; i++) buf[i] = Math.round(buf[i] * norm);
+    bedCache[key] = buf; return buf;
+  }
+  function ambienceBedKey(ctx) { // -> a bed key, or null when this call gets no room
+    if (String(env.VOICE_AMBIENCE || "on") === "off") return null;   // deployment kill switch (the state the live server sits in today)
+    if (!AI.MU_DEC || !AI.mulawEnc) return null;
+    if (ctx && ctx.ambience === "off") return null;   // owner / personal calls stay natural
+    const want = String((ctx && ctx.ambience_bed) || env.VOICE_AMBIENCE_BED || env.VOICE_AMBIENCE || "").toLowerCase().replace(/[^a-z_]/g, "");
+    if (!want || want === "on") return "dispatch_office";   // nothing named anywhere: the dispatch office — this product's home trade (a deployment names its own default in VOICE_AMBIENCE)
+    return AMBIENCE_BEDS[want] ? want : "generic_office";   // an unknown name: a plain working office, never the wrong trade's room
+  }
+  function ambienceStation(buf) { // one per call: her speech is queued, and a 20 ms pump mixes it over the bed — so the room is present for the whole call, in the pauses too, not only while she talks
+    const gain = Math.min(0.6, Math.max(0.01, Number(env.VOICE_AMBIENCE_GAIN) || 0.4));
+    let pos = Math.floor(Math.random() * buf.length), ramp = 0, q = [];
+    return {
+      push: function (b64) { try { const b = Buffer.from(b64, "base64"); for (let i = 0; i < b.length; i++) q.push(AI.MU_DEC[b[i]]); if (q.length > 24000) q.splice(0, q.length - 24000); } catch (e) { /* ignore */ } },
+      clear: function () { q = []; },
+      tick: function () { // one 20 ms frame out: queued speech (or silence) over the bed; reports whether the frame carried her voice
+        const out = Buffer.alloc(160); let spoke = false;
+        const n = Math.min(160, q.length), sp = n ? q.splice(0, n) : null;
+        for (let i = 0; i < 160; i++) {
+          if (ramp < 4000) ramp++;
+          const amb = buf[pos]; pos = (pos + 1) % buf.length;
+          const s = sp && i < n ? sp[i] : 0; if (s) spoke = true;
+          const v = s + Math.round(amb * gain * (ramp / 4000));
+          out[i] = AI.mulawEnc(v > 32767 ? 32767 : v < -32768 ? -32768 : v);
+        }
+        return { payload: out.toString("base64"), spoke: spoke };
+      }
+    };
+  }
+
   function handle(tw) {
     let saidBye = false, agentEnd = false, payPending = false, payStarted = false, idleAt = 0, closingAt = 0, closeNudges = 0, deafStage = 0, deafAt = 0, greetHold = true, greetT = null, lastCallerAt = 0, lastCallerTextAt = 0, lastAgentAt = 0, toolDoneAt = 0, toolBusy = 0, nudges = 0, burst = 0, readyAt = 0, wdTimer = null;
-    let lang = "English", langTimer = null, flushTimer = null, retries = 0, reconnecting = false, timersSet = false, hist = [], streamSid = null, ctx = null, ai = null, prov = null, connectTimerRef = null, spokeSinceTool = false, toolAt = 0, lastHoldAt = 0, done = false, aiReady = false, buffered = [], lastItem = null, assistStart = null, mediaTs = 0, marks = 0, markQ = [], transferPending = false, transferred = false, startedAt = Date.now(), timers = [], nm = 0;
+    let lang = "English", langTimer = null, flushTimer = null, retries = 0, reconnecting = false, timersSet = false, hist = [], streamSid = null, ctx = null, ai = null, prov = null, connectTimerRef = null, spokeSinceTool = false, toolAt = 0, lastHoldAt = 0, done = false, aiReady = false, buffered = [], lastItem = null, assistStart = null, mediaTs = 0, marks = 0, markQ = [], transferPending = false, transferred = false, startedAt = Date.now(), timers = [], nm = 0, amb = null, pump = null;
     const timer = function (fn, ms) { const t = setTimeout(fn, ms); timers.push(t); return t; };
     const twSend = function (o) { if (tw.readyState === 1) tw.send(JSON.stringify(o)); };
     const aiSend = function (o) { if (o && ai && ai.readyState === 1) ai.send(JSON.stringify(o)); };
@@ -62,7 +154,7 @@ function createBridge(deps) {
     };
 
     async function finish(reason, closeTwilio) {
-      if (done) return; done = true; timers.forEach(clearTimeout); if (flushTimer) clearInterval(flushTimer); if (langTimer) clearInterval(langTimer); if (wdTimer) clearInterval(wdTimer);
+      if (done) return; done = true; timers.forEach(clearTimeout); if (pump) clearInterval(pump); if (flushTimer) clearInterval(flushTimer); if (langTimer) clearInterval(langTimer); if (wdTimer) clearInterval(wdTimer);
       const secs = Math.round((Date.now() - startedAt) / 1000);
       flushPendingAgent(false);   // a held line from a finished turn is recorded before the rescue flush below
       if (ctx && prov && prov.flush) await Promise.all(prov.flush().map(function (e) { return api({ action: "transcript", session_id: ctx.session_id, role: e.kind === "caller_text" ? "caller" : "agent", text: e.text, key: nk(e.key) }, 6000); }));   // keep what was said even if the call ended mid-sentence
@@ -82,6 +174,16 @@ function createBridge(deps) {
       const c = await api({ action: "context", token: token }, 10000);
       if (c.status !== 200 || !c.data.session_id) { log("context refused", c.status, c.data && c.data.error); return finish("context_" + (c.status || "unreachable"), true); }
       ctx = c.data; clearTimeout(startTimeout);
+      if (done) return;   // the caller hung up while the context was fetched: never spin up the room or the AI on a dead call
+      const bedKey = ambienceBedKey(ctx), bedBuf = bedKey ? synthBed(bedKey) : null;
+      amb = bedBuf ? ambienceStation(bedBuf) : null;
+      log("ambience", amb ? bedKey : "off");
+      if (amb) pump = setInterval(function () {   // the room runs the whole call; her queued speech rides over it; a frame that carried her voice earns the playback mark her transcript trimming counts on
+        if (done || !streamSid) return;
+        const f = amb.tick();
+        twSend({ event: "media", streamSid: streamSid, media: { payload: f.payload } });
+        if (f.spoke) { const name = "m" + (++marks); markQ.push(name); twSend({ event: "mark", streamSid: streamSid, mark: { name: name } }); }
+      }, 20);
       startAi();
     }
     // One AI session. If it drops mid-call we reconnect (up to AI_RETRIES times) and hand the new session the conversation so far, instead of dropping the caller.
@@ -103,7 +205,7 @@ function createBridge(deps) {
       const max = env.VOICE_AI_RETRIES != null ? Number(env.VOICE_AI_RETRIES) : 2;
       log("ai down", reason, detail, "retry", retries + 1, "of", max);
       api({ action: "health", provider: "bridge", kind: "ai_drop", ok: false, detail: (reason + " " + (detail || "") + " after " + Math.round((Date.now() - startedAt) / 1000) + "s, retry " + (retries + 1) + "/" + max).slice(0, 240) }, 5000);
-      const old = ai; ai = null; aiReady = false; markQ = [];
+      const old = ai; ai = null; aiReady = false; markQ = []; if (amb) amb.clear();
       try { if (old) old.close(); } catch (e) { /* ignore */ }
       if (retries < max && ctx && tw.readyState === 1) { retries++; reconnecting = true; startAi(); return; }
       finish(reason, true);
@@ -136,10 +238,12 @@ function createBridge(deps) {
         if (!streamSid || !e.payload) return;
         lastAgentAt = Date.now(); nudges = 0;
         if (toolAt) spokeSinceTool = true;
+        if (amb) { amb.push(e.payload); return; }   // with a room live, her audio is queued and the pump mixes it over the bed (marks ride the pump's spoken frames)
         twSend({ event: "media", streamSid: streamSid, media: { payload: e.payload } });
         const name = "m" + (++marks); markQ.push(name); twSend({ event: "mark", streamSid: streamSid, mark: { name: name } });
       } else if (t === "interrupted") { // the caller talked over the assistant: stop its audio on the phone
         flushPendingAgent(true);   // record only the part of her line that actually played (markQ still holds the unplayed chunks)
+        if (amb) amb.clear();   // drop her unplayed queued speech; the room itself keeps breathing under the caller
         if (markQ.length) { twSend({ event: "clear", streamSid: streamSid }); markQ = []; }
       } else if (t === "caller_text") { lastCallerTextAt = Date.now(); hist.push({ role: "caller", text: String(e.text).slice(0, 400) }); note("caller", e.text, e.key); }
       else if (t === "agent_text") { flushPendingAgent(false); pendingAgent = { text: String(e.text), key: e.key, chunks: e.chunks || 0, rescue: !!e.rescue }; if (pendingAgent.rescue) flushPendingAgent(false); }
@@ -154,8 +258,8 @@ function createBridge(deps) {
       const toolStart = Date.now(), holdTimers = [];
       const holdFire = function (idx) {
         if (done || !aiReady || payPending || transferPending || agentEnd || toolBusy <= 0) return;   // the tool already landed, or the call moved on
-        if (lastAgentAt >= toolStart) return;   // she is already talking (e.g. her own hold-on line before the call): never talk over her
-        if (Date.now() - lastHoldAt < TOOL_HOLD_MS) return;   // overlapping tools share one voice
+        if (lastAgentAt >= toolStart) return;   // she is already talking (she answered while this check runs): never talk over her
+        if (idx === 0 && lastHoldAt && Date.now() - lastHoldAt < TOOL_HOLD_GAP_MS) return;   // a filler just played for the step before this one: back-to-back steps share one voice, never a stack
         lastHoldAt = Date.now(); aiSend(prov.say(HOLD_LINES[idx % HOLD_LINES.length]));
       };
       holdTimers.push(setTimeout(function () { holdFire(0); }, TOOL_HOLD_MS));

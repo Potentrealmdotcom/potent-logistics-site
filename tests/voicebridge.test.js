@@ -12,7 +12,7 @@ function rig(opts) {
     if (b.action === "tool") { if (opts.toolDown) throw new Error("tool down"); if (opts.toolDelay) await sleep(opts.toolDelay); data = { result: opts.toolResult || { ok: true } }; } if (b.action === "hangup") data = { ok: true }; if (b.action === "pay") data = opts.payFail ? { ok: false, error: "keypad_not_live" } : { ok: true }; if (b.action === "transfer") data = opts.transferFail ? { ok: false, error: "no_one_available" } : { ok: true, requested: true };
     return { status, json: async () => data }; };
   class W extends Sock { constructor(url, o) { super(); aiSock = this; this.url = url; this.headers = o.headers; if (!opts.aiNeverOpens) setTimeout(() => this.emit("open"), 5); } }
-  const b = createBridge({ env: Object.assign({ SITE_URL: "https://site.test/", VOICE_BRIDGE_SECRET: "sec", GEMINI_API_KEY: "gk-x" }, opts.env || {}), WebSocket: W, fetch, log() {} });
+  const b = createBridge({ env: Object.assign({ SITE_URL: "https://site.test/", VOICE_BRIDGE_SECRET: "sec", GEMINI_API_KEY: "gk-x", VOICE_AMBIENCE: "off" }, opts.env || {}), WebSocket: W, fetch, log() {} });   // VOICE_AMBIENCE off: the legacy suite tests the bare line; the room itself is proven in tests/voice-ambience.test.js
   const tw = new Sock(); b.handle(tw); const phone = o => tw.emit("message", JSON.stringify(o)); const ai = o => aiSock.emit("message", JSON.stringify(o));
   return { tw, phone, ai, calls, get aiSock() { return aiSock; }, start: () => phone({ event: "start", start: { streamSid: "MZ1", customParameters: { token: "tok" } } }), ready: () => ai({ setupComplete: {} }) };
 }
@@ -21,7 +21,7 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
   let r = rig(); r.start(); await sleep(40);
   ok(r.calls[0].action === "context" && r.calls[0].token === "tok", "bridge asks the site for the call context using the stream token");
   ok(r.aiSock.headers["x-goog-api-key"] === "gk-x" && /^wss:\/\//.test(r.aiSock.url), "AI key stays on the bridge and is sent only to the AI provider");
-  const setup = r.aiSock.sent.find(m => m.setup); ok(setup && setup.setup.model === "models/gemini-3.8-live" && setup.setup.systemInstruction.parts[0].text === "be nice" && setup.setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName === "Leda", "AI session configured (model, instructions, valid voice)");
+  const setup = r.aiSock.sent.find(m => m.setup); ok(setup && setup.setup.model === "models/gemini-3.8-live" && setup.setup.systemInstruction.parts[0].text === "be nice" && setup.setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName === "Sulafat", "AI session configured (model, instructions, valid voice)");
   const fd = setup.setup.tools[0].functionDeclarations[0]; ok(fd.name === "t" && fd.behavior === "BLOCKING" && fd.parameters.type === "OBJECT" && !("additionalProperties" in fd.parameters), "tools converted to the Gemini schema");
   ok(!r.aiSock.sent.some(m => m.clientContent), "nothing is said before the AI confirms its setup");
   r.phone({ event: "media", media: { track: "inbound", payload: Buffer.alloc(160, 0xff).toString("base64"), timestamp: "10" } }); r.ready(); await sleep(10);
@@ -222,6 +222,25 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
     r.ai({ toolCall: { functionCalls: [{ id: "s3", name: "lookup_customer", args: {} }] } }); await sleep(20); r.ai(audio(240)); await sleep(300);
     ok(holdSays(r, "checking that for you").length === 0, "hold-on: agent audio during the tool suppresses the hold-on line (never talks over her)");
     ok(toolResp(r).length === 1, "hold-on: the result is still delivered when she was speaking");
+    r.phone({ event: "stop" }); await sleep(10);
+    // (f) THE LOCK-IN STACK (Nov 2 confirmation call): three slow steps back to back produced two
+    // near-identical hold-ons ~4 s apart, one cut off mid-word. With the bridge as the ONLY filler
+    // owner and the post-filler quiet gap, a chain of slow steps shares exactly ONE filler.
+    r = rig({ env: Object.assign({}, HOLDENV, { VOICE_TOOL_HOLD_GAP_MS: "5000" }), toolDelay: 180 }); r.start(); await sleep(40); r.ready();
+    r.ai({ toolCall: { functionCalls: [{ id: "c1", name: "create_pending_booking", args: {} }] } }); await sleep(320);
+    r.ai({ toolCall: { functionCalls: [{ id: "c2", name: "confirm_eligible_booking", args: {} }] } }); await sleep(320);
+    r.ai({ toolCall: { functionCalls: [{ id: "c3", name: "take_card_payment", args: {} }] } }); await sleep(320);
+    ok(holdSays(r, "checking that for you").length === 1 && holdSays(r, "still checking on that").length === 0, "hold-on chain: three back-to-back slow steps share exactly ONE filler, never a stack");
+    ok(toolResp(r).length === 3, "hold-on chain: every step's result is still handed to the model");
+    r.phone({ event: "stop" }); await sleep(10); }
+
+  // ── VOICE + TURN-TAKING (Nov 2, 2026 voice-quality package): the locked voice is Sulafat and it
+  // comes from the ONE voice-source setting (the ctx voice the site sends is ignored, as before);
+  // turn-taking widened against mid-sentence cut-offs (prefix 300->500 ms, end-of-turn silence 600->900 ms).
+  { ok(AI.DEFAULT_VOICE === "Sulafat" && AI.VOICE_SOURCE && AI.VOICE_SOURCE.kind === "builtin" && AI.VOICE_SOURCE.voice === "Sulafat", "voice source: one setting, kind builtin, voice Sulafat");
+    const r = rig(); r.start(); await sleep(40);
+    const vad = r.aiSock.sent.find(m => m.setup).setup.realtimeInputConfig.automaticActivityDetection;
+    ok(vad.prefixPaddingMs === 500 && vad.silenceDurationMs === 900 && vad.startOfSpeechSensitivity === "START_SENSITIVITY_LOW" && vad.endOfSpeechSensitivity === "END_SENSITIVITY_LOW", "turn-taking: prefix padding 500 ms, silence 900 ms, sensitivities stay LOW (noise-shy)");
     r.phone({ event: "stop" }); await sleep(10); }
 console.log("PASS: " + n + " assertions"); process.exit(0);
 })().catch(e => { console.error(e); process.exit(1); });
