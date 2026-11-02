@@ -2,8 +2,21 @@
 // 16-bit PCM, so this file converts both ways. It only BUILDS messages and reads events; the socket lives in server-kit/voice-bridge.
 // create() returns one stateful object per call. parse() turns Gemini messages into a small provider-neutral event list:
 //   ready | audio{payload} | interrupted | caller_text{text,key} | agent_text{text,key} | tool{id,name,args} | turn_done | error{message}
-const DEFAULT_MODEL = "gemini-3.8-live", DEFAULT_VOICE = "Leda";
-const VOICES = ["Kore", "Puck", "Charon", "Fenrir", "Aoede", "Leda", "Orus", "Zephyr"];
+const DEFAULT_MODEL = "gemini-3.8-live";
+// THE VOICE (Tony, Nov 2, 2026): Sulafat, Google's "Warm" voice — Tony's current pick by ear
+// ("this could work… closest we can get to the Bland call"), replacing Leda ("Youthful" — Tony:
+// "white and giddy"). The Gacrux ("Mature") A/B sample is with Tony and his verdict is still
+// pending; if he flips, it is THIS one line that changes — the voice is named nowhere else.
+const DEFAULT_VOICE = "Sulafat";
+// VOICE SOURCE — the product-level setting this constant serves (Tony, Nov 2, 2026). Every company's
+// Elevate gets its voice from ONE voice-source choice: kind "builtin" (a stock voice, named by
+// `voice` — today's Sulafat) or kind "clone" (a voice cloned from a real person's own recordings,
+// with that person's recorded consent — the clone feature Tony green-lit the same day). THIS engine
+// (Gemini Live) can only speak built-in voices, so on this adapter the kind is always "builtin";
+// the "clone" kind resolves in the ElevenLabs voice layer, where cloning actually exists, and lands
+// here as the same one-setting shape. Naming it now means the future swap touches this block only.
+const VOICE_SOURCE = { kind: "builtin", voice: DEFAULT_VOICE };
+const VOICES = ["Sulafat", "Gacrux", "Kore", "Puck", "Charon", "Fenrir", "Aoede", "Leda", "Orus", "Zephyr"];
 const URL = function (model) { void model; return "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent"; }; // model goes in the setup message
 const headers = function (env) { return { "x-goog-api-key": env.GEMINI_API_KEY }; };
 
@@ -41,13 +54,13 @@ function create(opts) {
   // message or two, and an interruption landing in that gap must not orphan the count from its line.
   const flushAgent = function (ev, rescue) { if (agentBuf.trim()) { ev.push({ kind: "agent_text", text: agentBuf.trim(), key: "a:" + (++n), chunks: turnChunks, rescue: !!rescue }); turnChunks = 0; } agentBuf = ""; };
   return {
-    name: "gemini-live", version: "2026-10-29a",
+    name: "gemini-live", version: "2026-11-02a",
     setup: function (o) {
-      const voice = DEFAULT_VOICE; // LOCKED: Elevate is always the same female voice (Leda), on every call and every reconnect. No config, env or caller can change it.
+      const voice = VOICE_SOURCE.voice; // LOCKED: Elevate is always the same female voice (Sulafat — see VOICE_SOURCE above), on every call and every reconnect. No config, env or caller can change it.
       const decl = declarations(o.tools);
       return [{ setup: { model: "models/" + model, generationConfig: { responseModalities: ["AUDIO"], ...(Number.isFinite(Number(process.env.VOICE_THINKING_BUDGET)) && process.env.VOICE_THINKING_BUDGET !== undefined && process.env.VOICE_THINKING_BUDGET !== "" ? { thinkingConfig: { thinkingBudget: Number(process.env.VOICE_THINKING_BUDGET) } } : {}), speechConfig: Object.assign({ voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } }, process.env.VOICE_LANGUAGE_CODE ? { languageCode: process.env.VOICE_LANGUAGE_CODE } : {}) },
         systemInstruction: { parts: [{ text: o.instructions || "" }] }, tools: decl.length ? [{ functionDeclarations: decl }] : [],
-        realtimeInputConfig: { automaticActivityDetection: process.env.VOICE_FAST_TURNS === "on" ? { startOfSpeechSensitivity: "START_SENSITIVITY_HIGH", endOfSpeechSensitivity: "END_SENSITIVITY_HIGH", prefixPaddingMs: 200, silenceDurationMs: o.silence_ms || Number(process.env.VOICE_SILENCE_MS) || 350 } : { startOfSpeechSensitivity: process.env.VOICE_START_SENS === "high" ? "START_SENSITIVITY_HIGH" : "START_SENSITIVITY_LOW", endOfSpeechSensitivity: "END_SENSITIVITY_LOW", prefixPaddingMs: 300, silenceDurationMs: o.silence_ms || 600 } },   // default turn-taking is noise-shy on purpose: LOW start sensitivity means a bang, a TV or a cough neither cuts her off nor makes her answer (Tony: "she hears any noise, she automatically talks"); a person actually speaking still interrupts at once, and the kept 300 ms prefix padding saves the first word when they do. VOICE_START_SENS=high restores the old touchiness. Faster turn-taking only when VOICE_FAST_TURNS=on (it can cut a caller off mid-address)
+        realtimeInputConfig: { automaticActivityDetection: process.env.VOICE_FAST_TURNS === "on" ? { startOfSpeechSensitivity: "START_SENSITIVITY_HIGH", endOfSpeechSensitivity: "END_SENSITIVITY_HIGH", prefixPaddingMs: 200, silenceDurationMs: o.silence_ms || Number(process.env.VOICE_SILENCE_MS) || 350 } : { startOfSpeechSensitivity: process.env.VOICE_START_SENS === "high" ? "START_SENSITIVITY_HIGH" : "START_SENSITIVITY_LOW", endOfSpeechSensitivity: "END_SENSITIVITY_LOW", prefixPaddingMs: 500, silenceDurationMs: o.silence_ms || 900 } },   // default turn-taking is noise-shy on purpose: LOW start sensitivity means a bang, a TV or a cough neither cuts her off nor makes her answer (Tony: "she hears any noise, she automatically talks"); a person actually speaking still interrupts at once. Nov 2, 2026 (cut-off tuning, Tony's confirmation call): prefix padding 300 -> 500 ms so MORE of the caller's first word survives the barge-in, and the end-of-turn silence 600 -> 900 ms so a caller who pauses mid-thought (an address, a date) is not answered over and then clipped — the two changes trade a touch of response latency for far fewer mid-sentence cut-offs. VOICE_START_SENS=high restores the old touchiness. Faster turn-taking only when VOICE_FAST_TURNS=on (it can cut a caller off mid-address)
         inputAudioTranscription: {}, outputAudioTranscription: {} } }];
     },
     // phone -> Gemini: mu-law 8 kHz base64 -> PCM16 16 kHz base64
@@ -95,4 +108,4 @@ function create(opts) {
     }
   };
 }
-module.exports = { name: "gemini-live", DEFAULT_MODEL, DEFAULT_VOICE, VOICES, URL, headers, create, declarations, schema, mulawEnc, MU_DEC };
+module.exports = { name: "gemini-live", DEFAULT_MODEL, DEFAULT_VOICE, VOICE_SOURCE, VOICES, URL, headers, create, declarations, schema, mulawEnc, MU_DEC };

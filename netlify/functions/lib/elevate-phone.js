@@ -49,6 +49,7 @@ async function context(tok) {
     session_id: ID(c), call_sid: c.call_sid,
     instructions: E.systemPrompt({ memory: facts, owner: E.isOwnerKey(c.owner_key) }) + "\nYou are on a PHONE CALL, speaking out loud: one or two short sentences at a time. The caller was already verified by keypad PIN; do not ask for or accept PINs or passwords. You are not able to transfer calls.",
     greeting: "Hey, my name is Elevate. What can I do for you?", voice: process.env.ELEVATE_VOICE || "marin",
+    ambience: "off",   // the owner's own calls stay natural — no room under her voice (Tony's standing rule; ambience is for customer calls only)
     tools: E.asRealtimeTools(c.owner_key, "phone"), max_seconds: maxSeconds(), recording: false } };
 }
 async function handle(act, b) { // transcript / tool / end / transfer for an Əlevate call
