@@ -401,9 +401,9 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
     const PR2 = require("../netlify/functions/lib/voice/prompt.js");
     process.env.VOICE_LAYERS = "base"; const baseP = PR2.build({ agent_name: "Elevate" }, { name: "POTENT Logistics", slug: "potent-logistics" });
     ok(/NO DEAD AIR, AND NO NARRATION/.test(baseP) && /SAY EVERYTHING ONCE/.test(baseP) && !/Give me one moment while I pull that up/.test(baseP), "prompt (always on): no tool narration, nothing said twice");
-    ok(/Hold on while I check that for you/.test(baseP) && /never leave the caller hanging in silence/.test(baseP), "prompt (always on): before a check she says a hold-on line so the caller knows she is there");
+    ok(/the system itself speaks one short hold-on line/.test(baseP) && /Never speak your own hold-on line on top of it/.test(baseP), "prompt (always on): during a check the SYSTEM speaks the one hold-on line; she never adds her own (Nov 2 de-glitch: one filler owner)");
     ok(/DETAILS CONFIRM \(required\)/.test(baseP) && /Is that correct\?/.test(baseP), "prompt (always on): pickup, delivery and date/time are read back and confirmed before any quote or booking");
-    ok(/HOLD-ON LINES COME BEFORE THE TOOL CALL/.test(baseP) && /check_live_availability/.test(baseP) && /take_card_payment/.test(baseP), "prompt (always on): the hold-on line is spoken before slow tool calls, never fired off in silence");
+    ok(/WHILE A CHECK RUNS, STAY SILENT/.test(baseP) && /check_live_availability/.test(baseP) && /take_card_payment/.test(baseP) && !/HOLD-ON LINES COME BEFORE THE TOOL CALL/.test(baseP), "prompt (always on): slow steps are fired in silence on purpose — the bridge owns the hold-on line now");
     ok(/YOUR VOICE NEVER CHANGES/.test(baseP) && /never deeper/.test(baseP), "prompt (always on): her voice and pitch never change mid-call");
     ok(/follow the REFUSAL PATH above/.test(baseP) && !/offer a person or a callback\. If the details change/.test(baseP), "prompt (always on): the booking flow points at the refusal path, not the old bare callback line");
     ok(/WEIGHT, TOTAL OR EACH/.test(baseP) && /LEAVE NO MONEY ON THE TABLE/.test(baseP) && /smaller booked job beats an empty truck/.test(baseP), "prompt (always on): ask total-or-each; work a short caller with real levers down to the tool's floor, never below it");
