@@ -121,7 +121,8 @@ exports.handler = async function (event) {
         const seeded = Object.assign({}, ses.intake || {}, { customer_name: known.full });
         await S.patchSession(ses.org_id, ses.id, { intake: seeded }); ses.intake = seeded;
       }
-      return B.J(200, { resume: resume, session_id: ses.id, org_id: ses.org_id, call_sid: ses.provider_call_id, instructions: P.build(cfg, org, known), greeting: P.greeting(cfg, org, ses.from_number, known), voice: cfg.voice || "marin", tools: allowed, max_seconds: cap, recording: rec });
+      const amb = require("./lib/voice/ambience").resolve(cfg, ses);   // the room she sounds like she is sitting in, matched to this company's trade (Nov 2, 2026); the bridge owns the audio
+      return B.J(200, { resume: resume, session_id: ses.id, org_id: ses.org_id, call_sid: ses.provider_call_id, instructions: P.build(cfg, org, known), greeting: P.greeting(cfg, org, ses.from_number, known), voice: cfg.voice || "marin", tools: allowed, max_seconds: cap, recording: rec, ambience: amb.ambience, ambience_bed: amb.ambience_bed });
     }
     if (act === "canonical_jobs") return B.J(200, { jobs: await CN.jobs(20) });   // work list for the bridge-host transcriber (canonical transcripts)
     const ses = await sessionById(b.session_id); if (!ses) return B.J(404, { error: "No such call" });
