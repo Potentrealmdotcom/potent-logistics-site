@@ -124,7 +124,9 @@ exports.handler = async function (event) {
       const ses = rows(await B.sb("voice_sessions?provider_call_id=eq." + encodeURIComponent(callSid) + "&select=*&limit=1"))[0]; if (!ses) return xmlR("<Response/>");
       const ds = String(params.DialCallStatus || ""), good = ds === "completed" || ds === "answered";
       const leg = String(params.DialCallSid || "").slice(0, 64);   // per-LEG idempotency: a retried transfer reports the same parent status, so the old key (parent SID + status) would swallow the retry's result whole
+      let xferTransition = false;   // did THIS invocation transition a requested handoff row for this session? Captured BEFORE the patch below moves the row (defense in depth, Nov 2 race fix — see the hand-back gate)
       if (await S.firstTime(ses.org_id, ses.id, "dial:" + callSid + ":" + leg + ":" + ds, "handoff_result", { status: ds })) {
+        xferTransition = !!rows(await B.sb("voice_handoffs?org_id=eq." + ses.org_id + "&session_id=eq." + ses.id + "&status=eq.requested&select=id&limit=1"))[0];
         await B.sb("voice_handoffs?org_id=eq." + ses.org_id + "&session_id=eq." + ses.id + "&status=eq.requested", { method: "PATCH", prefer: "return=minimal", body: { status: good ? "completed" : "missed", resolved_at: new Date().toISOString(), resolved_by: "system:" + ds } });
         if (!good) await missed(ses.org_id, ses.id, ses.from_number, "Transfer to a person was not answered (" + (ds || "unknown") + ")");
       }
@@ -136,9 +138,16 @@ exports.handler = async function (event) {
       // redials on its own when she comes back. The second failure hands back for the spoken playbook
       // recovery; the callback for each failed attempt is already saved above. Reject/fallback dials never
       // carry state "handoff" and keep the spoken close below.
-      if (ses.state === "handoff" && bridgeUrl() && secret()) {
+      // RACE FIX (Nov 2, 2026): state "handoff" alone is no longer the only proof. The bridge's stream stop
+      // used to finalize the session (state "ended", reason caller_hangup) ~20 s before this dial result
+      // landed, destroying the state this gate keys on (the bridge now sets its transfer flag before its
+      // api call — but a session ended by ANY stray writer must still hand back). The durable proof this
+      // invocation itself produces — a requested handoff row for this session transitioning to missed in
+      // the firstTime block above — is therefore ALSO sufficient: only a real assistant transfer carries
+      // such a row; reject/fallback dials have none and keep the spoken close below, byte for byte.
+      if ((ses.state === "handoff" || xferTransition) && bridgeUrl() && secret()) {
         const attempts = rows(await B.sb("voice_events?session_id=eq." + ses.id + "&kind=eq.handoff_result&select=id")).length;
-        await S.patchSession(ses.org_id, ses.id, { state: "active" });   // hand her the call again: the stream context requires an active session
+        await S.patchSession(ses.org_id, ses.id, { state: "active", ended_at: null });   // hand her the call again: the stream context requires an active session — and a session a stray writer already ended must have its ended_at cleared too, or the returning stream still sees a finished call
         if (attempts <= 1) await B.sb("voice_handoffs", { method: "POST", prefer: "return=minimal", body: { org_id: ses.org_id, session_id: ses.id, reason: "Transfer retry (automatic): the first attempt was not answered", summary: null } });
         return xmlR(TW.twimlStream(bridgeUrl(), { token: TW.streamToken(secret(), callSid, ses.org_id, Date.now() + 120000, { r: attempts <= 1 ? "xferfail:1" : "xferfail:2" }), session: ses.id }, base() + "?a=fallback&s=" + ses.id));
       }

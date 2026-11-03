@@ -9,7 +9,7 @@ function rig(opts) {
   opts = opts || {}; const calls = []; let aiSock = null;
   const fetch = async (url, o) => { const b = JSON.parse(o.body); calls.push(b); if (opts.apiDown) throw new Error("down"); let data = {}, status = 200;
     if (b.action === "context") { if (opts.ctxStatus) { status = opts.ctxStatus; data = { error: "x" }; } else data = { session_id: "S1", instructions: "be nice", tools: [{ type: "function", name: "t", description: "d", parameters: { type: "object", properties: { a: { type: "string" } }, additionalProperties: false } }], voice: "alloy", greeting: "Hello", max_seconds: opts.maxSeconds || 1800, resume: opts.resume || null }; }
-    if (b.action === "tool") { if (opts.toolDown) throw new Error("tool down"); if (opts.toolDelay) await sleep(opts.toolDelay); data = { result: opts.toolResult || { ok: true } }; } if (b.action === "hangup") data = { ok: true }; if (b.action === "pay") data = opts.payFail ? { ok: false, error: "keypad_not_live" } : { ok: true }; if (b.action === "transfer") data = opts.transferFail ? { ok: false, error: "no_one_available" } : { ok: true, requested: true };
+    if (b.action === "tool") { if (opts.toolDown) throw new Error("tool down"); if (opts.toolDelay) await sleep(opts.toolDelay); data = { result: opts.toolResult || { ok: true } }; } if (b.action === "hangup") data = { ok: true }; if (b.action === "pay") data = opts.payFail ? { ok: false, error: "keypad_not_live" } : { ok: true }; if (b.action === "transfer") { if (opts.transferDelay) await sleep(opts.transferDelay); data = opts.transferFail ? { ok: false, error: "no_one_available" } : { ok: true, requested: true }; }
     return { status, json: async () => data }; };
   class W extends Sock { constructor(url, o) { super(); aiSock = this; this.url = url; this.headers = o.headers; if (!opts.aiNeverOpens) setTimeout(() => this.emit("open"), 5); } }
   const b = createBridge({ env: Object.assign({ SITE_URL: "https://site.test/", VOICE_BRIDGE_SECRET: "sec", GEMINI_API_KEY: "gk-x", VOICE_AMBIENCE: "off" }, opts.env || {}), WebSocket: W, fetch, log() {} });   // VOICE_AMBIENCE off: the legacy suite tests the bare line; the room itself is proven in tests/voice-ambience.test.js
@@ -49,6 +49,19 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
   // transfer ok
   r = rig({ toolResult: { ok: true, transfer_possible: true } }); r.start(); await sleep(40); r.ready(); r.ai({ toolCall: { functionCalls: [{ id: "h1", name: "request_human_handoff", args: {} }] } }); await sleep(20); ok(!r.calls.some(c => c.action === "transfer"), "transfer waits until the AI finishes speaking");
   r.ai(audio(240)); r.ai(sc({ turnComplete: true })); r.phone({ event: "mark" }); await sleep(450); ok(r.calls.some(c => c.action === "transfer"), "then the transfer is requested"); r.phone({ event: "stop" }); await sleep(60); ok(!r.calls.some(c => c.action === "end"), "stream ending after a transfer does NOT end the session from the bridge (Nov 2 warm transfer): a no-answer brings the caller back to her on a new stream, and the site finalizes the session when the phone call truly ends");
+  // transfer RACE (Nov 2 retest failure): the stream stop lands while the transfer api call is still in
+  // flight — the redirect that stops the stream is executed inside that same round trip, so the stop
+  // reliably beats the HTTP response. finish() must run as xfer_handoff (the flag is set BEFORE the
+  // await, mirroring doPay) and NO end action may be sent to the site: a normal caller_hangup end here
+  // rewrote the session handoff -> ended ~20 s before the dial result and killed the hand-back.
+  r = rig({ toolResult: { ok: true, transfer_possible: true }, transferDelay: 700 }); r.start(); await sleep(40); r.ready(); r.ai({ toolCall: { functionCalls: [{ id: "hR", name: "request_human_handoff", args: {} }] } }); await sleep(20); r.ai(audio(240)); r.ai(sc({ turnComplete: true })); r.phone({ event: "mark" });
+  for (let i = 0; i < 60 && !r.calls.some(c => c.action === "transfer"); i++) await sleep(20);
+  ok(r.calls.some(c => c.action === "transfer"), "transfer race: the transfer api call is in flight");
+  r.phone({ event: "stop" }); await sleep(120);   // the stop wins the race, while the transfer response is still ~500 ms away
+  ok(!r.calls.some(c => c.action === "end"), "transfer race: stop landing mid-transfer-flight sends NO end action to the site (finish ran as xfer_handoff)");
+  ok(r.aiSock.readyState === 3, "transfer race: finish still ran on the stop (AI link closed) — it closed as a handoff, not as a hangup end");
+  await sleep(800);   // let the in-flight transfer response land and doTransfer complete
+  ok(!r.calls.some(c => c.action === "end"), "transfer race: no end action arrives after the transfer response lands either");
   // transfer fail -> AI told
   r = rig({ toolResult: { ok: true, transfer_possible: true }, transferFail: true }); r.start(); await sleep(40); r.ready(); r.ai({ toolCall: { functionCalls: [{ id: "h2", name: "request_human_handoff", args: {} }] } }); await sleep(20); r.ai(audio(240)); r.ai(sc({ turnComplete: true })); r.phone({ event: "mark" }); await sleep(450);
   ok(JSON.stringify(r.aiSock.sent).includes("could not be completed") && JSON.stringify(r.aiSock.sent).includes("offer a callback"), "failed transfer: the AI is told to be honest and offer a callback");

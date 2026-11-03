@@ -54,7 +54,7 @@ function create(opts) {
   // message or two, and an interruption landing in that gap must not orphan the count from its line.
   const flushAgent = function (ev, rescue) { if (agentBuf.trim()) { ev.push({ kind: "agent_text", text: agentBuf.trim(), key: "a:" + (++n), chunks: turnChunks, rescue: !!rescue }); turnChunks = 0; } agentBuf = ""; };
   return {
-    name: "gemini-live", version: "2026-11-02b",
+    name: "gemini-live", version: "2026-11-02c",
     setup: function (o) {
       const voice = VOICE_SOURCE.voice; // LOCKED: Elevate is always the same female voice (Sulafat — see VOICE_SOURCE above), on every call and every reconnect. No config, env or caller can change it.
       const decl = declarations(o.tools);

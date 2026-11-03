@@ -338,8 +338,9 @@ function createBridge(deps) {
       if (xferFired) return; xferFired = true;   // one redirect per departure: the turn-end path and the 20 s backstop can both arrive, but the call moves once
       for (let i = 0; i < 30 && markQ.length; i++) await sleep(200);            // let her whole announce line finish playing ("I'm transferring you now — ok, yes, give me one second") before the call moves: the playback marks are the ground truth, and the longer line gets a longer leash than the old fragment did
       if (done) return;
+      xferStarted = true;   // BEFORE the api call, exactly as doPay() sets payStarted (Nov 2 race fix): the redirect that stops this stream is executed by the phone company INSIDE this round trip, so the stop event reliably beats the HTTP response — if the flag were set only after the await, finish() would run as a normal caller_hangup and end the session ~20 s before the dial result lands, destroying the state the hand-back keys on
       const r = await api({ action: "transfer", session_id: ctx.session_id }, 10000);
-      if (r.data && r.data.ok) { transferred = true; xferStarted = true; } else sysNote("The transfer could not be completed (" + ((r.data && r.data.error) || "no answer from the system") + "). Tell the caller honestly that no one could be reached, and offer a callback with create_callback_task.");
+      if (r.data && r.data.ok) { transferred = true; } else { xferStarted = false; sysNote("The transfer could not be completed (" + ((r.data && r.data.error) || "no answer from the system") + "). Tell the caller honestly that no one could be reached, and offer a callback with create_callback_task."); }   // no redirect happened: the stream is still hers, so a later stop is a normal end again
       // on success the phone company moves the call; the stream ends and finish("xfer_handoff") runs from the stop event — the session stays open on the site, because a no-answer brings the caller right back to her
     }
 
