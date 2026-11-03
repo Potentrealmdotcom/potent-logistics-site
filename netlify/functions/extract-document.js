@@ -15,6 +15,7 @@ function signedIn(event) {
 }
 
 exports.handler = async function(event, context) {
+<<<<<<< HEAD
   if(event.httpMethod !== "POST") return { statusCode: 405, body: "Method not allowed" };
   if(!signedIn(event)) return { statusCode: 401, body: JSON.stringify({ error: "Sign in to use document reading." }) };
 
@@ -24,10 +25,24 @@ exports.handler = async function(event, context) {
   try {
     const { imageBase64, docType } = JSON.parse(event.body);
     if(!imageBase64 || !docType) return { statusCode: 400, body: JSON.stringify({ error: "Missing image or docType" }) };
+=======
+if(event.httpMethod !== "POST") return { statusCode: 405, body: "Method not allowed" };
+
+const OPENAI_KEY = process.env.OPENAI_API_KEY;
+if(!OPENAI_KEY) return { statusCode: 500, body: JSON.stringify({ error: "API key not configured" }) };
+
+try {
+const { imageBase64, docType } = JSON.parse(event.body);
+if(!imageBase64 || !docType) return { statusCode: 400, body: JSON.stringify({ error: "Missing image or docType" }) };
+
+const prompts = {
+  ratecon: `You are extracting data from a trucking rate confirmation document. Extract these fields and return ONLY valid JSON, no other text:
+>>>>>>> origin/main
 
     const prompts = {
       ratecon: `You are extracting data from a trucking rate confirmation document. Extract these fields and return ONLY valid JSON, no other text:
 {
+<<<<<<< HEAD
   "customerName": "",
   "customerPhone": "",
   "pickupAddress": "",
@@ -67,10 +82,54 @@ Return only the JSON object.`,
   "expenseType": "",
   "description": "",
   "state": ""
+=======
+"customerName": "",
+"customerPhone": "",
+"pickupAddress": "",
+"deliveryAddress": "",
+"pickupDate": "",
+"deliveryDate": "",
+"commodity": "",
+"weight": "",
+"rate": "",
+"brokerName": "",
+"brokerMC": "",
+"loadNumber": "",
+"notes": ""
+}
+If a field is not found, use empty string. Return only the JSON object.`,
+
+  bol: `You are extracting data from a Bill of Lading (BOL). Extract these fields and return ONLY valid JSON:
+
+{
+"bolNumber": "",
+"shipperName": "",
+"shipperAddress": "",
+"consigneeName": "",
+"consigneeAddress": "",
+"commodity": "",
+"weight": "",
+"pieces": "",
+"specialInstructions": "",
+"date": ""
+}
+Return only the JSON object.`,
+
+  receipt: `You are extracting data from a receipt or expense document. Return ONLY valid JSON:
+
+{
+"vendor": "",
+"date": "",
+"amount": "",
+"expenseType": "",
+"description": "",
+"state": ""
+>>>>>>> origin/main
 }
 For expenseType use one of: fuel, tolls, parking, supplies, other.
 Return only the JSON object.`,
 
+<<<<<<< HEAD
       cdl: `You are extracting data from a Commercial Driver's License (CDL). Return ONLY valid JSON:
 {
   "driverName": "",
@@ -80,12 +139,29 @@ Return only the JSON object.`,
   "expiryDate": "",
   "licenseClass": "",
   "endorsements": ""
+=======
+  cdl: `You are extracting data from a Commercial Driver's License (CDL). Return ONLY valid JSON:
+
+{
+"driverName": "",
+"licenseNumber": "",
+"state": "",
+"dateOfBirth": "",
+"expiryDate": "",
+"licenseClass": "",
+"endorsements": ""
+>>>>>>> origin/main
 }
 Return only the JSON object.`
     };
 
+<<<<<<< HEAD
     const prompt = prompts[docType];
     if(!prompt) return { statusCode: 400, body: JSON.stringify({ error: "Invalid docType" }) };
+=======
+const prompt = prompts[docType];
+if(!prompt) return { statusCode: 400, body: JSON.stringify({ error: "Invalid docType" }) };
+>>>>>>> origin/main
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -114,11 +190,19 @@ Return only the JSON object.`
     const cleaned = text.replace(/```json|```/g, "").trim();
     const extracted = JSON.parse(cleaned);
 
+<<<<<<< HEAD
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ success: true, data: extracted, docType })
     };
+=======
+return {
+  statusCode: 200,
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ success: true, data: extracted, docType })
+};
+>>>>>>> origin/main
 
   } catch(e) {
     return { statusCode: 500, body: JSON.stringify({ error: e.message }) };

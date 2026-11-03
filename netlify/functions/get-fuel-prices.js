@@ -4,22 +4,21 @@
 // Fetches live gas + diesel prices from EIA server-side. The EIA API does not
 // reliably allow direct browser requests (CORS), which is why the app was
 // always silently falling back to the hardcoded default price. Running this
-// fetch on Netlify’s server instead of the browser avoids that entirely.
+// fetch on Netlify's server instead of the browser avoids that entirely.
 
-const EIA_API_KEY = “QYc4D6uqgsUFT4nyTwFNlv7PeHeS7xDhl80SHYmX”;
+const EIA_API_KEY = "QYc4D6uqgsUFT4nyTwFNlv7PeHeS7xDhl80SHYmX";
 
 exports.handler = async (event) => {
 const headers = {
-“Access-Control-Allow-Origin”: “*”,
-“Access-Control-Allow-Headers”: “Content-Type”,
-“Content-Type”: “application/json”
+"Access-Control-Allow-Origin": "*",
+"Access-Control-Allow-Headers": "Content-Type",
+"Content-Type": "application/json"
 };
 
 try {
 const gasUrl = `https://api.eia.gov/v2/petroleum/pri/gnd/data/?api_key=${EIA_API_KEY}&frequency=weekly&data[0]=value&facets[duoarea][]=SGA&facets[product][]=EPM0&sort[0][column]=period&sort[0][direction]=desc&length=1`;
 const dieselUrl = `https://api.eia.gov/v2/petroleum/pri/gnd/data/?api_key=${EIA_API_KEY}&frequency=weekly&data[0]=value&facets[duoarea][]=SGA&facets[product][]=EPD2D&sort[0][column]=period&sort[0][direction]=desc&length=1`;
 
-```
 const [gasRes, dieselRes] = await Promise.all([
   fetch(gasUrl),
   fetch(dieselUrl)
@@ -44,7 +43,6 @@ return {
     dieselPeriod: dieselData?.period || null,
   })
 };
-```
 
 } catch (err) {
 return {

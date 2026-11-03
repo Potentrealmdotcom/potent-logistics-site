@@ -1,6 +1,7 @@
 // netlify/functions/send-email.js  (REPLACES the old file)
 // Sends email through Mailjet. Keys now live in Netlify environment variables, not in the code.
 //
+<<<<<<< HEAD
 // Who can send what:
 //   - Anyone (no login): only to POTENT's own inbox, or to an address that already booked a job
 //     (so booking confirmations and "how did we do" emails still work). Never to arbitrary people.
@@ -73,4 +74,62 @@ exports.handler = async function (event) {
     } catch (err) {
         return out(200, { sent: false, error: "Could not send." });
     }
+=======
+// Sends real email via Mailjet's REST API. Credentials stay server-side here —
+// never expose the API key/secret in client-side app.jsx code, since anyone
+// could read them from the browser and send spam through your account.
+
+// Credentials come from Netlify environment variables (never hardcode them —
+const MAILJET_API_KEY = process.env.MAILJET_API_KEY;
+const MAILJET_SECRET_KEY = process.env.MAILJET_SECRET_KEY;
+const FROM_EMAIL = "potentlogistics@pm.me"; // must be a verified sender in your Mailjet account
+const FROM_NAME = "POTENT Logistics";
+
+exports.handler = async (event) => {
+const headers = {
+"Access-Control-Allow-Origin": "*",
+"Access-Control-Allow-Headers": "Content-Type",
+"Content-Type": "application/json"
+};
+
+if (event.httpMethod !== "POST") {
+return { statusCode: 405, headers, body: JSON.stringify({ error: "POST only" }) };
+}
+
+try {
+const { to, subject, message } = JSON.parse(event.body || "{}");
+if (!to || !subject || !message) {
+return { statusCode: 400, headers, body: JSON.stringify({ error: "Missing to, subject, or message" }) };
+}
+
+const auth = Buffer.from(`${MAILJET_API_KEY}:${MAILJET_SECRET_KEY}`).toString("base64");
+
+const res = await fetch("https://api.mailjet.com/v3.1/send", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": `Basic ${auth}`
+  },
+  body: JSON.stringify({
+    Messages: [{
+      From: { Email: FROM_EMAIL, Name: FROM_NAME },
+      To: [{ Email: to }],
+      Subject: subject,
+      TextPart: message
+    }]
+  })
+});
+
+const data = await res.json();
+
+if (!res.ok) {
+  return { statusCode: 200, headers, body: JSON.stringify({ sent: false, error: data }) };
+}
+
+return { statusCode: 200, headers, body: JSON.stringify({ sent: true, result: data }) };
+
+} catch (err) {
+return { statusCode: 200, headers, body: JSON.stringify({ sent: false, error: err.message }) };
+}
+>>>>>>> origin/main
 };

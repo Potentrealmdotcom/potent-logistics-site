@@ -8,6 +8,7 @@
 // bank account saved here (setup_future_usage = off_session).
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+<<<<<<< HEAD
 
 // Dollars. Must match the sign-up page and the tiers in create-checkout-session.js.
 const PRICES = { starter: 4995, growth: 9995, fleet: 19995, enterprise: 34995 };
@@ -64,6 +65,27 @@ exports.handler = async (event) => {
       });
       customerId = customer.id;
     }
+=======
+
+exports.handler = async (event) => {
+if (event.httpMethod !== "POST") {
+return { statusCode: 405, body: "Method Not Allowed" };
+}
+
+const headers = {
+"Access-Control-Allow-Origin": "*",
+"Access-Control-Allow-Headers": "Content-Type",
+"Content-Type": "application/json"
+};
+
+try {
+const body = JSON.parse(event.body || "{}");
+const { amount, tier, company, name, email, phone } = body;
+
+if (!amount || amount < 1000) {
+  return { statusCode: 400, headers, body: JSON.stringify({ error: "Invalid amount" }) };
+}
+>>>>>>> origin/main
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: total * 100,
@@ -95,6 +117,7 @@ exports.handler = async (event) => {
       description: `POTENT OS License (${plan === "flex" ? "Flex Pay down payment" : "full"}${wantsSupport ? " + Monthly Support month 1" : ""}) - ${key} - ${company || ""}`,
     });
 
+<<<<<<< HEAD
     return {
       statusCode: 200,
       headers,
@@ -104,4 +127,23 @@ exports.handler = async (event) => {
     console.error("Payment intent error:", err);
     return { statusCode: 500, headers, body: JSON.stringify({ error: "Could not start payment" }) };
   }
+=======
+return {
+  statusCode: 200,
+  headers,
+  body: JSON.stringify({
+    clientSecret: paymentIntent.client_secret,
+    paymentIntentId: paymentIntent.id,
+  }),
+};
+
+} catch (err) {
+console.error("Payment intent error:", err);
+return {
+statusCode: 500,
+headers,
+body: JSON.stringify({ error: err.message }),
+};
+}
+>>>>>>> origin/main
 };
