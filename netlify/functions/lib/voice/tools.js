@@ -391,7 +391,7 @@ const TOOLS = {
     if (!r.ok) return { ok: false, error: "save_failed" };
     const can = !!(ctx.cfg.human_available && ctx.cfg.transfer_number && TW.configured());
     await S.patchSession(ctx.orgId, ctx.session.id, { outcome: "handoff_requested" });
-    return { ok: true, handoff_id: rows(r)[0] && rows(r)[0].id, transfer_possible: can, transfer: can ? "pending" : "unavailable", say: can ? "Tell the caller you are trying to connect them. Do not say they are connected until told." : "No one is available right now. Tell the caller honestly and offer a callback (create_callback_task)." };
+    return { ok: true, handoff_id: rows(r)[0] && rows(r)[0].id, transfer_possible: can, transfer: can ? "pending" : "unavailable", say: can ? "Say warmly, in your own voice: \"I'm transferring you now — ok, yes, give me one second.\" Then one short closer — \"All set, putting you through now\" — and stop talking. The system connects them while it rings; do not say they are connected, and do not promise you will stay on the line." : "No one is available right now. Tell the caller honestly and offer a callback (create_callback_task)." };
   },
   async send_approved_confirmation(ctx, a) {
     const bk = rows(await B.sb("voice_bookings?org_id=eq." + ctx.orgId + "&id=eq." + clip(a.booking_id, 40) + "&session_id=eq." + ctx.session.id + "&select=*&limit=1"))[0];

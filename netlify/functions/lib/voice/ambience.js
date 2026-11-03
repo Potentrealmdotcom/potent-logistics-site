@@ -77,13 +77,23 @@ const keyOf = function (s) { return String(s || "").toLowerCase().replace(/[^a-z
 
 // Decide the room for one call. Returns { ambience: "off" } or { ambience_bed: <bed key> }.
 // cfg is the org's voice_agent_config (settings already merged); ses is the call session.
+function bedForIndustry(raw) {
+  const whole = keyOf(raw); if (whole && INDUSTRY_TO_BED[whole]) return INDUSTRY_TO_BED[whole];   // the exact trade ("logistics", "autorepair")
+  const words = String(raw == null ? "" : raw).toLowerCase().split(/[^a-z]+/).filter(Boolean);     // free text: any single word can carry the trade
+  for (const w of words) if (INDUSTRY_TO_BED[w]) return INDUSTRY_TO_BED[w];                          // ("Trucking & Logistics" -> trucking; "logistics company" -> logistics)
+  return null;
+}
 function resolve(cfg, ses) {
   const st = (cfg && cfg.settings) || {};
   if (String(st.ambience || "").toLowerCase() === "off") return { ambience: "off" };   // the company switched its room off
   const direct = keyOf(st.ambience_bed);   // an explicit room choice beats the trade mapping
   if (direct && BEDS[direct]) return { ambience_bed: direct };
-  const bed = INDUSTRY_TO_BED[keyOf(st.industry)] || FALLBACK_BED;
-  return { ambience_bed: bed };
+  const bed = bedForIndustry(st.industry); if (bed) return { ambience_bed: bed };      // else the trade decides
+  if (st.industry == null || String(st.industry).trim() === "") return {};             // NO trade on file: name no room at all, so the bridge's
+  // deployment default (this product's home trade: the dispatch office) decides — instead of pinning every
+  // not-yet-onboarded company to the generic office. (Nov 2, 2026: Potent's own line resolved generic_office
+  // on a graded call precisely because its industry was never written; the deployment default never got a say.)
+  return { ambience_bed: FALLBACK_BED };   // a trade IS on file but unlisted: the generic office
 }
 
 module.exports = { BEDS, FALLBACK_BED, INDUSTRY_TO_BED, resolve, keyOf };

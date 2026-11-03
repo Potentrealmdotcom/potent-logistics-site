@@ -81,7 +81,7 @@ exports.handler = async function (event) {
       const cfg = await S.cfgOf(ses.org_id), hand = rows(await B.sb("voice_handoffs?org_id=eq." + ses.org_id + "&session_id=eq." + ses.id + "&status=eq.requested&select=id&limit=1"))[0];
       if (!hand || !cfg.human_available || !cfg.transfer_number || cfg.emergency_stop) return xmlR(TW.twimlSay("Sorry, no one is available right now. We will call you back."));
       await S.patchSession(ses.org_id, ses.id, { state: "handoff" });
-      return xmlR(TW.twimlDial(cfg.transfer_number, base() + "?a=dial&s=" + ses.id, "Connecting you now.", ses.to_number));
+      return xmlR(TW.twimlDial(cfg.transfer_number, base() + "?a=dial&s=" + ses.id, "", ses.to_number));   // no robot voice here: SHE already announced the transfer in her own voice before the redirect
     }
     if (a === "pay" || a === "payresult") {   // KEYPAD PAYMENT. The caller types the card straight to Stripe through Twilio; the amount is re-read from our database here, never from the request or the AI.
       const JP = require("./lib/voice/jobpay"), TL = require("./lib/voice/tools");
@@ -123,14 +123,27 @@ exports.handler = async function (event) {
     if (a === "dial") { // the result of the attempt to reach a person
       const ses = rows(await B.sb("voice_sessions?provider_call_id=eq." + encodeURIComponent(callSid) + "&select=*&limit=1"))[0]; if (!ses) return xmlR("<Response/>");
       const ds = String(params.DialCallStatus || ""), good = ds === "completed" || ds === "answered";
-      if (await S.firstTime(ses.org_id, ses.id, "dial:" + callSid + ":" + ds, "handoff_result", { status: ds })) {
+      const leg = String(params.DialCallSid || "").slice(0, 64);   // per-LEG idempotency: a retried transfer reports the same parent status, so the old key (parent SID + status) would swallow the retry's result whole
+      if (await S.firstTime(ses.org_id, ses.id, "dial:" + callSid + ":" + leg + ":" + ds, "handoff_result", { status: ds })) {
         await B.sb("voice_handoffs?org_id=eq." + ses.org_id + "&session_id=eq." + ses.id + "&status=eq.requested", { method: "PATCH", prefer: "return=minimal", body: { status: good ? "completed" : "missed", resolved_at: new Date().toISOString(), resolved_by: "system:" + ds } });
         if (!good) await missed(ses.org_id, ses.id, ses.from_number, "Transfer to a person was not answered (" + (ds || "unknown") + ")");
       }
-      // A transfer that did not connect must never end in silence: the callback is already saved above,
-      // so close the call out loud. (The full hand-back to the assistant rides with the warm-transfer build.)
-      if (!good) return xmlR(TW.twimlSay("Sorry, no one could take the call. We will call you back."));
-      return xmlR("<Response/>");
+      if (good) return xmlR("<Response><Hangup/></Response>");   // the person answered and the conversation is over: end the caller leg cleanly instead of falling through to the dial TwiML's "no one could take the call" apology tail
+      // WARM HAND-BACK (Nov 2, 2026 — this is that build): a real assistant transfer (state "handoff"; only
+      // a=xfer sets it) that did not connect returns the caller to the assistant on a fresh stream, on the
+      // same rails as the payment hand-back. The ONE retry is enforced here, not by prompt: the first
+      // failure also writes the fresh "requested" handoff row the retry dials against, and the bridge
+      // redials on its own when she comes back. The second failure hands back for the spoken playbook
+      // recovery; the callback for each failed attempt is already saved above. Reject/fallback dials never
+      // carry state "handoff" and keep the spoken close below.
+      if (ses.state === "handoff" && bridgeUrl() && secret()) {
+        const attempts = rows(await B.sb("voice_events?session_id=eq." + ses.id + "&kind=eq.handoff_result&select=id")).length;
+        await S.patchSession(ses.org_id, ses.id, { state: "active" });   // hand her the call again: the stream context requires an active session
+        if (attempts <= 1) await B.sb("voice_handoffs", { method: "POST", prefer: "return=minimal", body: { org_id: ses.org_id, session_id: ses.id, reason: "Transfer retry (automatic): the first attempt was not answered", summary: null } });
+        return xmlR(TW.twimlStream(bridgeUrl(), { token: TW.streamToken(secret(), callSid, ses.org_id, Date.now() + 120000, { r: attempts <= 1 ? "xferfail:1" : "xferfail:2" }), session: ses.id }, base() + "?a=fallback&s=" + ses.id));
+      }
+      // Any other dial that did not connect must never end in silence: the callback is already saved above, so close the call out loud.
+      return xmlR(TW.twimlSay("Sorry, no one could take the call. We will call you back."));
     }
     return xmlR("<Response/>", 400);
   } catch (e) { console.error("voice-webhook", a, e && e.message); await health(null, "webhook_error", false, a); return xmlR(TW.twimlSay("We are having trouble. Please call back shortly."), 200); }
