@@ -3,6 +3,7 @@
 // Dependencies are injected so the whole conversation flow is testable with fake sockets (tests/voicebridge.test.js).
 function createBridge(deps) {
   const env = deps.env, W = deps.WebSocket, F = deps.fetch, log = deps.log || function () {};
+  const fs = require("fs"), path = require("path");
   const AI = deps.ai || (function () { try { return require("./gemini-live"); } catch (e) { return require("../../netlify/functions/lib/voice/adapters/gemini-live"); } })();
   const SITE = String(env.SITE_URL || "").replace(/\/+$/, "");
   async function api(body, ms) {
@@ -37,14 +38,19 @@ function createBridge(deps) {
   const HOLD_LINES = ["One second — I'm checking that for you.", "Just a moment — still checking on that for you.", "Hang tight one more second — I'm pulling that up for you."];
   const HOLD_RECOVERY = "I'm so sorry — that check is taking longer than it should on my end. Let's keep right on going; I have everything you've told me so far.";
 
-  // AMBIENCE — THE ROOM SHE SITS IN (Tony, Nov 2, 2026; restored and generalized). The Bland benchmark
-  // call sounded real partly because the room was in it: whatever trade the company is in, she should
-  // sound like she is sitting in it. A quiet workplace bed is mixed UNDER her voice on its way to the
-  // phone for the whole call — in the pauses too, not only while she talks. History: an office-only
-  // version of this shipped Oct 22, 2026 and was switched off the same day (VOICE_AMBIENCE=off in the
-  // deployment env); the mixing station below is that proven design, generalized from one office to a
-  // library of rooms. Every bed is SYNTHESIZED right here from noise, murmur and room events — no audio
-  // files, nothing bought, nothing licensed: free by construction.
+  // AMBIENCE — THE ROOM SHE SITS IN (Tony, Nov 2, 2026). The Bland benchmark call sounded real partly
+  // because the room was in it: whatever trade the company is in, she should sound like she is sitting
+  // in it. A quiet workplace bed is mixed UNDER her voice on its way to the phone for the whole call —
+  // in the pauses too, not only while she talks. History: an office-only version shipped Oct 22, 2026
+  // and was switched off the same day; the Nov 2 voice package generalized it to a library of rooms
+  // SYNTHESIZED in code — and that night Tony heard the graded call and ruled: "The noise wasn't what
+  // you played me earlier." He was right: the rooms he approved by ear were specific RECORDINGS, and a
+  // synthesizer's approximation of them is not them. So the beds are now the actual approved takes,
+  // shipped as files: beds/<name>.ulaw.b64 — 25 s loops, 8 kHz mu-law (the phone wire format itself),
+  // base64 so they travel as text, each RMS-matched to the level the package established for its room,
+  // loop seams crossfaded. A trade with no approved take of its own plays the approved generic office
+  // take — never an invented room. If a bed file is missing the call simply gets no room; ambience can
+  // never break a call.
   // WHICH ROOM: the site resolves the company's trade to a bed key at call setup (the industry->bed
   // map lives in netlify/functions/lib/voice/ambience.js — data-driven, one line per trade) and sends
   // ctx.ambience_bed; ctx.ambience="off" means NO room (the owner's own calls stay natural — Tony's
@@ -53,44 +59,28 @@ function createBridge(deps) {
   // the dispatch office. VOICE_AMBIENCE_GAIN sets the level (default 0.4, clamped 0.01..0.6). If the
   // adapter's mu-law codec is missing, calls pass through untouched.
   const AMBIENCE_BEDS = {
-    //            voices murmur rumble lp     tickEvery(samples)      tickAmp tickLen  event: {type,freq,every(samples),len,amp}   hum
-    dispatch_office: { voices: 3, murmur: 5200, rumble: 2400, lp: 0.08, tick: [6000, 26000], tickAmp: 420, tickLen: 90, event: { type: "ring", every: [160000, 360000], len: 6000, amp: 1500 } },
-    restaurant: { voices: 5, murmur: 6500, rumble: 1800, lp: 0.08, tick: [2000, 9000], tickAmp: 500, tickLen: 60 },
-    auto_shop: { voices: 1, murmur: 2200, rumble: 3400, lp: 0.05, tick: [24000, 70000], tickAmp: 2600, tickLen: 500 },
-    office_phones: { voices: 3, murmur: 4200, rumble: 1600, lp: 0.08, tick: [8000, 20000], tickAmp: 300, tickLen: 70, event: { type: "ring", every: [96000, 240000], len: 6000, amp: 1700 } },
-    construction: { voices: 1, murmur: 1500, rumble: 3800, lp: 0.04, tick: [30000, 80000], tickAmp: 3200, tickLen: 1500 },
-    salon: { voices: 2, murmur: 3200, rumble: 1200, lp: 0.08, tick: null, hum: 220 },
-    retail: { voices: 3, murmur: 3800, rumble: 1500, lp: 0.08, tick: [12000, 30000], tickAmp: 300, tickLen: 70, event: { type: "beep", freq: 2000, every: [120000, 320000], len: 700, amp: 1300 } },
-    clinic: { voices: 1, murmur: 1200, rumble: 700, lp: 0.08, tick: null, event: { type: "beep", freq: 880, every: [240000, 560000], len: 500, amp: 800 } },
-    warehouse: { voices: 1, murmur: 1800, rumble: 3000, lp: 0.05, tick: [20000, 60000], tickAmp: 1500, tickLen: 300, event: { type: "beep", freq: 1200, every: [144000, 360000], len: 1000, amp: 1400 } },
-    generic_office: { voices: 2, murmur: 3000, rumble: 1400, lp: 0.08, tick: [10000, 30000], tickAmp: 300, tickLen: 80 }
+    //            the approved recording for this room (beds/<file>.ulaw.b64); file: null = no approved take of its own yet -> the generic office take plays
+    dispatch_office: { file: "dispatch-office" },
+    restaurant: { file: "restaurant" },
+    auto_shop: { file: "auto-shop" },
+    office_phones: { file: "phones-office" },
+    construction: { file: null },
+    salon: { file: null },
+    retail: { file: null },
+    clinic: { file: null },
+    warehouse: { file: null },
+    generic_office: { file: "generic-office" }
   };
   const bedCache = {};
-  function synthBed(key) { // one seamless 24 s loop per room, generated once and cached: brown-noise rumble, filtered murmur "voices", ticks/clatter, and the room's signature event (a distant phone ring, a till beep)
+  function loadBed(key) { // the room itself: the approved recording for the trade, decoded once and cached (mu-law bytes -> linear samples for the mixing station)
     if (bedCache[key]) return bedCache[key];
-    const p = AMBIENCE_BEDS[key]; if (!p) return null;
-    const SR = 8000, LEN = SR * 24, buf = new Int16Array(LEN);
-    let seed = 987654321 + key.length * 131; const rnd = function () { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
-    let brown = 0, lp = 0, tick = 4000, evt = p.event ? Math.floor(p.event.every[0] + rnd() * (p.event.every[1] - p.event.every[0])) : -1;
-    const voices = []; for (let vi = 0; vi < p.voices; vi++) voices.push({ lp1: 0, lp2: 0, env: 0, target: 0, left: 0, f: 0.04 + rnd() * 0.11 });
-    for (let i = 0; i < LEN; i++) {
-      const w = rnd() * 2 - 1;
-      brown = (brown + 0.02 * w) / 1.02; lp += p.lp * (brown * 3.5 - lp);
-      let s = lp * p.rumble + (p.hum ? p.hum * Math.sin(i / (SR / 180) * 6.2832) : 0);
-      for (let vi = 0; vi < voices.length; vi++) { const v = voices[vi], n = rnd() * 2 - 1;
-        if (--v.left <= 0) { v.target = rnd() < 0.45 ? 0 : 0.35 + rnd() * 0.65; v.left = 500 + Math.floor(rnd() * 1100); }
-        v.env += (v.target - v.env) * 0.004;
-        v.lp1 += v.f * (n - v.lp1); v.lp2 += v.f * (v.lp1 - v.lp2);
-        s += v.lp2 * v.env * p.murmur;
-      }
-      if (p.tick && --tick <= 0) { tick = Math.floor(p.tick[0] + rnd() * (p.tick[1] - p.tick[0])); for (let j = 0; j < p.tickLen && i + j < LEN; j++) buf[i + j] += Math.round((rnd() * 2 - 1) * p.tickAmp * (1 - j / p.tickLen)); }
-      if (p.event && --evt <= 0) { evt = Math.floor(p.event.every[0] + rnd() * (p.event.every[1] - p.event.every[0])); const ev = p.event;
-        for (let j = 0; j < ev.len && i + j < LEN; j++) { const ph = j / SR; const tone = ev.type === "ring" ? (Math.sin(ph * 440 * 6.2832) + Math.sin(ph * 480 * 6.2832)) / 2 : Math.sin(ph * (ev.freq || 1000) * 6.2832); buf[i + j] += Math.round(tone * ev.amp * Math.min(1, j / 300) * Math.min(1, (ev.len - j) / 600)); } }
-      buf[i] += Math.max(-11000, Math.min(11000, Math.round(s)));
-    }
-    for (let i = 0; i < 800; i++) { const a = i / 800; buf[i] = Math.round(buf[i] * a + buf[LEN - 800 + i] * (1 - a)); }   // seamless loop seam
-    let peak = 1; for (let i = 0; i < LEN; i++) { const a = Math.abs(buf[i]); if (a > peak) peak = a; }   // normalize to a known level; the gain decides how much rides under her voice
-    const norm = 10000 / peak; for (let i = 0; i < LEN; i++) buf[i] = Math.round(buf[i] * norm);
+    const spec = AMBIENCE_BEDS[key]; if (!spec) return null;
+    const name = spec.file || "generic-office";   // a trade with no approved take of its own gets the approved generic office take
+    let ul = null;
+    try { ul = Buffer.from(fs.readFileSync(path.join(__dirname, "beds", name + ".ulaw.b64"), "utf8").replace(/\s+/g, ""), "base64"); }
+    catch (e) { try { ul = fs.readFileSync(path.join(__dirname, "beds", name + ".ulaw")); } catch (e2) { ul = null; } }
+    if (!ul || !ul.length) return null;   // no file, no room — the call itself is never at risk
+    const buf = new Int16Array(ul.length); for (let i = 0; i < ul.length; i++) buf[i] = AI.MU_DEC[ul[i]];
     bedCache[key] = buf; return buf;
   }
   function ambienceBedKey(ctx) { // -> a bed key, or null when this call gets no room
@@ -124,7 +114,7 @@ function createBridge(deps) {
 
   function handle(tw) {
     let saidBye = false, agentEnd = false, payPending = false, payStarted = false, idleAt = 0, closingAt = 0, closeNudges = 0, deafStage = 0, deafAt = 0, greetHold = true, greetT = null, lastCallerAt = 0, lastCallerTextAt = 0, lastAgentAt = 0, toolDoneAt = 0, toolBusy = 0, nudges = 0, burst = 0, readyAt = 0, wdTimer = null;
-    let lang = "English", langTimer = null, flushTimer = null, retries = 0, reconnecting = false, timersSet = false, hist = [], streamSid = null, ctx = null, ai = null, prov = null, connectTimerRef = null, spokeSinceTool = false, toolAt = 0, lastHoldAt = 0, done = false, aiReady = false, buffered = [], lastItem = null, assistStart = null, mediaTs = 0, marks = 0, markQ = [], transferPending = false, transferred = false, startedAt = Date.now(), timers = [], nm = 0, amb = null, pump = null;
+    let lang = "English", langTimer = null, flushTimer = null, retries = 0, reconnecting = false, timersSet = false, hist = [], streamSid = null, ctx = null, ai = null, prov = null, connectTimerRef = null, spokeSinceTool = false, toolAt = 0, lastHoldAt = 0, done = false, aiReady = false, buffered = [], lastItem = null, assistStart = null, mediaTs = 0, marks = 0, markQ = [], transferPending = false, transferred = false, xferStarted = false, xferFired = false, startedAt = Date.now(), timers = [], nm = 0, amb = null, pump = null;
     const timer = function (fn, ms) { const t = setTimeout(fn, ms); timers.push(t); return t; };
     const twSend = function (o) { if (tw.readyState === 1) tw.send(JSON.stringify(o)); };
     const aiSend = function (o) { if (o && ai && ai.readyState === 1) ai.send(JSON.stringify(o)); };
@@ -162,7 +152,7 @@ function createBridge(deps) {
         const d = prov && prov.diag ? prov.diag() : {}, got = (kinds.caller_text || 0) + (kinds.agent_text || 0);
         await api({ action: "health", provider: "bridge", kind: got || secs < 15 ? "call_summary" : "no_transcripts", ok: !!got || secs < 15, detail: JSON.stringify({ secs: secs, adapter: (prov && prov.version) || "old", ev: kinds, ago: { agent: lastAgentAt ? Math.round((Date.now() - lastAgentAt) / 1000) : null, caller: lastCallerAt ? Math.round((Date.now() - lastCallerAt) / 1000) : null, tool: toolDoneAt ? Math.round((Date.now() - toolDoneAt) / 1000) : null }, toolBusy: toolBusy, lang: lang, gemini: d }).slice(0, 1800) }, 5000);
       }
-      if (ctx && reason !== "pay_handoff") await api({ action: "end", session_id: ctx.session_id, reason: reason, seconds: secs }, 8000);   // a keypad payment moves the call away and brings it back: the call is NOT over
+      if (ctx && reason !== "pay_handoff" && reason !== "xfer_handoff") await api({ action: "end", session_id: ctx.session_id, reason: reason, seconds: secs }, 8000);   // a keypad payment — and now a transfer — moves the call away and may bring it back: the call is NOT over, so the bridge must not end the session; the site finalizes it when the phone call truly ends
       else if (!ctx && reason !== "caller_hangup") await api({ action: "health", provider: "bridge", kind: "call_setup_failed", ok: false, detail: reason }, 5000);
       try { if (ai) ai.close(); } catch (e) { /* ignore */ }
       if (closeTwilio) { try { tw.close(); } catch (e) { /* ignore */ } }
@@ -175,8 +165,9 @@ function createBridge(deps) {
       if (c.status !== 200 || !c.data.session_id) { log("context refused", c.status, c.data && c.data.error); return finish("context_" + (c.status || "unreachable"), true); }
       ctx = c.data; clearTimeout(startTimeout);
       if (done) return;   // the caller hung up while the context was fetched: never spin up the room or the AI on a dead call
-      const bedKey = ambienceBedKey(ctx), bedBuf = bedKey ? synthBed(bedKey) : null;
+      const bedKey = ambienceBedKey(ctx), bedBuf = bedKey ? loadBed(bedKey) : null;
       amb = bedBuf ? ambienceStation(bedBuf) : null;
+      if (bedKey && !bedBuf) log("ambience bed file missing:", bedKey);
       log("ambience", amb ? bedKey : "off");
       if (amb) pump = setInterval(function () {   // the room runs the whole call; her queued speech rides over it; a frame that carried her voice earns the playback mark her transcript trimming counts on
         if (done || !streamSid) return;
@@ -221,6 +212,9 @@ function createBridge(deps) {
         if (kind === "paid") { closingAt = Date.now(); sysNote("The caller is back from the keypad. Stripe CONFIRMED the payment of " + val + ". Do NOT greet again. Say warmly, in one or two short sentences, that the payment went through (" + val + ") and thank them. Then ask: \"Is there anything else I can help you with?\"" + tail); }
         else if (kind === "paidtest") { closingAt = Date.now(); sysNote("The caller is back from the keypad. This was a small TEST charge of " + val + " and Stripe confirmed it. Do NOT greet again. In one or two short sentences say the test payment of " + val + " went through, and that the full booking payment has not been taken. Then ask: \"Is there anything else I can help you with?\"" + tail); }
         else if (kind === "unverified") sysNote("The caller is back from the keypad, but the payment could NOT be confirmed yet. Do NOT say it is paid and do NOT say it failed. Say the team will verify it and follow up with them shortly, so they do not need to do anything now. Do not take the card again and do not offer a link. Then ask if there is anything else you can help with." + tail);
+        else if (kind === "xferfail" && val === "1") { transferPending = true; spokeSinceTool = false; toolAt = Date.now(); timer(function () { if (transferPending) { transferPending = false; doTransfer(); } }, 20000);
+          sysNote("The person did NOT answer, and the caller is back with you. Do NOT greet again. Say warmly, exactly: \"Sorry about that, let me try one more time.\" Then stop talking — the system redials them on its own as soon as you finish; you do not need to call any tool, and do not say they are connected." + tail); }
+        else if (kind === "xferfail") sysNote("Both attempts to reach a person have failed, and the caller is back with you. A callback is ALREADY saved for this caller — do not save another one. Do NOT greet again. Apologize warmly in one or two sentences, then confirm out loud that someone will call them back on the number they are calling from. Offer the other ways the company can help, from your instructions, then ask if there is anything else you can help with, and close warmly when they are done." + tail);
         else sysNote("The caller is back from the keypad, but the card payment did NOT go through (" + val.replace(/-/g, " ") + "). Do NOT greet again. Be kind and unbothered: say no worries, the booking is still locked in. If they want to try the keypad once more you may use take_card_payment again; otherwise say the team will reach out shortly to take the payment. Never send or offer a payment link, never ask for the card number out loud, and never say it is paid." + tail);
       } else if (reconnecting) {
         reconnecting = false;
@@ -341,10 +335,12 @@ function createBridge(deps) {
       if (!(r.data && r.data.ok)) finish("ended_by_agent", true);   // the phone company could not be told: close our side
     }
     async function doTransfer() {
-      for (let i = 0; i < 20 && markQ.length; i++) await sleep(200);            // let the "connecting you" sentence finish playing
+      if (xferFired) return; xferFired = true;   // one redirect per departure: the turn-end path and the 20 s backstop can both arrive, but the call moves once
+      for (let i = 0; i < 30 && markQ.length; i++) await sleep(200);            // let her whole announce line finish playing ("I'm transferring you now — ok, yes, give me one second") before the call moves: the playback marks are the ground truth, and the longer line gets a longer leash than the old fragment did
+      if (done) return;
       const r = await api({ action: "transfer", session_id: ctx.session_id }, 10000);
-      if (r.data && r.data.ok) transferred = true; else sysNote("The transfer could not be completed (" + ((r.data && r.data.error) || "no answer from the system") + "). Tell the caller honestly that no one could be reached, and offer a callback with create_callback_task.");
-      // on success the phone company moves the call; the stream ends and finish() runs from the stop event
+      if (r.data && r.data.ok) { transferred = true; xferStarted = true; } else sysNote("The transfer could not be completed (" + ((r.data && r.data.error) || "no answer from the system") + "). Tell the caller honestly that no one could be reached, and offer a callback with create_callback_task.");
+      // on success the phone company moves the call; the stream ends and finish("xfer_handoff") runs from the stop event — the session stays open on the site, because a no-answer brings the caller right back to her
     }
 
     tw.on("message", function (raw) {
@@ -352,10 +348,10 @@ function createBridge(deps) {
       if (m.event === "start") { streamSid = m.start && m.start.streamSid; const tok = m.start && m.start.customParameters && m.start.customParameters.token; if (!tok) return finish("no_token", true); begin(tok); }
       else if (m.event === "media" && m.media && (!m.media.track || m.media.track === "inbound")) { mediaTs = Number(m.media.timestamp) || mediaTs; if (!greetHold && loud(m.media.payload)) { if (++burst >= 6) lastCallerAt = Date.now(); } else burst = Math.max(0, burst - 1); if (aiReady && !greetHold) aiSend(prov.audioIn(m.media.payload)); }   // lastCallerAt is LOUDNESS only (any sound, incl. a TV): it may hold off idle check-ins, but it never counts as the caller speaking — only transcribed caller turns set lastCallerTextAt
       else if (m.event === "mark") markQ.shift();
-      else if (m.event === "stop") finish(transferred ? "transferred" : payStarted ? "pay_handoff" : agentEnd ? "ended_by_agent" : "caller_hangup", false);
+      else if (m.event === "stop") finish(xferStarted ? "xfer_handoff" : payStarted ? "pay_handoff" : agentEnd ? "ended_by_agent" : "caller_hangup", false);
     });
-    tw.on("close", function () { finish(payStarted ? "pay_handoff" : "twilio_closed", false); });
-    tw.on("error", function () { finish(payStarted ? "pay_handoff" : "twilio_error", false); });
+    tw.on("close", function () { finish(payStarted ? "pay_handoff" : xferStarted ? "xfer_handoff" : "twilio_closed", false); });
+    tw.on("error", function () { finish(payStarted ? "pay_handoff" : xferStarted ? "xfer_handoff" : "twilio_error", false); });
   }
   return { handle: handle, api: api };
 }
