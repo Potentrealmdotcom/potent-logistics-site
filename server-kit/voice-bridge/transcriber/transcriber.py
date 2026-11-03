@@ -71,13 +71,57 @@ def site(body):
 
 # ---------- transcription ----------
 
+# TRANSCRIPT HONESTY (Nov 3, 2026 — Tony's ruling after the usage-test calls: "the transcript
+# isn't accurate"). faster-whisper is a language model with a microphone: over garbled audio it
+# reconstructs the most probable sentence and hides its uncertainty, so a greeting that was
+# distorted to the point of being unintelligible came back as clean, wrong words ("Hey! I called
+# you by name…" for a scripted "Hi, thanks…"). A canonical transcript must never invent words:
+# segments/words the model itself scored as unlikely are marked [unintelligible] instead.
+# Thresholds, chosen from the forensic measurements of those very calls (production whisper,
+# word probabilities): the garbled greeting scored mean 0.775 with words down to 0.07 — below the
+# segment floor, so the whole segment is marked. Clean turns the same night scored means of
+# 0.91–0.97 with minimums of 0.56–0.87 — untouched. The one borderline case (the Nov 2
+# confirmation greeting, mean 0.832, one word at 0.19) keeps its segment and marks only the
+# sub-floor word. Floors: segment mean < 0.82 -> the segment is not words we can stand behind;
+# a single word < 0.20 -> that word alone is marked, consecutive marked words collapse to one.
+SEGMENT_MEAN_FLOOR = 0.82
+WORD_FLOOR = 0.20
+UNINTELLIGIBLE = "[unintelligible]"
+
+
+def render_segment_text(words, fallback=""):
+    """The honest text for one whisper segment. words: [(word_text, probability)] from word
+    timestamps, or None when the model returned none (then the segment text is kept as-is —
+    there is no confidence evidence to judge it by)."""
+    if not words:
+        return (fallback or "").strip()
+    probs = [p for _t, p in words]
+    if sum(probs) / len(probs) < SEGMENT_MEAN_FLOOR:
+        return UNINTELLIGIBLE
+    out, marked = [], False
+    for text, p in words:
+        if p < WORD_FLOOR:
+            if not marked:
+                out.append(" " + UNINTELLIGIBLE)
+            marked = True
+        else:
+            out.append(text)
+            marked = False
+    return "".join(out).strip() or UNINTELLIGIBLE
+
+
 def transcribe_array(samples):
-    """samples: float32 mono 16 kHz. Returns [{start, end, text}] with empty/noise segments dropped."""
+    """samples: float32 mono 16 kHz. Returns [{start, end, text}] with empty/noise segments dropped.
+    Word timestamps are always requested so every segment's text passes the honesty render above."""
     segs, _info = get_model().transcribe(samples, beam_size=5, vad_filter=True,
-                                         vad_parameters={"min_silence_duration_ms": 400})
+                                         vad_parameters={"min_silence_duration_ms": 400},
+                                         word_timestamps=True)
     out = []
     for s in segs:
-        t = (s.text or "").strip()
+        words = None
+        if getattr(s, "words", None):
+            words = [(w.word, float(w.probability)) for w in s.words]
+        t = render_segment_text(words, s.text)
         if t:
             out.append({"start": float(s.start), "end": float(s.end), "text": t})
     return out

@@ -41,6 +41,14 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
   T.customers.push({ id: "c1", org_id: OA, name: "Pat Lee", company: "Lee Tile", phone: "(404) 555-0142" }); r = await run(s, "lookup_customer"); ok(r.known && r.name === "Pat Lee" && r.verified === false && !JSON.stringify(r).match(/address|balance/), "known caller: name only, flagged as NOT verified");
   T.customers.push({ id: "c2", org_id: OB, name: "Other Tenant", phone: "(404) 555-0142" }); ok(!T.customers.some(c => c.org_id === OA && c.name === "Other Tenant"), "(tenant data kept separate)");
   r = await run(s, "get_approved_service_information", { topic: "truck_limits" }); ok(r.ok && r.facts.join(" ").includes("4500") && /No liftgate/.test(r.facts.join(" ")) && /No pallet jack/.test(r.facts.join(" ")), "truck facts come from the verified profile");
+  // Nov 3, 2026: POTENT'S COMPANY LINE — for the Potent org the services answer is the software line,
+  // never the truck pitch, and a stale stored document pitching the sold truck is never served
+  T.voice_knowledge_documents.push({ id: "k9", org_id: OA, category: "services", title: "Services", body: "Business supply deliveries with our 16 ft box truck.", status: "approved", effective_from: "2020-01-01" });
+  const svcP = await run(newSes(), "get_approved_service_information", { topic: "services" });
+  ok(svcP.facts.join(" ").includes("Potent builds POTENT OS and Elevate"), "Potent services: the approved company line (POTENT OS + Elevate) is the answer");
+  ok(!/box truck|supply deliveries/i.test(svcP.facts.join(" ")), "Potent services: neither the vehicle pitch nor the stale stored document reaches the caller");
+  ok((await run(newSes(), "get_approved_service_information", { topic: "truck_limits" })).facts.join(" ").includes("4500"), "Potent truck_limits still returns the factual profile on request (facts are facts; the services PITCH is what changed)");
+  ok(!/POTENT OS and Elevate/.test((await run(newSes(OB), "get_approved_service_information", { topic: "services" })).facts.join(" ")), "platform rule: another company never hears Potent's company line");
   r = await run(s, "get_approved_service_information", { topic: "payment" }); ok(r.facts.length === 0 && /do not guess/i.test(r.note), "no approved text -> says so, no invention");
   T.voice_knowledge_documents.push({ id: "k1", org_id: OA, category: "payment", title: "Payment", body: "We accept card and ACH.", status: "approved", effective_from: "2020-01-01" }, { id: "k2", org_id: OA, category: "payment", title: "Draft", body: "SECRET DRAFT", status: "draft" }, { id: "k3", org_id: OB, category: "payment", title: "Other", body: "OTHER TENANT", status: "approved" });
   r = await run(s, "get_approved_service_information", { topic: "payment" }); ok(r.facts.join(" ").includes("card and ACH") && !/SECRET|OTHER/.test(r.facts.join(" ")), "only approved text of this company is returned");
@@ -346,6 +354,14 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
     const pb = P1.build(rc, org); ok(/Not sure who you think you're talking to/.test(pb) && /sassy but always very professional/.test(pb) && /use the end_call tool/.test(pb) && !/Certainly!\\\"/.test("x") && /REGULAR COMPANY, REGULAR PERSON/.test(pb), "regular-person realism + the professional-sass disrespect boundary are in her instructions");
     ok(/THICK Southern accent/.test(pb) && /you ARE in Georgia/.test(pb) && /never a dumb country-bumpkin act/.test(pb), "persona: thick Georgia Southern accent, proper English, no bumpkin act");
     ok(/laugh — a real, light laugh/.test(pb) && /yes, exactly/.test(pb) && /reactions to what THEY said/.test(pb), "persona: she laughs, feels things out loud, and tracks the caller with yes / yes exactly");
+    // Nov 3, 2026 — the recording notice LEADS the greeting wherever one is owed (on the live usage calls
+    // it surfaced again over the greeting's tail, chopping her); the greeting is the last thing before the caller
+    ok(P1.greeting(rc, org, "+12125550100").startsWith("This call may be recorded. "), "notice order: when a notice is owed, it OPENS the greeting — never follows or interrupts it");
+    ok(P1.greeting(Object.assign({}, rc, { greeting: "Well hey there, friend!" }), org, "+12125550100").startsWith("This call may be recorded. Well hey there"), "notice order: a custom greeting carries the notice in FRONT of it");
+    ok(P1.greeting(Object.assign({}, rc, { settings: { intake: { greeting: "Hey, Acme here" } } }), { name: "Acme", slug: "acme" }, "+14045550142").startsWith("This call may be recorded. Hey, Acme here"), "notice order: a tenant's own greeting also leads with its notice");
+    ok(!/may be recorded/.test(P1.greeting(rc, org, "+14045550142")), "notice order: Georgia callers still hear no notice at all (one-party consent, unchanged)");
+    // Nov 3, 2026 — ANSWER FIRST: she answers direct questions (small talk included) instead of deflecting
+    ok(/ANSWER FIRST — NEVER DEFLECT/.test(pb) && /AT MOST ONCE more in the whole call/.test(pb) && /HOLDING LINES ARE SINGLE-USE PER PAUSE/.test(pb) && /what's your first one/.test(pb), "answer-first: questions get answers before steering; 'how can I help you today' is spent by the greeting; holding lines are once per pause");
     ok(/Georgia slang, country talk, street slang/.test(pb) && /never make a caller repeat themselves over slang or mumbling/.test(pb) && /a little muffly on me/.test(pb), "persona: she understands slang and mumbling; if words are truly lost she asks once, with wit");
     ok(!/DISRESPECT|REGULAR COMPANY/.test(P1.build({ agent_name: "X" }, { name: "Acme", slug: "acme" })), "tenants do not inherit POTENT's attitude lines");
     // end_call: logs, tells the owner, and the hangup action only works after it ran

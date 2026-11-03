@@ -70,7 +70,9 @@ const rms = payload => { const b = Buffer.from(payload, "base64"); let s = 0; fo
   ok(r.media().every(m => Buffer.from(m.media.payload, "base64").length === 160), "bridge: bed frames are full 20 ms phone frames");
   ok(rms(r.media()[3].media.payload) > 30, "bridge: the bed is audible sound, not digital silence (frame RMS " + Math.round(rms(r.media()[3].media.payload)) + ")");
   // her speech rides over the bed and earns playback marks, like the bare line
-  r.ai({ serverContent: { modelTurn: { parts: [{ inlineData: { mimeType: "audio/pcm;rate=24000", data: pcm(2400) } }] } } }); await sleep(200);
+  // (Nov 3, 2026: the FIRST turn now passes the pre-roll gate — a 100 ms utterance is held until its
+  // burst ends (~240 ms) before it plays, so this waits long enough for the release + playout)
+  r.ai({ serverContent: { modelTurn: { parts: [{ inlineData: { mimeType: "audio/pcm;rate=24000", data: pcm(2400) } }] } } }); await sleep(650);
   ok(r.tw.sent.some(m => m.event === "mark"), "bridge: her speech over the bed produces playback marks (transcript trimming still grounded)");
   r.phone({ event: "stop" }); await sleep(15);
   // the owner's own call: ambience "off" from the site — no room, no frames, exactly the old bare line
@@ -104,6 +106,33 @@ const rms = payload => { const b = Buffer.from(payload, "base64"); let s = 0; fo
     let found = -1; const probe = pumped.slice(0, 160);
     for (let j = 0; j + 160 <= file.length && found < 0; j++) { let good = true; for (let i = 0; i < 160; i++) { if (Math.abs(file[j + i] - probe[i] / 0.4) > 320) { good = false; break; } } if (good) found = j; }
     ok(found >= 0, "bridge: the bed under her voice is the approved dispatch-office recording itself (matched at file sample " + found + ")"); }
+  r.phone({ event: "stop" }); await sleep(15);
+  // ── (5) greeting integrity (Nov 3, 2026): the pre-roll gate holds her FIRST turn until a cushion
+  // of speech is queued, and the queue never deletes speech ──
+  // a short first utterance (800 samples = 100 ms, below the 400 ms / 3,200-sample threshold) is
+  // HELD while the room keeps playing, then released once its burst has clearly ended
+  r = rig({ ctx: { ambience_bed: "dispatch_office" } }); r.start(); await sleep(60); r.ready(); await sleep(120);
+  { const marks0 = () => r.tw.sent.filter(m => m.event === "mark").length;
+    r.ai({ serverContent: { modelTurn: { parts: [{ inlineData: { mimeType: "audio/pcm;rate=24000", data: pcm(2400) } }] } } });
+    await sleep(130);
+    ok(marks0() === 0 && r.media().length >= 5, "pre-roll: a short first turn is held behind the gate (no speech frames yet) while the room plays on");
+    await sleep(450);
+    ok(marks0() >= 4, "pre-roll: the held first turn is released whole once its burst ends (" + marks0() + " spoken frames)");
+    // the SECOND turn is conversation, not a greeting: it is never held
+    const before = marks0();
+    r.ai({ serverContent: { modelTurn: { parts: [{ inlineData: { mimeType: "audio/pcm;rate=24000", data: pcm(2400) } }] } } });
+    await sleep(160);
+    ok(marks0() - before >= 4, "pre-roll: later turns play immediately — the cushion protects only the first turn"); }
+  r.phone({ event: "stop" }); await sleep(15);
+  // a burst far past the old 24,000-sample (3.0 s) queue cap: every sample must reach the line —
+  // the old overflow rule deleted the oldest queued speech and would cap this at ~150 spoken frames
+  r = rig({ ctx: { ambience_bed: "dispatch_office" } }); r.start(); await sleep(60); r.ready(); await sleep(80);
+  { for (let i = 0; i < 8; i++) r.ai({ serverContent: { modelTurn: { parts: [{ inlineData: { mimeType: "audio/pcm;rate=24000", data: pcm(14400) } }] } } });   // 8 x 4,800 = 38,400 samples (4.8 s), pushed synchronously so the pump cannot drain between pushes
+    await sleep(150);
+    ok(r.tw.sent.filter(m => m.event === "mark").length >= 3, "pre-roll: a first turn past the threshold starts at once, no idle wait");
+    await sleep(5600);
+    const spoken = r.tw.sent.filter(m => m.event === "mark").length;
+    ok(spoken >= 235, "queue never drops speech: a 38,400-sample burst plays out whole (" + spoken + " of 240 spoken frames; the old splice capped this at ~150)"); }
   r.phone({ event: "stop" }); await sleep(15);
   console.log("PASS: " + n + " assertions"); process.exit(0);
 })().catch(e => { console.error(e); process.exit(1); });

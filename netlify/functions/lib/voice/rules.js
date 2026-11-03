@@ -1,7 +1,7 @@
 // Eligibility engine: can THIS vehicle profile carry THIS shipment? Deterministic and config-driven; the AI never decides this.
 // Result: status "eligible" | "blocked" | "review". Blocked = a hard limit is exceeded. Review = a human must look (unknown, unverified or unusual).
-const DEFAULT_PROFILE = { // verified starting values for POTENT's current truck; an administrator maintains the real record (voice_vehicle_profiles)
-  name: "2022 Ford E350 16-ft Morgan box truck", max_payload_lb: 4500, interior_l_in: 190, interior_w_in: 94, interior_h_in: 80, door_w_in: 86.5, door_h_in: 71,
+const DEFAULT_PROFILE = { // GENERIC STARTER TEMPLATE for a company's first vehicle profile (seeded only on an owner's explicit action, and created UNAUTHORIZED until the owner signs off — see voice-api profile_seed_default). It is deliberately NOT any real company's truck: until Nov 3, 2026 this object carried POTENT's own 2022 Ford E350 as the "default", which stamped a for-sale truck onto the product as if it were the operating vehicle. Potent no longer runs freight (Tony, Nov 3, 2026); its live record lives in voice_vehicle_profiles and is maintained there. The numbers below stay a plain mid-size box-truck shape so a new company has something real to edit.
+  name: "Starter box truck (template — replace with your vehicle)", max_payload_lb: 4500, interior_l_in: 190, interior_w_in: 94, interior_h_in: 80, door_w_in: 86.5, door_h_in: 71,
   equipment: { dock_height: true, liftgate: false, pallet_jack: false, crew_loads: true, blankets: true, e_track: true, load_bars: true }, service_area: { states: ["GA"] }, interstate_authorized: false, authorized: true };
 
 function pieceList(d) { const out = []; (d.pieces || []).forEach(function (p) { out.push(p); }); if (!out.length && d.total_dims) out.push(d.total_dims); return out; }

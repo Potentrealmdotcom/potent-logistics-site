@@ -4,6 +4,14 @@ const B = require("../beats");
 const S = require("./store"), I = require("./intake"), R = require("./rules"), P = require("./pricing"), RT = require("./route"), AV = require("./availability"), V = require("./billing"), TW = require("./adapters/twilio");
 const rows = S.rows;
 const PLAYBOOK = require("./playbook.js");
+// POTENT'S APPROVED COMPANY LINE (Tony, Nov 3, 2026 — his words, verbatim): what Elevate says Potent
+// does now. Potent builds software; it no longer runs freight and its box truck is sold, so no Potent
+// surface may present that truck or a freight operation as the business. The stale-copy pattern is the
+// fingerprint of the retired pitch (the for-sale truck, "business supply deliveries"); it gates ONLY
+// Potent's stored knowledge documents in get_approved_service_information — other companies' documents
+// are their own facts and are never filtered.
+const POTENT_COMPANY_LINE = "Potent builds POTENT OS and Elevate — software that runs trucking companies: dispatch, drivers, the whole operation.";
+const POTENT_STALE_COPY = /16[-\s]?(ft|foot|feet)\b|box truck|supply deliveries/i;
 const ALERT_MAIL = require("./alert-mail");   // the full Elevate design for owner alert emails (standalone module: no require cycle with owner-report.js)
 const CALL_LANGS = { en: "English", es: "Spanish", pt: "Portuguese", kk: "Kazakh", ru: "Russian", fr: "French", zh: "Chinese (Mandarin)", ko: "Korean", vi: "Vietnamese", ar: "Arabic", hi: "Hindi", ht: "Haitian Creole", pl: "Polish", de: "German" };
 // The speech engine sometimes turns a stray English syllable into a foreign word ("Ja.", "bien", "anhelo"). Switching the whole call's language on that is how an English call ended in Spanish.
@@ -140,15 +148,21 @@ const TOOLS = {
     const id = rows(r)[0] && rows(r)[0].id; if (id) await S.patchSession(ctx.orgId, ctx.session.id, { lead_id: id }); return r.ok ? { ok: true, created: true } : { ok: false, error: "save_failed" };
   },
   async get_approved_service_information(ctx, a) {
-    const topic = String(a.topic || ""), prof = await S.profileOf(ctx.orgId), facts = [];
-    if (topic === "truck_limits" || topic === "services") {
+    const topic = String(a.topic || ""), isP = await isPotentOrg(ctx), prof = await S.profileOf(ctx.orgId), facts = [];
+    // POTENT'S COMPANY LINE (Tony, Nov 3, 2026): Potent no longer runs freight — its truck is sold and
+    // the company builds software. When a caller asks what Potent does, THIS approved line is the
+    // answer; the vehicle profile is never presented as Potent's business on the services topic, and
+    // none of Potent's stale freight copy may be served (see POTENT_STALE_COPY below). Other companies
+    // are untouched: their own profiles and documents are their facts, exactly as before.
+    if (isP && topic === "services") facts.push("What Potent does: " + POTENT_COMPANY_LINE);
+    if (topic === "truck_limits" || (topic === "services" && !isP)) {
       if (prof) facts.push("Vehicle: " + prof.name + ". Maximum shipment weight " + prof.max_payload_lb + " lb. Cargo area " + prof.interior_l_in + " x " + prof.interior_w_in + " x " + prof.interior_h_in + " inches; rear door " + prof.door_w_in + " x " + prof.door_h_in + " inches.", "Equipment: " + Object.keys(prof.equipment || {}).filter(function (k) { return prof.equipment[k]; }).join(", ").replace(/_/g, " ") + (prof.equipment && !prof.equipment.liftgate ? ". No liftgate" : "") + (prof.equipment && !prof.equipment.pallet_jack ? ". No pallet jack" : "") + ".");
       else facts.push("Vehicle limits are not set up yet; do not state any limits.");
     }
     if (topic === "service_area") facts.push(prof ? "Authorized service area: " + ((prof.service_area && prof.service_area.states) || []).join(", ") + (prof.interstate_authorized ? " including interstate." : ", local intrastate work only.") : "Service area is not set up yet; do not state one.");
     if (topic === "pricing_policy") facts.push("Prices are calculated by the system after the details and route are verified. The assistant cannot discount or change a price. Waiting time, extra labor and changes can add charges.");
     const today = new Date().toISOString().slice(0, 10);
-    const docs = rows(await B.sb("voice_knowledge_documents?org_id=eq." + ctx.orgId + "&status=eq.approved&select=category,title,body,effective_from&limit=50")).filter(function (d) { return (!d.effective_from || d.effective_from <= today) && (d.category === topic || topic === "faq"); });
+    const docs = rows(await B.sb("voice_knowledge_documents?org_id=eq." + ctx.orgId + "&status=eq.approved&select=category,title,body,effective_from&limit=50")).filter(function (d) { return (!d.effective_from || d.effective_from <= today) && (d.category === topic || topic === "faq") && !(isP && POTENT_STALE_COPY.test(String(d.title || "") + " " + String(d.body || ""))); });   // Potent only: a stored document still pitching the sold truck / freight operation is never served, even before the stored copy is replaced (Nov 3, 2026)
     docs.forEach(function (d) { facts.push(d.title + ": " + d.body); });
     return { ok: true, topic: topic, facts: facts, note: facts.length ? "Only state these facts." : "No approved information on this topic. Say you will have someone follow up; do not guess." };
   },

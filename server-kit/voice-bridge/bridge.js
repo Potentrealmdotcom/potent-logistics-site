@@ -91,15 +91,42 @@ function createBridge(deps) {
     if (!want || want === "on") return "dispatch_office";   // nothing named anywhere: the dispatch office — this product's home trade (a deployment names its own default in VOICE_AMBIENCE)
     return AMBIENCE_BEDS[want] ? want : "generic_office";   // an unknown name: a plain working office, never the wrong trade's room
   }
+  // GREETING INTEGRITY — PRE-ROLL (Nov 3, 2026, from the greeting-audio forensics on the usage-test
+  // calls). The greeting is the first turn of a COLD Gemini Live session, fired the instant setup
+  // completes; its audio arrives in bursts, and the pump below used to play speech exactly as fast as
+  // it arrived — no cushion — so a bursty first turn starved and compressed on the live leg: the caller
+  // heard a distorted, half-unintelligible greeting while the recording (which preserves only the
+  // sample sequence, not the wall-clock spacing) decoded cleanly. Both degraded greetings that night
+  // were the first calls after a bridge restart. The station therefore holds a session's FIRST turn
+  // until a real cushion is in hand: PREROLL_MS of queued speech (default 400 ms = 3,200 samples at
+  // 8 kHz) before the first speech frame plays. Gemini generates faster than real time, so the cushion
+  // normally accumulates in a fraction of that wall-clock time and the greeting is not noticeably
+  // later; a short first utterance that never reaches the threshold is released once its burst has
+  // clearly ended (PREROLL_IDLE_MS with no new audio). Later turns play immediately — the cushion is
+  // a first-turn protection, not a per-turn delay. Env VOICE_PREROLL_MS retunes it (0 = off).
+  // THE QUEUE NEVER DELETES SPEECH (same fix round): the old overflow rule capped the queue at
+  // 24,000 samples (3.0 s) by DELETING the oldest queued speech — it could cut chunks out of the
+  // middle of an utterance that generated faster than real time. That splice is gone: the queue
+  // simply extends. It is bounded in practice by a turn's length and is emptied wholesale on a
+  // caller barge-in (clear), so nothing accumulates across turns.
+  const PREROLL_MS = (function () { const v = env.VOICE_PREROLL_MS; if (v == null || v === "") return 400; const n = Number(v); return isFinite(n) ? Math.max(0, n) : 400; })();
+  const PREROLL_SAMPLES = Math.round(PREROLL_MS * 8);   // phone audio is 8 kHz: 8 samples per millisecond
+  const PREROLL_IDLE_MS = 240;
   function ambienceStation(buf) { // one per call: her speech is queued, and a 20 ms pump mixes it over the bed — so the room is present for the whole call, in the pauses too, not only while she talks
     const gain = Math.min(0.6, Math.max(0.01, Number(env.VOICE_AMBIENCE_GAIN) || 0.4));
     let pos = Math.floor(Math.random() * buf.length), ramp = 0, q = [];
+    let gateOpen = PREROLL_SAMPLES <= 0, firstTurn = true, idleTicks = 0;   // pre-roll gate state (see above): the room plays from the first frame; her first turn is held behind the gate until the cushion is in hand
     return {
-      push: function (b64) { try { const b = Buffer.from(b64, "base64"); for (let i = 0; i < b.length; i++) q.push(AI.MU_DEC[b[i]]); if (q.length > 24000) q.splice(0, q.length - 24000); } catch (e) { /* ignore */ } },
-      clear: function () { q = []; },
+      push: function (b64) { try { const b = Buffer.from(b64, "base64"); for (let i = 0; i < b.length; i++) q.push(AI.MU_DEC[b[i]]); idleTicks = 0; } catch (e) { /* ignore */ } },   // no cap, no splice: queued speech is never deleted
+      clear: function () { q = []; if (firstTurn) { firstTurn = false; gateOpen = true; } },   // a barge-in ends the protected first turn: what follows is conversation, and it is never held
       tick: function () { // one 20 ms frame out: queued speech (or silence) over the bed; reports whether the frame carried her voice
         const out = Buffer.alloc(160); let spoke = false;
-        const n = Math.min(160, q.length), sp = n ? q.splice(0, n) : null;
+        if (firstTurn && !gateOpen) {   // pre-roll: her first turn waits for its cushion (threshold reached, or the opening burst has clearly ended below it)
+          if (q.length >= PREROLL_SAMPLES) gateOpen = true;
+          else if (q.length > 0 && ++idleTicks * 20 >= PREROLL_IDLE_MS) gateOpen = true;
+        }
+        const n = gateOpen ? Math.min(160, q.length) : 0, sp = n ? q.splice(0, n) : null;
+        if (firstTurn && gateOpen && !sp && q.length === 0) firstTurn = false;   // the first turn has fully played: every later turn starts at once
         for (let i = 0; i < 160; i++) {
           if (ramp < 4000) ramp++;
           const amb = buf[pos]; pos = (pos + 1) % buf.length;
