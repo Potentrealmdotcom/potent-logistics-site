@@ -48,10 +48,23 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
   r.phone({ event: "stop" }); await sleep(20); const en = r.calls.filter(c => c.action === "end"); ok(en.length === 1 && en[0].reason === "caller_hangup" && r.aiSock.readyState === 3, "caller hangs up: call ended once, AI closed"); r.tw.close(); await sleep(10); ok(r.calls.filter(c => c.action === "end").length === 1, "a late socket close does not end it twice");
   // transfer ok
   r = rig({ toolResult: { ok: true, transfer_possible: true } }); r.start(); await sleep(40); r.ready(); r.ai({ toolCall: { functionCalls: [{ id: "h1", name: "request_human_handoff", args: {} }] } }); await sleep(20); ok(!r.calls.some(c => c.action === "transfer"), "transfer waits until the AI finishes speaking");
-  r.ai(audio(240)); r.ai(sc({ turnComplete: true })); r.phone({ event: "mark" }); await sleep(450); ok(r.calls.some(c => c.action === "transfer"), "then the transfer is requested"); r.phone({ event: "stop" }); await sleep(20); ok(r.calls.find(c => c.action === "end").reason === "transferred", "stream ending after a transfer is recorded as transferred");
+  r.ai(audio(240)); r.ai(sc({ turnComplete: true })); r.phone({ event: "mark" }); await sleep(450); ok(r.calls.some(c => c.action === "transfer"), "then the transfer is requested"); r.phone({ event: "stop" }); await sleep(60); ok(!r.calls.some(c => c.action === "end"), "stream ending after a transfer does NOT end the session from the bridge (Nov 2 warm transfer): a no-answer brings the caller back to her on a new stream, and the site finalizes the session when the phone call truly ends");
   // transfer fail -> AI told
   r = rig({ toolResult: { ok: true, transfer_possible: true }, transferFail: true }); r.start(); await sleep(40); r.ready(); r.ai({ toolCall: { functionCalls: [{ id: "h2", name: "request_human_handoff", args: {} }] } }); await sleep(20); r.ai(audio(240)); r.ai(sc({ turnComplete: true })); r.phone({ event: "mark" }); await sleep(450);
   ok(JSON.stringify(r.aiSock.sent).includes("could not be completed") && JSON.stringify(r.aiSock.sent).includes("offer a callback"), "failed transfer: the AI is told to be honest and offer a callback");
+  // warm hand-back, first attempt rang out: the site streams her back in with xferfail:1 — she gets Tony's
+  // return line, and the RETRY is armed by the bridge itself (no tool call from the model needed)
+  r = rig({ resume: { code: "xferfail:1", recap: "Caller: let me talk to a person" } }); r.start(); await sleep(40); r.ready(); await sleep(20);
+  ok(JSON.stringify(r.aiSock.sent).includes("Sorry about that, let me try one more time"), "hand-back 1: she is handed the exact return line");
+  r.ai(audio(240)); r.ai(sc({ turnComplete: true })); r.phone({ event: "mark" }); await sleep(600);
+  ok(r.calls.some(c => c.action === "transfer") && !r.calls.some(c => c.action === "tool"), "hand-back 1: the retry transfer fires from the bridge's own arming, with no tool call from the model");
+  r.phone({ event: "stop" }); await sleep(60); ok(!r.calls.some(c => c.action === "end"), "hand-back 1: the retry's stream stop still does not end the session from the bridge");
+  // warm hand-back, second attempt rang out too: playbook recovery note, NO third dial, session lives on
+  r = rig({ resume: { code: "xferfail:2", recap: "Caller: let me talk to a person" } }); r.start(); await sleep(40); r.ready(); await sleep(20);
+  ok(JSON.stringify(r.aiSock.sent).includes("callback is ALREADY saved"), "hand-back 2: she is told the callback is already saved (playbook recovery, never a duplicate)");
+  r.ai(audio(240)); r.ai(sc({ turnComplete: true })); r.phone({ event: "mark" }); await sleep(600);
+  ok(!r.calls.some(c => c.action === "transfer"), "hand-back 2: no third transfer attempt is made");
+  r.phone({ event: "stop" }); await sleep(60); const en2 = r.calls.find(c => c.action === "end"); ok(en2 && en2.reason === "caller_hangup", "hand-back 2: afterwards the session ends normally again");
   // context refused (emergency stop / forged token)
   r = rig({ ctxStatus: 423 }); r.start(); await sleep(30); ok(r.tw.readyState === 3 && !r.aiSock, "site refuses the call: phone leg closed, AI never opened");
   r = rig({ apiDown: true }); r.start(); await sleep(30); ok(r.tw.readyState === 3 && !r.aiSock, "site unreachable: the call is closed cleanly (the phone company then plays its fallback)");
