@@ -37,6 +37,13 @@ function createBridge(deps) {
   const TOOL_HOLD_GAP_MS = Math.max(0, Number(env.VOICE_TOOL_HOLD_GAP_MS) != null && env.VOICE_TOOL_HOLD_GAP_MS !== "" ? Number(env.VOICE_TOOL_HOLD_GAP_MS) : 12000);
   const HOLD_LINES = ["One second — I'm checking that for you.", "Just a moment — still checking on that for you.", "Hang tight one more second — I'm pulling that up for you."];
   const HOLD_RECOVERY = "I'm so sorry — that check is taking longer than it should on my end. Let's keep right on going; I have everything you've told me so far.";
+  // CALLER GOODBYE (Nov 4, 2026 — retest 2: Tony said "Goodbye.", she answered "Bye!" and stayed on
+  // the line until HE hung up). A caller's goodbye is detected here, from their transcribed words,
+  // and the ending is enforced by the bridge (the watchdog's goodbye fuse + doEnd): she closes
+  // warmly and the call ENDS — it no longer depends on the model choosing to hang up. The pattern
+  // is deliberately tight, a whole short turn that IS a goodbye, so a goodbye mentioned
+  // mid-sentence ("my buddy said bye") can never trigger it.
+  const GOODBYE_RE = /^(you too[,.]?\s+)?(ok(ay)?|well|alright|great|perfect|thanks|thank you)?[\s,.!]*(good\s?bye|bye(\s?bye)?|bye now|see you( later)?|talk (to you )?(later|soon)|that'?s (it|all)( for (me|now))?|i'?m (done|good|all set)|we'?re (done|good|all set))[.!…]*$/i;
   // STALLS AND THE SILENCE LADDER (Nov 3, 2026 — the recording-announcement call, graded from the audio).
   // A slow check stalled her twice (~15 s and ~25 s). Three rules came out of that call:
   // 1) THE SECOND HOLD POINT IS A STALL CAP, not another filler: past TOOL_HOLD2_MS a check is not
@@ -154,7 +161,7 @@ function createBridge(deps) {
   }
 
   function handle(tw) {
-    let saidBye = false, agentEnd = false, payPending = false, payStarted = false, idleAt = 0, idleStage = 0, closingAt = 0, closeNudges = 0, deafStage = 0, deafAt = 0, greetHold = true, greetT = null, lastCallerAt = 0, lastCallerTextAt = 0, lastAgentAt = 0, toolDoneAt = 0, toolBusy = 0, nudges = 0, burst = 0, readyAt = 0, wdTimer = null;
+    let saidBye = false, agentEnd = false, payPending = false, payStarted = false, idleAt = 0, idleStage = 0, closingAt = 0, closeNudges = 0, deafStage = 0, deafAt = 0, greetHold = true, greetT = null, lastCallerAt = 0, lastCallerTextAt = 0, lastAgentAt = 0, toolDoneAt = 0, toolBusy = 0, nudges = 0, burst = 0, readyAt = 0, wdTimer = null, callerByeAt = 0, byeNudged = false;
     let lang = "English", langTimer = null, flushTimer = null, retries = 0, reconnecting = false, timersSet = false, hist = [], streamSid = null, ctx = null, ai = null, prov = null, connectTimerRef = null, spokeSinceTool = false, toolAt = 0, lastHoldAt = 0, done = false, aiReady = false, buffered = [], lastItem = null, assistStart = null, mediaTs = 0, marks = 0, markQ = [], transferPending = false, transferred = false, xferStarted = false, xferFired = false, startedAt = Date.now(), timers = [], nm = 0, amb = null, pump = null;
     const timer = function (fn, ms) { const t = setTimeout(fn, ms); timers.push(t); return t; };
     const twSend = function (o) { if (tw.readyState === 1) tw.send(JSON.stringify(o)); };
@@ -225,7 +232,7 @@ function createBridge(deps) {
       prov = AI.create({ model: env.VOICE_AI_MODEL });
       if (!langTimer) langTimer = setInterval(lockReminder, 40000);
       if (!wdTimer) wdTimer = setInterval(watchdog, 1000);
-      if (!flushTimer) flushTimer = setInterval(function () { if (prov && prov.flush) prov.flush(5000).forEach(function (e) { onAi(e); }); }, 3000);
+      if (!flushTimer) flushTimer = setInterval(function () { if (!prov) return; if (prov.flushCaller) prov.flushCaller(1200).forEach(function (e) { onAi(e); }); if (prov.flush) prov.flush(5000).forEach(function (e) { onAi(e); }); }, 1000);   // caller words surface within ~1–2 s (the adapter's flushCaller): the watchdog, the goodbye fuse, the spelled-email assembler and the transcript all key on caller turns, and the old 3 s poll / 5 s fuse left a clearly-spoken "yes" invisible for up to ~8 s (retest 2's unanswered confirmation). Her own lines keep the 5 s rescue flush — their played/unplayed accounting must not change.
       const sock = new W(AI.URL(env.VOICE_AI_MODEL), { headers: AI.headers(env) }); ai = sock;
       sock.on("open", function () { if (ai === sock) prov.setup({ instructions: ctx.instructions, tools: ctx.tools, voice: ctx.voice }).forEach(aiSend); });
       sock.on("message", function (raw) { if (ai !== sock) return; let m; try { m = JSON.parse(raw.toString()); } catch (e) { return; } prov.parse(m).forEach(onAi); });
@@ -280,7 +287,8 @@ function createBridge(deps) {
         flushPendingAgent(true);   // record only the part of her line that actually played (markQ still holds the unplayed chunks)
         if (amb) amb.clear();   // drop her unplayed queued speech; the room itself keeps breathing under the caller
         if (markQ.length) { twSend({ event: "clear", streamSid: streamSid }); markQ = []; }
-      } else if (t === "caller_text") { lastCallerTextAt = Date.now(); idleStage = 0; idleAt = 0; hist.push({ role: "caller", text: String(e.text).slice(0, 400) }); note("caller", e.text, e.key); }   // a transcribed caller turn is a sign of life: the idle ladder restarts from its first, mildest line (Nov 3, 2026 — her ladder kept escalating across answers and repeated its stage-2 line at a man who had just replied)
+      } else if (t === "caller_text") { lastCallerTextAt = Date.now(); idleStage = 0; idleAt = 0; hist.push({ role: "caller", text: String(e.text).slice(0, 400) }); note("caller", e.text, e.key);
+        if (!callerByeAt && !agentEnd && String(e.text).trim().length <= 80 && GOODBYE_RE.test(String(e.text).trim())) { callerByeAt = Date.now(); byeNudged = false; sysNote("The caller just said goodbye — everything they needed is done. Do NOT ask another question, do not offer anything else, and do not repeat the job reference. Say ONE short, warm goodbye line, then call end_call with kind caller_done right away — the call must actually end after your goodbye."); } }   // a transcribed caller turn is a sign of life: the idle ladder restarts from its first, mildest line (Nov 3, 2026 — her ladder kept escalating across answers and repeated its stage-2 line at a man who had just replied)
       else if (t === "agent_text") { flushPendingAgent(false); pendingAgent = { text: String(e.text), key: e.key, chunks: e.chunks || 0, rescue: !!e.rescue }; if (pendingAgent.rescue) flushPendingAgent(false); }
       else if (t === "go_away") { log("ai says it will close soon", e.left); }
       else if (t === "tool") runTool(e);
@@ -292,12 +300,20 @@ function createBridge(deps) {
       let result; toolBusy++;
       const toolStart = Date.now(), holdTimers = [];
       let recoverySaid = false;   // the stall-cap apology is owed at most once per check — by the HOLD2 timer if the check runs long, or by the failure path below if it dies first; never by both
+      let ownHoldAt = 0;   // when THIS check's hold line was ordered by the bridge (its audio is not "her own voice" for the guard below)
       const holdFire = function (idx) {
         if (done || !aiReady || payPending || transferPending || agentEnd || toolBusy <= 0) return;   // the tool already landed, or the call moved on
-        if (lastAgentAt >= toolStart) return;   // she is already talking (she answered while this check runs): never talk over her
+        // "She is already talking" must mean HER OWN voice — not the hold line this bridge ordered
+        // for this very check. The old guard counted ANY agent audio since the check started, so
+        // the moment hold line 1 played, its own audio permanently disarmed the stall cap: on the
+        // retest-2 stall (26 s of dead air) the recovery line could never fire, because the hold
+        // line that preceded it had already "spoken". Audio inside the hold line's own window
+        // (its arrival + playback tail) is the bridge's, not hers.
+        const ownVoice = lastAgentAt >= toolStart && !(ownHoldAt && lastAgentAt <= ownHoldAt + 4000);
+        if (ownVoice) return;   // she is already talking (she answered while this check runs): never talk over her
         if (idx === 0 && lastHoldAt && Date.now() - lastHoldAt < TOOL_HOLD_GAP_MS) return;   // a filler just played for the step before this one: back-to-back steps share one voice, never a stack
         lastHoldAt = Date.now();
-        if (idx === 0) aiSend(prov.say(HOLD_LINES[0]));
+        if (idx === 0) { ownHoldAt = Date.now(); aiSend(prov.say(HOLD_LINES[0])); }
         else { recoverySaid = true; aiSend(prov.say(HOLD_RECOVERY)); }   // STALL CAP (Nov 3, 2026): the second threshold is not another "still checking" — the check is stuck, so the bridge apologizes once with the recovery line (which promises the caller the conversation continues from what she already has) and then stays out of the way
       };
       holdTimers.push(setTimeout(function () { holdFire(0); }, TOOL_HOLD_MS));
@@ -332,8 +348,21 @@ function createBridge(deps) {
     // 1st: tell the model the caller is waiting; 2nd: make her say "Still here, one second"; 3rd: drop and rebuild the AI link (the reconnect path with the conversation recap).
     // Also covers a greeting that never played. VOICE_SILENCE_MS changes the 4 s.
     function watchdog() {
-      if (done || !aiReady || toolBusy || transferPending || payPending || agentEnd || !ctx) return;
+      if (done || !aiReady || agentEnd || !ctx) return;
       const now = Date.now(), th = Number(env.VOICE_SILENCE_MS) || 4000;
+      // GOODBYE FUSE (Nov 4, 2026): once the caller has said goodbye the call ENDS — by her
+      // end_call if she uses it, by this fuse if she doesn't. If she has said her own bye and the
+      // line is still open seconds later, the bridge hangs up itself (doEnd — the same path an
+      // agent-initiated end takes); if she hasn't answered the goodbye at all, she is told once,
+      // and the fuse closes the call after that. Armed ONLY by GOODBYE_RE on the caller's own
+      // words: a caller who never said goodbye is never touched by it.
+      if (callerByeAt && !payPending && !transferPending) {
+        const sinceBye = now - callerByeAt;
+        if (saidBye && sinceBye > 4000) { callerByeAt = 0; doEnd(); return; }
+        if (!saidBye && sinceBye > 9000 && !byeNudged) { byeNudged = true; lastAgentAt = now; sysNote("The caller said goodbye a moment ago and is waiting on yours. Say ONE short, warm goodbye line now, then end the call with end_call (kind caller_done)."); return; }
+        if (sinceBye > 16000) { callerByeAt = 0; doEnd(); return; }
+      }
+      if (toolBusy || transferPending || payPending) return;
       const owed = Math.max(lastCallerTextAt, toolDoneAt) > lastAgentAt, noGreeting = !lastAgentAt && !reconnecting && readyAt && now - readyAt > 2 * th;   // "owed" counts only REAL caller turns (transcribed speech) and finished tools — never raw loudness: a TV, running water or banging is loud too, and loudness alone used to make the watchdog prod her into answering the room
       if (!lastCallerTextAt && !owed && !closingAt && lastAgentAt && lastCallerAt > lastAgentAt && now - lastCallerAt > th && now - lastAgentAt > th && now - deafAt > 2 * th) { // DEAF LANE: sound from the caller landed after her last line, yet not one word has ever been transcribed this call — her ears are the problem, not the caller. The silent-caller backstop below needs ~12 s between check-ins, so a talking-but-unheard caller gets dead air for a minute and hangs up first (Call 13, Oct 29 2026: 42 s, one check-in, nothing saved). Escalate fast: hearing line, then a fresh AI session, then a saved callback.
         deafAt = now; deafStage++; kinds.deaf_check = (kinds.deaf_check || 0) + 1; api({ action: "health", provider: "bridge", kind: "silence_nudge", ok: false, detail: ("deaf " + deafStage).slice(0, 120) }, 4000);
@@ -344,7 +373,7 @@ function createBridge(deps) {
       }
       if (closingAt && !saidBye && !owed && !noGreeting && closeNudges < 2 && lastAgentAt > closingAt && lastCallerAt <= lastAgentAt && now - lastAgentAt > th * 1.75) { // wrap-up done and the caller is quiet: never leave dead air, ask the close question
         closeNudges++; lastAgentAt = now; api({ action: "health", provider: "bridge", kind: "silence_nudge", ok: false, detail: ("close " + closeNudges).slice(0, 120) }, 4000);
-        sysNote(closeNudges === 1 ? "The booking is done and the caller is quiet. Ask warmly: \"Is there anything else I can help you with?\"" : "The caller is still quiet. Thank them by name, give the job reference, and say a warm goodbye.");
+        sysNote(closeNudges === 1 ? "The booking is done and the caller is quiet. Ask warmly: \"Is there anything else I can help you with?\"" : "The caller is still quiet. Thank them by name and say a warm goodbye. Do not repeat the job reference — it was already given once on this call; say it again only if they ask.");
         return;
       }
       const quietBase = Math.max(lastAgentAt, lastCallerAt || 0, lastCallerTextAt || 0, toolDoneAt || 0);   // the ladder's silence clock starts at the LATEST sign of life — her voice, the caller's sound or words, or a finished check. Tool time is not absence (Nov 3, 2026): the old clock ran straight through a tool stall, so the moment the check ended the ladder read 12+ s of "silence" that was really the system working, and started scripting an exit
