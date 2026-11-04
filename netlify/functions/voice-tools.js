@@ -11,6 +11,7 @@ const CN = require("./lib/voice/canonical");
 const P = require("./lib/voice/prompt");
 const PR = require("./lib/voice/pricing");
 const EP = require("./lib/elevate-phone");   // Əlevate phone calls: separate table, separate rules
+const EC = require("./lib/voice/email-capture");   // deterministic spelled-letter email assembly (Nov 4, 2026): runs on every caller line, see the transcript action
 const rows = S.rows;
 const secret = function () { return process.env.VOICE_BRIDGE_SECRET || ""; };
 const base = function () { return process.env.VOICE_WEBHOOK_URL || ((process.env.URL || B.SITE) + "/.netlify/functions/voice-webhook"); };
@@ -139,7 +140,18 @@ exports.handler = async function (event) {
     if (act === "transcript") {
       const role = ["caller", "agent", "system"].indexOf(b.role) >= 0 ? b.role : "system";
       if (b.key && !(await S.firstTime(ses.org_id, ses.id, "tr:" + ses.id + ":" + String(b.key).slice(0, 100), "transcript", null))) return B.J(200, { ok: true, duplicate: true });
-      return B.J(200, { ok: await S.transcript(ses.org_id, ses.id, role, b.text) });
+      const storedOk = await S.transcript(ses.org_id, ses.id, role, b.text);
+      // SPELLED-LETTER EMAIL ASSEMBLY (Nov 4, 2026): every caller line feeds the deterministic
+      // assembler; when the caller's own spelling completes an address it is stored as
+      // _email_candidate on the intake, where collect_shipment_details treats it as ground truth.
+      // Assembly is best-effort by design: a failure here must never cost the transcript line.
+      if (storedOk && role === "caller") {
+        try {
+          const it = Object.assign({}, ses.intake || {}), f = EC.feed(it._email_asm, String(b.text || ""));
+          if (f.changed) { it._email_asm = f.state; if (f.email) it._email_candidate = f.email; ses.intake = it; await S.patchSession(ses.org_id, ses.id, { intake: it }); }
+        } catch (e) { /* the transcript is already saved; assembly never breaks it */ }
+      }
+      return B.J(200, { ok: storedOk });
     }
     if (act === "end") return B.J(200, await finish(ses, b.reason, b.seconds));
     if (act === "pay") {   // the bridge asks to move the live call to the keypad payment. Everything is re-checked here; the model supplies nothing but a booking id we already own.

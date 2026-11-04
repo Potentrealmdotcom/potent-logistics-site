@@ -12,7 +12,7 @@ const T = require("./tools");
 const PUSH = require("../push");
 const rows = S.rows;
 
-const LABELS = { booked: "Booked", booking_requested: "Booking requested", callback: "Callback saved", handoff_requested: "Handoff requested", handoff: "Transferred to a person", declined: "Could not take it", ended_abuse: "Ended (abusive caller)", ended_do_not_contact: "Ended (do-not-contact)", info_only: "Information only" };
+const LABELS = { booked: "Booked", booking_requested: "Booking requested", callback: "Callback saved", handoff_requested: "Handoff requested", handoff: "Transferred to a person", declined: "Could not take it", caller_requested_end: "Ended (caller finished)", ended_abuse: "Ended (abusive caller)", ended_do_not_contact: "Ended (do-not-contact)", info_only: "Information only" };
 function label(outcome) { const o = String(outcome || "info_only"); return LABELS[o] || (o.replace(/_/g, " ").replace(/^./, function (c) { return c.toUpperCase(); })); }
 function money(cents) { return cents == null || isNaN(Number(cents)) ? null : "$" + (Number(cents) / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function dur(sec) { const s = Math.max(0, Math.floor(Number(sec) || 0)); if (!s) return null; const m = Math.floor(s / 60), r = s % 60; return m ? (m + " min" + (r ? " " + r + " sec" : "")) : (r + " sec"); }
@@ -40,6 +40,7 @@ function nextStep(ses, callbacks, handoffs, bk) {
     case "handoff": case "handoff_requested": return "Handoff saved — someone will call back on the number they confirmed.";
     case "callback": return "Callback saved — someone will call back on the number they confirmed.";
     case "declined": return "No booking was made on this call.";
+    case "caller_requested_end": return "The caller finished and said goodbye — nothing is owed on this call.";
     case "ended_abuse": case "ended_do_not_contact": return "The call was ended — the full record is saved in your dashboard.";
     default: return "No follow-up was saved on this call.";
   }

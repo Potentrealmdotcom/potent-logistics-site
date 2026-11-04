@@ -30,6 +30,18 @@ function canon(a) {
   return out;
 }
 function cityOf(a) { const p = String(a || "").split(",").map(function (s) { return s.trim(); }); return p.length >= 3 ? p[p.length - 2] : (p.length === 2 ? p[0] : ""); }
+// Comparison form of an address (Nov 4, 2026): the same address in different dress — "100 Peachtree
+// St NE, Atlanta, GA 30303" vs "100 Peachtree Street Northeast, Atlanta, Georgia" — is the SAME
+// address. The model re-states addresses in whatever form it last heard, and the intake layer used
+// to treat every re-dressing as a CHANGE: each one wiped the geocode, the eligibility and the quote
+// (invalidate-on-any-resend), so a flow could circle forever re-verifying what it already had.
+// normAddr is the identity an address is compared, cached and locked by: canonical state, no ZIP
+// (a ZIP is found by the system, never identity), suffixes and directions folded to one spelling.
+const SUFFIX = { street: "st", st: "st", avenue: "ave", ave: "ave", road: "rd", rd: "rd", drive: "dr", dr: "dr", lane: "ln", ln: "ln", court: "ct", ct: "ct", boulevard: "blvd", blvd: "blvd", highway: "hwy", hwy: "hwy", parkway: "pkwy", pkwy: "pkwy", circle: "cir", cir: "cir", place: "pl", pl: "pl", square: "sq", sq: "sq", trail: "trl", terrace: "ter", alley: "aly", north: "n", south: "s", east: "e", west: "w", northeast: "ne", northwest: "nw", southeast: "se", southwest: "sw" };
+function normAddr(a) {
+  const s = canon(a).toLowerCase().replace(/\b\d{5}(?:-\d{4})?\b/g, " ").replace(/[.,#]/g, " ").replace(/\s+/g, " ").trim();
+  return s.split(" ").map(function (w) { return SUFFIX[w] || w; }).join(" ");
+}
 function addressCheck(a) {
   const s = clip(a, 200); if (!s) return { ok: false, why: "missing" };
   if (!/^\d+[A-Za-z]?\s+\S+/.test(s)) return { ok: false, why: "needs a street number and street name" };
@@ -61,7 +73,11 @@ function validate(raw, now) {
   d.email = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(raw.email || "")) ? String(raw.email).toLowerCase().slice(0, 120) : ""; if (raw.email && !d.email) prob.push("email_invalid");
   [["pickup", "pickup_address"], ["delivery", "delivery_address"]].forEach(function (p) {
     d[p[1]] = clip(raw[p[1]], 200); const c = addressCheck(d[p[1]]);
-    if (!d[p[1]]) miss.push(p[1]); else if (!c.ok) prob.push(p[1] + "_ambiguous: " + c.why);
+    // _addr_as_stated (set by collect_shipment_details after the same address failed the format
+    // check twice): the caller's address is accepted EXACTLY as stated and the format problem can
+    // never be raised again — eligibility's geocoder pass (and its own two-try rule) decides what
+    // happens next. Without this valve a format problem re-asks the address forever (Nov 4, 2026).
+    if (!d[p[1]]) miss.push(p[1]); else if (!c.ok && !(raw._addr_as_stated && raw._addr_as_stated[p[0]])) prob.push(p[1] + "_ambiguous: " + c.why);
     d[p[0] + "_state"] = c.ok ? c.state : null; d[p[0] + "_contact_name"] = clip(raw[p[0] + "_contact_name"], 80); d[p[0] + "_contact_phone"] = phone(raw[p[0] + "_contact_phone"]) || "";
   });
   if (d.pickup_address && d.delivery_address && d.pickup_address.toLowerCase() === d.delivery_address.toLowerCase()) prob.push("pickup_and_delivery_are_the_same");
@@ -98,4 +114,4 @@ function validate(raw, now) {
   d.special_handling = clip(raw.special_handling, 300); d.special_instructions = clip(raw.special_instructions, 400); d.po_number = clip(raw.po_number, 60);
   return { ok: !miss.length && !prob.length, missing: miss, problems: prob, data: d };
 }
-module.exports = { canon, looseDims, validate, phone, stateOf, cityOf, addressCheck, WINDOWS, LEVELS };
+module.exports = { canon, normAddr, looseDims, validate, phone, stateOf, cityOf, addressCheck, WINDOWS, LEVELS };

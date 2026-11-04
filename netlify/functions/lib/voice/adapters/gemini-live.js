@@ -54,7 +54,7 @@ function create(opts) {
   // message or two, and an interruption landing in that gap must not orphan the count from its line.
   const flushAgent = function (ev, rescue) { if (agentBuf.trim()) { ev.push({ kind: "agent_text", text: agentBuf.trim(), key: "a:" + (++n), chunks: turnChunks, rescue: !!rescue }); turnChunks = 0; } agentBuf = ""; };
   return {
-    name: "gemini-live", version: "2026-11-03b",
+    name: "gemini-live", version: "2026-11-04a",
     setup: function (o) {
       const voice = VOICE_SOURCE.voice; // LOCKED: Elevate is always the same female voice (Sulafat — see VOICE_SOURCE above), on every call and every reconnect. No config, env or caller can change it.
       const decl = declarations(o.tools);
@@ -74,6 +74,13 @@ function create(opts) {
     note: function (text) { return { clientContent: { turns: [{ role: "user", parts: [{ text: "[system notice, not the caller] " + text }] }], turnComplete: true } }; },
     // text heard so far that no event has flushed yet (call ended or garbled before a turn completed): hand it over instead of losing it
     flush: function (idleMs) { if (idleMs && Date.now() - lastTextAt < idleMs) return []; const ev = []; flushCaller(ev); flushAgent(ev, true); return ev; },
+    // Caller words ONLY, on a short fuse (Nov 4, 2026): a caller turn used to become visible to the
+    // bridge — its watchdog, its goodbye detector, the transcript — only when the model next produced
+    // an event or the 5 s rescue flush ran, so a caller's clear "that's correct" sat unheard for
+    // ~8 s while every timer downstream waited on a turn it could not see (retest 2). The bridge now
+    // polls this every second with a ~1.2 s fuse. It never touches the agent buffer: her held lines
+    // keep their exact played/unplayed accounting via flush() and the turn events.
+    flushCaller: function (idleMs) { if (idleMs && Date.now() - lastTextAt < idleMs) return []; const ev = []; flushCaller(ev); return ev; },
     // context only: added to the conversation WITHOUT asking the model to answer (turnComplete false), used for the language-lock reminder
     noteSilent: function (text) { return { clientContent: { turns: [{ role: "user", parts: [{ text: "[system reminder, do not reply to this] " + text }] }], turnComplete: false } }; },
     diag: function () { return JSON.parse(JSON.stringify(seen)); },   // which message types Gemini actually sent (proves whether transcripts were produced)
