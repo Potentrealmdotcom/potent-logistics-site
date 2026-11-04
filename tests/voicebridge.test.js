@@ -9,7 +9,7 @@ function rig(opts) {
   opts = opts || {}; const calls = []; let aiSock = null;
   const fetch = async (url, o) => { const b = JSON.parse(o.body); calls.push(b); if (opts.apiDown) throw new Error("down"); let data = {}, status = 200;
     if (b.action === "context") { if (opts.ctxStatus) { status = opts.ctxStatus; data = { error: "x" }; } else data = { session_id: "S1", instructions: "be nice", tools: [{ type: "function", name: "t", description: "d", parameters: { type: "object", properties: { a: { type: "string" } }, additionalProperties: false } }], voice: "alloy", greeting: "Hello", max_seconds: opts.maxSeconds || 1800, resume: opts.resume || null }; }
-    if (b.action === "tool") { if (opts.toolDown) throw new Error("tool down"); if (opts.toolDelay) await sleep(opts.toolDelay); data = { result: opts.toolResult || { ok: true } }; } if (b.action === "hangup") data = { ok: true }; if (b.action === "pay") data = opts.payFail ? { ok: false, error: "keypad_not_live" } : { ok: true }; if (b.action === "transfer") { if (opts.transferDelay) await sleep(opts.transferDelay); data = opts.transferFail ? { ok: false, error: "no_one_available" } : { ok: true, requested: true }; }
+    if (b.action === "tool") { if (opts.toolFailDelay) { await sleep(opts.toolFailDelay); throw new Error("tool down late"); } if (opts.toolDown) throw new Error("tool down"); if (opts.toolDelay) await sleep(opts.toolDelay); data = { result: opts.toolResult || { ok: true } }; } if (b.action === "hangup") data = { ok: true }; if (b.action === "pay") data = opts.payFail ? { ok: false, error: "keypad_not_live" } : { ok: true }; if (b.action === "transfer") { if (opts.transferDelay) await sleep(opts.transferDelay); data = opts.transferFail ? { ok: false, error: "no_one_available" } : { ok: true, requested: true }; }
     return { status, json: async () => data }; };
   class W extends Sock { constructor(url, o) { super(); aiSock = this; this.url = url; this.headers = o.headers; if (!opts.aiNeverOpens) setTimeout(() => this.emit("open"), 5); } }
   const b = createBridge({ env: Object.assign({ SITE_URL: "https://site.test/", VOICE_BRIDGE_SECRET: "sec", GEMINI_API_KEY: "gk-x", VOICE_AMBIENCE: "off" }, opts.env || {}), WebSocket: W, fetch, log() {} });   // VOICE_AMBIENCE off: the legacy suite tests the bare line; the room itself is proven in tests/voice-ambience.test.js
@@ -229,11 +229,13 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
     await sleep(250); ok(holdSays(r, "checking that for you").length === 1 && holdSays(r, "still checking on that").length === 0, "hold-on: no repeat lines after the tool has landed");
     r.ai(audio(240)); ok(r.tw.sent.some(m => m.event === "media"), "hold-on: the conversation continues normally after the held tool (model audio reaches the caller)");
     r.phone({ event: "stop" }); await sleep(10);
-    // (c) a very long tool: at most one repeat, near the timeout end of the window
+    // (c) a very long tool: first hold-on, then the STALL CAP (Nov 3, 2026) — the recovery line replaces
+    // the second generic hold-on, and the late result arrives with the resume-at-checkpoint note
     r = rig({ env: Object.assign({}, HOLDENV, { VOICE_TOOL_HOLD2_MS: "200" }), toolDelay: 450 }); r.start(); await sleep(40); r.ready();
     r.ai({ toolCall: { functionCalls: [{ id: "s2", name: "lookup_customer", args: {} }] } }); await sleep(560);
-    ok(holdSays(r, "checking that for you").length === 1 && holdSays(r, "still checking on that").length === 1, "hold-on: a very long tool gets the first line plus at most one repeat");
+    ok(holdSays(r, "checking that for you").length === 1 && holdSays(r, "taking longer than it should").length === 1 && holdSays(r, "still checking on that").length === 0, "hold-on: a very long tool gets the first line, then the stall-cap recovery — never a second generic hold-on");
     ok(toolResp(r).length === 1, "hold-on: the very long tool's result still completes the turn");
+    ok(holdSays(r, "exact step you were on").length === 1, "hold-on: a result that lands after a stall carries the resume-at-checkpoint note");
     r.phone({ event: "stop" }); await sleep(10);
     // (d) a tool that FAILS (the Nov 2 hang shape): the BRIDGE speaks the recovery and the session is not stranded
     r = rig({ env: HOLDENV, toolDown: true }); r.start(); await sleep(40); r.ready();
@@ -258,6 +260,65 @@ const sc = o => ({ serverContent: o }), audio = n => sc({ modelTurn: { parts: [{
     r.ai({ toolCall: { functionCalls: [{ id: "c3", name: "take_card_payment", args: {} }] } }); await sleep(320);
     ok(holdSays(r, "checking that for you").length === 1 && holdSays(r, "still checking on that").length === 0, "hold-on chain: three back-to-back slow steps share exactly ONE filler, never a stack");
     ok(toolResp(r).length === 3, "hold-on chain: every step's result is still handed to the model");
+    r.phone({ event: "stop" }); await sleep(10); }
+
+  // ── ANNOUNCEMENT-CALL REPLAY (Nov 3, 2026 — graded FAIL from the audio; diagnosis in the checklist
+  // goal's hidden_files/call-announcement-grade-diagnosis-2026-11-03.md). The sequence that killed that
+  // call: a check stalled ~15 s; the bridge's idle ladder — built for absent callers — spent the stall
+  // and its aftermath scripting "keep going or have someone call them back?" (twice, the second after
+  // the caller had answered) and then the follow-up exit, while the caller was present and answering;
+  // she never re-entered the booking (no name, no email, no booking). These three rigs replay that
+  // sequence against the fixes: the ladder is gated on tool state + a post-tool grace window and its
+  // stage resets on ANY caller sign of life; a stall is capped with the recovery line; a stalled
+  // result lands with a resume-at-checkpoint note.
+  { const ENV = { VOICE_SILENCE_MS: "100", VOICE_TOOL_HOLD_MS: "60", VOICE_TOOL_HOLD2_MS: "250", VOICE_TOOL_GRACE_MS: "1500" };
+    const says = (r, frag) => r.aiSock.sent.filter(m => m.clientContent && JSON.stringify(m).includes(frag));
+    const ladderNotes = r => r.aiSock.sent.filter(m => m.clientContent).map(m => JSON.stringify(m)).filter(t => /Still quiet|It has been quiet/.test(t));
+    const toolResp = r => r.aiSock.sent.filter(m => m.toolResponse);
+    const waitFor = async (fn, ms) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(60); } return fn(); };
+    // (g) THE STALL REPLAY: a 700 ms check (hold at 60, cap at 250) inside a live booking conversation
+    let r = rig({ env: ENV, toolDelay: 700 }); r.start(); await sleep(40); r.ready(); await sleep(10);
+    r.ai(audio(240)); r.ai(sc({ turnComplete: true }));   // greeting done
+    r.ai(sc({ inputTranscription: { text: "1200 Peachtree Street, Atlanta" } })); r.ai(sc({ turnComplete: true }));   // the caller answers
+    r.ai(audio(240)); r.ai(sc({ turnComplete: true }));   // she takes the details and runs the check
+    await sleep(30);   // a real beat between her line ending and the tool firing (else the no-talk-over guard quite rightly suppresses the hold-on)
+    r.ai({ toolCall: { functionCalls: [{ id: "q1", name: "calculate_quote", args: {} }] } });
+    await sleep(950);   // hold-on at ~60 ms, stall cap at ~250 ms, result lands at ~700 ms
+    ok(says(r, "checking that for you").length === 1, "replay: a stalled check gets exactly one hold-on line");
+    ok(says(r, "taking longer than it should").length === 1, "replay: past the second threshold the bridge speaks the recovery line once (the stall cap)");
+    ok(says(r, "still checking on that").length === 0, "replay: the second generic hold-on line is never spoken anymore");
+    ok(toolResp(r).length === 1, "replay: the stalled check's result is delivered exactly once");
+    ok(says(r, "exact step you were on").length === 1, "replay: the stalled result arrives with the resume-at-checkpoint note");
+    r.ai(audio(240)); r.ai(sc({ turnComplete: true }));   // she speaks the result and the booking continues; the caller sits quiet
+    await sleep(900);
+    ok(ladderNotes(r).length === 0, "replay: inside the post-tool grace window the idle ladder does NOT fire — tool time is not caller absence");
+    ok(await waitFor(() => ladderNotes(r).length >= 1, 4000), "replay: after the grace window and genuine silence, the ladder may start");
+    ok(/ask if they are still with you/.test(ladderNotes(r)[0]) && !ladderNotes(r).some(t => /call them back/.test(t)), "replay: the ladder starts at its first, mildest line — never at the keep-going-or-callback stage");
+    r.phone({ event: "stop" }); await sleep(10);
+    // (h) THE ANSWER RESET: a silent caller climbs the ladder; the moment he answers, the ladder
+    // restarts from its first line — its stage-2 line is never repeated across an answer (on the real
+    // call Tony answered at 164.58 s and got the identical question again at 167.04 s)
+    r = rig({ env: { VOICE_SILENCE_MS: "100" } }); r.start(); await sleep(40); r.ready(); await sleep(10);
+    r.ai(audio(240)); r.ai(sc({ turnComplete: true }));   // she speaks; then total quiet
+    ok(await waitFor(() => ladderNotes(r).some(t => /call them back/.test(t)), 6000), "ladder reset: a truly silent caller climbs the ladder to the keep-going-or-callback line");
+    ok(ladderNotes(r).filter(t => /call them back/.test(t)).length === 1, "ladder reset: the stage-2 line fired exactly once in the first absence");
+    r.ai(sc({ inputTranscription: { text: "Yes, keep going" } })); r.ai(sc({ turnComplete: true }));   // the caller answers
+    r.ai(audio(240)); r.ai(sc({ turnComplete: true }));   // she acknowledges and carries on
+    const base = ladderNotes(r).length;
+    ok(await waitFor(() => ladderNotes(r).length > base, 4000), "ladder reset: quiet again after the answer, the ladder starts over");
+    ok(/ask if they are still with you/.test(ladderNotes(r)[ladderNotes(r).length - 1]) && ladderNotes(r).filter(t => /call them back/.test(t)).length === 1, "ladder reset: after ANY caller answer the ladder restarts at its first line — the stage-2 line never repeats across an answer");
+    r.phone({ event: "stop" }); await sleep(10);
+    // (i) THE STALLED FAILURE: a check that runs past the cap and THEN dies — the recovery line the cap
+    // already spoke is the only one; the failure does not earn a second, and no resume note rides with
+    // an error result (its own fallback governs)
+    r = rig({ env: ENV, toolFailDelay: 600 }); r.start(); await sleep(40); r.ready(); await sleep(10);
+    r.ai(audio(240)); r.ai(sc({ turnComplete: true }));
+    await sleep(30);
+    r.ai({ toolCall: { functionCalls: [{ id: "q2", name: "calculate_quote", args: {} }] } }); await sleep(900);
+    ok(says(r, "checking that for you").length === 1, "stalled failure: the hold-on line still fires on the way into the stall");
+    ok(says(r, "taking longer than it should").length === 1, "stalled failure: the recovery line is spoken exactly once even though the failure landed after the stall cap");
+    ok(toolResp(r).length === 1 && JSON.stringify(toolResp(r)[0]).includes("tool_unreachable"), "stalled failure: the error result is still delivered exactly once");
+    ok(says(r, "exact step you were on").length === 0, "stalled failure: no resume note rides with a failed check — its error result carries the honest fallback");
     r.phone({ event: "stop" }); await sleep(10); }
 
   // ── VOICE + TURN-TAKING (Nov 2, 2026 voice-quality package): the locked voice is Sulafat and it

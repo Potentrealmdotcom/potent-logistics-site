@@ -37,6 +37,20 @@ function createBridge(deps) {
   const TOOL_HOLD_GAP_MS = Math.max(0, Number(env.VOICE_TOOL_HOLD_GAP_MS) != null && env.VOICE_TOOL_HOLD_GAP_MS !== "" ? Number(env.VOICE_TOOL_HOLD_GAP_MS) : 12000);
   const HOLD_LINES = ["One second — I'm checking that for you.", "Just a moment — still checking on that for you.", "Hang tight one more second — I'm pulling that up for you."];
   const HOLD_RECOVERY = "I'm so sorry — that check is taking longer than it should on my end. Let's keep right on going; I have everything you've told me so far.";
+  // STALLS AND THE SILENCE LADDER (Nov 3, 2026 — the recording-announcement call, graded from the audio).
+  // A slow check stalled her twice (~15 s and ~25 s). Three rules came out of that call:
+  // 1) THE SECOND HOLD POINT IS A STALL CAP, not another filler: past TOOL_HOLD2_MS a check is not
+  //    "still checking", it is stuck, so the bridge speaks HOLD_RECOVERY (once) and stops filling —
+  //    the old second generic hold-on just stacked words in front of dead air.
+  // 2) A STALLED CHECK'S RESULT ARRIVES WITH A RESUME NOTE (in runTool): pick the flow up at the exact
+  //    step she was on; a stall is never a reason to exit to a callback.
+  // 3) THE IDLE LADDER NEVER COUNTS TOOL TIME AS ABSENCE (in watchdog): the ladder exists for callers
+  //    who have gone quiet, so its silence clock starts at the latest sign of life (her voice, the
+  //    caller's voice or words, a finished check), it stays shut for TOOL_GRACE_MS after any check
+  //    finishes, and ANY caller audio or transcribed turn resets its stage to zero — on that call the
+  //    ladder spent a stall scripting "keep going or a call back?" twice and then the follow-up exit
+  //    at a man who was on the line answering her, and she never re-entered the booking.
+  const TOOL_GRACE_MS = Math.max(0, Number(env.VOICE_TOOL_GRACE_MS) != null && env.VOICE_TOOL_GRACE_MS !== "" ? Number(env.VOICE_TOOL_GRACE_MS) : 15000);
 
   // AMBIENCE — THE ROOM SHE SITS IN (Tony, Nov 2, 2026). The Bland benchmark call sounded real partly
   // because the room was in it: whatever trade the company is in, she should sound like she is sitting
@@ -140,7 +154,7 @@ function createBridge(deps) {
   }
 
   function handle(tw) {
-    let saidBye = false, agentEnd = false, payPending = false, payStarted = false, idleAt = 0, closingAt = 0, closeNudges = 0, deafStage = 0, deafAt = 0, greetHold = true, greetT = null, lastCallerAt = 0, lastCallerTextAt = 0, lastAgentAt = 0, toolDoneAt = 0, toolBusy = 0, nudges = 0, burst = 0, readyAt = 0, wdTimer = null;
+    let saidBye = false, agentEnd = false, payPending = false, payStarted = false, idleAt = 0, idleStage = 0, closingAt = 0, closeNudges = 0, deafStage = 0, deafAt = 0, greetHold = true, greetT = null, lastCallerAt = 0, lastCallerTextAt = 0, lastAgentAt = 0, toolDoneAt = 0, toolBusy = 0, nudges = 0, burst = 0, readyAt = 0, wdTimer = null;
     let lang = "English", langTimer = null, flushTimer = null, retries = 0, reconnecting = false, timersSet = false, hist = [], streamSid = null, ctx = null, ai = null, prov = null, connectTimerRef = null, spokeSinceTool = false, toolAt = 0, lastHoldAt = 0, done = false, aiReady = false, buffered = [], lastItem = null, assistStart = null, mediaTs = 0, marks = 0, markQ = [], transferPending = false, transferred = false, xferStarted = false, xferFired = false, startedAt = Date.now(), timers = [], nm = 0, amb = null, pump = null;
     const timer = function (fn, ms) { const t = setTimeout(fn, ms); timers.push(t); return t; };
     const twSend = function (o) { if (tw.readyState === 1) tw.send(JSON.stringify(o)); };
@@ -266,7 +280,7 @@ function createBridge(deps) {
         flushPendingAgent(true);   // record only the part of her line that actually played (markQ still holds the unplayed chunks)
         if (amb) amb.clear();   // drop her unplayed queued speech; the room itself keeps breathing under the caller
         if (markQ.length) { twSend({ event: "clear", streamSid: streamSid }); markQ = []; }
-      } else if (t === "caller_text") { lastCallerTextAt = Date.now(); hist.push({ role: "caller", text: String(e.text).slice(0, 400) }); note("caller", e.text, e.key); }
+      } else if (t === "caller_text") { lastCallerTextAt = Date.now(); idleStage = 0; idleAt = 0; hist.push({ role: "caller", text: String(e.text).slice(0, 400) }); note("caller", e.text, e.key); }   // a transcribed caller turn is a sign of life: the idle ladder restarts from its first, mildest line (Nov 3, 2026 — her ladder kept escalating across answers and repeated its stage-2 line at a man who had just replied)
       else if (t === "agent_text") { flushPendingAgent(false); pendingAgent = { text: String(e.text), key: e.key, chunks: e.chunks || 0, rescue: !!e.rescue }; if (pendingAgent.rescue) flushPendingAgent(false); }
       else if (t === "go_away") { log("ai says it will close soon", e.left); }
       else if (t === "tool") runTool(e);
@@ -277,27 +291,39 @@ function createBridge(deps) {
     async function runTool(m) {
       let result; toolBusy++;
       const toolStart = Date.now(), holdTimers = [];
+      let recoverySaid = false;   // the stall-cap apology is owed at most once per check — by the HOLD2 timer if the check runs long, or by the failure path below if it dies first; never by both
       const holdFire = function (idx) {
         if (done || !aiReady || payPending || transferPending || agentEnd || toolBusy <= 0) return;   // the tool already landed, or the call moved on
         if (lastAgentAt >= toolStart) return;   // she is already talking (she answered while this check runs): never talk over her
         if (idx === 0 && lastHoldAt && Date.now() - lastHoldAt < TOOL_HOLD_GAP_MS) return;   // a filler just played for the step before this one: back-to-back steps share one voice, never a stack
-        lastHoldAt = Date.now(); aiSend(prov.say(HOLD_LINES[idx % HOLD_LINES.length]));
+        lastHoldAt = Date.now();
+        if (idx === 0) aiSend(prov.say(HOLD_LINES[0]));
+        else { recoverySaid = true; aiSend(prov.say(HOLD_RECOVERY)); }   // STALL CAP (Nov 3, 2026): the second threshold is not another "still checking" — the check is stuck, so the bridge apologizes once with the recovery line (which promises the caller the conversation continues from what she already has) and then stays out of the way
       };
       holdTimers.push(setTimeout(function () { holdFire(0); }, TOOL_HOLD_MS));
       holdTimers.push(setTimeout(function () { holdFire(1); }, TOOL_HOLD2_MS));
       const r = await api({ action: "tool", session_id: ctx.session_id, name: m.name, args: m.args, call_key: nk(m.id) }, 15000);
       holdTimers.forEach(clearTimeout);
+      const stalled = Date.now() - toolStart >= TOOL_HOLD2_MS;   // this check genuinely stalled (the announcement call stalled twice, ~15 s and ~25 s): if it still brought a result back, the result lands with a resume-at-checkpoint note, below
       const unreachable = !r || !r.status || !!r.error || !(r.data && r.data.result);
       result = (r.data && r.data.result) || { ok: false, error: "tool_unreachable", say: "The system did not answer. Offer a callback; do not guess." };
       // A timed-out / unreachable tool used to be able to strand the call in silence: the error result went
       // to the model and if the model produced nothing, nothing was ever said again (Nov 2, session
       // 86ac437e). The bridge now speaks the recovery line ITSELF, then hands the error result to the model
       // like any other result; the watchdog is also armed again the moment toolBusy drops below.
-      if (unreachable && !done && aiReady && !payPending && !agentEnd) aiSend(prov.say(HOLD_RECOVERY));
+      if (unreachable && !recoverySaid && !done && aiReady && !payPending && !agentEnd) aiSend(prov.say(HOLD_RECOVERY));
       if (m.name === "request_human_handoff" && result.transfer_possible) { transferPending = true; spokeSinceTool = false; toolAt = Date.now(); timer(function () { if (transferPending) { transferPending = false; doTransfer(); } }, 20000); }
       if (m.name === "end_call" && result.ok && result.end_call) { agentEnd = true; doEnd(); }   // abuse after a warning: let her say goodbye, then hang up
       if (m.name === "take_card_payment" && result.ok && result.pay_handoff) { payPending = true; spokeSinceTool = false; doPay(result.booking_id); }   // the card is never spoken: after one sentence the live call moves to the keypad
       if (result && result.language_name && result.ok) lang = String(result.language_name).slice(0, 40);   // the model reported the caller's language: remember it for the lock
+      // RESUME AT CHECKPOINT (Nov 3, 2026): a stalled check used to hand its result to a model whose
+      // silence machinery had spent the stall treating the caller as gone — she surfaced in follow-up
+      // mode, offered a callback to a man still answering her, and never re-entered the booking (no name
+      // asked, no email asked, no booking made). A result that lands after a real stall therefore
+      // arrives with its marching orders: the caller waited and is still here; resume at the exact
+      // unfinished step; a stall is never a reason to exit. A FAILED check is different — its error
+      // result already carries the honest fallback, so no resume note rides with it.
+      if (stalled && !unreachable && !done && aiReady && !payPending && !transferPending && !agentEnd) sysNote("That check took much longer than it should, and the caller waited through it — they are still on the line with you. Pick the conversation back up at the exact step you were on before the check: speak the result once, then ask the next question you still need. Do NOT offer a callback or a follow-up because of the wait, do not say you will write anything down for someone to follow up on, and do not re-ask anything the caller already answered.");
       prov.toolResult(m.id, m.name, result).forEach(aiSend);
       toolBusy = Math.max(0, toolBusy - 1); toolDoneAt = Date.now(); if (["send_approved_confirmation", "book_demo", "create_callback_task"].indexOf(m.name) >= 0 && result && result.ok !== false) closingAt = Date.now();
     }
@@ -321,9 +347,10 @@ function createBridge(deps) {
         sysNote(closeNudges === 1 ? "The booking is done and the caller is quiet. Ask warmly: \"Is there anything else I can help you with?\"" : "The caller is still quiet. Thank them by name, give the job reference, and say a warm goodbye.");
         return;
       }
-      if (!owed && !noGreeting && !closingAt && (!markQ.length || now - lastAgentAt > th * 8) && readyAt && lastAgentAt && now - lastAgentAt > th * 3 && now - Math.max(lastCallerAt, 0) > th * 3 && now - Math.max(idleAt, 0) > th * 3) { // dead-air backstop: whatever the cause, nobody has spoken for ~12s, so she checks in
-        idleAt = now; kinds.idle_checkin = (kinds.idle_checkin || 0) + 1; api({ action: "health", provider: "bridge", kind: "silence_nudge", ok: false, detail: ("idle " + Math.round((now - lastAgentAt) / 1000) + "s").slice(0, 120) }, 4000);
-        { const n = kinds.idle_checkin;   // normal check-ins that never repeat; no forced restart (a quiet caller is not a broken connection)
+      const quietBase = Math.max(lastAgentAt, lastCallerAt || 0, lastCallerTextAt || 0, toolDoneAt || 0);   // the ladder's silence clock starts at the LATEST sign of life — her voice, the caller's sound or words, or a finished check. Tool time is not absence (Nov 3, 2026): the old clock ran straight through a tool stall, so the moment the check ended the ladder read 12+ s of "silence" that was really the system working, and started scripting an exit
+      if (!owed && !noGreeting && !closingAt && (!markQ.length || now - lastAgentAt > th * 8) && readyAt && lastAgentAt && now - quietBase > th * 3 && now - Math.max(idleAt, 0) > th * 3 && (!toolDoneAt || now - toolDoneAt > TOOL_GRACE_MS)) { // dead-air backstop: whatever the cause, nobody has spoken for ~12s, so she checks in — but never inside the grace window after a check finishes, when she is owed the moment to speak its result
+        idleAt = now; idleStage++; kinds.idle_checkin = (kinds.idle_checkin || 0) + 1; api({ action: "health", provider: "bridge", kind: "silence_nudge", ok: false, detail: ("idle " + Math.round((now - lastAgentAt) / 1000) + "s").slice(0, 120) }, 4000);
+        { const n = idleStage;   // the stage is per-absence-episode: any caller sound or transcribed turn resets it to zero (see the resets in onAi and the media handler), so the lines climb only while the caller is truly gone and the same line never repeats across an answer. No forced restart either (a quiet caller is not a broken connection)
           if (n === 1) sysNote("It has been quiet. In one short sentence, check in warmly: ask if they are still with you. Then stay quiet and wait.");   // matches her prompt's one allowed check-in; the old wording ordered the exact "I'm right here, take your time" narration her prompt bans
           else if (n === 2) sysNote("Still quiet. Say one short, different sentence: ask whether they would like to keep going or have someone call them back. Do not repeat your earlier words.");
           else if (n === 3) sysNote("Still quiet. In one short sentence, say you can write down what you have so far and have a person follow up on this number. Do not repeat your earlier words.");
@@ -374,7 +401,7 @@ function createBridge(deps) {
     tw.on("message", function (raw) {
       let m; try { m = JSON.parse(raw.toString()); } catch (e) { return; }
       if (m.event === "start") { streamSid = m.start && m.start.streamSid; const tok = m.start && m.start.customParameters && m.start.customParameters.token; if (!tok) return finish("no_token", true); begin(tok); }
-      else if (m.event === "media" && m.media && (!m.media.track || m.media.track === "inbound")) { mediaTs = Number(m.media.timestamp) || mediaTs; if (!greetHold && loud(m.media.payload)) { if (++burst >= 6) lastCallerAt = Date.now(); } else burst = Math.max(0, burst - 1); if (aiReady && !greetHold) aiSend(prov.audioIn(m.media.payload)); }   // lastCallerAt is LOUDNESS only (any sound, incl. a TV): it may hold off idle check-ins, but it never counts as the caller speaking — only transcribed caller turns set lastCallerTextAt
+      else if (m.event === "media" && m.media && (!m.media.track || m.media.track === "inbound")) { mediaTs = Number(m.media.timestamp) || mediaTs; if (!greetHold && loud(m.media.payload)) { if (++burst >= 6) { lastCallerAt = Date.now(); idleStage = 0; idleAt = 0; } } else burst = Math.max(0, burst - 1); if (aiReady && !greetHold) aiSend(prov.audioIn(m.media.payload)); }   // lastCallerAt is LOUDNESS only (any sound, incl. a TV): it may hold off idle check-ins, but it never counts as the caller speaking — only transcribed caller turns set lastCallerTextAt. Sustained caller sound ALSO resets the idle ladder's stage (Nov 3, 2026): a garbled, low-volume answer may never transcribe, but the man is plainly still there, and the ladder must not keep climbing — or repeat itself — across his answers
       else if (m.event === "mark") markQ.shift();
       else if (m.event === "stop") finish(xferStarted ? "xfer_handoff" : payStarted ? "pay_handoff" : agentEnd ? "ended_by_agent" : "caller_hangup", false);
     });
