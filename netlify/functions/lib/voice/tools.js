@@ -4,6 +4,7 @@ const B = require("../beats");
 const S = require("./store"), I = require("./intake"), R = require("./rules"), P = require("./pricing"), RT = require("./route"), AV = require("./availability"), V = require("./billing"), TW = require("./adapters/twilio");
 const rows = S.rows;
 const PLAYBOOK = require("./playbook.js");
+const EC = require("./email-capture");   // spelled-letter assembly: collect treats its _email_candidate as ground truth (Nov 4, 2026)
 // POTENT'S APPROVED COMPANY LINE (Tony, Nov 3, 2026 — his words, verbatim): what Elevate says Potent
 // does now. Potent builds software; it no longer runs freight and its box truck is sold, so no Potent
 // surface may present that truck or a freight operation as the business. The stale-copy pattern is the
@@ -44,6 +45,15 @@ const CRITICAL = ["pickup_address", "delivery_address", "service_date", "time_wi
 const INTAKE_KEYS = CRITICAL.concat(["customer_name", "company", "callback_phone", "email", "pickup_contact_name", "pickup_contact_phone", "delivery_contact_name", "delivery_contact_phone", "special_instructions", "po_number", "recurring"]);
 const clip = function (v, n) { return String(v == null ? "" : v).trim().slice(0, n); };
 const last4 = function (p) { return String(p || "").replace(/\D/g, "").slice(-4); };
+// A booking reference as it must be SPOKEN (Nov 4, 2026): read raw off a tool result, "PV261104BU5P"
+// is one fast 13-character blob no caller can write down. The spoken form keeps the dash groups and
+// spaces them for the ear: letters one at a time, digits in pairs — "P V, 26 11 04, B U 5 P".
+const spokenRef = function (ref) {
+  return String(ref || "").split("-").map(function (g) {
+    if (/^\d+$/.test(g)) { const pairs = []; let s = g; if (s.length % 2) { pairs.push(s[0]); s = s.slice(1); } for (let i = 0; i < s.length; i += 2) pairs.push(s.slice(i, i + 2)); return pairs.join(" "); }
+    return g.split("").join(" ");
+  }).join(", ");
+};
 const AFFIRM = /\b(yes|yeah|yep|yup|correct|confirm|confirmed|go ahead|book it|that'?s right|sounds good|do it|please do|okay|ok|sure|let'?s do it|proceed|ya|yah|yeh|yea|ja|si|sí|claro|dale|vale)\b/i, NEG = /\b(no|not|don'?t|wait|hold on|stop|cancel|never ?mind|actually|change)\b/i;
 
 // ── schemas shown to the model (kept deliberately small; the server validates again) ──
@@ -56,6 +66,7 @@ function defs() {
     D("create_or_update_lead", "Save the caller as a sales lead.", obj({ name: str("Caller name"), company: str("Company"), email: str("Email"), notes: str("What they need") }, ["name"])),
     D("get_approved_service_information", "Get approved company facts. Use this instead of guessing about services, service area, truck limits, scheduling, payment or policies.", obj({ topic: { type: "string", enum: ["services", "service_area", "truck_limits", "scheduling", "payment", "policies", "pricing_policy", "faq"] } }, ["topic"])),
     D("collect_shipment_details", "Record shipment facts the caller has stated. Send only what the caller actually said. Returns what is still missing or inconsistent.", obj({
+      correction: { type: "boolean", description: "true ONLY when the caller explicitly corrects a detail they already gave (they say the earlier one was wrong). A geocoder-verified address is protected: a fragmentary or malformed replacement is ignored and the verified one stays — correction=true forces the caller's own corrected version through anyway." },
       customer_name: str(""), company: str(""), callback_phone: str("10-digit US number"), use_caller_id: { type: "boolean", description: "true when the caller said yes to using the number they are calling from; then leave callback_phone empty" }, email: str(""), pickup_address: str("full street address with city and state"), delivery_address: str("full street address with city and state"),
       pickup_contact_name: str(""), pickup_contact_phone: str(""), delivery_contact_name: str(""), delivery_contact_phone: str(""), service_date: str("YYYY-MM-DD"), time_window: str("early|morning|afternoon|evening|all_day or HH:MM 24h"),
       service_level: { type: "string", enum: ["standard", "same_day", "rush", "recurring", "savannah_early", "savannah_full"] }, freight_description: str(""), piece_count: { type: "integer" }, total_weight_lb: { type: "number" },
@@ -83,7 +94,7 @@ function defs() {
     D("lookup_os_feature", "POTENT-only reference: look up whether POTENT OS has a feature, screen or control, and what it does, from the Master Inventory (200 features, 535 screens). Call it when the caller asks if OS can do something or you need the detail behind a feature. It answers only from the book; if nothing matches it says so and you offer to confirm. It has no prices.", obj({ query: { type: "string" } }, ["query"])),
     D("get_playbook", "Get the POTENT playbook script for the situation you are in: objections, junk removal, cleanouts, freight, pop-up events, recurring accounts and the wallet, closing, tracking and accounts. Call it when the caller pushes back, hesitates, or you are starting a service you need the questions for. It has no prices; prices only come from the quote tools.", obj({ topic: { type: "string", enum: PLAYBOOK.NAMES } }, ["topic"])),
     D("send_payment_link", "After a booking is CONFIRMED and the caller wants to pay by card, email them a secure Stripe payment link for the exact quoted total. The caller pays on Stripe's page; you never take or repeat card numbers. Needs the confirmed booking_id and an email read back and confirmed.", obj({ booking_id: str(""), email: str("their email exactly as the caller said it"), email_confirmed: { type: "boolean", description: "true only after you spelled it back and the caller said yes" } }, ["booking_id", "email"])),
-    D("end_call", "End the call. kind 'abuse': ONLY because the caller kept being abusive or disrespectful AFTER you gave one firm warning — never use it on someone who is merely upset, confused, sad or hard to understand, and never when someone is in danger. kind 'do_not_contact': ONLY when a tool result told you the caller's number is on the do-not-contact list. Say a short goodbye line first.", obj({ reason: str("what happened, one sentence"), kind: { type: "string", enum: ["abuse", "do_not_contact"], description: "why the call is ending: abuse (default) or do_not_contact" } }, ["reason"])),
+    D("end_call", "End the call. kind 'caller_done': the NORMAL polite ending — the caller clearly said goodbye or that they are done, and everything they needed is finished. Use it whenever the caller ends the conversation, so the call actually hangs up after your goodbye line; a polite goodbye is NEVER abuse. kind 'abuse': ONLY because the caller kept being abusive or disrespectful AFTER you gave one firm warning — never use it on someone who is merely upset, confused, sad or hard to understand, and never when someone is in danger. kind 'do_not_contact': ONLY when a tool result told you the caller's number is on the do-not-contact list. Say a short goodbye line first.", obj({ reason: str("what happened, one sentence"), kind: { type: "string", enum: ["caller_done", "abuse", "do_not_contact"], description: "why the call is ending: caller_done (the caller said goodbye — the normal ending), abuse, or do_not_contact" } }, ["reason"])),
     D("take_card_payment", "After a booking is CONFIRMED, take the card payment ON THE CALL by phone keypad. The caller types the card on their keypad; you never hear, see, say or store it. The amount is the quoted total from our system. Needs the confirmed booking_id. After it says ok, say the one short sentence it gives you and then STOP TALKING until you are told the result.", obj({ booking_id: str("") }, ["booking_id"])),
     D("send_approved_confirmation", "Send the approved written confirmation or request-received notice for this call's booking.", obj({ booking_id: str(""), channel: { type: "string", enum: ["email", "sms"] }, email: str("only for email: exactly what the caller said"), email_confirmed: { type: "boolean", description: "true only after you spelled it back and the caller said yes" }, sms_consent: { type: "boolean", description: "caller agreed to a text message" } }, ["booking_id", "channel"])),
     D("look_up_booking_status", "Look up a booking. Needs the booking reference and the last 4 digits of the phone number on the booking.", obj({ reference: str(""), phone_last4: str("") }, ["reference", "phone_last4"])),
@@ -127,6 +138,20 @@ async function emailGate(ctx, a, email) {
   const spelled = email.replace(/@/, " at ").replace(/\./g, " dot ").split("").join(" ");
   return { ok: false, error: "read_back_required", gate: (a.email_confirmed === true ? (pend ? "pending_mismatch:" + pend : "no_pending") : "not_confirmed_flag"), email: email, say: "NOT SENT YET. Say: \"Let me read that back: " + spelled + ". Is that right?\" Spell it letter by letter, wait for a clear yes from the caller, and do not call the tool again until you have heard it. If they correct it, use the corrected address. Then call this tool again with the same email and email_confirmed true. If the caller did not clearly say an address, ask for it; never guess or reuse one from memory." };
 }
+// THE REFERENCE IS SPOKEN ONCE (Nov 4, 2026 — retest 2: the reference was spoken as one fast
+// blob TWICE, the second time unprompted in the close). The confirm result is the one place the
+// reference reaches her voice, in its spoken form (spokenRef), and _ref_announced on the intake
+// remembers that it happened: any later confirm on the same call is told, in the result itself,
+// that the reference was already given and must not be repeated unless the caller asks.
+async function refSay(ctx, bk, baseSay) {
+  const it = ctx.session.intake || {};
+  if (it._ref_announced === bk.reference) return { say: (baseSay ? baseSay + " " : "") + "The job reference was already given on this call — do not say it again unless the caller asks for it.", again: true };
+  it._ref_announced = bk.reference; ctx.session.intake = it;
+  await S.patchSession(ctx.orgId, ctx.session.id, { intake: it });
+  const spoken = spokenRef(bk.reference);
+  const line = "Give the job reference ONCE, slowly, exactly like this: \"Your job reference is " + spoken + ".\" Say the groups one at a time so they can write it down. Do not say the reference again later in the call unless the caller asks for it.";
+  return { say: baseSay ? baseSay + " " + line : line, spoken: spoken };
+}
 // Payment wording the model sees. POTENT takes the card on the call by keypad when it is switched on, so no tool result may tell her "dispatch will send instructions" (call 2: that line made her tell the owner he did not have to pay).
 const payOn = function () { return process.env.VOICE_PAY === "on" && !!process.env.VOICE_PAY_CONNECTOR; };
 const PAY_HINT = "We take the card right on this call, over the phone keypad, once the booking is confirmed (take_card_payment).";
@@ -168,13 +193,61 @@ const TOOLS = {
   },
   async collect_shipment_details(ctx, a) {
     const intake = Object.assign({}, ctx.session.intake || {}), inc = cleanArgs(a); let changed = false;
-    Object.keys(inc).forEach(function (k) { if (JSON.stringify(intake[k]) !== JSON.stringify(inc[k])) { if (CRITICAL.indexOf(k) >= 0 && intake[k] !== undefined) changed = true; intake[k] = inc[k]; } });
+    const lockedKeep = [];
+    Object.keys(inc).forEach(function (k) {
+      // ADDRESSES ARE COMPARED BY IDENTITY, NOT BY SPELLING (Nov 4, 2026 — see intake.normAddr):
+      // the same address re-stated in different dress is NOT a change. The old rule invalidated
+      // the geocode, the eligibility and the quote on ANY collect that merely repeated a settled
+      // critical field, so a model that re-sends its facts (they do) kept wiping its own progress
+      // and the flow circled — re-verifying, re-quoting, re-asking. And once eligibility has
+      // geocoder-verified an address it is LOCKED (_addr_lock, set in validate_shipment_eligibility):
+      // a different address for that slot is ignored unless the caller is explicitly correcting it
+      // (correction=true). Re-asking a locked slot is thereby made useless — there is nothing new
+      // the answer could change.
+      if (k === "pickup_address" || k === "delivery_address") {
+        const slot = k === "pickup_address" ? "pickup" : "delivery", lock = intake._addr_lock && intake._addr_lock[slot];
+        if (intake[k] !== undefined && I.normAddr(intake[k]) === I.normAddr(inc[k])) return;   // same address, different dress: keep the stored form, change nothing
+        // The lock guards against DEGRADATION, not against the caller: a fragmentary or
+        // format-failing replacement for a verified address is churn (a mis-heard repeat, a
+        // half-collected re-ask) and is ignored — the verified address stays. A complete,
+        // well-formed new address is a genuine change: it falls through, invalidates the checks
+        // built on the old one, and earns its own lock at the next eligibility pass. That split
+        // is what keeps both contracts: settled addresses cannot be silently overwritten by
+        // fragments, and a caller who really does change an address mid-call still can.
+        if (lock && !(a && a.correction === true) && !I.addressCheck(inc[k]).ok) { lockedKeep.push(slot); return; }
+        if (intake._addr_lock) delete intake._addr_lock[slot];   // the replacement is unverified until eligibility passes it again
+        if (intake._addr_as_stated) delete intake._addr_as_stated[slot];   // a genuinely new address earns its own format check and its own two tries
+      } else if (JSON.stringify(intake[k]) === JSON.stringify(inc[k])) return;
+      if (CRITICAL.indexOf(k) >= 0 && intake[k] !== undefined) changed = true;
+      intake[k] = inc[k];
+    });
     if (!intake.callback_phone && ctx.session.from_number && a && a.use_caller_id === true) intake.callback_phone = I.phone(ctx.session.from_number) || ctx.session.from_number;
     if (intake.callback_phone && (inc.callback_phone !== undefined || (a && a.use_caller_id === true)) && await suppressed(ctx.orgId, I.phone(intake.callback_phone) || intake.callback_phone)) return { ok: false, error: "do_not_contact", do_not_contact: true, say: "That number is on our do-not-contact list. Do not save it, and do not collect anything else. Politely say you cannot take details or arrange a callback for that number, thank them for calling, and end the call now with end_call using kind do_not_contact." };
     if (a && (a.weight_basis === "total" || a.weight_basis === "each") && intake._weight_basis !== a.weight_basis) { intake._weight_basis = a.weight_basis; changed = true; }   // the caller's settled answer on weight, kept server-side so the question can never re-open
-    if (changed || Object.keys(inc).some(function (k) { return CRITICAL.indexOf(k) >= 0; })) await invalidate(ctx, intake);
-    await setIntake(ctx, intake);
+    // A CALLER-SPELLED EMAIL IS GROUND TRUTH (Nov 4, 2026): the deterministic assembler
+    // (email-capture.js, fed by the transcript hook in voice-tools.js) collects the letters the
+    // caller actually spelled into _email_candidate. It outranks any address the model formed by
+    // ear — spelled letters are the caller's own dictation, and the live model provably drops and
+    // swaps them (retest 3: four spellings, zero capture).
+    let spelledEmail = null;
+    if (intake._email_candidate && intake.email !== intake._email_candidate) { intake.email = intake._email_candidate; spelledEmail = intake._email_candidate; }
+    if (changed) await invalidate(ctx, intake);   // ONLY a real change invalidates (Nov 4, 2026): the old trigger — any collect merely CONTAINING a critical field — wiped the geocode/eligibility/quote on every fact re-send
     let v = I.validate(intake), wqSettled = false;
+    // ADDRESS FORMAT CAP (Nov 4, 2026): when the SAME address (by identity) fails the format check
+    // on two collects, the problem is the format rule, not the caller. The address is accepted
+    // exactly as stated (_addr_as_stated — intake.validate then never raises it again) and the
+    // flow moves on: eligibility's geocoder pass still gets its say, with its own two-try rule
+    // that ends in the callback path. Progression is enforced here, not requested in the prompt.
+    let asStated = null;
+    ["pickup", "delivery"].forEach(function (slot) {
+      const key = slot + "_address", bad = v.problems.some(function (p) { return p.indexOf(key + "_ambiguous") === 0; });
+      if (bad && intake[key]) {
+        const fails = intake._addr_fails || (intake._addr_fails = {}), norm = I.normAddr(intake[key]);
+        if (fails[slot] && fails[slot].norm === norm) fails[slot].n++; else fails[slot] = { norm: norm, n: 1 };
+        if (fails[slot].n >= 2) { intake._addr_as_stated = Object.assign({}, intake._addr_as_stated, { [slot]: true }); delete fails[slot]; asStated = slot; }
+      } else if (intake._addr_fails && intake._addr_fails[slot]) delete intake._addr_fails[slot];
+    });
+    if (asStated) v = I.validate(intake);
     // TOTAL-OR-EACH, AT MOST ONCE (Tony, Nov 2, 2026: asked twice back-to-back live after the caller had
     // already answered "Total", because the model's re-save kept re-surfacing the mismatch). The first
     // collect that surfaces the mismatch arms the one allowed ask; any later collect that would surface
@@ -184,8 +257,8 @@ const TOOLS = {
       if (intake._wq_asked || intake._weight_basis) {
         intake._weight_basis = "total";
         if (Array.isArray(intake.pieces)) intake.pieces = intake.pieces.map(function (p) { const q = Object.assign({}, p); delete q.weight_lb; return q; });
-        await setIntake(ctx, intake); v = I.validate(intake); wqSettled = true;
-      } else { intake._wq_asked = true; await setIntake(ctx, intake); }
+        v = I.validate(intake); wqSettled = true;
+      } else { intake._wq_asked = true; }
     }
     let heavy;
     if (inc.total_weight_lb !== undefined && Number(intake.total_weight_lb) > 0) {   // flag an overweight load the moment the weight is said, so she does not keep collecting details for a job we cannot take
@@ -195,10 +268,25 @@ const TOOLS = {
     const l4 = a && a.use_caller_id === true && intake.callback_phone ? String(intake.callback_phone).replace(/\D/g, "").slice(-4) : undefined;
     let l4say;
     if (l4 && !intake._cb_said) {   // the callback number is stated ONCE, as a fact — never confirmed twice (Tony, Nov 2, 2026: she locked it in, then confirmed it again as a question and made him answer twice)
-      intake._cb_said = true; await setIntake(ctx, intake);
+      intake._cb_said = true;
       l4say = "Say it ONCE, as a plain statement — not a question, and do not wait for an answer: \"I'll use the number you're calling from, ending in " + l4.split("").join(" ") + ".\" Then ask the next thing you still need in the same turn. Never raise the callback number again unless the caller changes it.";
     }
+    await setIntake(ctx, intake);   // ONE save for the whole collect (Nov 4, 2026): the merge, weight settle, format cap, spelled email and callback flag all land together — the old shape patched the session up to three times per collect, and every patch is a network round trip on the caller's clock
     const res = { ok: true, complete: v.ok, missing: v.missing, problems: v.problems, number_ends_in: l4, say: heavy || l4say, reset: changed ? "Details changed, so earlier checks and any quote were cleared. Re-run validation and quote." : undefined };
+    if (lockedKeep.length) {
+      res.locked = lockedKeep.map(function (s) { return s + "_address"; });
+      const lt = "The " + lockedKeep.join(" and ") + " address is already verified and saved as \"" + lockedKeep.map(function (s) { return intake[s + "_address"]; }).join("\" / \"") + "\" — it stays exactly that. Do NOT ask for it again and do not re-confirm it. Only if the caller says it is WRONG do you change it, by collecting the corrected address with correction=true.";
+      res.say = res.say ? res.say + " " + lt : lt;
+    }
+    if (asStated) {
+      const at = "The " + asStated + " address is accepted exactly as the caller stated it: \"" + intake[asStated + "_address"] + "\". Do NOT ask for it again and do not ask them to repeat any part of it — move on to the next thing you need; the checks will work with it as stated.";
+      res.say = res.say ? res.say + " " + at : at;
+    }
+    if (spelledEmail) {
+      res.email_spelled = spelledEmail;
+      const st = "The caller's email, assembled letter by letter from their own spelling, is " + spelledEmail + " — it is already saved; use exactly that address. Read it back like this: \"" + EC.spellOut(spelledEmail) + "\" and get a yes before anything is sent to it.";
+      res.say = res.say ? res.say + " " + st : st;
+    }
     if (!res.say && wqSettled) res.say = "Weight settled: " + intake.total_weight_lb + " lb is the total for everything. The total-or-each question is CLOSED — never ask it again on this call. Move on to the next thing you still need.";
     if (!res.say && v.problems.indexOf("piece_weights_do_not_match_total") >= 0) res.say = "The piece weights and the total weight do not agree. Do NOT change either number yourself. Ask the caller once: \"Is that weight the total for everything, or for each piece?\" When they answer, record it with weight_basis ('total' or 'each') in your next collect_shipment_details call. Never ask it a second time.";
     // What is already answered rides in EVERY result, named, so a suspended/resumed turn can never drift
@@ -215,16 +303,25 @@ const TOOLS = {
     if (!v.ok) return { ok: false, missing: v.missing, problems: v.problems };
     const d = v.data, geo = intake._geo || {};
     const notFound = [];
-    for (const k of ["pickup", "delivery"]) {   // BOTH addresses are checked even when the first one fails (call 4: the unverifiable drop-off hid behind the unverifiable pickup)
-      const addr = d[k + "_address"]; if (geo[k] && geo[k].input === addr) continue;
-      const g = await RT.verifyAddress(addr);
+    // BOTH addresses are checked even when the first one fails (call 4: the unverifiable drop-off
+    // hid behind the unverifiable pickup) — and since Nov 4, 2026 they are checked IN PARALLEL:
+    // the Census geocoder can take seconds per address, and two sequential checks were up to ten
+    // seconds of dead air inside one tool call. The cache and the miss counts key on the address's
+    // normalized identity, so a re-dressed restatement can neither dodge the cache nor farm misses.
+    const need = ["pickup", "delivery"].filter(function (k) { return !(geo[k] && I.normAddr(geo[k].input || "") === I.normAddr(d[k + "_address"])); });
+    const found = await Promise.all(need.map(function (k) { return RT.verifyAddress(d[k + "_address"]); }));
+    const locks = Object.assign({}, intake._addr_lock || {});
+    for (let i = 0; i < need.length; i++) {
+      const k = need[i], g = found[i], addr = d[k + "_address"];
       if (g.unknown) return { ok: false, error: "address_check_unavailable", say: "I can't verify addresses right now. Offer a callback or a person." };
       if (!g.ok) { notFound.push(k); continue; }
       geo[k] = { input: addr, matched: g.matched, lat: g.lat, lon: g.lon, state: g.state }; d[k + "_state"] = g.state || d[k + "_state"];
+      locks[k] = I.normAddr(addr);   // VERIFIED = LOCKED: from here the slot can only change on an explicit caller correction (collect, correction=true)
     }
+    if (Object.keys(locks).length) intake._addr_lock = locks;
     if (notFound.length) {
       const miss = intake._addr_miss || {}; let finalMiss = false;
-      notFound.forEach(function (k) { const a = d[k + "_address"]; miss[a] = (miss[a] || 0) + 1; if (miss[a] >= 2) finalMiss = true; });
+      notFound.forEach(function (k) { const key = k + ":" + I.normAddr(d[k + "_address"]); miss[key] = (miss[key] || 0) + 1; if (miss[key] >= 2) finalMiss = true; });
       intake._addr_miss = miss; intake._geo = geo; await setIntake(ctx, intake);
       const probs = notFound.map(function (k) { return k + "_address_not_found"; });
       const named = notFound.map(function (k) { return "the " + k + " address \"" + d[k + "_address"] + "\""; }).join(" and ");
@@ -287,7 +384,7 @@ const TOOLS = {
     if (!S.UUID.test(String(a.booking_id || ""))) return { ok: false, error: "bad_booking" };
     const bk = rows(await B.sb("voice_bookings?org_id=eq." + ctx.orgId + "&id=eq." + a.booking_id + "&session_id=eq." + ctx.session.id + "&select=*&limit=1"))[0];
     if (!bk) return { ok: false, error: "booking_not_found" };
-    if (bk.status === "confirmed") return { ok: true, confirmed: true, duplicate: true, reference: bk.reference, job_id: bk.job_id, say: (await isPotentOrg(ctx)) && payOn() ? PAY_SAY : undefined };
+    if (bk.status === "confirmed") { const rs = await refSay(ctx, bk, (await isPotentOrg(ctx)) && payOn() ? PAY_SAY : undefined); return { ok: true, confirmed: true, duplicate: true, reference: bk.reference, job_id: bk.job_id, reference_spoken: rs.spoken, say: rs.say }; }
     if (bk.status !== "pending_review") return { ok: false, error: "booking_" + bk.status };
     const snap = bk.snapshot, q = rows(await B.sb("voice_quotes?org_id=eq." + ctx.orgId + "&id=eq." + bk.quote_id + "&select=*&limit=1"))[0];
     const fail = async function (why, say) { await B.sb("voice_bookings?id=eq." + bk.id, { method: "PATCH", prefer: "return=minimal", body: { review_reason: why } }); return { ok: true, confirmed: false, reference: bk.reference, pending: true, reason: why, say: say || "Not confirmed. It stays a request for a person to review. Say so honestly." }; };
@@ -311,7 +408,8 @@ const TOOLS = {
     // No owner email here either (Tony, Nov 1, 2026): the old plain "Voice booking CONFIRMED"
     // stub is gone. The booking + job references, total and the real payment state ride in the
     // ONE full-design owner call report at call end (owner-report.js) — one email per call.
-    return { ok: true, confirmed: true, reference: bk.reference, job_id: res.job_id, duplicate: !!res.duplicate, say: (await isPotentOrg(ctx)) && payOn() ? PAY_SAY : undefined };
+    const rs = await refSay(ctx, bk, (await isPotentOrg(ctx)) && payOn() ? PAY_SAY : undefined);
+    return { ok: true, confirmed: true, reference: bk.reference, job_id: res.job_id, duplicate: !!res.duplicate, reference_spoken: rs.spoken, say: rs.say };
   },
   async book_demo(ctx, a) {
     const email = clip(a.email, 120).toLowerCase(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { ok: false, error: "need_valid_email", say: "Ask for their email and read it back letter by letter." };
@@ -349,6 +447,18 @@ const TOOLS = {
   // Ending a call: log it, tell the owner, and let the bridge hang up once the goodbye has been spoken.
   // A do-not-contact ending is NOT abuse: it gets its own outcome and owner wording, never the abusive-caller label.
   async end_call(ctx, a) {
+    // The polite ending gets its OWN outcome (Nov 4, 2026): every end used to fall through to
+    // ended_abuse, so a caller who said goodbye and hung up happy was stamped "Ended (abusive
+    // caller)" in the owner's report — session 814f0450 is the proof. caller_done records the
+    // truth (caller_requested_end) and sends no alarm email: most calls end exactly this way,
+    // and the full-design call report at call end already carries the outcome.
+    if (a && a.kind === "caller_done") {
+      // Only a call with nothing stronger to report takes the new outcome: a booked/callback/
+      // handoff outcome already on the session is the headline and stays (this is the common
+      // path — most successful calls end with the caller's goodbye).
+      if (!ctx.session.outcome || ctx.session.outcome === "info_only") await S.patchSession(ctx.orgId, ctx.session.id, { outcome: "caller_requested_end" });
+      return { ok: true, end_call: true, say: "Say ONE short, warm goodbye line now, then stop talking. The call ends right after." };
+    }
     if (a && a.kind === "do_not_contact") {
       await S.patchSession(ctx.orgId, ctx.session.id, { outcome: "ended_do_not_contact" });
       await notifyOwner(ctx.orgId, "Call ended by Elevate (number on do-not-contact list)", "Caller " + (ctx.session.from_number || "unknown") + ". Reason: " + clip(a.reason, 200) + ". See the transcript in Calls.");
@@ -483,12 +593,16 @@ async function execute(ctx, name, args, callKey) {
   try {
     if (!TOOLS[name]) return { ok: false, error: "unknown_tool" };
     if (!callKey) return { ok: false, error: "missing_call_key" };
-    const prior = rows(await B.sb("voice_tool_executions?org_id=eq." + ctx.orgId + "&call_key=eq." + encodeURIComponent(String(callKey).slice(0, 120)) + "&select=result&limit=1"))[0];
+    // The duplicate check and the plan check are independent reads: run them TOGETHER (Nov 4,
+    // 2026). Every tool call used to pay for them one after another, plus its own work, plus the
+    // execution log — sequential round trips are a real slice of the 4–7 s response gaps.
+    const both = await Promise.all([B.sb("voice_tool_executions?org_id=eq." + ctx.orgId + "&call_key=eq." + encodeURIComponent(String(callKey).slice(0, 120)) + "&select=result&limit=1"), V.allow(ctx.orgId, FEATURE[name])]);
+    const prior = rows(both[0])[0];
     if (prior) return Object.assign({}, prior.result, { duplicate: true });
     if (!ctx.session || ["ended", "failed", "rejected"].indexOf(ctx.session.state) >= 0) out = { ok: false, error: "call_not_active" };
     else if (ctx.cfg.emergency_stop || ctx.cfg.ai_enabled === false) out = { ok: false, error: "ai_disabled", say: "The assistant is switched off. Offer a callback." };
     else if (POTENT_ONLY[name] && !(await isPotentOrg(ctx))) out = { ok: false, error: "not_available", say: "That is not set up for this company. Take a callback so the owner can follow up. Do not guess." };
-    else { const al = await V.allow(ctx.orgId, FEATURE[name]); out = !al.allowed ? { ok: false, error: "not_in_plan", say: al.reason } : await TOOLS[name](ctx, args && typeof args === "object" ? args : {}); }
+    else { const al = both[1]; out = !al.allowed ? { ok: false, error: "not_in_plan", say: al.reason } : await TOOLS[name](ctx, args && typeof args === "object" ? args : {}); }
   } catch (e) { console.error("voice tool", name, e && e.message); out = { ok: false, error: "tool_failed", say: "Something went wrong. Offer a callback or a person; do not guess." }; }
   try { await B.sb("voice_tool_executions", { method: "POST", prefer: "resolution=ignore-duplicates,return=minimal", body: { org_id: ctx.orgId, session_id: ctx.session && ctx.session.id, tool: name, call_key: String(callKey).slice(0, 120), args: JSON.parse(S.redact(JSON.stringify(args || {}))), result: out, ok: !!out.ok, error: out.error || null, ms: Date.now() - t0 } }); } catch (e) { /* logging must not fail the call */ }
   return out;
