@@ -18,7 +18,7 @@ fails, POST canonical_giveup before the job's deadline so the owner report still
 with the live transcript.
 
 Env: SITE_URL, VOICE_BRIDGE_SECRET,
-     WHISPER_MODEL (default "small"), CANONICAL_POLL_SEC (default 15),
+     WHISPER_MODEL (default "large-v3-turbo"), CANONICAL_POLL_SEC (default 15),
      TWILIO_CALLER_CHANNEL (0 or 1; default: auto — the agent greets first, so the channel
      whose speech starts first is the agent's).
 
@@ -50,7 +50,7 @@ def get_model():
     global MODEL
     if MODEL is None:
         from faster_whisper import WhisperModel
-        name = os.environ.get("WHISPER_MODEL", "small")
+        name = os.environ.get("WHISPER_MODEL", "large-v3-turbo")
         MODEL = WhisperModel(name, device="cpu", compute_type="int8")
         log("whisper model loaded:", name)
     return MODEL
@@ -272,7 +272,7 @@ def process(job):
         log("giveup (empty)", sid)
         return
     r = site({"action": "canonical_transcript", "session_id": sid, "lines": lines,
-              "engine": "faster-whisper-" + os.environ.get("WHISPER_MODEL", "small"), "source": source})
+              "engine": "faster-whisper-" + os.environ.get("WHISPER_MODEL", "large-v3-turbo"), "source": source})
     log("canonical stored", sid, len(lines), "lines", source, r.get("ok"))
 
 
