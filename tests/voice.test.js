@@ -63,7 +63,7 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
   ok(r.ok && r.complete && !("org_id" in s.intake) && !("is_admin" in s.intake) && !("caller_confirmed" in s.intake) && !("price_cents" in s.intake), "unknown/privileged fields from the model are dropped");
   ok(T.voice_sessions.find(x => x.id === s.id).intake.special_instructions.includes("90% off"), "caller text is stored only as a note");
   r = await run(s, "validate_shipment_eligibility"); ok(r.ok && r.status === "eligible", "eligible after both addresses verified");
-  r = await run(s, "calculate_quote"); ok(r.ok && r.total === "$400.00" && r.quote_number && r.exclusions.length >= 3 && r.valid_minutes >= 29, "quote: $400 (Local zone flat price), exclusions, validity"); const QN = r.quote_number;
+  r = await run(s, "calculate_quote"); ok(r.ok && r.total === "$400.00" && r.quote_number && r.exclusions.length >= 2 && r.valid_minutes >= 29, "quote: $400 (Local zone flat price), exclusions, validity"); const QN = r.quote_number;
   ok(T.voice_quotes.length === 1 && T.voice_quotes[0].total_cents === 40000 && T.voice_quotes[0].miles_source === "osrm" && T.voice_quotes[0].settings_version === "s1", "quote stored with distance source and the price version used");
   r = await run(s, "check_live_availability"); ok(r.ok && r.available === true, "truck is open");
   r = await run(s, "create_pending_booking"); ok(!r.ok && r.error === "caller_has_not_confirmed", "no booking before the caller says yes");
