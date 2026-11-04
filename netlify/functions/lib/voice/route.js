@@ -44,21 +44,28 @@ async function osrmBackup(a, b) {
   return null;
 }
 async function distance(a, b) {
+  const t0 = Date.now();
   const main = await mainDistance(a, b);
   if (main.ok) return main;
+  if (Date.now() - t0 > 11000) return main;   // the backup would land outside the caller's window too (see mainDistance): the honest failure now beats a late success nobody hears
   const bk = await osrmBackup(a, b);
   return bk ? Object.assign(bk, { primary_failure: main.reason + (main.detail ? " - " + main.detail : "") }) : main;
 }
 async function mainDistance(a, b) { // a, b: {lat, lon}
   if (!routingOn()) return { ok: false, reason: "routing_not_configured" };
   const fail = function (e) { return { ok: false, reason: e && e.name === "TimeoutError" ? "routing_timeout" : "routing_unavailable", detail: String(e && e.message || e).slice(0, 160), retry: true }; };
+  // OVERALL DEADLINE (Nov 4, 2026): the retry chain below could burn ~37 s (two hosts × two 9 s
+  // attempts + waits) while the voice bridge gives up on a tool at 15 s — the quote then landed
+  // in a dead call and the caller heard a 26 s hole. A route answer, even an honest failure,
+  // must land inside the caller's window: once ~10 s is spent, no new attempt starts.
+  const t0 = Date.now(), spent = function () { return Date.now() - t0 > 10000; };
   try {
     if (process.env.ROUTING_PROVIDER === "ors") {
       const hosts = ORS_HOSTS(); let r;
       for (let h = 0; h < hosts.length; h++) {   // new host first; the old one only if the new one is unreachable or does not know the route path
         r = await orsOnce(a, b, hosts[h]).catch(fail);
-        if (!r.ok && r.retry) { await new Promise(function (ok) { setTimeout(ok, 700); }); r = await orsOnce(a, b, hosts[h]).catch(fail); }
-        if (r.ok || !(r.reason === "routing_unavailable" || r.reason === "routing_timeout" || /^ors_http_404$/.test(r.reason))) break;
+        if (!r.ok && r.retry && !spent()) { await new Promise(function (ok) { setTimeout(ok, 700); }); r = await orsOnce(a, b, hosts[h]).catch(fail); }
+        if (r.ok || spent() || !(r.reason === "routing_unavailable" || r.reason === "routing_timeout" || /^ors_http_404$/.test(r.reason))) break;
       }
       return r;
     }

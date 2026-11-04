@@ -54,3 +54,30 @@ voiceengine 63 · voice-owner-report 35. Run them before and after any change.
   storage had the agent's "1,500" mishearing saved as the caller's words), the callback
   number line is complete ("ending in 1-6-1-6"), and the "St" / "tarde" / "¿Aló?"
   artifacts are gone. Suite: tests/voice-canonical.test.js (11 assertions).
+
+## Announcement defect bundle 2026-11-04a (built Nov 4, 2026 — pending push)
+
+Adapter stamp 2026-11-04a. Fixes the six retest-2/retest-3 defects with system
+enforcement, not prompt wording:
+- Address loop: geocoder-verified addresses lock (intake._addr_lock, keyed by
+  normalized identity in intake.normAddr); fragmentary replacements are ignored,
+  same-address re-sends change nothing and can no longer invalidate a quote, and
+  a format-failed address is accepted as stated after two collects
+  (_addr_as_stated). Eligibility geocodes both addresses in parallel.
+- Email: deterministic spelled-letter assembler (lib/voice/email-capture.js) fed
+  from caller transcript lines; the assembled address (_email_candidate) is
+  ground truth in collect_shipment_details.
+- Stall cap: the hold line's own audio no longer disarms HOLD_RECOVERY
+  (per-check ownHoldAt window in bridge.js runTool).
+- Latency: caller turns flush to the bridge within ~1–2 s (adapter flushCaller,
+  1 s poll / 1.2 s fuse); collect saves intake once per call; tool execute runs
+  the duplicate check and plan check in parallel; routing has an overall ~10 s
+  deadline so a quote answer always lands inside the bridge's tool window.
+- Goodbye: bridge GOODBYE_RE + watchdog fuse ends the call after a caller
+  goodbye; end_call kind caller_done records outcome caller_requested_end
+  (owner report label "Ended (caller finished)"), no abusive-caller alarm.
+- Reference: confirm returns reference_spoken in spaced groups exactly once
+  (_ref_announced); prompt closing and the bridge close-nudge no longer order
+  a repeat. Prompt also carries the §3.9 build-privacy answer.
+Suites: tests/email-capture.test.js, tests/voice-fixups.test.js,
+tests/voicebridge-fixups.test.js plus the full voice/voicebridge set.
