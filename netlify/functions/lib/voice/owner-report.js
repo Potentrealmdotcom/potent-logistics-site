@@ -60,7 +60,7 @@ function buildHtml(r) {
     + '<table role="presentation" width="640" cellpadding="0" cellspacing="0" style="width:640px;background:#ffffff;">'
     + '<tr><td align="center" style="background:#000000;padding:30px 40px 24px;"><div style="color:#ffffff;font-size:40px;font-weight:bold;letter-spacing:8px;">ƏLEVATE</div><div style="color:#FFFF00;font-size:12.5px;letter-spacing:3.5px;margin-top:8px;text-transform:uppercase;">She answers. She books. She follows up.</div></td></tr>'
     + '<tr><td style="background:#FFFF00;height:5px;font-size:0;line-height:0;">&nbsp;</td></tr>'
-    + '<tr><td><img src="' + IMG("coin-banner.png") + '" width="640" height="250" alt="Potent Coin" style="display:block;width:640px;height:250px;"></td></tr>'
+    + '<tr><td><img src="' + IMG("coin-banner-email.gif") + '" width="640" height="250" alt="Potent Coin" style="display:block;width:640px;height:250px;"></td></tr>'
     + '<tr><td style="padding:30px 42px 8px;">'
     + '<div style="font-size:25px;font-weight:bold;color:#000000;line-height:1.3;">You&rsquo;ve received a call from Elevate.</div>'
     + '<p style="font-size:15.5px;color:#333333;margin:9px 0 0;line-height:1.5;">Here&rsquo;s what happened, and what she said. The full call is saved in your Elevate dashboard, where your admins and team can view it any time.</p>'
