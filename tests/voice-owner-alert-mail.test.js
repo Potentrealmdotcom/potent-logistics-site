@@ -19,7 +19,7 @@ const { EXT } = M;
 (async () => {
   const T = require("../netlify/functions/lib/voice/tools.js");
   const AM = require("../netlify/functions/lib/voice/alert-mail.js");
-  const DESIGN = [/ƏLEVATE/, /coin-banner\.png/, /mouth\.png/, /globe\.png/, /VIEW IN YOUR ELEVATE DASHBOARD/, /#FFFF00/, /POTENT/];
+  const DESIGN = [/ƏLEVATE/, /coin-banner-email\.gif/, /mouth\.png/, /globe\.png/, /VIEW IN YOUR ELEVATE DASHBOARD/, /#FFFF00/, /POTENT/];
   const hasDesign = function (html) { return DESIGN.every(function (re) { return re.test(html || ""); }); };
 
   // (a) notifyOwner WITHOUT html: the mail that leaves carries the full design, addressed to the owner
