@@ -6,7 +6,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>POTENT OS — License Agreement & Purchase</title>
 <script src="https://js.stripe.com/v3/"></script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,89 +13,84 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
-  --bg:#0c0c09; --card:#141410; --line:#2c2c24; --dim:#a9a9a0; --gold:#f0e000;
-  --green:#4ade80; --blue:#34b0e7; --purple:#b87ef2; --red:#f87171;
-  --green-bg:#0d1a10; --blue-bg:#0a1520; --purple-bg:#170f1e; --gold-bg:#1a1408;
+  --bg:#000000; --card:#0d0d0d; --line:#2a2a2a; --dim:#a3a3a3; --gold:#FFFF00;
 }
-body{background:var(--bg);color:#F2F2F2;font-family:"Inter",-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;}
+body{background:var(--bg);color:#FFFFFF;font-family:"Inter",-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;}
 h1,h2{font-family:"Oswald",sans-serif;letter-spacing:0.01em;}
-.hero{background:linear-gradient(135deg,#0d0d00,#080808);border-bottom:2px solid var(--gold);padding:36px 20px 28px;text-align:center;}
+.hero{background:linear-gradient(135deg,#0a0a00,#000000);border-bottom:2px solid var(--gold);padding:36px 20px 28px;text-align:center;}
 .brand{font-size:11px;font-weight:700;color:var(--gold);letter-spacing:3px;margin-bottom:8px;}
-.hero h1{font-size:2.1rem;font-weight:600;color:#F2F2F2;margin-bottom:6px;}
+.hero h1{font-size:2.1rem;font-weight:600;color:#FFFFFF;margin-bottom:6px;}
 .hero p{font-size:1rem;color:var(--dim);max-width:480px;margin:0 auto;}
 .container{max-width:800px;margin:0 auto;padding:24px 16px 60px;}
 .step{display:none;}.step.active{display:block;}
 .step-bar{display:flex;margin-bottom:24px;border-radius:2px;overflow:hidden;border:1px solid var(--line);}
-.si{flex:1;padding:10px 4px;text-align:center;font-size:10px;font-weight:700;color:#555;background:var(--card);border-right:1px solid var(--line);font-family:"Oswald",sans-serif;letter-spacing:0.03em;transition:.2s;}
+.si{flex:1;padding:10px 4px;text-align:center;font-size:10px;font-weight:700;color:#666;background:var(--card);border-right:1px solid var(--line);font-family:"Oswald",sans-serif;letter-spacing:0.03em;transition:.2s;}
 .si:last-child{border-right:none;}
-.si.active{background:#1a1608;color:var(--gold);}
-.si.done{background:var(--green-bg);color:var(--green);}
+.si.active{background:#1a1a00;color:var(--gold);}
+.si.done{background:#111100;color:var(--gold);}
 .card{background:var(--card);border:1px solid var(--line);border-radius:2px;padding:22px;margin-bottom:14px;}
 .card h2{font-size:1.1rem;font-weight:600;color:var(--gold);margin-bottom:14px;font-family:"Oswald",sans-serif;}
 .tier{border:1px solid var(--line);border-radius:2px;padding:16px 18px;margin-bottom:10px;cursor:pointer;transition:.15s;background:var(--card);}
 .tier:hover{border-color:var(--gold);}
 .tier.sel{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold);}
-.tier.starter{background:var(--green-bg);} .tier.starter .tier-name{color:var(--green);}
-.tier.growth{background:var(--blue-bg);} .tier.growth .tier-name{color:var(--blue);}
-.tier.fleet{background:var(--purple-bg);} .tier.fleet .tier-name{color:var(--purple);}
-.tier.enterprise{background:var(--gold-bg);} .tier.enterprise .tier-name{color:var(--gold);}
-.tier.custom{background:#141410;} .tier.custom .tier-name{color:#999;}
 .tier-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px;}
-.tier-name{font-size:0.95rem;font-weight:600;font-family:"Oswald",sans-serif;letter-spacing:0.02em;}
+.tier-name{font-size:0.95rem;font-weight:600;font-family:"Oswald",sans-serif;letter-spacing:0.02em;color:#FFFFFF;}
 .tier-price{font-size:1.3rem;font-weight:700;color:#fff;white-space:nowrap;font-family:"Oswald",sans-serif;}
 .tier-sub{font-size:11px;color:var(--dim);}
-.tier-save{font-size:10px;color:var(--green);font-weight:700;margin-top:3px;}
+.tier-save{font-size:10px;color:var(--dim);font-weight:700;margin-top:3px;}
 label{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;margin-top:12px;}
-input,select{width:100%;background:#0d0d0d;border:1px solid var(--line);border-radius:2px;color:#F2F2F2;padding:10px 12px;font-size:13px;outline:none;font-family:inherit;transition:.15s;}
+input,select{width:100%;background:#0d0d0d;border:1px solid var(--line);border-radius:2px;color:#FFFFFF;padding:10px 12px;font-size:13px;outline:none;font-family:inherit;transition:.15s;}
 input:focus,select:focus{border-color:var(--gold);}
 select{color-scheme:dark;}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.agr{background:#060606;border:1px solid var(--line);border-radius:2px;padding:16px;height:260px;overflow-y:auto;font-size:11px;color:#4a4a4a;line-height:1.8;margin-bottom:12px;}
+.agr{background:#060606;border:1px solid var(--line);border-radius:2px;padding:16px;height:260px;overflow-y:auto;font-size:11px;color:#8a8a8a;line-height:1.8;margin-bottom:12px;}
 .agr h3{color:var(--gold);font-size:11px;margin:12px 0 4px;}
 .agr h3:first-child{margin-top:0;}
-.agr strong{color:#777;}
-.chk{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid #111;}
+.agr strong{color:#c9c9c9;}
+.chk{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid #1c1c1c;}
 .chk input[type=checkbox]{width:18px;height:18px;flex-shrink:0;margin-top:1px;accent-color:var(--gold);cursor:pointer;}
-.chk span{font-size:12px;color:#777;line-height:1.6;}
+.chk span{font-size:12px;color:#bdbdbd;line-height:1.6;}
 .btn{width:100%;background:var(--gold);color:#000;border:none;border-radius:2px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:"Oswald",sans-serif;letter-spacing:0.02em;margin-top:8px;transition:.15s;}
-.btn:hover{background:#e0d000;}
+.btn:hover{background:#FFFFFF;}
 .btn:disabled{opacity:.35;cursor:not-allowed;}
-.btn-g{width:100%;background:transparent;color:#666;border:1px solid var(--line);border-radius:2px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px;}
-.btn-g:hover{border-color:#333;color:#888;}
+.btn-g{width:100%;background:transparent;color:#888;border:1px solid var(--line);border-radius:2px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px;}
+.btn-g:hover{border-color:#444;color:#bbb;}
 .pay-method{display:flex;gap:8px;margin-bottom:16px;}
 .pm{flex:1;border:1px solid var(--line);border-radius:2px;padding:12px;cursor:pointer;text-align:center;transition:.15s;background:var(--card);}
-.pm:hover,.pm.sel{border-color:var(--gold);background:#1a1608;}
+.pm:hover,.pm.sel{border-color:var(--gold);background:#1a1a00;}
 .pm-icon{font-size:22px;margin-bottom:4px;}
-.pm-label{font-size:11px;font-weight:700;color:#F2F2F2;}
-.pm-sub{font-size:10px;color:#555;margin-top:2px;}
-#card-element,#payment-element,#card-element-flex{background:#0d0d0d;border:1px solid var(--line);border-radius:2px;padding:13px;margin-top:4px;}
-.err{color:var(--red);font-size:12px;margin-top:6px;display:none;}
-.sum-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #0f0f0f;font-size:12px;}
+.pm-label{font-size:11px;font-weight:700;color:#FFFFFF;}
+.pm-sub{font-size:10px;color:#888;margin-top:2px;}
+#card-element-flex{background:#0d0d0d;border:1px solid var(--line);border-radius:2px;padding:13px;margin-top:4px;}
+.err{color:var(--gold);font-size:12px;font-weight:600;margin-top:6px;display:none;}
+.sum-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #161616;font-size:12px;}
 .sum-row:last-child{border-bottom:none;}
-.sk{color:#555;} .sv{color:#F2F2F2;font-weight:700;}
+.sk{color:#888;} .sv{color:#FFFFFF;font-weight:700;}
 .tot{display:flex;justify-content:space-between;padding:14px 0 4px;font-size:16px;font-weight:700;font-family:"Oswald",sans-serif;}
-.tk{color:#F2F2F2;} .tv{color:var(--gold);}
-.note{font-size:10px;color:#333;line-height:1.6;margin-top:6px;}
-.hl{background:#1a1608;border:1px solid #3a3410;border-radius:2px;padding:10px 14px;font-size:12px;color:var(--gold);font-weight:600;margin-bottom:12px;}
+.tk{color:#FFFFFF;} .tv{color:var(--gold);}
+.note{font-size:10px;color:#777;line-height:1.6;margin-top:6px;}
+.hl{background:#1a1a00;border:1px solid #3a3a00;border-radius:2px;padding:10px 14px;font-size:12px;color:var(--gold);font-weight:600;margin-bottom:12px;}
 .success-wrap{text-align:center;padding:40px 16px;}
 .success-wrap h2{font-size:1.6rem;font-weight:600;margin-bottom:6px;}
 .success-wrap p{font-size:13px;color:var(--dim);margin-bottom:20px;}
-.badge{display:inline-block;background:#1a1608;color:var(--gold);border:1px solid #3a3410;border-radius:2px;padding:3px 10px;font-size:10px;font-weight:700;margin:2px;}
-.badge.green{background:var(--green-bg);color:var(--green);border-color:#1a3a20;}
-.bank-notice{background:var(--blue-bg);border:1px solid #1a3a55;border-radius:2px;padding:12px;margin-top:10px;font-size:11px;color:var(--blue);line-height:1.6;}
-.enterprise-box{background:var(--gold-bg);border:1px solid #3a3410;border-radius:2px;padding:18px;text-align:center;}
+.badge{display:inline-block;background:#1a1a00;color:var(--gold);border:1px solid #3a3a00;border-radius:2px;padding:3px 10px;font-size:10px;font-weight:700;margin:2px;}
+.badge.green{background:#1a1a00;color:var(--gold);border-color:#3a3a00;}
+.flex-notice{background:#111100;border:1px solid #FFFF0055;border-radius:2px;padding:12px;margin-top:10px;font-size:11px;color:var(--gold);line-height:1.6;}
+.flex-warn{background:#0d0d0d;border:1px solid #FFFF00;border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:11px;color:#e8e8e8;line-height:1.7;}
+.flex-warn strong{color:var(--gold);}
+.enterprise-box{background:#111100;border:1px solid #3a3a00;border-radius:2px;padding:18px;text-align:center;}
 @media(max-width:500px){.g2{grid-template-columns:1fr;}.tier-price{font-size:1.1rem;}.pay-method{flex-direction:column;}}
 .tourOverlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:99998;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:20px;}
-.tourCard{background:#141410;border:1px solid #f0e00066;border-radius:14px;padding:24px;max-width:380px;width:100%;}
+.tourCard{background:#0d0d0d;border:1px solid #FFFF0066;border-radius:14px;padding:24px;max-width:380px;width:100%;}
 .tourBars{display:flex;gap:4px;margin-bottom:16px;}
-.tourBar{flex:1;height:3px;border-radius:2px;background:#2c2c24;}
-.tourBar.active{background:#f0e000;}
-.tourStepLabel{font-size:10px;color:#a9a9a0;text-transform:uppercase;margin-bottom:6px;}
-.tourTitle{font-size:17px;font-weight:700;color:#F2F2F2;margin-bottom:10px;font-family:"Oswald",sans-serif;}
-.tourBody{font-size:13px;color:#ccc;line-height:1.6;margin-bottom:22px;}
+.tourBar{flex:1;height:3px;border-radius:2px;background:#2a2a2a;}
+.tourBar.active{background:#FFFF00;}
+.tourStepLabel{font-size:10px;color:#a3a3a3;text-transform:uppercase;margin-bottom:6px;}
+.tourTitle{font-size:17px;font-weight:700;color:#FFFFFF;margin-bottom:10px;font-family:"Oswald",sans-serif;}
+.tourBody{font-size:13px;color:#ddd;line-height:1.6;margin-bottom:22px;}
 .tourFooter{display:flex;justify-content:space-between;align-items:center;}
-.tourSkip{background:transparent;color:#a9a9a0;border:none;font-size:12px;cursor:pointer;}
-.tourNext{background:#f0e000;color:#000;border:none;border-radius:8px;padding:8px 20px;font-size:12px;font-weight:700;cursor:pointer;}
+.tourSkip{background:transparent;color:#a3a3a3;border:none;font-size:12px;cursor:pointer;}
+.tourNext{background:#FFFF00;color:#000;border:none;border-radius:8px;padding:8px 20px;font-size:12px;font-weight:700;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -117,7 +111,7 @@ select{color-scheme:dark;}
 <div class="hero">
   <div class="brand">POTENT PRÄDƏKT®</div>
   <h1>POTENT OS License Purchase</h1>
-  <p>One-time license. Perpetual. No monthly fees. No per-truck fees. No subscriptions.</p>
+  <p>One-time license. Perpetual. No per-truck fees. No required monthly fees — optional support plans available.</p>
 </div>
 
 <div class="container">
@@ -136,37 +130,37 @@ select{color-scheme:dark;}
     <div class="card">
       <h2>Select Your License Tier</h2>
       <div class="hl">Every tier includes: Offline Mode · Voice Quoting · Live GPS · Fleet & Compliance · Payroll · 14 Languages · Unlimited Jobs · Lifetime Updates</div>
+      <div class="hl">The math: a 200-truck fleet pays $100K–$200K a year for the usual subscription stack. POTENT OS is one payment, $0 a year after — $465K–$965K saved over 5 years.</div>
 
-```
-  <div class="tier sel starter" data-tier="Starter" data-price="4995" data-fleet="1–10 trucks" onclick="pickTier(this)">
-    <div class="tier-top"><div class="tier-name">Starter — 1 to 10 Trucks</div><div class="tier-price">$4,995</div></div>
-    <div class="tier-sub">Up to 10 trucks · 20 dispatchers · Unlimited jobs</div>
-    <div class="tier-save">Saves $75k–$120k/yr vs Motive · Pays back in under 1 month</div>
-  </div>
-  <div class="tier growth" data-tier="Growth" data-price="9995" data-fleet="11–50 trucks" onclick="pickTier(this)">
-    <div class="tier-top"><div class="tier-name">Growth — 11 to 50 Trucks</div><div class="tier-price">$9,995</div></div>
-    <div class="tier-sub">Up to 50 trucks · 20 dispatchers · Unlimited jobs</div>
-    <div class="tier-save">Saves $150k–$240k/yr vs Motive · Pays back in under 1 month</div>
-  </div>
-  <div class="tier fleet" data-tier="Fleet" data-price="19995" data-fleet="51–150 trucks" onclick="pickTier(this)">
-    <div class="tier-top"><div class="tier-name">Fleet — 51 to 150 Trucks</div><div class="tier-price">$19,995</div></div>
-    <div class="tier-sub">Up to 150 trucks · 20 dispatchers · Unlimited jobs</div>
-    <div class="tier-save">Saves $375k–$600k/yr · 5-year savings: $1M+ · Flex-Pay available</div>
-  </div>
-  <div class="tier enterprise" data-tier="Enterprise" data-price="34995" data-fleet="151–300 trucks" onclick="pickTier(this)">
-    <div class="tier-top"><div class="tier-name">Enterprise — 151 to 300 Trucks</div><div class="tier-price">$34,995</div></div>
-    <div class="tier-sub">Up to 300 trucks · 20 dispatchers · White-glove 24hr setup</div>
-    <div class="tier-save">Saves $800k–$1.2M/yr · 5-year savings: $2.2M+ · Flex-Pay available</div>
-  </div>
-  <div class="tier custom" data-tier="Custom" data-price="0" data-fleet="300+ trucks" onclick="pickTier(this)">
-    <div class="tier-top"><div class="tier-name">Custom — 300+ Trucks</div><div class="tier-price" style="color:#666;font-size:15px;">Custom Pricing</div></div>
-    <div class="tier-sub">300+ trucks · Custom scope · White label available</div>
-    <div class="tier-save">Contact Anthony: (912) 914-2166</div>
-  </div>
-</div>
-<button class="btn" onclick="go(2)">Continue →</button>
-```
+      <div class="tier sel starter" data-tier="Starter" data-price="4995" data-fleet="1–10 trucks" onclick="pickTier(this)">
+        <div class="tier-top"><div class="tier-name">Starter — 1 to 10 Trucks</div><div class="tier-price">$4,995</div></div>
+        <div class="tier-sub">Up to 10 trucks · 20 dispatchers · Unlimited jobs</div>
+        <div class="tier-save">One-time payment · Flex Pay available · Optional support +$149/mo</div>
+      </div>
+      <div class="tier growth" data-tier="Growth" data-price="9995" data-fleet="11–50 trucks" onclick="pickTier(this)">
+        <div class="tier-top"><div class="tier-name">Growth — 11 to 50 Trucks</div><div class="tier-price">$9,995</div></div>
+        <div class="tier-sub">Up to 50 trucks · 20 dispatchers · Unlimited jobs</div>
+        <div class="tier-save">One-time payment · Flex Pay available · Optional support +$249/mo</div>
+      </div>
+      <div class="tier fleet" data-tier="Fleet" data-price="19995" data-fleet="51–150 trucks" onclick="pickTier(this)">
+        <div class="tier-top"><div class="tier-name">Fleet — 51 to 150 Trucks</div><div class="tier-price">$19,995</div></div>
+        <div class="tier-sub">Up to 150 trucks · 20 dispatchers · Unlimited jobs</div>
+        <div class="tier-save">One-time payment · Flex Pay available · Optional support +$399/mo</div>
+      </div>
+      <div class="tier enterprise" data-tier="Enterprise" data-price="34995" data-fleet="151–300+ trucks" onclick="pickTier(this)">
+        <div class="tier-top"><div class="tier-name">Enterprise — 151 to 300+ Trucks</div><div class="tier-price">$34,995</div></div>
+        <div class="tier-sub">Up to 300+ trucks · 20 dispatchers · Priority onboarding</div>
+        <div class="tier-save">One-time payment · Flex Pay available · Optional support +$599/mo</div>
+      </div>
+      <div class="tier custom" data-tier="Custom" data-price="0" data-fleet="300+ trucks" onclick="pickTier(this)">
+        <div class="tier-top"><div class="tier-name">Custom — 300+ Trucks</div><div class="tier-price" style="color:#999;font-size:15px;">Custom Pricing</div></div>
+        <div class="tier-sub">300+ trucks · Custom scope · White label available</div>
+        <div class="tier-save">Contact POTENT: (912) 914-2166</div>
+      </div>
 
+      <div class="note">Optional Monthly Support is never required — the license works without it. Flex Pay: 20% down, then 12 equal monthly payments at 0% interest, every tier.</div>
+    </div>
+    <button class="btn" onclick="go(2)">Continue →</button>
   </div>
 
   <!-- STEP 2 -->
@@ -176,24 +170,13 @@ select{color-scheme:dark;}
       <h2>Your Information</h2>
       <div class="g2">
         <div><label>Legal Company Name *</label><input id="iCompany" placeholder="ABC Trucking LLC"/></div>
-        <div><label>DBA / Trade Name</label><input id="iDBA" placeholder="If different"/></div>
-      </div>
-      <div class="g2">
         <div><label>Your Full Legal Name *</label><input id="iName" placeholder="First Last"/></div>
-        <div><label>Title *</label><input id="iTitle" placeholder="Owner / CEO"/></div>
       </div>
       <div class="g2">
         <div><label>Email Address *</label><input id="iEmail" type="email" placeholder="you@company.com"/></div>
         <div><label>Phone *</label><input id="iPhone" type="tel" placeholder="(555) 000-0000"/></div>
       </div>
-      <div class="g2">
-        <div><label>City *</label><input id="iCity" placeholder="Atlanta"/></div>
-        <div><label>State *</label><input id="iState" placeholder="GA"/></div>
-      </div>
-      <div class="g2">
-        <div><label>Number of Trucks</label><input id="iFleet" type="number" placeholder="e.g. 25"/></div>
-        <div><label>Current Software</label><input id="iSoftware" placeholder="Motive, Samsara, etc."/></div>
-      </div>
+      <div class="note">Your email is your login — your company page and sign-in are created automatically the moment your payment lands. No application, no approval wait.</div>
     </div>
     <button class="btn" onclick="step2next()">Continue →</button>
     <button class="btn-g" onclick="go(1)">← Back</button>
@@ -211,64 +194,61 @@ select{color-scheme:dark;}
         <strong>Licensee:</strong> <span id="aLicensee">Your Company</span><br/>
         <strong>License Tier:</strong> <span id="aTier">—</span> · <strong>Fee:</strong> <span id="aPrice">—</span> (One-Time · Perpetual)<br/><br/>
 
-```
-    <h3>1. LICENSE GRANT</h3>
-    Licensor grants Licensee a non-exclusive, non-transferable, perpetual license to use POTENT OS solely for Licensee's internal business operations for the fleet tier purchased.
+        <h3>1. LICENSE GRANT</h3>
+        Licensor grants Licensee a non-exclusive, non-transferable, perpetual license to access and use POTENT OS — as hosted and operated by Licensor on Licensor's single platform — solely for Licensee's internal business operations for the fleet tier purchased. No copy of the Software is delivered, transferred, or installed on Licensee's own systems; the license is access to use the technology inside the hosted POTENT OS system.
 
-    <h3>2. OWNERSHIP</h3>
-    POTENT OS — including all source code, logic, features, UI design, data structures, and intellectual property — is and remains the exclusive property of ANTHONY EMMANUEL FIGUEROA MENDES®. This Agreement grants a license to USE the Software, not ownership of it.
+        <h3>2. OWNERSHIP</h3>
+        POTENT OS — including all source code, logic, features, UI design, data structures, and intellectual property — is and remains the exclusive property of ANTHONY EMMANUEL FIGUEROA MENDES®. This Agreement grants a license to USE the Software, not ownership of it.
 
-    <h3>3. LICENSE FEE</h3>
-    Licensee agrees to pay the one-time fee of <span id="aPrice2">—</span> for the <span id="aTier2">—</span> tier. No monthly fees, per-truck fees, or subscription fees apply to the base license.
+        <h3>3. LICENSE FEE</h3>
+        Licensee agrees to pay the one-time fee of <span id="aPrice2">—</span> for the <span id="aTier2">—</span> tier. No per-truck fees or subscription fees apply to the base license, and no monthly fee is required. Optional Monthly Support plans are available separately (see Section 7) and are never required.
 
-    <h3>4. PERMITTED USE</h3>
-    Licensee may use the Software internally and authorize employees and drivers to access it. Licensee may NOT resell, sublicense, reverse engineer, decompile, or use the Software to build a competing product.
+        <h3>4. PERMITTED USE</h3>
+        Licensee may use the Software internally and authorize employees and drivers to access it. Licensee may NOT resell, sublicense, reverse engineer, decompile, or use the Software to build a competing product.
 
-    <h3>5. NON-DISCLOSURE AGREEMENT (NDA)</h3>
-    By signing this Agreement, Licensee agrees that all information disclosed during demos, onboarding, and use — including features, pricing, system architecture, and business methodology — is CONFIDENTIAL and constitutes a trade secret of POTENT OPERATIONS LLC. Licensee will not disclose this information to competitors or use it to build competing technology. This NDA survives termination for five (5) years. Breach entitles Licensor to seek injunctive relief and monetary damages.
+        <h3>5. NON-DISCLOSURE AGREEMENT (NDA)</h3>
+        By signing this Agreement, Licensee agrees that all information disclosed during demos, onboarding, and use — including features, pricing, system architecture, and business methodology — is CONFIDENTIAL and constitutes a trade secret of POTENT OPERATIONS LLC. Licensee will not disclose this information to competitors or use it to build competing technology. This NDA survives termination for five (5) years. Breach entitles Licensor to seek injunctive relief and monetary damages.
 
-    <h3>6. CONFIDENTIALITY</h3>
-    Both parties agree to maintain strict confidentiality of system credentials, pricing, client data, and proprietary processes. Neither party will disclose confidential information to any third party without prior written consent.
+        <h3>6. CONFIDENTIALITY</h3>
+        Both parties agree to maintain strict confidentiality of system credentials, pricing, client data, and proprietary processes. Neither party will disclose confidential information to any third party without prior written consent.
 
-    <h3>7. SUPPORT & UPDATES</h3>
-    License includes 30 days onboarding support from purchase date. Software updates are included at Licensor's discretion. Annual support plans available separately for continued priority support.
+        <h3>7. SUPPORT & UPDATES</h3>
+        License includes 30 days onboarding support from purchase date. Software updates are included at Licensor's discretion. Optional Monthly Support plans are available separately for continued priority support — Starter $149/mo, Growth $249/mo, Fleet $399/mo, Enterprise $599/mo — billed monthly, cancel anytime. Support is optional and is never required to use the license.
 
-    <h3>7A. THIRD-PARTY SERVICE COSTS</h3>
-    The one-time License Fee covers the Software itself, in perpetuity. It does not cover third-party infrastructure services required to run the Software — a database hosting account (e.g. Supabase), a mapping/geocoding API (e.g. Google Maps), and an email delivery service (e.g. EmailJS). Most fleets of Licensee's size operate these services within free or low-cost tiers, typically $0-$25 per month combined, billed directly by those providers to Licensee. Licensee may set these up independently, or elect Licensor's optional Annual Support Plan, under which Licensor configures and manages these accounts on Licensee's behalf as part of ongoing support. Licensor has no control over and is not responsible for pricing changes made by third-party providers.
+        <h3>7A. HOSTED PLATFORM — ACCESS ONLY, NO COPY DELIVERED</h3>
+        POTENT OS is provided solely as access to the one hosted POTENT OS system, operated and maintained by Licensor. No copy of the Software is delivered or transferred to Licensee, and Licensee receives no right to host, install, copy, or redistribute the Software, or to run it on Licensee's own infrastructure or third-party accounts. The License Fee covers access to the Software itself, in perpetuity; the hosting, database, mapping, and email infrastructure the system runs on is operated by Licensor as part of the platform. Licensee's access is through its authorized user accounts on the platform only.
 
-    <h3>7B. FLEX PAY INSTALLMENT PLAN (ALL LICENSE TIERS)</h3>
-    Licensee electing the Flex Pay option agrees to the following fixed terms: a down payment of 20% of the total License Fee is due at signing, followed by equal monthly installments at 0% interest, due on the same calendar day each month. For the Starter and Growth tiers, the term is six (6) monthly installments. For the Mid Fleet and Enterprise tiers, the term is twelve (12) monthly installments. Continued access to the Software is contingent on timely payment, functioning as ongoing service access rather than a one-time transfer until the plan is paid in full. Each payment carries a two (2) day grace period following its due date. If a second installment payment is missed at any point during the applicable term — regardless of whether the first missed payment was later cured — Licensee's access to the Software will be immediately suspended. To restore access following suspension for non-payment, the entire remaining balance becomes due in a single payment; partial catch-up payments will not restore access. Any Licensee whose access has been suspended under this section is permanently ineligible for the Flex Pay option on any future License purchase from Licensor, and must use full payment or another financing method. This section does not limit any other remedy available to Licensor for breach of payment terms.
+        <h3>7B. FLEX PAY INSTALLMENT PLAN (ALL LICENSE TIERS)</h3>
+        Licensee electing the Flex Pay option agrees to the following fixed terms: a down payment of 20% of the total License Fee is due at signing, followed by twelve (12) equal monthly installments at 0% interest, due on the same calendar day each month — the same terms for every tier. Because the license is access to the hosted POTENT OS platform rather than a transfer of the Software, continued access to the Software is contingent on timely payment until the plan is paid in full. Each payment carries a two (2) day grace period following its due date. If a second installment payment is missed at any point during the applicable term — regardless of whether the first missed payment was later cured — Licensee's access to the Software will be immediately suspended. To restore access following suspension for non-payment, the entire remaining balance becomes due in a single payment; partial catch-up payments will not restore access. Any Licensee whose access has been suspended under this section is permanently ineligible for the Flex Pay option on any future License purchase from Licensor, and must use full payment or another financing method. This section does not limit any other remedy available to Licensor for breach of payment terms.
 
-    <h3>8. NO REFUND POLICY</h3>
-    Due to the nature of software licensing and immediate system access upon purchase, all sales are final. No refunds will be issued after Software access is granted.
+        <h3>8. NO REFUND POLICY</h3>
+        Due to the nature of software licensing and immediate system access upon purchase, all sales are final. No refunds will be issued after Software access is granted.
 
-    <h3>9. LIMITATION OF LIABILITY</h3>
-    THE SOFTWARE IS PROVIDED "AS IS." LICENSOR'S TOTAL LIABILITY SHALL NOT EXCEED THE LICENSE FEE PAID BY LICENSEE.
+        <h3>9. LIMITATION OF LIABILITY</h3>
+        THE SOFTWARE IS PROVIDED "AS IS." LICENSOR'S TOTAL LIABILITY SHALL NOT EXCEED THE LICENSE FEE PAID BY LICENSEE.
 
-    <h3>10. GOVERNING LAW</h3>
-    This Agreement is governed by the laws of the State of Georgia. Disputes resolved in Rockdale County, Georgia courts.
+        <h3>10. GOVERNING LAW</h3>
+        This Agreement is governed by the laws of the State of Georgia. Disputes resolved in Rockdale County, Georgia courts.
 
-    <br/><br/>
-    <strong>© 2026 ANTHONY EMMANUEL FIGUEROA MENDES® · POTENT PRÄDƏKT® · All Rights Reserved</strong>
-  </div>
+        <br/><br/>
+        <strong>© 2026 POTENT PRÄDƏKT® · POTENT OPERATIONS LLC · All Rights Reserved</strong>
+      </div>
 
-  <div class="chk"><input type="checkbox" id="c1" onchange="chkAll()"/><span>I have read and agree to the POTENT OS License Agreement in full.</span></div>
-  <div class="chk"><input type="checkbox" id="c2" onchange="chkAll()"/><span>I agree to the Non-Disclosure Agreement and understand all proprietary information is confidential.</span></div>
-  <div class="chk"><input type="checkbox" id="c3" onchange="chkAll()"/><span>I confirm I am authorized to sign on behalf of <strong id="cCompany">my company</strong>.</span></div>
-  <div class="chk"><input type="checkbox" id="c4" onchange="chkAll()"/><span>I understand this is a one-time fee of <strong id="cPrice">—</strong> with no refunds after access is granted.</span></div>
+      <div class="chk"><input type="checkbox" id="c1" onchange="chkAll()"/><span>I have read and agree to the POTENT OS License Agreement in full.</span></div>
+      <div class="chk"><input type="checkbox" id="c2" onchange="chkAll()"/><span>I agree to the Non-Disclosure Agreement and understand all proprietary information is confidential.</span></div>
+      <div class="chk"><input type="checkbox" id="c3" onchange="chkAll()"/><span>I confirm I am authorized to sign on behalf of <strong id="cCompany">my company</strong>.</span></div>
+      <div class="chk"><input type="checkbox" id="c4" onchange="chkAll()"/><span>I understand this is a one-time fee of <strong id="cPrice">—</strong> with no refunds after access is granted.</span></div>
 
-  <div style="margin-top:14px;">
-    <label>Electronic Signature — Type Your Full Legal Name *</label>
-    <input id="iSig" placeholder="Full legal name as electronic signature" oninput="chkAll()"/>
-    <div class="note">By typing your name, you are signing electronically under the ESIGN Act. This is a legally binding signature.</div>
-  </div>
+      <div style="margin-top:14px;">
+        <label>Electronic Signature — Type Your Full Legal Name *</label>
+        <input id="iSig" placeholder="Full legal name as electronic signature" oninput="chkAll()"/>
+        <div class="note">By typing your name, you are signing electronically under the ESIGN Act. This is a legally binding signature.</div>
+      </div>
 
-  <button class="btn" id="agreeBtn" disabled onclick="go(4)" style="margin-top:14px;">I Agree — Proceed to Payment →</button>
-  <button class="btn-g" onclick="go(2)">← Back</button>
-</div>
-<button class="btn-g" onclick="dlAgreement()" style="margin-top:0;">📄 Download Agreement PDF</button>
-```
-
+      <button class="btn" id="agreeBtn" disabled onclick="go(4)" style="margin-top:14px;">I Agree — Proceed to Payment →</button>
+      <button class="btn-g" onclick="go(2)">← Back</button>
+    </div>
+    <button class="btn-g" onclick="dlAgreement()" style="margin-top:0;">📄 Download Agreement PDF</button>
   </div>
 
   <!-- STEP 4 -->
@@ -278,101 +258,78 @@ select{color-scheme:dark;}
       <h2>Order Summary</h2>
       <div class="sum-row"><span class="sk">Company</span><span class="sv" id="sumCo">—</span></div>
       <div class="sum-row"><span class="sk">License Tier</span><span class="sv" id="sumTier">—</span></div>
-      <div class="sum-row"><span class="sk">Fleet</span><span class="sv" id="sumFleet">—</span></div>
-      <div class="sum-row"><span class="sk">License Type</span><span class="sv">One-Time · Perpetual · No Monthly Fees</span></div>
+      <div class="sum-row"><span class="sk">Buyer</span><span class="sv" id="sumBuyer">—</span></div>
+      <div class="sum-row"><span class="sk">Email (your login)</span><span class="sv" id="sumEmail">—</span></div>
+      <div class="sum-row"><span class="sk">License Type</span><span class="sv">One-Time · Perpetual · No Required Monthly Fees</span></div>
       <div class="sum-row"><span class="sk">Includes</span><span class="sv">30-Day Onboarding Support</span></div>
-      <div class="tot"><span class="tk">Total Due Today</span><span class="tv" id="sumAmt">$4,995</span></div>
+      <div class="sum-row"><span class="sk">Support Plan</span><span class="sv">Optional — $149–$599/mo by tier, never required</span></div>
+      <div class="tot"><span class="tk">Total</span><span class="tv" id="sumAmt">$4,995</span></div>
     </div>
 
-```
-<!-- ENTERPRISE CUSTOM -->
-<div id="enterpriseBox" style="display:none;" class="card">
-  <div class="enterprise-box">
-    <div style="font-size:14px;font-weight:800;color:#F0E000;margin-bottom:6px;">Custom Enterprise Pricing</div>
-    <div style="font-size:12px;color:#777;margin-bottom:14px;">Call or text Anthony to finalize your enterprise license and pricing.</div>
-    <a href="tel:9129142166" style="display:inline-block;background:#F0E000;color:#000;text-decoration:none;border-radius:8px;padding:12px 28px;font-weight:800;font-size:14px;">(912) 914-2166</a>
-  </div>
-</div>
-
-<!-- PAYMENT FORM -->
-<div id="payForm" class="card">
-  <h2>Payment Method</h2>
-
-  <div class="pay-method">
-    <div class="pm sel" id="pmCard" onclick="selectPM('card')">
-      <div class="pm-icon">💳</div>
-      <div class="pm-label">Credit / Debit Card</div>
-      <div class="pm-sub">Visa, MC, Amex, Discover</div>
-    </div>
-    <div class="pm" id="pmBank" onclick="selectPM('bank')">
-      <div class="pm-icon">🏦</div>
-      <div class="pm-label">Bank Account (ACH)</div>
-      <div class="pm-sub">Instant verify via Plaid · No fees</div>
-    </div>
-    <div class="pm" id="pmFlex" onclick="selectPM('flex')" style="display:none;">
-      <div class="pm-icon">📅</div>
-      <div class="pm-label">Flex Pay</div>
-      <div class="pm-sub">20% down, 12 months</div>
-    </div>
-  </div>
-
-  <!-- FLEX PAY -->
-  <div id="flexSection" style="display:none;">
-    <div class="bank-notice" style="border-color:#F0E00033;background:#0f0d00;color:#F0E000;">
-      📅 <strong id="flexHeadline">Flex Pay — 20% Down, 12 Months, 0% Interest</strong><br/>
-      <span id="flexSummary">20% down today, then 12 equal monthly payments at 0% interest.</span>
-    </div>
-
-    <div style="background:#0d0d0d;border:1px solid #1e1e1e;border-radius:8px;padding:14px;margin:12px 0;">
-      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1a1a1a;">
-        <span style="color:#888;">Due Today (20% Down)</span>
-        <span id="flexDown" style="color:#F0E000;font-weight:800;">$13,900</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:6px 0;">
-        <span style="color:#888;">Then 12 Monthly Payments Of</span>
-        <span id="flexMonthly" style="color:#F2F2F2;font-weight:800;">$4,633 / month</span>
+    <!-- ENTERPRISE CUSTOM -->
+    <div id="enterpriseBox" style="display:none;" class="card">
+      <div class="enterprise-box">
+        <div style="font-size:14px;font-weight:800;color:#FFFF00;margin-bottom:6px;">Custom Enterprise Pricing</div>
+        <div style="font-size:12px;color:#a3a3a3;margin-bottom:14px;">300+ trucks needs a custom scope. Call or text POTENT and Əlevate will walk you through custom pricing and setup.</div>
+        <a href="tel:9129142166" style="display:inline-block;background:#FFFF00;color:#000;text-decoration:none;border-radius:8px;padding:12px 28px;font-weight:800;font-size:14px;">(912) 914-2166</a>
       </div>
     </div>
 
-    <div style="background:#1a0000;border:1px solid #E53E3E44;border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:11px;color:#cc8888;line-height:1.7;">
-      <strong style="color:#E53E3E;">How Flex Pay Works — Read Before Continuing</strong><br/>
-      This works like a utility bill. Pay on time, your access stays on. Each payment has a 2-day grace period after the due date. If a <strong>second</strong> payment is ever missed (whether or not the first was late), your POTENT OS access is <strong>immediately suspended</strong>. To restore access after suspension, the <strong>full remaining balance</strong> becomes due in one payment — not just the missed installments. Once your access has been suspended for non-payment, you are <strong>no longer eligible for Flex Pay on any future purchase</strong> — full payment or standard financing only.
+    <!-- PAYMENT FORM -->
+    <div id="payForm" class="card">
+      <h2>Payment Method</h2>
+
+      <div class="pay-method">
+        <div class="pm sel" id="pmFull" onclick="selectPM('full')">
+          <div class="pm-icon">💳</div>
+          <div class="pm-label">Pay in Full</div>
+          <div class="pm-sub" id="pmFullSub">Pay $4,995 today — card, bank, Apple Pay &amp; Google Pay on Stripe's secure checkout</div>
+        </div>
+        <div class="pm" id="pmFlex" onclick="selectPM('flex')">
+          <div class="pm-icon">📅</div>
+          <div class="pm-label">Flex Pay</div>
+          <div class="pm-sub" id="pmFlexSub">20% down today, then 12 monthly payments · 0% interest</div>
+        </div>
+      </div>
+
+      <!-- FLEX PAY -->
+      <div id="flexSection" style="display:none;">
+        <div class="flex-notice">
+          📅 <strong>Flex Pay — 20% Down, 12 Months, 0% Interest</strong><br/>
+          <span id="flexSummary">20% down today, then 12 equal monthly payments at 0% interest.</span>
+        </div>
+
+        <div style="background:#0d0d0d;border:1px solid #1e1e1e;border-radius:8px;padding:14px;margin:12px 0;">
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1a1a1a;">
+            <span style="color:#888;">Due Today (20% Down)</span>
+            <span id="flexDown" style="color:#FFFF00;font-weight:800;">$999</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;">
+            <span style="color:#888;">Then 12 Monthly Payments Of</span>
+            <span id="flexMonthly" style="color:#FFFFFF;font-weight:800;">$333 / month</span>
+          </div>
+        </div>
+
+        <div class="flex-warn">
+          <strong>How Flex Pay Works — Read Before Continuing</strong><br/>
+          This works like a utility bill. Pay on time, your access stays on. Each payment has a 2-day grace period after the due date. If a <strong>second</strong> payment is ever missed (whether or not the first was late), your POTENT OS access is <strong>immediately suspended</strong>. To restore access after suspension, the <strong>full remaining balance</strong> becomes due in one payment — not just the missed installments. Once your access has been suspended for non-payment, you are <strong>no longer eligible for Flex Pay on any future purchase</strong> — full payment or standard financing only. Your installments are charged automatically to the card below each month.
+        </div>
+
+        <label>Card Details (for today's down payment — this card is charged monthly after)</label>
+        <div id="card-element-flex"></div>
+        <div class="err" id="cardErrFlex"></div>
+      </div>
+
+      <div class="note" style="margin-top:10px;">🔒 Payments processed securely by Stripe. POTENT never stores your card or bank details.</div>
+
+      <button class="btn" id="payBtn" onclick="submitPay()" style="margin-top:14px;">
+        🔒 Pay <span id="payAmt">$4,995</span> — Complete License Purchase
+      </button>
+      <div id="payLoading" style="display:none;text-align:center;padding:14px;font-size:13px;color:#888;">Processing your payment securely...</div>
+      <div class="err" id="payErr"></div>
     </div>
 
-    <label>Card Details (for today's down payment)</label>
-    <div id="card-element-flex"></div>
-    <div class="err" id="cardErrFlex"></div>
-  </div>
-
-  <!-- CARD -->
-  <div id="cardSection">
-    <label>Card Details</label>
-    <div id="card-element"></div>
-    <div class="err" id="cardErr"></div>
-  </div>
-
-  <!-- BANK / PLAID -->
-  <div id="bankSection" style="display:none;">
-    <div class="bank-notice">
-      🏦 <strong>Instant Bank Verification via Plaid</strong><br/>
-      Click the button below to securely connect your bank account through Plaid. Your login credentials go directly to Plaid — POTENT never sees them. ACH payments typically settle in 1–3 business days.
-    </div>
-    <button class="btn" id="bankBtn" onclick="startBankVerify()" style="background:#4299E1;color:#fff;margin-top:10px;">🔗 Connect Bank Account via Plaid</button>
-    <div id="bankConfirmed" style="display:none;background:#0a1a0a;border:1px solid #1DB95433;border-radius:8px;padding:12px;margin-top:10px;font-size:12px;color:#1DB954;font-weight:700;">✅ Bank account verified and connected</div>
-  </div>
-
-  <div class="note" style="margin-top:10px;">🔒 Payments processed securely by Stripe. POTENT never stores your card or bank details.</div>
-
-  <button class="btn" id="payBtn" onclick="submitPay()" style="margin-top:14px;">
-    🔒 Pay <span id="payAmt">$4,995</span> — Complete License Purchase
-  </button>
-  <div id="payLoading" style="display:none;text-align:center;padding:14px;font-size:13px;color:#666;">Processing your payment securely...</div>
-  <div class="err" id="payErr"></div>
-</div>
-
-<button class="btn-g" onclick="go(3)">← Back</button>
-```
-
+    <button class="btn-g" onclick="go(3)">← Back</button>
   </div>
 
   <!-- STEP 5 -->
@@ -381,32 +338,33 @@ select{color-scheme:dark;}
     <div class="success-wrap">
       <div style="font-size:56px;margin-bottom:14px;">🎉</div>
       <h2>Welcome to POTENT OS</h2>
-      <p>Your license is confirmed. Create your real account below to get instant access — no waiting on a call.</p>
+      <p>Your license is confirmed — you're in. Əlevate has your order and will guide your setup from here.</p>
       <div style="margin:16px 0;">
         <span class="badge">✓ License Confirmed</span>
-        <span class="badge green">✓ Instant Account Access</span>
+        <span class="badge green">✓ Company Created Automatically</span>
         <span class="badge green">✓ Agreement on File</span>
       </div>
       <div class="card" style="text-align:left;max-width:460px;margin:0 auto 16px;">
-        <h2>Create Your Account</h2>
-        <div style="font-size:12px;color:#666;margin-bottom:10px;">This is how you'll log in and get real alerts — no email required after this.</div>
-        <input type="text" id="acctUsername" placeholder="Choose a username" style="width:100%;padding:10px;margin-bottom:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;">
-        <input type="password" id="acctPassword" placeholder="Choose a password" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;">
-        <button onclick="createRealAccount()" id="createAcctBtn" style="width:100%;background:#F0E000;color:#000;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer;">Create Account</button>
-        <div id="acctMsg" style="font-size:12px;margin-top:8px;"></div>
-      </div>
-      <div class="card" style="text-align:left;max-width:460px;margin:0 auto 16px;">
         <h2>What Happens Next</h2>
-        <div style="font-size:12px;color:#666;line-height:2.2;">
-          <div>✅ License agreement emailed to you</div>
-          <div>✅ Anthony calls within 24 hours</div>
-          <div>✅ Your team receives access credentials</div>
-          <div>✅ 30-minute onboarding call scheduled</div>
-          <div>✅ System live within 24 hours of onboarding</div>
+        <div style="font-size:12px;color:#a3a3a3;line-height:2.2;">
+          <div>✅ Payment confirmed by Stripe — your receipt is emailed to you</div>
+          <div>✅ Your company is created automatically in POTENT OS — no waiting on a call</div>
+          <div>✅ Your sign-in link and temporary password are emailed to <strong id="sxEmail" style="color:#fff;">your email</strong></div>
+          <div>✅ Əlevate will guide your setup — just reply to your welcome email any time</div>
+          <div>✅ Download your signed agreement below and keep it for your records</div>
+          <div id="sxNote" style="display:none;color:#FFFF00;"></div>
         </div>
       </div>
+      <div class="card" style="text-align:left;max-width:460px;margin:0 auto 16px;">
+        <h2>Set Your Own Login (Optional)</h2>
+        <div style="font-size:12px;color:#a3a3a3;margin-bottom:10px;">Your welcome email already includes a sign-in link and a temporary password. Prefer your own username and password? Set them here — they're tied to your purchase email.</div>
+        <input type="text" id="acctUsername" placeholder="Choose a username" style="width:100%;padding:10px;margin-bottom:8px;border:1px solid #2a2a2a;border-radius:6px;font-size:13px;box-sizing:border-box;background:#0d0d0d;color:#fff;">
+        <input type="password" id="acctPassword" placeholder="Choose a password" style="width:100%;padding:10px;margin-bottom:10px;border:1px solid #2a2a2a;border-radius:6px;font-size:13px;box-sizing:border-box;background:#0d0d0d;color:#fff;">
+        <button onclick="createRealAccount()" id="createAcctBtn" style="width:100%;background:#FFFF00;color:#000;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer;">Create Account</button>
+        <div id="acctMsg" style="font-size:12px;margin-top:8px;"></div>
+      </div>
       <button class="btn" style="max-width:320px;margin:0 auto 8px;display:block;" onclick="dlSigned()">📄 Download Signed License PDF</button>
-      <div style="font-size:12px;color:#444;margin-top:10px;">Questions? <a href="tel:9129142166" style="color:#F0E000;">(912) 914-2166</a> · <a href="mailto:potentlogistics@proton.me" style="color:#F0E000;">potentlogistics@proton.me</a></div>
+      <div style="font-size:12px;color:#666;margin-top:10px;">Questions? <a href="tel:9129142166" style="color:#FFFF00;">(912) 914-2166</a> · <a href="mailto:potentlogistics@proton.me" style="color:#FFFF00;">potentlogistics@proton.me</a></div>
     </div>
   </div>
 
@@ -415,10 +373,10 @@ select{color-scheme:dark;}
 <script>
 // Real tour — same engine pattern as Driver Onboarding, shows once per device.
 var LICENSE_TOUR_STEPS = [
-  { title: "Welcome", body: "This walks you through licensing POTENT OS for your own fleet — pick a tier, sign the real agreement, and pay. Takes about 5 minutes." },
+  { title: "Welcome", body: "This walks you through licensing POTENT OS for your fleet — pick a tier, sign the real agreement, and pay. Takes about 5 minutes. No application, no approval wait: the moment you pay, your company is created and your login is emailed to you." },
   { title: "Pick Your Tier", body: "Fleet size determines your tier and price. Every tier includes the same real features — Offline Mode, Live GPS, Payroll, unlimited jobs." },
   { title: "Real Agreement, Not Boilerplate", body: "You'll read and sign the actual license agreement before payment — real terms, including Flex Pay installment details if you choose that option." },
-  { title: "Payment", body: "Card or Flex Pay (20% down, 0% interest). Once paid, you own the license outright — no recurring per-truck fee, ever." },
+  { title: "Payment", body: "Pay in full, or Flex Pay (20% down, 0% interest, 12 monthly payments). Once paid, your license is active and your sign-in is on its way to your email." },
 ];
 var licenseTourStepIdx = 0;
 function startLicenseTour(){
@@ -451,56 +409,51 @@ function closeLicenseTour(){
 }
 window.addEventListener('DOMContentLoaded', startLicenseTour);
 
-// Real redirect detection — Stripe's Checkout Session sends the real
-// customer back here with ?session_id=...&step=success on real
-// payment success, or ?step=cancelled if they backed out. This is the
-// real server-confirmed alternative to just hoping the client-side
-// confirmation worked.
-(function checkRealCheckoutRedirect(){
-  var params = new URLSearchParams(window.location.search);
-  if(params.get('step') === 'success' && params.get('session_id')){
-    go(5);
-    if(typeof notifyAnthony === 'function'){ notifyAnthony().catch(function(){}); }
-  } else if(params.get('step') === 'cancelled'){
-    go(4);
-    var errEl = document.getElementById('payErr');
-    if(errEl){ errEl.textContent = 'Checkout was cancelled \u2014 no charge was made. You can try again below.'; errEl.style.display='block'; }
-  }
-})();
-
 // ── STATE ─────────────────────────────────────────────────────────
-var S = { tier:'Starter', price:14500, fleet:'1–10 trucks',
-  company:'', name:'', title:'', email:'', phone:'', city:'', state:'GA',
-  fleet_count:'', software:'', sig:'', payMethod:'card', bankVerified:false,
-  piSecret:null, flexPlan:3 };
+var S = { tier:'Starter', price:4995, fleet:'1–10 trucks',
+  company:'', name:'', email:'', phone:'',
+  sig:'', payMethod:'full' };
+
+// Money display: whole dollars plain, cents only when real (Flex monthly).
+function fmt(n){
+  return '$' + Number(n).toLocaleString('en-US',{minimumFractionDigits:(Number(n)%1?2:0), maximumFractionDigits:2});
+}
+
+// ── FLEX PAY — computed from the tier price, never hardcoded ──────
+// Canon: 20% down, 0% interest, remaining balance in 12 equal monthly
+// payments, every tier. Starter $999/$333 · Growth $1,999/$666.33 ·
+// Fleet $3,999/$1,333 · Enterprise $6,999/$2,333.
+function flexTerms(){
+  var down = Math.round(S.price * 0.20);
+  var monthly = Math.round(((S.price - down) / 12) * 100) / 100;
+  return { down: down, monthly: monthly, term: 12 };
+}
+
+function flexEligible(){
+  return S.price > 0;
+}
+
+function renderFlexTerms(){
+  var terms = flexTerms();
+  document.getElementById('flexDown').textContent = fmt(terms.down);
+  document.getElementById('flexMonthly').textContent = fmt(terms.monthly) + ' / month';
+  document.getElementById('flexSummary').textContent = fmt(terms.down) + ' due today, then ' + terms.term + ' monthly payments of ' + fmt(terms.monthly) + ' at 0% interest.';
+  document.getElementById('pmFlexSub').textContent = fmt(terms.down) + ' down today, then 12 x ' + fmt(terms.monthly) + '/mo · 0% interest';
+}
 
 // ── STRIPE ────────────────────────────────────────────────────────
 var stripe = Stripe('pk_live_51TkbJt609KMwZrdNl8Y3BEyvwNmS25EGbuWFFS4326ttgTaKGr1mxylDXNdXKOgtuvQoXKGsptN0zC0YyGTP92Bx00T0FTTVBX');
 var elements = stripe.elements();
-var cardEl = null;
 var cardElFlex = null;
 
 window.addEventListener('load', function(){
-  if(window.emailjs) emailjs.init('6Qs0HlOLjJ6jfWHtp');
   document.getElementById('aDate').textContent = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
-  mountCard();
   mountCardFlex();
 });
 
-function mountCard(){
-  if(cardEl) return;
-  cardEl = elements.create('card',{style:{base:{color:'#F2F2F2',fontFamily:'Segoe UI,sans-serif',fontSize:'14px','::placeholder':{color:'#333'}},invalid:{color:'#E53E3E'}}});
-  cardEl.mount('#card-element');
-  cardEl.on('change',function(e){
-    var err=document.getElementById('cardErr');
-    if(e.error){err.textContent=e.error.message;err.style.display='block';}
-    else err.style.display='none';
-  });
-}
-
 function mountCardFlex(){
   if(cardElFlex) return;
-  cardElFlex = elements.create('card',{style:{base:{color:'#F2F2F2',fontFamily:'Segoe UI,sans-serif',fontSize:'14px','::placeholder':{color:'#333'}},invalid:{color:'#E53E3E'}}});
+  cardElFlex = elements.create('card',{style:{base:{color:'#FFFFFF',fontFamily:'Segoe UI,sans-serif',fontSize:'14px','::placeholder':{color:'#444'}},invalid:{color:'#FFFF00'}}});
   cardElFlex.mount('#card-element-flex');
   cardElFlex.on('change',function(e){
     var err=document.getElementById('cardErrFlex');
@@ -509,34 +462,32 @@ function mountCardFlex(){
   });
 }
 
-// ── FLEX PAY — fixed terms, Mid Fleet & Enterprise only ─────────────
-// 20% down, 12 equal monthly payments, 0% interest. Hardcoded per tier.
-var FLEX_TERMS = {
-  'Starter':     { down: 2900, monthly: 1933, term: 6 },
-  'Growth':      { down: 6900, monthly: 4600, term: 6 },
-  'Mid Fleet':   { down: 13900, monthly: 4633, term: 12 },
-  'Enterprise':  { down: 21900, monthly: 7300, term: 12 },
-};
-
-function flexEligible(){
-  return FLEX_TERMS.hasOwnProperty(S.tier);
-}
-
-function updateFlexVisibility(){
-  var el = document.getElementById('pmFlex');
-  if(!el) return;
-  el.style.display = flexEligible() ? 'flex' : 'none';
-  if(!flexEligible() && S.payMethod==='flex') selectPM('card');
-}
-
-function renderFlexTerms(){
-  var terms = FLEX_TERMS[S.tier];
-  if(!terms) return;
-  document.getElementById('flexDown').textContent = '$'+terms.down.toLocaleString();
-  document.getElementById('flexMonthly').textContent = '$'+terms.monthly.toLocaleString()+' / month';
-  document.getElementById('flexSummary').textContent = '$'+terms.down.toLocaleString()+' due today, then '+terms.term+' monthly payments of $'+terms.monthly.toLocaleString()+' at 0% interest.';
-}
-
+// Real redirect detection — Stripe's Checkout Session sends the real
+// customer back here with ?session_id=...&step=success on real
+// payment success, or ?step=cancelled if they backed out. This is the
+// real server-confirmed alternative to just hoping the client-side
+// confirmation worked. Buyer basics were stashed in sessionStorage
+// before the redirect (page state does not survive leaving for Stripe),
+// so the success screen, the signed PDF, the account form and the owner
+// notification all carry the real buyer — the old page emailed blanks.
+(function checkRealCheckoutRedirect(){
+  var params = new URLSearchParams(window.location.search);
+  if(params.get('step') === 'success' && params.get('session_id')){
+    try {
+      var saved = JSON.parse(sessionStorage.getItem('potent_license_buyer') || 'null');
+      if(saved){ for (var k in saved) S[k] = saved[k]; }
+    } catch(e){}
+    S.payMethod = 'full';
+    go(5);
+    fillSuccess();
+    if(typeof notifyOwner === 'function'){ notifyOwner().catch(function(){}); }
+    try { sessionStorage.removeItem('potent_license_buyer'); } catch(e){}
+  } else if(params.get('step') === 'cancelled'){
+    go(4);
+    var errEl = document.getElementById('payErr');
+    if(errEl){ errEl.textContent = 'Checkout was cancelled — no charge was made. You can try again below.'; errEl.style.display='block'; }
+  }
+})();
 
 // ── STEP NAV ──────────────────────────────────────────────────────
 function go(n){
@@ -558,27 +509,21 @@ function pickTier(el){
   S.tier=el.dataset.tier;
   S.price=Number(el.dataset.price)||0;
   S.fleet=el.dataset.fleet;
-  updateFlexVisibility();
 }
 
 // ── STEP 2 ────────────────────────────────────────────────────────
 function step2next(){
   S.company=document.getElementById('iCompany').value.trim();
   S.name=document.getElementById('iName').value.trim();
-  S.title=document.getElementById('iTitle').value.trim();
   S.email=document.getElementById('iEmail').value.trim();
   S.phone=document.getElementById('iPhone').value.trim();
-  S.city=document.getElementById('iCity').value.trim();
-  S.state=document.getElementById('iState').value.trim();
-  S.fleet_count=document.getElementById('iFleet').value.trim();
-  S.software=document.getElementById('iSoftware').value.trim();
-  if(!S.company||!S.name||!S.title||!S.email||!S.phone||!S.city||!S.state){alert('Please fill in all required fields.');return;}
+  if(!S.company||!S.name||!S.email||!S.phone){alert('Please fill in all required fields.');return;}
   if(!S.email.includes('@')){alert('Please enter a valid email address.');return;}
   // Fill agreement fields
-  document.getElementById('aLicensee').textContent=S.company+' ('+S.name+', '+S.title+')';
+  document.getElementById('aLicensee').textContent=S.company+' ('+S.name+')';
   document.getElementById('aTier').textContent=S.tier;
   document.getElementById('aTier2').textContent=S.tier;
-  var pf=S.price>0?'$'+S.price.toLocaleString():'Custom Quote';
+  var pf=S.price>0?fmt(S.price):'Custom Quote';
   document.getElementById('aPrice').textContent=pf;
   document.getElementById('aPrice2').textContent=pf;
   document.getElementById('cCompany').textContent=S.company;
@@ -598,92 +543,39 @@ function chkAll(){
 function fillSummary(){
   document.getElementById('sumCo').textContent=S.company;
   document.getElementById('sumTier').textContent=S.tier;
-  document.getElementById('sumFleet').textContent=(S.fleet_count?S.fleet_count+' trucks — ':'')+S.fleet;
-  var pf=S.price>0?'$'+S.price.toLocaleString():'Custom';
-  document.getElementById('sumAmt').textContent=pf;
-  document.getElementById('payAmt').textContent=pf;
+  document.getElementById('sumBuyer').textContent=S.name;
+  document.getElementById('sumEmail').textContent=S.email;
+  document.getElementById('sumAmt').textContent=S.price>0?fmt(S.price):'Custom';
+  document.getElementById('pmFullSub').textContent='Pay '+(S.price>0?fmt(S.price):'')+' today — card, bank, Apple Pay & Google Pay on Stripe\'s secure checkout';
   var isCustom=S.tier==='Custom'||S.price===0;
   document.getElementById('enterpriseBox').style.display=isCustom?'block':'none';
   document.getElementById('payForm').style.display=isCustom?'none':'block';
-  updateFlexVisibility();
+  if(!isCustom){ renderFlexTerms(); selectPM(S.payMethod); }
+}
+
+// ── SUCCESS ───────────────────────────────────────────────────────
+function fillSuccess(){
+  if(S.email) document.getElementById('sxEmail').textContent=S.email;
 }
 
 // ── PAYMENT METHOD SELECT ─────────────────────────────────────────
 function selectPM(method){
-  if(method==='flex' && !flexEligible()) return; // guard: only Mid Fleet/Enterprise
+  if(method==='flex' && !flexEligible()) return;
   S.payMethod=method;
-  document.getElementById('pmCard').classList.toggle('sel',method==='card');
-  document.getElementById('pmBank').classList.toggle('sel',method==='bank');
+  document.getElementById('pmFull').classList.toggle('sel',method==='full');
   document.getElementById('pmFlex').classList.toggle('sel',method==='flex');
-  document.getElementById('cardSection').style.display=method==='card'?'block':'none';
-  document.getElementById('bankSection').style.display=method==='bank'?'block':'none';
   document.getElementById('flexSection').style.display=method==='flex'?'block':'none';
   if(method==='flex'){
     renderFlexTerms();
-    var terms = FLEX_TERMS[S.tier];
-    document.getElementById('payBtn').innerHTML = '🔒 Pay $'+terms.down.toLocaleString()+' Down — Start Flex Pay Plan';
+    var terms = flexTerms();
+    document.getElementById('payBtn').innerHTML = '🔒 Pay '+fmt(terms.down)+' Down — Start Flex Pay Plan';
   } else {
-    document.getElementById('payBtn').innerHTML = '🔒 Pay <span id="payAmt">'+(S.price>0?'$'+S.price.toLocaleString():'—')+'</span> — Complete License Purchase';
+    document.getElementById('payBtn').innerHTML = '🔒 Pay <span id="payAmt">'+(S.price>0?fmt(S.price):'—')+'</span> — Complete License Purchase';
   }
 }
+</script>
 
-// ── BANK / PLAID VERIFY ──────────────────────────────────────────
-async function startBankVerify(){
-  document.getElementById('bankBtn').textContent='Connecting...';
-  document.getElementById('bankBtn').disabled=true;
-  try {
-    // Create PaymentIntent for ACH via our Netlify function
-    var res = await fetch('/.netlify/functions/create-license-payment',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        amount: S.price,
-        tier: S.tier,
-        company: S.company,
-        name: S.name,
-        email: S.email,
-        phone: S.phone
-      })
-    });
-    var data = await res.json();
-    if(!data.clientSecret) throw new Error(data.error||'Failed to initialize');
-    S.piSecret = data.clientSecret;
-
-    // Launch Stripe Financial Connections (Plaid) for bank account
-    var result = await stripe.collectBankAccountForPayment({
-      clientSecret: S.piSecret,
-      params: {
-        payment_method_type: 'us_bank_account',
-        payment_method_data: {
-          billing_details: {
-            name: S.name,
-            email: S.email,
-          }
-        }
-      },
-      expand: ['payment_method']
-    });
-
-    if(result.error){
-      document.getElementById('bankBtn').textContent='🔗 Connect Bank Account via Plaid';
-      document.getElementById('bankBtn').disabled=false;
-      showErr('payErr', result.error.message);
-      return;
-    }
-
-    // Bank connected
-    S.bankVerified=true;
-    document.getElementById('bankConfirmed').style.display='block';
-    document.getElementById('bankBtn').style.display='none';
-    document.getElementById('payBtn').textContent='✅ Confirm ACH Payment — '+document.getElementById('payAmt').textContent;
-
-  } catch(e){
-    document.getElementById('bankBtn').textContent='🔗 Connect Bank Account via Plaid';
-    document.getElementById('bankBtn').disabled=false;
-    showErr('payErr','Bank connection failed: '+e.message+'. Please use card or call (912) 914-2166.');
-  }
-}
-
+<script>
 // ── PAYMENT SUBMIT ────────────────────────────────────────────────
 async function submitPay(){
   hideErr('payErr');
@@ -692,59 +584,53 @@ async function submitPay(){
 
   try {
     if(S.payMethod==='flex'){
-      var terms = FLEX_TERMS[S.tier];
-      if(!terms) throw new Error('Flex Pay is not available for this tier.');
+      var terms = flexTerms();
+      if(!flexEligible()) throw new Error('Flex Pay is not available for this tier.');
 
+      // PaymentIntent for today's down payment. The function also puts
+      // a Stripe Customer on the intent (flex only) so the payment
+      // webhook can create the 12-month installment subscription from
+      // the saved card — provisioning itself (company, owner login,
+      // license unlock, welcome email) is done by the webhook.
       var resFlex = await fetch('/.netlify/functions/create-license-payment',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({amount:terms.down,tier:S.tier,company:S.company,name:S.name,email:S.email,phone:S.phone})
+        body:JSON.stringify({
+          amount:terms.down, tier:S.tier, company:S.company, name:S.name, email:S.email, phone:S.phone,
+          plan:'flex', license_amount:S.price, flex_monthly:terms.monthly, flex_term:terms.term,
+          flex_total:S.price, support_monthly:0
+        })
       });
       var dataFlex = await resFlex.json();
       if(!dataFlex.clientSecret) throw new Error(dataFlex.error||'Payment setup failed');
 
-      var pmFlexResult = await stripe.createPaymentMethod({type:'card',card:cardElFlex,billing_details:{name:S.name,email:S.email,phone:S.phone,address:{city:S.city,state:S.state,country:'US'}}});
+      var pmFlexResult = await stripe.createPaymentMethod({type:'card',card:cardElFlex,billing_details:{name:S.name,email:S.email,phone:S.phone}});
       if(pmFlexResult.error){showErr('payErr',pmFlexResult.error.message);resetPayBtn();return;}
 
       var confirmFlexResult = await stripe.confirmCardPayment(dataFlex.clientSecret,{payment_method:pmFlexResult.paymentMethod.id});
       if(confirmFlexResult.error){showErr('payErr',confirmFlexResult.error.message);resetPayBtn();return;}
 
-      // Build the payment due-date schedule, using this tier's actual term length
-      var schedule = [];
-      var today = new Date();
-      for(var i=1;i<=terms.term;i++){
-        var due = new Date(today);
-        due.setMonth(due.getMonth()+i);
-        schedule.push({payment_number:i, amount:terms.monthly, due_date:due.toISOString().slice(0,10), status:'scheduled'});
-      }
-
-      // Save the payment plan record so it can be tracked and enforced
-      try {
-        await fetch('https://ymvsatlrkzgxwzxybwmk.supabase.co/rest/v1/waitlist',{
-          method:'POST',
-          headers:{'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inltd nNhdGxya3pneHd6eHlid21rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxNDk2MzUsImV4cCI6MjA1OTcyNTYzNX0.T3Thhr5NJdbI4Ehp1vkhVEyPEg','Content-Type':'application/json'},
-          body:JSON.stringify({
-            company:S.company, contact:S.name, email:S.email, phone:S.phone,
-            tier:S.tier, price:S.price, signature:S.sig, status:'flex_pay_active',
-            fleet_size: JSON.stringify({
-              plan_type:'flex_pay', down_paid:terms.down, monthly_amount:terms.monthly,
-              total_price:S.price, missed_payments:0, access_status:'active',
-              flex_eligible_again: true, schedule: schedule
-            }),
-            created_at:new Date().toISOString()
-          })
-        });
-      } catch(e){}
-
-      await notifyAnthonyFlex(terms);
+      await notifyOwnerFlex(terms);
+      fillSuccess();
+      var firstDue = new Date(); firstDue.setMonth(firstDue.getMonth()+1);
+      var sxn = document.getElementById('sxNote');
+      sxn.style.display='block';
+      sxn.textContent = '📅 Flex Pay active: ' + fmt(terms.down) + ' paid today. Your first installment of ' + fmt(terms.monthly) + ' is due ' + firstDue.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}) + ' — Stripe charges your saved card automatically each month (12 payments, 0% interest).';
       go(5);
       return;
     }
 
     // Real Checkout Session — one redirect, Stripe's own hosted page
-    // automatically offers card, ACH, Apple Pay, and Google Pay. This
-    // replaces the old separate ACH-branch and card-branch code above
-    // with a single real flow.
+    // automatically offers card, ACH, Apple Pay, and Google Pay.
+    // Stash the buyer basics first: page state does not survive the
+    // redirect, and the success screen / signed PDF / owner notice
+    // all need the real buyer on the way back.
+    try {
+      sessionStorage.setItem('potent_license_buyer', JSON.stringify({
+        tier:S.tier, price:S.price, fleet:S.fleet, company:S.company,
+        name:S.name, email:S.email, phone:S.phone, sig:S.sig
+      }));
+    } catch(e){}
     var tierKeyMap = {'Starter':'starter','Growth':'growth','Fleet':'fleet','Enterprise':'enterprise'};
     var checkoutRes = await fetch('/.netlify/functions/create-checkout-session',{
       method:'POST',
@@ -755,7 +641,6 @@ async function submitPay(){
     if(!checkoutData.url){ showErr('payErr', checkoutData.error || 'Could not start real checkout. Please try again.'); resetPayBtn(); return; }
     window.location.href = checkoutData.url; // real redirect to Stripe's hosted page
     return;
-    go(5);
 
   } catch(e){
     showErr('payErr','Payment failed: '+e.message+'. Call (912) 914-2166.');
@@ -763,16 +648,34 @@ async function submitPay(){
   }
 }
 
-async function notifyAnthonyFlex(terms){
-  if(!window.emailjs) return;
+// ── OWNER NOTIFICATION — house Resend pattern ─────────────────────
+// Sends through the site's own send-email Netlify function (Resend,
+// server-side key). Replaces the retired browser-side email calls. The Stripe
+// webhook ALSO alerts the owner server-side for every payment event,
+// so a purchase is never only reported from the browser.
+var OWNER_EMAIL = 'potentlogistics@proton.me';
+async function sendOwnerEmail(subject, message){
   try {
-    await emailjs.send('service_e3qn0bs','template_nxubdce',{
-      to_email:'potentlogistics@proton.me',
-      from_name:S.name+' — '+S.company,
-      subject:'📅 FLEX PAY STARTED: '+S.company+' — $'+terms.down.toLocaleString()+' down / $'+terms.monthly.toLocaleString()+'/mo x'+terms.term,
-      message:'NEW FLEX PAY PLAN\n\nCompany: '+S.company+'\nContact: '+S.name+' ('+S.title+')\nEmail: '+S.email+'\nPhone: '+S.phone+'\nTier: '+S.tier+' (Total: $'+S.price.toLocaleString()+')\n\nDown payment collected: $'+terms.down.toLocaleString()+'\nMonthly payment (x'+terms.term+'): $'+terms.monthly.toLocaleString()+'\nRemaining balance: $'+(S.price-terms.down).toLocaleString()+'\n\nSigned By: '+S.sig+'\nDate: '+new Date().toLocaleString()+'\n\nIMPORTANT: You must manually track and charge the '+terms.term+' monthly installments. Missing a 2nd payment should trigger access suspension per the signed agreement.'
+    await fetch('/.netlify/functions/send-email',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ to: OWNER_EMAIL, subject: subject, message: message })
     });
   } catch(e){}
+}
+
+async function notifyOwner(){
+  await sendOwnerEmail(
+    '🎉 LICENSE SOLD: '+S.company+' — '+fmt(S.price),
+    'NEW POTENT OS LICENSE PURCHASE\n\nCompany: '+S.company+'\nContact: '+S.name+'\nEmail: '+S.email+'\nPhone: '+S.phone+'\nTier: '+S.tier+'\nAmount: '+fmt(S.price)+'\nPayment: PAID IN FULL (Stripe Checkout)\nSigned By: '+S.sig+'\nDate: '+new Date().toLocaleString()+'\n\nProvisioning is automatic via the Stripe webhook — company, owner login and license unlock are created and the buyer is emailed their sign-in.\n\n— Əlevate, POTENT OS checkout'
+  );
+}
+
+async function notifyOwnerFlex(terms){
+  await sendOwnerEmail(
+    '📅 FLEX PAY STARTED: '+S.company+' — '+fmt(terms.down)+' down / '+fmt(terms.monthly)+'/mo x'+terms.term,
+    'NEW FLEX PAY PLAN\n\nCompany: '+S.company+'\nContact: '+S.name+'\nEmail: '+S.email+'\nPhone: '+S.phone+'\nTier: '+S.tier+' (Total: '+fmt(S.price)+')\n\nDown payment collected: '+fmt(terms.down)+'\nMonthly payment (x'+terms.term+'): '+fmt(terms.monthly)+'\nRemaining balance: '+fmt(S.price-terms.down)+'\n\nSigned By: '+S.sig+'\nDate: '+new Date().toLocaleString()+'\n\nInstallments are charged automatically by Stripe — the payment webhook creates the 12-month subscription from the saved card. A 2nd missed payment triggers access suspension per the signed agreement.\n\n— Əlevate, POTENT OS checkout'
+  );
 }
 
 function resetPayBtn(){
@@ -785,7 +688,7 @@ async function createRealAccount(){
   var password = document.getElementById('acctPassword').value;
   var msgEl = document.getElementById('acctMsg');
   if(!username || password.length < 6){
-    msgEl.style.color = '#E53E3E';
+    msgEl.style.color = '#FFFF00';
     msgEl.textContent = 'Pick a username and a password at least 6 characters.';
     return;
   }
@@ -799,14 +702,14 @@ async function createRealAccount(){
     });
     var rj = await res.json().catch(function(){ return {}; });
     if(!res.ok || !rj.ok){
-      msgEl.style.color = '#E53E3E';
-      msgEl.textContent = rj.error || 'Something went wrong. Call (912) 914-2166 and we\'ll set it up directly.';
+      msgEl.style.color = '#FFFF00';
+      msgEl.textContent = rj.error || 'Something went wrong. Call (912) 914-2166.';
       document.getElementById('createAcctBtn').disabled = false;
       document.getElementById('createAcctBtn').textContent = 'Create Account';
       return;
     }
-    msgEl.style.color = '#1DB954';
-    msgEl.textContent = '\u2705 Saved. POTENT will activate your company login and email you when it is ready.';
+    msgEl.style.color = '#FFFF00';
+    msgEl.textContent = '✅ Saved. Sign in any time at potentoperations.netlify.app with your username, or with the login in your welcome email.';
     document.getElementById('createAcctBtn').textContent = 'Account Created';
     // Real push notification opt-in right here, while they're already engaged —
     // this is the only real window where a brand-new user can actually subscribe.
@@ -814,31 +717,11 @@ async function createRealAccount(){
       Notification.requestPermission();
     }
   } catch(e){
-    msgEl.style.color = '#E53E3E';
-    msgEl.textContent = 'Something went wrong. Call (912) 914-2166 and we\'ll set it up directly.';
+    msgEl.style.color = '#FFFF00';
+    msgEl.textContent = 'Something went wrong. Call (912) 914-2166.';
     document.getElementById('createAcctBtn').disabled = false;
     document.getElementById('createAcctBtn').textContent = 'Create Account';
   }
-}
-
-async function notifyAnthony(){
-  if(!window.emailjs) return;
-  try {
-    await emailjs.send('service_e3qn0bs','template_nxubdce',{
-      to_email:'potentlogistics@proton.me',
-      from_name:S.name+' — '+S.company,
-      subject:'🎉 LICENSE SOLD: '+S.company+' — $'+S.price.toLocaleString(),
-      message:'NEW POTENT OS LICENSE PURCHASE\n\nCompany: '+S.company+'\nContact: '+S.name+' ('+S.title+')\nEmail: '+S.email+'\nPhone: '+S.phone+'\nCity: '+S.city+', '+S.state+'\nFleet: '+(S.fleet_count||'—')+' trucks\nCurrent Software: '+(S.software||'None')+'\nTier: '+S.tier+'\nAmount: $'+S.price.toLocaleString()+'\nPayment: '+S.payMethod.toUpperCase()+'\nSigned By: '+S.sig+'\nDate: '+new Date().toLocaleString()
-    });
-  } catch(e){}
-  // Save to Supabase
-  try {
-    fetch('https://ymvsatlrkzgxwzxybwmk.supabase.co/rest/v1/waitlist',{
-      method:'POST',
-      headers:{'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inltd nNhdGxya3pneHd6eHlid21rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxNDk2MzUsImV4cCI6MjA1OTcyNTYzNX0.T3Thhr5NJdbI4Ehp1vkhVEyPEg','Content-Type':'application/json'},
-      body:JSON.stringify({company:S.company,contact:S.name,email:S.email,phone:S.phone,fleet_size:S.fleet_count||null,tier:S.tier,price:S.price,signature:S.sig,status:'paid',created_at:new Date().toISOString()})
-    });
-  } catch(e){}
 }
 
 function showErr(id,msg){var e=document.getElementById(id);e.textContent=msg;e.style.display='block';}
@@ -861,48 +744,48 @@ function buildPDF(signed){
     if(y>275){doc.addPage();y=18;doc.setFillColor(8,8,8);doc.rect(0,0,210,297,'F');}
   }
   doc.setFillColor(8,8,8);doc.rect(0,0,210,297,'F');
-  doc.setFillColor(240,224,0);doc.rect(0,0,210,16,'F');
+  doc.setFillColor(255,255,0);doc.rect(0,0,210,16,'F');
   doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor('#000000');
   doc.text('POTENT OS SOFTWARE LICENSE AGREEMENT',105,10,{align:'center'});
   y=24;
-  ln('POTENT PRÄDƏKT® · POTENT OPERATIONS LLC',9,true,'#F0E000');
+  ln('POTENT PRÄDƏKT® · POTENT OPERATIONS LLC',9,true,'#FFFF00');
   y+=3;
   ln('Effective Date: '+new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}),8,false,'#666666');
   ln('Licensor: Anthony Emmanuel Figueroa Mendes®, POTENT OPERATIONS LLC',8,false,'#666666');
-  if(S.company) ln('Licensee: '+S.company+' ('+S.name+', '+S.title+')',8,false,'#666666');
+  if(S.company) ln('Licensee: '+S.company+' ('+S.name+')',8,false,'#666666');
   ln('Tier: '+S.tier+' — '+S.fleet+'  |  License Fee: $'+S.price.toLocaleString()+' (One-Time · Perpetual)',8,false,'#666666');
   y+=6;
   var secs=[
-    ['1. LICENSE GRANT','Licensor grants Licensee a non-exclusive, non-transferable, perpetual license to use POTENT OS solely for internal business operations.'],
+    ['1. LICENSE GRANT','Licensor grants Licensee a non-exclusive, non-transferable, perpetual license to access and use POTENT OS, as hosted and operated by Licensor on Licensor\'s single platform, solely for internal business operations. No copy of the Software is delivered or transferred.'],
     ['2. OWNERSHIP','POTENT OS and all intellectual property remains the exclusive property of ANTHONY EMMANUEL FIGUEROA MENDES®. This is a license to use, not ownership.'],
-    ['3. LICENSE FEE','One-time fee of $'+S.price.toLocaleString()+' for the '+S.tier+' tier. No monthly fees, per-truck fees, or subscriptions.'],
+    ['3. LICENSE FEE','One-time fee of $'+S.price.toLocaleString()+' for the '+S.tier+' tier. No per-truck fees and no required monthly fee. Optional Monthly Support is available separately and is never required.'],
     ['4. PERMITTED USE','Internal use only. No resale, sublicensing, reverse engineering, or use to build competing products.'],
     ['5. NDA','All demo, onboarding, and feature information is confidential. Do not disclose to competitors. Survives termination for 5 years.'],
     ['6. CONFIDENTIALITY','System credentials, pricing, client data, and proprietary processes are confidential.'],
-    ['6A. THIRD-PARTY SERVICE COSTS','License fee covers the Software only. Database, mapping API, and email service accounts are typically $0-$25/month, billed directly by those providers. Licensee may set these up independently, or add the optional Annual Support Plan for Licensor to configure and manage them.'],
-    ['6B. FLEX PAY (ALL TIERS)','20% down, then equal monthly payments at 0% interest — 6 months for Starter/Growth, 12 months for Mid Fleet/Enterprise. 2-day grace period per payment. A second missed payment suspends access immediately; full remaining balance is due to restore it. Licensee becomes permanently ineligible for Flex Pay on future purchases after any suspension.'],
+    ['6A. HOSTED PLATFORM','The license is access to the one hosted POTENT OS system, operated and maintained by Licensor. No copy of the Software is delivered or transferred to Licensee, and Licensee has no right to host, install, copy, or redistribute it.'],
+    ['6B. FLEX PAY (ALL TIERS)','20% down, then 12 equal monthly payments at 0% interest — every tier. 2-day grace period per payment. A second missed payment suspends access immediately; full remaining balance is due to restore it. Licensee becomes permanently ineligible for Flex Pay on future purchases after any suspension.'],
     ['7. NO REFUNDS','All sales are final. No refunds after software access is granted.'],
     ['8. LIABILITY','Licensor\'s total liability shall not exceed the license fee paid.'],
     ['9. GOVERNING LAW','State of Georgia. Rockdale County courts.'],
   ];
   secs.forEach(function(s){
-    ln(s[0],9,true,'#F0E000');
+    ln(s[0],9,true,'#FFFF00');
     y+=1;
     ln(s[1],8,false,'#AAAAAA',6);
     y+=4;
   });
   if(signed&&S.sig){
     y+=8;
-    doc.setDrawColor(240,224,0);doc.setLineWidth(0.5);doc.line(lm,y,lm+130,y);y+=6;
-    ln('Electronic Signature: '+S.sig,10,true,'#F0E000');
-    ln('Full Name: '+S.name+'  |  Title: '+S.title,9,false,'#888888');
+    doc.setDrawColor(255,255,0);doc.setLineWidth(0.5);doc.line(lm,y,lm+130,y);y+=6;
+    ln('Electronic Signature: '+S.sig,10,true,'#FFFF00');
+    ln('Full Name: '+S.name,9,false,'#888888');
     if(S.company) ln('Company: '+S.company,9,false,'#888888');
     if(S.email) ln('Email: '+S.email,9,false,'#888888');
     ln('Date Signed: '+new Date().toLocaleString(),9,false,'#888888');
-    ln('Payment Method: '+S.payMethod.toUpperCase(),9,false,'#888888');
+    ln('Payment Method: '+(S.payMethod==='flex'?'FLEX PAY':'PAID IN FULL'),9,false,'#888888');
   }
   y+=8;
-  ln('© 2026 ANTHONY EMMANUEL FIGUEROA MENDES® · POTENT PRÄDƏKT® · All Rights Reserved',8,false,'#333333');
+  ln('© 2026 POTENT PRÄDƏKT® · POTENT OPERATIONS LLC · All Rights Reserved',8,false,'#333333');
   var fn=signed?'POTENT-OS-License-SIGNED-'+(S.company||'').replace(/[^a-z0-9]/gi,'_')+'.pdf':'POTENT-OS-License-Agreement.pdf';
   doc.save(fn);
 }
