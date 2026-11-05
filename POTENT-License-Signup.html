@@ -109,7 +109,7 @@ select{color-scheme:dark;}
 </div>
 
 <div class="hero">
-  <div class="brand">POTENT PRÄDƏKT®</div>
+  <div class="brand">POTENT PRÄDəKT®</div>
   <h1>POTENT OS License Purchase</h1>
   <p>One-time license. Perpetual. No per-truck fees. No required monthly fees — optional support plans available.</p>
 </div>
@@ -231,7 +231,7 @@ select{color-scheme:dark;}
         This Agreement is governed by the laws of the State of Georgia. Disputes resolved in Rockdale County, Georgia courts.
 
         <br/><br/>
-        <strong>© 2026 POTENT PRÄDƏKT® · All Rights Reserved</strong>
+        <strong>© 2026 POTENT PRÄDəKT® · All Rights Reserved</strong>
       </div>
 
       <div class="chk"><input type="checkbox" id="c1" onchange="chkAll()"/><span>I have read and agree to the POTENT OS License Agreement in full.</span></div>
@@ -748,7 +748,7 @@ function buildPDF(signed){
   doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor('#000000');
   doc.text('POTENT OS SOFTWARE LICENSE AGREEMENT',105,10,{align:'center'});
   y=24;
-  ln('POTENT PRÄDƏKT®',9,true,'#FFFF00');
+  ln('POTENT PRÄDəKT®',9,true,'#FFFF00');
   y+=3;
   ln('Effective Date: '+new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}),8,false,'#666666');
   ln('Licensor: Anthony Emmanuel Figueroa Mendes®, POTENT OPERATIONS LLC',8,false,'#666666');
@@ -785,7 +785,7 @@ function buildPDF(signed){
     ln('Payment Method: '+(S.payMethod==='flex'?'FLEX PAY':'PAID IN FULL'),9,false,'#888888');
   }
   y+=8;
-  ln('© 2026 POTENT PRÄDƏKT® · All Rights Reserved',8,false,'#333333');
+  ln('© 2026 POTENT PRÄDəKT® · All Rights Reserved',8,false,'#333333');
   var fn=signed?'POTENT-OS-License-SIGNED-'+(S.company||'').replace(/[^a-z0-9]/gi,'_')+'.pdf':'POTENT-OS-License-Agreement.pdf';
   doc.save(fn);
 }
