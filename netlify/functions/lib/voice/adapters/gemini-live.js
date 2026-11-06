@@ -8,6 +8,12 @@ const DEFAULT_MODEL = "gemini-3.8-live";
 // "white and giddy"). The Gacrux ("Mature") A/B sample is with Tony and his verdict is still
 // pending; if he flips, it is THIS one line that changes — the voice is named nowhere else.
 const DEFAULT_VOICE = "Sulafat";
+// ACCENT (Tony, Nov 5, 2026 — bundle 2026-11-05a): BRITISH, smooth and sophisticated (the Jarvis
+// register), replacing the Oct 21 Spanish-Southern spec. Gemini prebuilt voices are neutral
+// timbres with no accent identity, so the British identity rides on two levers: speechConfig
+// languageCode "en-GB" (setup below; env VOICE_LANGUAGE_CODE still overrides) + the prompt's
+// PERSONALITY AND SOUND steering. The timbre stays Sulafat (proven on calls). REVERT: restore
+// the prompt's Southern persona block and drop the "en-GB" default back to env-only.
 // VOICE SOURCE — the product-level setting this constant serves (Tony, Nov 2, 2026). Every company's
 // Elevate gets its voice from ONE voice-source choice: kind "builtin" (a stock voice, named by
 // `voice` — today's Sulafat) or kind "clone" (a voice cloned from a real person's own recordings,
@@ -54,11 +60,11 @@ function create(opts) {
   // message or two, and an interruption landing in that gap must not orphan the count from its line.
   const flushAgent = function (ev, rescue) { if (agentBuf.trim()) { ev.push({ kind: "agent_text", text: agentBuf.trim(), key: "a:" + (++n), chunks: turnChunks, rescue: !!rescue }); turnChunks = 0; } agentBuf = ""; };
   return {
-    name: "gemini-live", version: "2026-11-04a",
+    name: "gemini-live", version: "2026-11-05a",
     setup: function (o) {
       const voice = VOICE_SOURCE.voice; // LOCKED: Elevate is always the same female voice (Sulafat — see VOICE_SOURCE above), on every call and every reconnect. No config, env or caller can change it.
       const decl = declarations(o.tools);
-      return [{ setup: { model: "models/" + model, generationConfig: { responseModalities: ["AUDIO"], ...(Number.isFinite(Number(process.env.VOICE_THINKING_BUDGET)) && process.env.VOICE_THINKING_BUDGET !== undefined && process.env.VOICE_THINKING_BUDGET !== "" ? { thinkingConfig: { thinkingBudget: Number(process.env.VOICE_THINKING_BUDGET) } } : {}), speechConfig: Object.assign({ voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } }, process.env.VOICE_LANGUAGE_CODE ? { languageCode: process.env.VOICE_LANGUAGE_CODE } : {}) },
+      return [{ setup: { model: "models/" + model, generationConfig: { responseModalities: ["AUDIO"], ...(Number.isFinite(Number(process.env.VOICE_THINKING_BUDGET)) && process.env.VOICE_THINKING_BUDGET !== undefined && process.env.VOICE_THINKING_BUDGET !== "" ? { thinkingConfig: { thinkingBudget: Number(process.env.VOICE_THINKING_BUDGET) } } : {}), speechConfig: Object.assign({ voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } }, { languageCode: process.env.VOICE_LANGUAGE_CODE || "en-GB" }) },
         systemInstruction: { parts: [{ text: o.instructions || "" }] }, tools: decl.length ? [{ functionDeclarations: decl }] : [],
         realtimeInputConfig: { automaticActivityDetection: process.env.VOICE_FAST_TURNS === "on" ? { startOfSpeechSensitivity: "START_SENSITIVITY_HIGH", endOfSpeechSensitivity: "END_SENSITIVITY_HIGH", prefixPaddingMs: 200, silenceDurationMs: o.silence_ms || Number(process.env.VOICE_SILENCE_MS) || 350 } : { startOfSpeechSensitivity: process.env.VOICE_START_SENS === "high" ? "START_SENSITIVITY_HIGH" : "START_SENSITIVITY_LOW", endOfSpeechSensitivity: "END_SENSITIVITY_LOW", prefixPaddingMs: 500, silenceDurationMs: o.silence_ms || 900 } },   // default turn-taking is noise-shy on purpose: LOW start sensitivity means a bang, a TV or a cough neither cuts her off nor makes her answer (Tony: "she hears any noise, she automatically talks"); a person actually speaking still interrupts at once. Nov 2, 2026 (cut-off tuning, Tony's confirmation call): prefix padding 300 -> 500 ms so MORE of the caller's first word survives the barge-in, and the end-of-turn silence 600 -> 900 ms so a caller who pauses mid-thought (an address, a date) is not answered over and then clipped — the two changes trade a touch of response latency for far fewer mid-sentence cut-offs. VOICE_START_SENS=high restores the old touchiness. Faster turn-taking only when VOICE_FAST_TURNS=on (it can cut a caller off mid-address)
         inputAudioTranscription: {}, outputAudioTranscription: {} } }];

@@ -352,7 +352,7 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
     ok(/Do not announce that calls are recorded/.test(P1.build(rc, org)) && !/Tell the caller this call may be recorded/.test(P1.build(rc, org)), "the prompt no longer tells her to announce recording");
     ok(/may be recorded/.test(P1.greeting(rc, { name: "Acme", slug: "acme" }, "+14045550142")), "tenants keep their notice (the Georgia rule is stated for POTENT only)");
     const pb = P1.build(rc, org); ok(/Not sure who you think you're talking to/.test(pb) && /sassy but always very professional/.test(pb) && /use the end_call tool/.test(pb) && !/Certainly!\\\"/.test("x") && /REGULAR COMPANY, REGULAR PERSON/.test(pb), "regular-person realism + the professional-sass disrespect boundary are in her instructions");
-    ok(/THICK Southern accent/.test(pb) && /you ARE in Georgia/.test(pb) && /never a dumb country-bumpkin act/.test(pb), "persona: thick Georgia Southern accent, proper English, no bumpkin act");
+    ok(/refined BRITISH accent/.test(pb) && /smooth and sophisticated/.test(pb) && /like Jarvis/.test(pb), "persona: refined British accent, smooth and sophisticated, Jarvis register (Tony, Nov 5 2026)");
     ok(/laugh — a real, light laugh/.test(pb) && /yes, exactly/.test(pb) && /reactions to what THEY said/.test(pb), "persona: she laughs, feels things out loud, and tracks the caller with yes / yes exactly");
     // Nov 3, 2026 — the recording notice LEADS the greeting wherever one is owed (on the live usage calls
     // it surfaced again over the greeting's tail, chopping her); the greeting is the last thing before the caller
