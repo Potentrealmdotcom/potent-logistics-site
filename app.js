@@ -1728,7 +1728,7 @@ var POTENT_OS_TOS_SECTIONS = [
  {
   "num": 4,
   "title": "Ownership and Reservation of Rights",
-  "body": "POTENT owns the Service, including software, code, logic, designs, trademarks (including POTENT®, POTENT PRÄDƏKT® and the griffin mark), documentation and improvements, and all rights not expressly granted are reserved. Feedback you give may be used by POTENT without obligation. You own your Customer Data (below)."
+  "body": "POTENT owns the Service, including software, code, logic, designs, trademarks (including POTENT®, POTENT PRÄDəKT® and the griffin mark), documentation and improvements, and all rights not expressly granted are reserved. Feedback you give may be used by POTENT without obligation. You own your Customer Data (below)."
  },
  {
   "num": 5,
@@ -3464,7 +3464,7 @@ function CustomerMailPanel(props) {
             React.createElement("span", { style: { fontSize: 12, color: C.white } }, j.id + " - " + (j.customer || "") + " - " + plMoney(j.finalPrice || j.basePrice) + " - " + j.status),
             React.createElement("span", null, React.createElement("button", { onClick: function () { send("quote", j); }, style: b }, "Send quote"), React.createElement("button", { onClick: function () { send("invoice", j); }, style: b }, "Send invoice"))); }));
 }
-// ── FACTORING TRACKER (manual workflow: no live Cashway/Trinity connection) ──
+// ── FACTORING TRACKER (manual workflow: no live factor connection) ──
 var PL_FACTOR_STATUSES = ["Delivered", "Documents ready", "Submitted", "Accepted", "Funding pending", "Partially funded", "Funded", "Rejected / disputed", "Reconciled"];
 var PL_FACTOR_DOCS = [["rate_con", "Rate confirmation"], ["bol", "Signed BOL"], ["pod", "Signed POD"], ["receipts", "Accessorial receipts"]];
 function plFactorCalc(r) {
@@ -3564,7 +3564,7 @@ function FactoringPanel(props) {
     var fld = function (k, label, type, extra) { return React.createElement("label", { key: k, style: { fontSize: 10, color: C.dim, display: "block" } }, label, React.createElement("input", Object.assign({ type: type || "text", step: "any", value: ed[k] == null ? "" : ed[k], style: inp, onChange: function (e) { var v = e.target.value, o = {}; o[k] = v; setEd(Object.assign({}, ed, o)); } }, extra || {}))); };
     var stat = function (label, val, color) { return React.createElement("div", { key: label, style: { background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "9px 12px", flex: "1 1 120px" } }, React.createElement("div", { style: { fontSize: 10, color: C.dim } }, label), React.createElement("div", { style: { fontSize: 16, fontWeight: 900, color: color || C.white } }, plMoney(val))); };
     var kids = [
-        React.createElement("div", { key: "n", style: { fontSize: 11, color: C.dim, marginBottom: 10 } }, "Manual tracking for Cashway, Trinity or any factor. There is no live connection to a factor: you enter what they tell you. Only money entered as funded counts as received; unpaid invoices never count as deposits."),
+        React.createElement("div", { key: "n", style: { fontSize: 11, color: C.dim, marginBottom: 10 } }, "Manual tracking for Trinity or any factor. There is no live connection to a factor: you enter what they tell you. Only money entered as funded counts as received; unpaid invoices never count as deposits."),
         React.createElement("div", { key: "t", style: { display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 } }, [stat("Ready to submit", tot.ready), stat("Submitted", tot.submitted), stat("Funding pending", tot.pending, C.orange), stat("Funds received", tot.received, C.green), stat("Still owed to us", tot.owed)]),
         msg && React.createElement("div", { key: "m", style: { fontSize: 12, color: msg.indexOf("Not saved") === 0 || msg.indexOf("Could not") === 0 ? C.red : C.green, marginBottom: 8 } }, msg)
     ];
@@ -3574,7 +3574,7 @@ function FactoringPanel(props) {
             React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.white, marginBottom: 8 } }, ed.id ? "Edit record" : "New factoring record"),
             React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 } },
                 fld("job_id", "POTENT load ID", "text", { disabled: !!ed.id }), fld("broker_load_no", "Broker's load number"), fld("broker", "Broker / customer"),
-                React.createElement("label", { key: "fa", style: { fontSize: 10, color: C.dim } }, "Factor", React.createElement("select", { value: ed.factor || "", style: inp, onChange: function (e) { setEd(Object.assign({}, ed, { factor: e.target.value })); } }, ["", "Cashway", "Trinity", "Other"].map(function (o) { return React.createElement("option", { key: o, value: o }, o || "Choose..."); }))),
+                React.createElement("label", { key: "fa", style: { fontSize: 10, color: C.dim } }, "Factor", React.createElement("select", { value: ed.factor || "", style: inp, onChange: function (e) { setEd(Object.assign({}, ed, { factor: e.target.value })); } }, ["", "Trinity", "Other"].map(function (o) { return React.createElement("option", { key: o, value: o }, o || "Choose..."); }))),
                 fld("invoice_amount", "Invoice amount ($)", "number"), fld("fee_pct", "Factoring fee (%)", "number"),
                 React.createElement("label", { key: "cs", style: { fontSize: 10, color: C.dim } }, "Broker credit approval", React.createElement("select", { value: ed.credit_status || "unknown", style: inp, onChange: function (e) { setEd(Object.assign({}, ed, { credit_status: e.target.value })); } }, ["unknown", "approved", "pending", "declined"].map(function (o) { return React.createElement("option", { key: o, value: o }, o); }))),
                 React.createElement("label", { key: "st", style: { fontSize: 10, color: C.dim } }, "Status", React.createElement("select", { value: ed.status, style: inp, onChange: function (e) { setEd(Object.assign({}, ed, { status: e.target.value })); } }, PL_FACTOR_STATUSES.map(function (o) { return React.createElement("option", { key: o, value: o }, o); }))),
@@ -4732,7 +4732,7 @@ function TermsOfServiceModal(props) {
             React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 } },
                 React.createElement("div", { style: { fontSize: 18, fontWeight: 800, color: C.white } }, "Terms of Service"),
                 React.createElement("button", { onClick: props.onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer" } }, "\u2715")),
-            React.createElement("div", { style: { fontSize: 11, color: C.faint, marginBottom: 18 } }, "© 2026 ANTHONY EMMANUEL FIGUEROA MENDES® · POTENT PRÄDƏKT® · Version " + TOS_VERSION + " · Updated " + LEGAL_UPDATED),
+            React.createElement("div", { style: { fontSize: 11, color: C.faint, marginBottom: 18 } }, "© 2026 ANTHONY EMMANUEL FIGUEROA MENDES® · POTENT PRÄDəKT® · Version " + TOS_VERSION + " · Updated " + LEGAL_UPDATED),
             TOS_SECTIONS.map(function (s) {
                 return React.createElement("div", { key: s.title, style: { marginBottom: 16 } },
                     React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.orange, marginBottom: 4 } }, s.num + ". " + s.title),
@@ -7766,7 +7766,7 @@ function getTabGroups() {
         { label: "📞 Sales", color: "#1DB954", tabs: [["leads", "📋 " + t("leads")], ["activity", "👥 " + t("activity")], ["leaderboard", "🏆 " + t("board")], ["ospipeline", "🎯 Pipeline"], ["aemnireach", "📡 Aemnireach"], ["ostraining", "📚 Training"], ["flexpay", "📅 Flex Pay"], ["rebuttals", "📞 Rebuttal Cards"], ["recurring", "🔁 Recurring Routes"], ["realcapacity", "\uD83D\uDCC5 Real Capacity Calendar"], ["capacityforecast", "\uD83D\uDCCA Forecasted Capacity"], ["whatif", "\uD83E\uDDEE What-If Mode"], ["potentwallet", "\uD83E\uDE99 POTENT Coins Wallet"], ["fitcheck", "\uD83D\uDCE6 Real Fit Check"], ["savannah", "\uD83C\uDF0A Savannah Flat Rate"], ["b2bpricing", "\u2699\uFE0F B2B Pricing Controls"], ["griffin", "\uD83E\uDDD9 Griffin"], ["livecall", "📞 Live Call Screen"], ["companyonboard", "🤝 Company Onboarding"], ["pendingapps", "\uD83D\uDCCB Pending Applications"], ["incomingloads", "📦 Incoming Loads"], ["loadanalysis", "\uD83D\uDCF8 Load Analysis"], ["costprofile", "\u2699 Cost Profile"], ["carriercourse", "\uD83C\uDF93 Carrier Authority Course"], ["truckpricing", "\uD83D\uDCB2 Truck Job Pricing"], ["voiceroom", "\uD83D\uDCAC Team Chat Room"], ["dispatchroom", "\uD83D\uDCDE Dispatch"]] },
         { label: "🚗 Fleet", color: "#F6AD55", tabs: [["fleet", "🚗 Fleet"], ["fleetmap", "🗺️ Live Map"], ["vendors", "\uD83D\uDE9B Vendors & Disposal"], ["properties", "\uD83C\uDFE2 Properties"], ["driveravail", "\uD83D\uDC65 Driver Availability"], ["vehicleavail", "\uD83D\uDE9B Vehicle Availability"], ["storagepartners", "\uD83D\uDCE6 Storage Partners"], ["compliance", "🛡 Compliance"], ["documents", "📁 Documents"], ["docpackages", "\uD83D\uDCC1 Document Packages"], ["safetyscore", "🛡️ Safety Scores"], ["geofence", "📍 Geofencing"], ["carriers", "🤝 " + t("carriers")], ["safety", "🔒 Safety Alerts"]] },
         { label: "💰 Money", color: C.orange, tabs: [["reports", "📊 " + t("reports")], ["advanced", "📈 " + t("analytics")], ["sales", "🏆 " + t("sales")], ["expenses", "💸 " + t("expenses")], ["accounts", "🏢 " + t("accounts")], ["payroll", "💰 " + t("payroll")], ["growthtools", "📈 Growth Tools"], ["ceodash", "📊 CEO Dashboard"], ["referrals", "🎟️ Referral Codes"], ["marketrates", "📊 Market Rates"], ["claims", "⚠ Claims & Recovery"], ["ratecards", "\uD83D\uDCB2 Rate Cards"], ["deadlines", "\u23F0 Deadlines"], ["ledger", "\uD83D\uDCD2 Accounting Ledger"], ["marginleak", "\uD83D\uDCB0 Margin Leak Detector"], ["teamwallets", "\uD83D\uDCB3 Team Wallets"]] },
-        { label: "⚙ Team", color: "#FC8181", tabs: [["setup", "\uD83D\uDE80 Get Started"], ["ownerSettings", "⚙ Settings"], ["licenses", "\uD83C\uDFE2 Customers & Licenses"], ["mycompany", "\uD83C\uDFE2 My Company"], ["datatools", "\uD83D\uDCE6 Data & Imports"], ["teamaccts", "\uD83D\uDC65 Team Accounts"], ["pricingsetup", "\uD83D\uDCB2 Pricing Setup"], ["audit", "👁 " + t("audit")], ["loginActivity", "🔐 Login Activity"], ["loginimages", "\uD83D\uDCF8 Login Images"], ["shifthandoff", "\uD83D\uDD04 Shift Handoff"], ["ai", "🤖 " + t("aiDocs")], ["demo", "🎬 " + t("demo"), ["ext_guide", "\U0001F4CB Prices Page", "guide.html"], ["ext_osguide", "\U0001F4BB POTENT OS Guide", "os-guide.html"], ["ext_team", "\U0001F465 Team Guide", "team.html"], ["ext_training", "\U0001F393 Sales Training", "training.html"]]] },
+        { label: "⚙ Team", color: "#FC8181", tabs: [["setup", "\uD83D\uDE80 Get Started"], ["ownerSettings", "⚙ Settings"], ["licenses", "\uD83C\uDFE2 Customers & Licenses"], ["mycompany", "\uD83C\uDFE2 My Company"], ["datatools", "\uD83D\uDCE6 Data & Imports"], ["teamaccts", "\uD83D\uDC65 Team Accounts"], ["pricingsetup", "\uD83D\uDCB2 Pricing Setup"], ["audit", "👁 " + t("audit")], ["loginActivity", "🔐 Login Activity"], ["loginimages", "\uD83D\uDCF8 Login Images"], ["shifthandoff", "\uD83D\uDD04 Shift Handoff"], ["ai", "🤖 " + t("aiDocs")], ["demo", "🎬 " + t("demo"), ["ext_osguide", "\U0001F4BB POTENT OS Guide", "os-guide.html"], ["ext_team", "\U0001F465 Team Guide", "team.html"], ["ext_training", "\U0001F393 Sales Training", "training.html"]]] },
         { label: "\uD83E\uDDE9 POTENT APPS", color: "#9F7AEA", tabs: [["offerings", "\uD83E\uDDE9 POTENT APPS"], ["ext_ccml", "\uD83D\uDCB3 Credit Changed My Life", "/ccml/"], ["ext_aceheals", "\uD83E\uDDE8 AceHeals Kids App", "https://aceheals.netlify.app"], ["ext_playbook", "\uD83D\uDC57 Potent Playbook", "/playbook/"], ["ext_bodega", "\uD83D\uDECD POTENT Bodega", "/bodega/"]] },
     ];
 }
@@ -7860,7 +7860,7 @@ function AdminDashboard(props) {
                 React.createElement("div", null,
                     React.createElement("div", { style: { fontSize: 14, fontWeight: 900 } },
                         React.createElement(BrandName, null)),
-                    React.createElement("div", { style: { fontSize: 8, color: C.gold, letterSpacing: 1.5, textTransform: "uppercase" } }, props.currentUser && props.currentUser.orgId ? ((PL_BRAND && PL_BRAND.tagline) || "Powered by POTENT OS") : "POTENT OS \u00B7 A POTENT PR\u00C4D\u018FKT\u00AE PRODUCT")),
+                    React.createElement("div", { style: { fontSize: 8, color: C.gold, letterSpacing: 1.5, textTransform: "uppercase" } }, props.currentUser && props.currentUser.orgId ? ((PL_BRAND && PL_BRAND.tagline) || "Powered by POTENT OS") : "POTENT OS \u00B7 A POTENT PR\u00C4D\u0259KT\u00AE PRODUCT")),
                 React.createElement(LangSwitcher, { lang: adminLang, changeLang: changeGlobalLang })),
             React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center" } },
                 React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1 } },
@@ -8420,7 +8420,7 @@ function AdminLogin(props) {
                     React.createElement("div", null,
                         React.createElement("div", { style: { fontSize: 20, fontWeight: 900 } },
                             React.createElement(BrandName, null)),
-                        React.createElement("div", { style: { fontSize: 9, color: C.gold, letterSpacing: 1.5, textTransform: "uppercase" } }, "A POTENT PR\u00C4D\u018FKT\u00AE COMPANY"))),
+                        React.createElement("div", { style: { fontSize: 9, color: C.gold, letterSpacing: 1.5, textTransform: "uppercase" } }, "A POTENT PR\u00C4D\u0259KT\u00AE COMPANY"))),
                 React.createElement("div", { style: { color: C.dim, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", marginTop: 8 } }, "Team Sign In")),
             React.createElement(Card, null,
                 React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: C.white, marginBottom: 4 } }, "Who are you?"),
@@ -8553,7 +8553,7 @@ function HeroSoundButton() {
 }
 function LandingMenuSheet(props) {
     var sets = {
-        guides: ["\uD83D\uDCDA Guides & Training", [["\uD83D\uDCDA Prices & How It Works", "/guide.html"], ["\uD83D\uDCBB POTENT OS Guide", "/os-guide.html"], ["\uD83C\uDF93 Training", "/training.html"], ["\uD83D\uDC65 Team Guide", "/team.html"]]],
+        guides: ["\uD83D\uDCDA Guides & Training", [["\uD83D\uDCBB POTENT OS Guide", "/os-guide.html"], ["\uD83C\uDF93 Training", "/training.html"], ["\uD83D\uDC65 Team Guide", "/team.html"]]],
         partners: ["\uD83C\uDF10 Partner Apps", [["\uD83D\uDCB3 Credit Changed My Life \u2014 Credit Book", "/ccml/"], ["\uD83E\uDDF8 AceHeals Kids App", "https://aceheals.netlify.app"], ["\uD83D\uDC57 Potent Playbook \u2014 Fashion", "/playbook/"], ["\uD83C\uDFB5 POTENT MUSIC \u2014 Stream, Beats & Studio", "/music/"], ["\uD83E\uDE99 POTENT Wallet \u2014 Coins & Rewards", "/music/coins.html"], ["\uD83D\uDCAC POTENT PLAYER OS \u2014 AI Wingman", "/player/"], ["\u018Flevate \u2014 Your Private Assistant", "/elevate/"]]]
     };
     var set = sets[props.kind]; if (!set) return null;
@@ -8604,7 +8604,7 @@ function PublicApp(props) {
                     React.createElement("div", null,
                         React.createElement("div", { style: { fontSize: 15, fontWeight: 900, letterSpacing: -0.5 } },
                             React.createElement(BrandName, null)),
-                        React.createElement("div", { style: { fontSize: 7, color: C.gold, letterSpacing: 1.5, textTransform: "uppercase" } }, "A POTENT PR\u00C4D\u018FKT\u00AE COMPANY"))),
+                        React.createElement("div", { style: { fontSize: 7, color: C.gold, letterSpacing: 1.5, textTransform: "uppercase" } }, "A POTENT PR\u00C4D\u0259KT\u00AE COMPANY"))),
                 React.createElement("div", { style: { display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" } },
                     React.createElement("select", {
                         defaultValue: "",
@@ -8625,8 +8625,7 @@ function PublicApp(props) {
                             else if (v === "stafflogin") window.location.href = "?staff-login";
                             else if (v === "guides") setMenuSheet("guides");
                             else if (v === "partners") setMenuSheet("partners");
-                            else if (v === "guide") window.location.href = "/guide.html";
-                            else if (v === "osguide") window.location.href = "/os-guide.html";
+                                                        else if (v === "osguide") window.location.href = "/os-guide.html";
                             else if (v === "training") window.location.href = "/training.html";
                             else if (v === "team") window.location.href = "/team.html";
                             else if (v === "ccml") window.location.href = "/ccml/";
@@ -8694,7 +8693,7 @@ function PublicApp(props) {
                 React.createElement("div", { style: { maxWidth: 680, margin: "0 auto", textAlign: "center" } },
                     React.createElement("div", { style: { fontSize: 10, color: C.orange, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 10 } }, "Our Partners"),
                     React.createElement("div", { style: { display: "flex", gap: 12, justifyContent: "center", alignItems: "stretch", flexWrap: "wrap" } },
-                        [["cashway-logo.png", "Cashway Funding", "Freight factoring, fuel discounts & credit checks"], ["trinity-logo.png", "Trinity Logistics", "Nationwide freight partner"]].map(function (p) {
+                        [["trinity-logo.png", "Trinity Logistics", "Nationwide freight partner"]].map(function (p) {
                             return React.createElement("div", { key: p[1], style: { background: "#fff", borderRadius: 12, padding: "12px 16px", flex: "1 1 200px", maxWidth: 260, display: "flex", alignItems: "center", gap: 12, textAlign: "left" } },
                                 React.createElement("img", { src: "/" + p[0], alt: p[1], style: { width: 64, height: 44, objectFit: "contain", flexShrink: 0 } }),
                                 React.createElement("div", null,
@@ -8920,7 +8919,7 @@ h2{color:#1a1a1a;margin-top:30px;}
 
 <div class="footer">
 <strong>POTENT OS</strong> · potentoperations.netlify.app/apply · (912) 914-2166 · potentlogistics@" + "proton.me<br>
-© 2026 ANTHONY EMMANUEL FIGUEROA MENDES® · POTENT PRÄDƏKT® · Private access only
+© 2026 ANTHONY EMMANUEL FIGUEROA MENDES® · POTENT PRÄDəKT® · Private access only
 </div>
 </body></html>`;
     var blob = new Blob([content], { type: "text/html" });
@@ -9006,7 +9005,7 @@ tr:nth-child(even){background:#f9f9f9;}
 <tr><td>Paint / Hazmat</td><td>$15</td></tr></table>
 
 <div class="footer">
-<strong>POTENT OS</strong> · A POTENT PRÄDƏKT® Product · © 2026 ANTHONY EMMANUEL FIGUEROA MENDES®<br>
+<strong>POTENT OS</strong> · A POTENT PRÄDəKT® Product · © 2026 ANTHONY EMMANUEL FIGUEROA MENDES®<br>
 Keep this confidential — for authorized POTENT OS users only.
 </div>
 </body></html>`;
@@ -9075,7 +9074,7 @@ ${swCost > laborCost ? '<p>Your biggest cost is <strong>software subscriptions</
 
 <div class="footer">
 <strong>POTENT OS</strong> · potentoperations.netlify.app · (912) 914-2166 · potentlogistics@" + "proton.me<br>
-© 2026 ANTHONY EMMANUEL FIGUEROA MENDES® · POTENT PRÄDƏKT® · Actual savings may vary.
+© 2026 ANTHONY EMMANUEL FIGUEROA MENDES® · POTENT PRÄDəKT® · Actual savings may vary.
 </div>
 </body></html>`;
     var blob = new Blob([content], { type: "text/html" });
@@ -10859,7 +10858,7 @@ function Root() {
         showFooterTos && React.createElement(TermsOfServiceModal, { onClose: function () { setShowFooterTos(false); } }),
         React.createElement(PublicApp, { jobs: jobs, onBook: addJob, gasPPG: gasPPG, blockedDates: blockedDates, onOpenLogin: function(){ setShowLogin(true); } }),
         React.createElement("div", { style: { borderTop: "1px solid " + C.border, textAlign: "center", padding: "12px 0 20px", fontFamily: "'DM Sans','Segoe UI',sans-serif" } },
-            React.createElement("span", { style: { color: C.faint, fontSize: 11, userSelect: "none" } }, "\u00A9 2026 ANTHONY EMMANUEL FIGUEROA MENDES\u00AE \u00B7 POTENT PR\u00C4D\u018FKT\u00AE \u00B7 All Rights Reserved"),
+            React.createElement("span", { style: { color: C.faint, fontSize: 11, userSelect: "none" } }, "\u00A9 2026 ANTHONY EMMANUEL FIGUEROA MENDES\u00AE \u00B7 POTENT PR\u00C4D\u0259KT\u00AE \u00B7 All Rights Reserved"),
             React.createElement("span", { style: { color: C.faint, fontSize: 11 } }, " \u00B7 "),
             React.createElement("span", { onClick: function () { setShowFooterTos(true); }, style: { color: C.faint, fontSize: 11, cursor: "pointer", userSelect: "none", textDecoration: "underline" } }, "Terms of Service")));
 }

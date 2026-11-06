@@ -1,7 +1,7 @@
 // Dev tool: collects every piece of on-screen English text in the app and pages into lang/phrases.json.
 // Run: NODE_PATH=/opt/npm-tools/node_modules node scripts/extract-phrases.js
 const fs = require("fs"), acorn = require("acorn"), walk = require("acorn-walk");
-const FILES = { app: ["app.js"], home: [], pages: ["index.html", "POTENT-OS-Landing-Page.html", "POTENT-Driver-Onboarding.html", "POTENT-Employee-Portal.html", "POTENT-Contractor-Broker-Agreement.html", "POTENT-License-Signup.html", "POTENT-Handbook.html", "guide.html", "os-guide.html", "team.html", "training.html", "404.html"], elevate: ["elevate/index.html"], voice: ["voice/index.html"] };
+const FILES = { app: ["app.js"], home: [], pages: ["index.html", "POTENT-OS-Landing-Page.html", "POTENT-Driver-Onboarding.html", "POTENT-Employee-Portal.html", "POTENT-License-Signup.html", "POTENT-Handbook.html", "os-guide.html", "team.html", "training.html", "404.html"], elevate: ["elevate/index.html"], voice: ["voice/index.html"] };
 const out = new Map(); // phrase -> Set(source)
 function add(s, src) {
   s = s.replace(/\s+/g, " ").trim();
