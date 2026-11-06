@@ -32,7 +32,7 @@ function createBridge(deps) {
   // no result), the bridge speaks a recovery line itself and still hands the error result to the model
   // like any other result — recovery never depends on the model choosing to resume. Tenant-generic
   // wording only: the bridge holds no business content.
-  const TOOL_HOLD_MS = Math.max(20, Number(env.VOICE_TOOL_HOLD_MS) || 2500);
+  const TOOL_HOLD_MS = Math.max(20, Number(env.VOICE_TOOL_HOLD_MS) || 1200);   // lowered 2500 -> 1200 (bundle 2026-11-06a, dead-air diagnosis Nov 5, 2026): at 2.5 s most real checks finished before any cover line could fire, so the caller heard pure silence; 1.2 s puts the hold line inside the gap it exists to cover. VOICE_TOOL_HOLD_MS still overrides.
   const TOOL_HOLD2_MS = Math.max(TOOL_HOLD_MS + 100, Number(env.VOICE_TOOL_HOLD2_MS) || 10000);
   const TOOL_HOLD_GAP_MS = Math.max(0, Number(env.VOICE_TOOL_HOLD_GAP_MS) != null && env.VOICE_TOOL_HOLD_GAP_MS !== "" ? Number(env.VOICE_TOOL_HOLD_GAP_MS) : 12000);
   const HOLD_LINES = ["One second — I'm checking that for you.", "Just a moment — still checking on that for you.", "Hang tight one more second — I'm pulling that up for you."];
@@ -170,7 +170,28 @@ function createBridge(deps) {
     // keys restart at 1 on every stream; after a keypad payment the SECOND stream of the same call reused them and the server dropped every line as a duplicate
     const nonce = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36), nk = function (k) { return k ? nonce + ":" + k : k; };
     const note = function (role, text, key) { if (ctx && text) api({ action: "transcript", session_id: ctx.session_id, role: role, text: text, key: nk(key) }, 8000); };
-    const sysNote = function (text) { aiSend(prov.note(text)); };
+    // INJECTION DISCIPLINE (bundle 2026-11-06a — repeats diagnosis, Nov 5, 2026): every say()/note()
+    // the bridge sends is a new clientContent turn, and one landing WHILE the model is mid-turn can
+    // restart her half-formed answer — the caller then hears the pending sentence twice (the graded
+    // repeats defect). So bridge speech is gated on turn state: turnInFlight is set by her audio /
+    // agent_text events and cleared at turn_done, at a tool call (she has yielded to the check), on
+    // interruption and on reconnect. sysNote()/bridgeSay() NEVER inject while she is actively
+    // streaming (audio/text within the last 750 ms): the injection queues and flushes at the turn
+    // boundary (turn_done), when she is idle and it cannot restart anything; a queue left over by
+    // an interrupted turn is dropped with that turn. "In flight" means ACTIVELY streaming, not
+    // merely "no turn_done seen yet": a turn whose stream has been quiet for 750 ms is finished or
+    // wedged, and the silence watchdog — whose whole job is prodding a wedged model — must still
+    // be able to speak; a stale send first flushes anything queued, in order. Hold lines are
+    // unaffected in practice — they fire during tool calls, when she has already yielded — and the
+    // watchdog only ever prods her after seconds of silence anyway. noteSilent (the language lock)
+    // is exempt on purpose: it is sent with turnComplete:false and never asks the model to
+    // generate, so it cannot restart a turn.
+    let turnInFlight = false, lastTurnActivityAt = 0, pendingInjections = [];
+    const queueInjection = function (send) { if (pendingInjections.length < 4) pendingInjections.push(send); kinds.inj_deferred = (kinds.inj_deferred || 0) + 1; };
+    const flushInjections = function () { const q = pendingInjections; pendingInjections = []; q.forEach(function (send) { send(); }); };
+    const turnActive = function () { return turnInFlight && (Date.now() - lastTurnActivityAt < 750); };
+    const sysNote = function (text) { if (turnActive()) { queueInjection(function () { aiSend(prov.note(text)); }); return; } flushInjections(); aiSend(prov.note(text)); };
+    const bridgeSay = function (text) { if (turnActive()) { queueInjection(function () { aiSend(prov.say(text)); }); return; } flushInjections(); aiSend(prov.say(text)); };
     // TRANSCRIPT FIDELITY (Tony, Oct 29, 2026: "the transcripts need to match the recording word for word —
     // if it doesn't it isn't right"). Her lines are HELD until the turn's fate is known, because the AI's
     // transcription also covers words that were generated but never heard: a line with no audio behind it
@@ -244,7 +265,7 @@ function createBridge(deps) {
       const max = env.VOICE_AI_RETRIES != null ? Number(env.VOICE_AI_RETRIES) : 2;
       log("ai down", reason, detail, "retry", retries + 1, "of", max);
       api({ action: "health", provider: "bridge", kind: "ai_drop", ok: false, detail: (reason + " " + (detail || "") + " after " + Math.round((Date.now() - startedAt) / 1000) + "s, retry " + (retries + 1) + "/" + max).slice(0, 240) }, 5000);
-      const old = ai; ai = null; aiReady = false; markQ = []; if (amb) amb.clear();
+      const old = ai; ai = null; aiReady = false; turnInFlight = false; pendingInjections = []; markQ = []; if (amb) amb.clear();
       try { if (old) old.close(); } catch (e) { /* ignore */ }
       if (retries < max && ctx && tw.readyState === 1) { retries++; reconnecting = true; startAi(); return; }
       finish(reason, true);
@@ -252,7 +273,7 @@ function createBridge(deps) {
 
     function onReady() { // the AI accepted its setup: start the conversation (or resume it after a reconnect)
       clearTimeout(connectTimerRef);
-      aiReady = true; readyAt = Date.now(); nudges = 0; lastCallerAt = 0; lastCallerTextAt = 0; toolDoneAt = 0; buffered = []; // caller audio is not forwarded while the greeting plays, so background noise cannot interrupt it
+      aiReady = true; turnInFlight = false; pendingInjections = []; readyAt = Date.now(); nudges = 0; lastCallerAt = 0; lastCallerTextAt = 0; toolDoneAt = 0; buffered = []; // caller audio is not forwarded while the greeting plays, so background noise cannot interrupt it
       greetHold = !reconnecting && !ctx.resume; clearTimeout(greetT); if (greetHold) greetT = setTimeout(function () { greetHold = false; }, 12000);
       if (ctx.resume) {   // back from the keypad payment: no greeting; tell her the verified result and what was said before
         const rc = String(ctx.resume.code || ""), kind = rc.split(":")[0], val = rc.slice(kind.length + 1), recap = ctx.resume.recap || "(nothing said yet)";
@@ -274,6 +295,8 @@ function createBridge(deps) {
 
     function onAi(e) {
       const t = e.kind; kinds[t] = (kinds[t] || 0) + 1;
+      if (t === "audio" || t === "agent_text") { turnInFlight = true; lastTurnActivityAt = Date.now(); }   // she is mid-turn: bridge injections queue until the boundary (see INJECTION DISCIPLINE above)
+      else if (t === "tool") turnInFlight = false;   // she yielded to a check: the turn is suspended, not in flight — hold lines may speak for her
       if (t !== "agent_text" && t !== "interrupted") flushPendingAgent(false);   // any other event settles the held line as fully spoken
       if (t === "ready") onReady();
       else if (t === "audio") {
@@ -284,6 +307,7 @@ function createBridge(deps) {
         twSend({ event: "media", streamSid: streamSid, media: { payload: e.payload } });
         const name = "m" + (++marks); markQ.push(name); twSend({ event: "mark", streamSid: streamSid, mark: { name: name } });
       } else if (t === "interrupted") { // the caller talked over the assistant: stop its audio on the phone
+        turnInFlight = false; pendingInjections = [];   // the interrupted turn is over; injections queued for it die with it instead of landing on her next turn
         flushPendingAgent(true);   // record only the part of her line that actually played (markQ still holds the unplayed chunks)
         if (amb) amb.clear();   // drop her unplayed queued speech; the room itself keeps breathing under the caller
         if (markQ.length) { twSend({ event: "clear", streamSid: streamSid }); markQ = []; }
@@ -292,7 +316,7 @@ function createBridge(deps) {
       else if (t === "agent_text") { flushPendingAgent(false); pendingAgent = { text: String(e.text), key: e.key, chunks: e.chunks || 0, rescue: !!e.rescue }; if (pendingAgent.rescue) flushPendingAgent(false); }
       else if (t === "go_away") { log("ai says it will close soon", e.left); }
       else if (t === "tool") runTool(e);
-      else if (t === "turn_done") { if (greetHold) { greetHold = false; clearTimeout(greetT); } if (transferPending && (spokeSinceTool || e.spoke)) { transferPending = false; doTransfer(); } }
+      else if (t === "turn_done") { if (greetHold) { greetHold = false; clearTimeout(greetT); } if (transferPending && (spokeSinceTool || e.spoke)) { transferPending = false; doTransfer(); } turnInFlight = false; flushInjections(); }   // turn boundary: she is idle, so anything the bridge queued mid-turn may land now — it cannot restart a finished turn
       else if (t === "error") { log("ai reported error", e.message); }
     }
 
@@ -313,8 +337,8 @@ function createBridge(deps) {
         if (ownVoice) return;   // she is already talking (she answered while this check runs): never talk over her
         if (idx === 0 && lastHoldAt && Date.now() - lastHoldAt < TOOL_HOLD_GAP_MS) return;   // a filler just played for the step before this one: back-to-back steps share one voice, never a stack
         lastHoldAt = Date.now();
-        if (idx === 0) { ownHoldAt = Date.now(); aiSend(prov.say(HOLD_LINES[0])); }
-        else { recoverySaid = true; aiSend(prov.say(HOLD_RECOVERY)); }   // STALL CAP (Nov 3, 2026): the second threshold is not another "still checking" — the check is stuck, so the bridge apologizes once with the recovery line (which promises the caller the conversation continues from what she already has) and then stays out of the way
+        if (idx === 0) { ownHoldAt = Date.now(); bridgeSay(HOLD_LINES[0]); }
+        else { recoverySaid = true; bridgeSay(HOLD_RECOVERY); }   // STALL CAP (Nov 3, 2026): the second threshold is not another "still checking" — the check is stuck, so the bridge apologizes once with the recovery line (which promises the caller the conversation continues from what she already has) and then stays out of the way
       };
       holdTimers.push(setTimeout(function () { holdFire(0); }, TOOL_HOLD_MS));
       holdTimers.push(setTimeout(function () { holdFire(1); }, TOOL_HOLD2_MS));
@@ -327,7 +351,7 @@ function createBridge(deps) {
       // to the model and if the model produced nothing, nothing was ever said again (Nov 2, session
       // 86ac437e). The bridge now speaks the recovery line ITSELF, then hands the error result to the model
       // like any other result; the watchdog is also armed again the moment toolBusy drops below.
-      if (unreachable && !recoverySaid && !done && aiReady && !payPending && !agentEnd) aiSend(prov.say(HOLD_RECOVERY));
+      if (unreachable && !recoverySaid && !done && aiReady && !payPending && !agentEnd) bridgeSay(HOLD_RECOVERY);
       if (m.name === "request_human_handoff" && result.transfer_possible) { transferPending = true; spokeSinceTool = false; toolAt = Date.now(); timer(function () { if (transferPending) { transferPending = false; doTransfer(); } }, 20000); }
       if (m.name === "end_call" && result.ok && result.end_call) { agentEnd = true; doEnd(); }   // abuse after a warning: let her say goodbye, then hang up
       if (m.name === "take_card_payment" && result.ok && result.pay_handoff) { payPending = true; spokeSinceTool = false; doPay(result.booking_id); }   // the card is never spoken: after one sentence the live call moves to the keypad
@@ -393,8 +417,8 @@ function createBridge(deps) {
       if (waited < th * (nudges + 1) + (noGreeting ? th : 0)) return;
       nudges++; kinds.silence_nudge = (kinds.silence_nudge || 0) + 1;
       api({ action: "health", provider: "bridge", kind: "silence_nudge", ok: false, detail: ("step " + nudges + " after " + Math.round(waited / 1000) + "s" + (noGreeting ? " (greeting never played)" : "")).slice(0, 120) }, 4000);
-      if (nudges === 1) { if (noGreeting) aiSend(prov.say(ctx.greeting)); else sysNote("The caller is waiting for your answer. Answer now in one short sentence."); }
-      else if (nudges === 2) aiSend(prov.say("Still here, one second."));
+      if (nudges === 1) { if (noGreeting) bridgeSay(ctx.greeting); else sysNote("The caller is waiting for your answer. Answer now in one short sentence."); }
+      else if (nudges === 2) bridgeSay("Still here, one second.");
       else { nudges = 0; lastCallerAt = 0; lastCallerTextAt = 0; toolDoneAt = 0; aiDown("silence_watchdog", "no speech for " + Math.round(waited / 1000) + "s"); }
     }
     // Language lock: every 40 s the model is quietly reminded which language this call is in, so it cannot drift into one the caller is not speaking.

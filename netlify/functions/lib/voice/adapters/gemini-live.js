@@ -23,6 +23,13 @@ const DEFAULT_VOICE = "Sulafat";
 // here as the same one-setting shape. Naming it now means the future swap touches this block only.
 const VOICE_SOURCE = { kind: "builtin", voice: DEFAULT_VOICE };
 const VOICES = ["Sulafat", "Gacrux", "Kore", "Puck", "Charon", "Fenrir", "Aoede", "Leda", "Orus", "Zephyr"];
+// THINKING CAP (bundle 2026-11-06a): setup used to send a thinkingConfig ONLY when the
+// VOICE_THINKING_BUDGET env var was set; unset, the model's default thinking ran on every
+// turn — a per-turn dead-air tax (diagnosis, Nov 5, 2026). The default is now 0 in code:
+// ordinary turns do not burn time thinking. The env var still overrides whenever it holds
+// a finite number (an explicit "0" included), so the cap can be retuned per deployment
+// without a code change.
+const DEFAULT_THINKING_BUDGET = 0;
 const URL = function (model) { void model; return "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent"; }; // model goes in the setup message
 const headers = function (env) { return { "x-goog-api-key": env.GEMINI_API_KEY }; };
 
@@ -54,17 +61,37 @@ function create(opts) {
   opts = opts || {}; const model = opts.model || process.env.VOICE_AI_MODEL || DEFAULT_MODEL;
   const seen = { top: {}, sc: {} }; let lastTextAt = 0, upPrev = 0, dnRest = [], callerBuf = "", agentBuf = "", n = 0, agentSpoke = false, turnChunks = 0;
   const flushCaller = function (ev) { if (callerBuf.trim()) ev.push({ kind: "caller_text", text: callerBuf.trim(), key: "c:" + (++n) }); callerBuf = ""; };
+  // SENTENCE DEDUPE (bundle 2026-11-06a — the repeats defect, graded Nov 5, 2026: whole
+  // sentences arriving twice back-to-back inside ONE model turn, e.g. the delivery-address
+  // question x2). parse() used to forward every chunk unchecked, so a generation restart
+  // (around a tool call or a bridge injection) replayed the pending sentence into both the
+  // transcript and the bridge's record. The guard works on the sentence stream — the only
+  // stream that HAS sentences: before her text is handed over, it is split into sentences
+  // and any sentence whose normalized form (case, whitespace and punctuation ignored)
+  // matches the immediately previous sentence OF THE SAME TURN is dropped. The tracker
+  // resets when a turn ends (turnComplete / interrupted flush), so the same sentence in a
+  // LATER turn — a legitimate re-ask — is never swallowed. A mid-turn rescue flush keeps
+  // the tracker, because that turn is still in progress.
+  let prevSentNorm = "";
+  const normSent = function (s) { return String(s || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim(); };
+  const dedupeAgentBuf = function () {
+    if (!agentBuf) return;
+    const segs = agentBuf.match(/[^.!?…]+(?:[.!?…]+["'”’)\]]*)?\s*|[^.!?…]+$/g) || [agentBuf];
+    let out = "";
+    segs.forEach(function (seg) { const nz = normSent(seg); if (nz && nz === prevSentNorm) { seen.dedup = (seen.dedup || 0) + 1; return; } out += seg; if (nz) prevSentNorm = nz; });
+    agentBuf = out;
+  };
   // chunks = how much audio this line actually generated, so the bridge can tell a spoken line from a
   // text-only generation and can trim a cut-off line to what played (transcript fidelity, Oct 29, 2026).
   // The count is spent only when text is actually handed over: her transcription can lag her audio by a
   // message or two, and an interruption landing in that gap must not orphan the count from its line.
-  const flushAgent = function (ev, rescue) { if (agentBuf.trim()) { ev.push({ kind: "agent_text", text: agentBuf.trim(), key: "a:" + (++n), chunks: turnChunks, rescue: !!rescue }); turnChunks = 0; } agentBuf = ""; };
+  const flushAgent = function (ev, rescue, endTurn) { dedupeAgentBuf(); if (agentBuf.trim()) { ev.push({ kind: "agent_text", text: agentBuf.trim(), key: "a:" + (++n), chunks: turnChunks, rescue: !!rescue }); turnChunks = 0; } agentBuf = ""; if (endTurn) prevSentNorm = ""; };
   return {
-    name: "gemini-live", version: "2026-11-05a",
+    name: "gemini-live", version: "2026-11-06a",
     setup: function (o) {
       const voice = VOICE_SOURCE.voice; // LOCKED: Elevate is always the same female voice (Sulafat — see VOICE_SOURCE above), on every call and every reconnect. No config, env or caller can change it.
       const decl = declarations(o.tools);
-      return [{ setup: { model: "models/" + model, generationConfig: { responseModalities: ["AUDIO"], ...(Number.isFinite(Number(process.env.VOICE_THINKING_BUDGET)) && process.env.VOICE_THINKING_BUDGET !== undefined && process.env.VOICE_THINKING_BUDGET !== "" ? { thinkingConfig: { thinkingBudget: Number(process.env.VOICE_THINKING_BUDGET) } } : {}), speechConfig: Object.assign({ voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } }, { languageCode: process.env.VOICE_LANGUAGE_CODE || "en-GB" }) },
+      return [{ setup: { model: "models/" + model, generationConfig: { responseModalities: ["AUDIO"], thinkingConfig: { thinkingBudget: (process.env.VOICE_THINKING_BUDGET !== undefined && process.env.VOICE_THINKING_BUDGET !== "" && Number.isFinite(Number(process.env.VOICE_THINKING_BUDGET))) ? Number(process.env.VOICE_THINKING_BUDGET) : DEFAULT_THINKING_BUDGET }, speechConfig: Object.assign({ voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } }, { languageCode: process.env.VOICE_LANGUAGE_CODE || "en-GB" }) },
         systemInstruction: { parts: [{ text: o.instructions || "" }] }, tools: decl.length ? [{ functionDeclarations: decl }] : [],
         realtimeInputConfig: { automaticActivityDetection: process.env.VOICE_FAST_TURNS === "on" ? { startOfSpeechSensitivity: "START_SENSITIVITY_HIGH", endOfSpeechSensitivity: "END_SENSITIVITY_HIGH", prefixPaddingMs: 200, silenceDurationMs: o.silence_ms || Number(process.env.VOICE_SILENCE_MS) || 350 } : { startOfSpeechSensitivity: process.env.VOICE_START_SENS === "high" ? "START_SENSITIVITY_HIGH" : "START_SENSITIVITY_LOW", endOfSpeechSensitivity: "END_SENSITIVITY_LOW", prefixPaddingMs: 500, silenceDurationMs: o.silence_ms || 900 } },   // default turn-taking is noise-shy on purpose: LOW start sensitivity means a bang, a TV or a cough neither cuts her off nor makes her answer (Tony: "she hears any noise, she automatically talks"); a person actually speaking still interrupts at once. Nov 2, 2026 (cut-off tuning, Tony's confirmation call): prefix padding 300 -> 500 ms so MORE of the caller's first word survives the barge-in, and the end-of-turn silence 600 -> 900 ms so a caller who pauses mid-thought (an address, a date) is not answered over and then clipped — the two changes trade a touch of response latency for far fewer mid-sentence cut-offs. VOICE_START_SENS=high restores the old touchiness. Faster turn-taking only when VOICE_FAST_TURNS=on (it can cut a caller off mid-address)
         inputAudioTranscription: {}, outputAudioTranscription: {} } }];
@@ -99,7 +126,7 @@ function create(opts) {
       if (m.setupComplete) ev.push({ kind: "ready" });
       const c = m.serverContent;
       if (c) {
-        if (c.interrupted) { flushAgent(ev); ev.push({ kind: "interrupted" }); }
+        if (c.interrupted) { flushAgent(ev, false, true); ev.push({ kind: "interrupted" }); }
         if (c.inputTranscription && c.inputTranscription.text) { callerBuf += c.inputTranscription.text; lastTextAt = Date.now(); }
         if (c.outputTranscription && c.outputTranscription.text) { flushCaller(ev); agentBuf += c.outputTranscription.text; lastTextAt = Date.now(); }
         if (c.modelTurn && c.modelTurn.parts) c.modelTurn.parts.forEach(function (p) {
@@ -112,7 +139,7 @@ function create(opts) {
           dnRest = s.slice(full);
           if (out.length) { ev.push({ kind: "audio", payload: out.toString("base64") }); turnChunks++; }
         });
-        if (c.turnComplete) { flushCaller(ev); flushAgent(ev); ev.push({ kind: "turn_done", spoke: agentSpoke }); agentSpoke = false; }
+        if (c.turnComplete) { flushCaller(ev); flushAgent(ev, false, true); ev.push({ kind: "turn_done", spoke: agentSpoke }); agentSpoke = false; }
       }
       if (m.toolCall && m.toolCall.functionCalls) { flushCaller(ev); m.toolCall.functionCalls.forEach(function (f) { ev.push({ kind: "tool", id: f.id, name: f.name, args: f.args || {} }); }); }
       if (m.goAway) ev.push({ kind: "go_away", left: m.goAway.timeLeft });
@@ -121,4 +148,4 @@ function create(opts) {
     }
   };
 }
-module.exports = { name: "gemini-live", DEFAULT_MODEL, DEFAULT_VOICE, VOICE_SOURCE, VOICES, URL, headers, create, declarations, schema, mulawEnc, MU_DEC };
+module.exports = { name: "gemini-live", DEFAULT_MODEL, DEFAULT_VOICE, VOICE_SOURCE, VOICES, DEFAULT_THINKING_BUDGET, URL, headers, create, declarations, schema, mulawEnc, MU_DEC };
