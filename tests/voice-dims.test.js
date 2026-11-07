@@ -6,6 +6,7 @@ const now = Date.parse("2026-10-21");
 [ "190 x 94 x 80 in", "190x94x80", [190, 94, 80], { length: 190, width: 94, height: 80 }, { l: 190, w: 94, h: 80 }, { width_in: 94, height_in: 80, length_in: 190 } ].forEach(d => {
   const r = I.validate(Object.assign({}, base, { dimensions: d }), now); ok(r.missing.indexOf("dimensions") < 0 && r.data.total_dims && r.data.total_dims.l === 190 && r.data.total_dims.w === 94 && r.data.total_dims.h === 80, "accepts " + JSON.stringify(d)); });
 ok(I.validate(Object.assign({}, base, { length: 190, width: 94, height: 80 }), now).missing.indexOf("dimensions") < 0, "flat length/width/height accepted");
-["4 boxes", "190 x 94", "190 x 94 x 80 ft", "", null, [1, 2], { l: 5, w: 5 }].forEach(d => ok(I.validate(Object.assign({}, base, { dimensions: d }), now).missing.indexOf("dimensions") >= 0, "still missing for " + JSON.stringify(d)));
+["4 boxes", "190 x 94", "190 x 94 x 80 ft", "", null, [1, 2], { l: 5, w: 5 }].forEach(d => { const r = I.validate(Object.assign({}, base, { dimensions: d }), now); ok(r.missing.indexOf("dimensions") < 0 && !r.data.total_dims && r.ok, "unusable dimensions are simply not recorded and NEVER block the booking (fix round 2) for " + JSON.stringify(d)); });
+ok(I.validate(base, now).ok, "no dimensions at all: the intake is complete and bookable (fix round 2: 'I don't know' proceeds)");
 ok(I.validate(Object.assign({}, base, { total_dims: { l: 100, w: 40, h: 40 }, dimensions: "1 x 1 x 1" }), now).data.total_dims.l === 100, "explicit total_dims wins");
 console.log("voice-dims: " + n + " assertions PASS");

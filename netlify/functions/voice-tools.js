@@ -11,6 +11,8 @@ const CN = require("./lib/voice/canonical");
 const P = require("./lib/voice/prompt");
 const PR = require("./lib/voice/pricing");
 const EP = require("./lib/elevate-phone");   // Əlevate phone calls: separate table, separate rules
+const RT = require("./lib/voice/route");   // post-call address/route verification (fix round 2)
+const RL = require("./lib/voice/rules");   // post-call eligibility re-check (fix round 2)
 const EC = require("./lib/voice/email-capture");   // deterministic spelled-letter email assembly (Nov 4, 2026): runs on every caller line, see the transcript action
 const rows = S.rows;
 const secret = function () { return process.env.VOICE_BRIDGE_SECRET || ""; };
@@ -71,9 +73,53 @@ async function unfinishedNet(ses, reason) {
     const line = (blocked ? "AUTO-SAVED LEAD (we could not take it: " + (i._elig.blocks || []).map(function (b) { return b.text; }).join("; ").slice(0, 80) + "). " : "AUTO-SAVED: call ended before booking. ") + (have.length ? "Has: " + have.join("; ") + ". " : "") + (!have.length && say.length ? "Caller said: \"" + say[say.length - 1].slice(0, 120) + "\". " : "");
     await B.sb("voice_callbacks", { method: "POST", prefer: "return=minimal", body: { org_id: ses.org_id, session_id: sid, name: who ? String(who).slice(0, 80) : null, phone: phone, reason: line.slice(0, 300) } });
     await S.patchSession(ses.org_id, sid, { outcome: "callback" });
-    await T.notifyOwner(ses.org_id, "Unfinished call saved: " + (who || phone || "caller"), "A caller hung up before the booking was finished, so a callback was saved automatically.\n\nCaller: " + (who || "name not given") + (phone ? "  " + phone : "") + "\n" + (have.length ? "Details we have: " + have.join("; ") + "\n" : "") + (need.length ? "Still missing: " + need.join(", ") + "\n" : "") + (say.length ? "Last things they said: " + say.map(function (x) { return "\"" + x.slice(0, 140) + "\""; }).join(" / ") + "\n" : "") + "\nCall back to finish it. Session " + sid + ".");
+    // NO separate "Unfinished call saved" email (fix round 2, Nov 7, 2026 — graded session a3289d81):
+    // that alert was the email the owner actually received for the call, and the alert renderer has
+    // no CALL SUMMARY card and no transcript — it broke Tony's Nov 1 rule that EVERY owner email is
+    // the full Elevate design. The callback above is saved; the owner hears about this call in the
+    // ONE full-design call report (owner-report.js: CALL SUMMARY card + word-for-word transcript +
+    // dashboard button + session footer), which finish() sends via settleReport immediately after
+    // this net runs, with the outcome now reading "Callback saved" and the saved callback as its
+    // next step. One call, one owner email, full design.
     return true;
   } catch (e) { console.error("unfinishedNet", e && e.message); return false; }
+}
+// POST-CALL VERIFICATION (fix round 2, Nov 7, 2026 — Tony's design: "verification happens AFTER
+// the call"). The talk path no longer geocodes, route-checks or eligibility-checks while the caller
+// waits; this pass runs once, at call end, on the finished session: both addresses are verified
+// against the geocoder, the route distance is computed, and eligibility is re-evaluated from the
+// verified facts. The result is stored on the intake as _post_verify for the dashboard/team. A hard
+// flag (an address that does not verify, or a blocked eligibility on verified facts) saves a
+// callback carrying the details and alerts the owner. Best-effort by design: a failure here must
+// never break call finalization, the safety net, or the owner's call report.
+async function postCallVerify(ses) {
+  try {
+    if (!ses || ses.test_mode || ses.direction === "outbound") return false;
+    const fresh = rows(await B.sb("voice_sessions?id=eq." + ses.id + "&select=intake,org_id,from_number&limit=1"))[0] || ses;
+    const i = Object.assign({}, fresh.intake || {});
+    if (i._post_verify || !i.pickup_address || !i.delivery_address) return false;
+    const I = require("./lib/voice/intake"), d = I.validate(i).data;
+    if (!d.pickup_address || !d.delivery_address) return false;
+    const both = await Promise.all([RT.verifyAddress(d.pickup_address), RT.verifyAddress(d.delivery_address)]);
+    const gp = both[0], gd = both[1], pv = { at: new Date().toISOString(), pickup_ok: gp.ok === true, delivery_ok: gd.ok === true };
+    if (gp.ok) pv.pickup_matched = gp.matched; if (gd.ok) pv.delivery_matched = gd.matched;
+    if (gp.unknown) pv.pickup_check = "unavailable"; if (gd.unknown) pv.delivery_check = "unavailable";
+    if (gp.ok && gd.ok) {
+      const r = await RT.distance(gp, gd);
+      if (r.ok) { pv.miles = Math.round(r.miles * 10) / 10; pv.minutes = Math.round(r.minutes); pv.route_source = r.source; } else pv.route_failure = r.reason;
+      const prof = await S.profileOf(ses.org_id);
+      if (prof) { const e = RL.evaluate(Object.assign({}, d, { pickup_state: gp.state || d.pickup_state, delivery_state: gd.state || d.delivery_state }), prof); pv.eligibility = e.status; pv.blocks = e.blocks.map(function (b) { return b.code; }); pv.reviews = e.reviews.map(function (b) { return b.code; }); }
+    }
+    i._post_verify = pv;
+    await S.patchSession(ses.org_id, ses.id, { intake: i });
+    const flagged = (gp.ok === false && !gp.unknown) || (gd.ok === false && !gd.unknown) || pv.eligibility === "blocked";
+    if (flagged) {
+      const why = [pv.pickup_ok === false && !gp.unknown ? "pickup address not verified" : "", pv.delivery_ok === false && !gd.unknown ? "delivery address not verified" : "", pv.eligibility === "blocked" ? "eligibility blocked on verified facts (" + (pv.blocks || []).join(", ") + ")" : ""].filter(Boolean).join("; ");
+      await B.sb("voice_callbacks", { method: "POST", prefer: "return=minimal", body: { org_id: ses.org_id, session_id: ses.id, name: i.customer_name || null, phone: fresh.from_number || ses.from_number || null, reason: ("POST-CALL CHECK: " + why + ". Pickup " + d.pickup_address + " -> delivery " + d.delivery_address + ".").slice(0, 300) } });
+      await T.notifyOwner(ses.org_id, "Post-call check flagged: " + (i.customer_name || fresh.from_number || "caller"), "The after-call verification for the call that just ended flagged a problem: " + why + ".\n\nPickup: " + d.pickup_address + "\nDelivery: " + d.delivery_address + (pv.miles ? "\nVerified route: " + pv.miles + " miles." : "") + "\nA callback with the details was saved. Session " + ses.id + ".");
+    }
+    return true;
+  } catch (e) { console.error("postCallVerify", e && e.message); return false; }
 }
 async function finish(ses, reason, seconds) {
   if (["ended", "failed", "rejected"].indexOf(ses.state) >= 0 && ses.ended_at) { if (ses.seconds == null && seconds) await V.recordUsage(ses.org_id, ses.id, seconds, ses.direction === "outbound" ? "outbound" : "call", ses.started_at); await CN.settleReport(ses.org_id, ses.id); return { ok: true, already: true }; }
@@ -81,6 +127,7 @@ async function finish(ses, reason, seconds) {
   await S.patchSession(ses.org_id, ses.id, { state: "ended", ended_at: new Date().toISOString(), seconds: secs, end_reason: String(reason || "hangup").slice(0, 60), summary: summarize(ses), outcome: ses.outcome || "info_only" });
   if (secs > 0) await V.recordUsage(ses.org_id, ses.id, secs, ses.direction === "outbound" ? "outbound" : "call", ses.started_at);
   const saved = ses.direction === "outbound" ? false : await unfinishedNet(ses, reason);
+  if (ses.direction !== "outbound") await postCallVerify(ses);   // verification AFTER the call (fix round 2): never on the caller's clock, always before the owner's report so the record is complete
   // The owner's copy of the call (summary + full transcript email + push). Runs AFTER the safety net so
   // the report sees the final outcome. settleReport sends it now — or, when a Twilio recording exists,
   // parks it until the canonical (recording-based, word-for-word) transcript lands, bounded by

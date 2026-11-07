@@ -8,7 +8,7 @@ const SET = { onetime_min: 175, sameday_min: 225, rush_min: 350, recurring_min: 
   inside_delivery_min: 100, overnight_hold_nightly: 300, included_pickup_minutes: 30, included_delivery_minutes: 30, quote_expiration_minutes: 30, payload_limit_lbs: 4500, updated_at: "v1" };
 // ── intake ──
 let v = I.validate(good(), NOW); ok(v.ok && v.data.callback_phone === "+14045550142" && v.data.pickup_state === "GA", "complete intake passes and normalizes the phone");
-v = I.validate({}, NOW); ok(!v.ok && ["customer_name", "callback_phone", "pickup_address", "delivery_address", "service_date", "time_window", "freight_description", "piece_count", "total_weight_lb", "dimensions"].every(k => v.missing.includes(k)), "empty intake lists everything missing");
+v = I.validate({}, NOW); ok(!v.ok && ["customer_name", "callback_phone", "pickup_address", "delivery_address", "service_date", "time_window", "freight_description", "piece_count", "total_weight_lb"].every(k => v.missing.includes(k)) && !v.missing.includes("dimensions"), "empty intake lists everything missing EXCEPT dimensions (fix round 2: dimensions are optional, never a gate)");
 v = I.validate(Object.assign(good(), { pickup_address: "Peachtree" }), NOW); ok(!v.ok && v.problems.some(p => /pickup_address_ambiguous/.test(p)), "address without number is ambiguous");
 v = I.validate(Object.assign(good(), { delivery_address: "55 Roswell Rd" }), NOW); ok(v.problems.some(p => /delivery_address_ambiguous/.test(p)), "address without city/state is ambiguous");
 v = I.validate(Object.assign(good(), { delivery_address: good().pickup_address }), NOW); ok(v.problems.includes("pickup_and_delivery_are_the_same"), "same pickup and delivery is a conflict");

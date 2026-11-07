@@ -344,6 +344,13 @@ function createBridge(deps) {
       holdTimers.push(setTimeout(function () { holdFire(1); }, TOOL_HOLD2_MS));
       const r = await api({ action: "tool", session_id: ctx.session_id, name: m.name, args: m.args, call_key: nk(m.id) }, 12000);   // tool window 15000 -> 12000 (2026-11-07a): the server-side steps now budget themselves to land inside ~9 s (route 6 s + reads/writes), so a 12 s cap only ever catches a genuinely wedged call — and catches it 3 s sooner
       holdTimers.forEach(clearTimeout);
+      // PER-TOOL TIMING LOG (fix round 2, Nov 7, 2026): the graded Nov 7 call's server log held exactly
+      // TWO lines for 414 s — no tool names, durations or outcomes — so the grade had to be built from
+      // the phone recording alone. Every tool call now logs ONE line: name, duration ms, outcome
+      // (ok | timeout | error). "tool <name> <ms>ms <outcome>" — grep-able in the container log.
+      { const toolMs = Date.now() - toolStart, un = !r || !r.status || !!r.error || !(r.data && r.data.result), res0 = (r.data && r.data.result) || null;
+        const outcome = un ? ((r && /timeout|abort/i.test(String(r.error || ""))) || !(r && r.status) ? "timeout" : "error") : (res0 && res0.ok === false ? "error" : "ok");
+        log("tool", m.name, toolMs + "ms", outcome); }
       const stalled = Date.now() - toolStart >= TOOL_HOLD2_MS;   // this check genuinely stalled (the announcement call stalled twice, ~15 s and ~25 s): if it still brought a result back, the result lands with a resume-at-checkpoint note, below
       const unreachable = !r || !r.status || !!r.error || !(r.data && r.data.result);
       result = (r.data && r.data.result) || { ok: false, error: "tool_unreachable", say: "The system did not answer. Do NOT run that step again on this call. Offer a callback; do not guess." };   // the no-retry clause is 2026-11-07a: a timed-out step re-fired by the model is how one slow check became 36 s of dead air on the Nov 6 call

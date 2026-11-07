@@ -20,7 +20,8 @@ function evaluate(d, v) {
   if (!(w > 0)) reviews.push({ code: "weight_missing", text: "Total weight is not verified." });
   else if (w > v.max_payload_lb) blocks.push({ code: "over_payload", text: "Shipment weight " + w + " lb is over the " + v.max_payload_lb + " lb limit." });
   const ps = pieceList(d);
-  if (!ps.length) reviews.push({ code: "dimensions_missing", text: "Dimensions are not verified." });
+  // No dimensions -> no review (fix round 2, Nov 7, 2026): dimensions are optional on the call, so their absence can
+  // never hold a booking at "review". When dimensions ARE known and do not fit, the blocks below still fire.
   ps.forEach(function (p, i) {
     const f = fits(p, v);
     if (!f.inside) blocks.push({ code: "too_big_for_interior", text: "Item " + (i + 1) + " (" + p.l + "x" + p.w + "x" + p.h + " in) does not fit the truck interior." });

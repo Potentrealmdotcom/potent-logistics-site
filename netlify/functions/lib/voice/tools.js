@@ -1,7 +1,7 @@
 // The ONLY things the voice model can do. Every tool re-checks authorization, plan entitlement, call state and business rules on the server;
 // the model's words never grant a permission. Results are written to voice_tool_executions, keyed by the provider's call id, so a retry cannot repeat an action.
 const B = require("../beats");
-const S = require("./store"), I = require("./intake"), R = require("./rules"), P = require("./pricing"), RT = require("./route"), AV = require("./availability"), V = require("./billing"), TW = require("./adapters/twilio");
+const S = require("./store"), I = require("./intake"), R = require("./rules"), P = require("./pricing"), RT = require("./route"), AV = require("./availability"), V = require("./billing"), TW = require("./adapters/twilio"), PB = require("./pricebook");
 const rows = S.rows;
 const PLAYBOOK = require("./playbook.js");
 const EC = require("./email-capture");   // spelled-letter assembly: collect treats its _email_candidate as ground truth (Nov 4, 2026)
@@ -54,7 +54,7 @@ const spokenRef = function (ref) {
     return g.split("").join(" ");
   }).join(", ");
 };
-const AFFIRM = /\b(yes|yeah|yep|yup|correct|confirm|confirmed|go ahead|book it|that'?s right|sounds good|do it|please do|okay|ok|sure|let'?s do it|proceed|ya|yah|yeh|yea|ja|si|sí|claro|dale|vale)\b/i, NEG = /\b(no|not|don'?t|wait|hold on|stop|cancel|never ?mind|actually|change)\b/i;
+const AFFIRM = /\b(yes|yeah|yep|yup|correct|confirm|confirmed|go ahead|book it|that'?s right|sounds good|do it|please do|okay|ok|sure|let'?s do it|proceed|ya|yah|yeh|yea|ye|uh[-\s]?huh|ja|si|sí|claro|dale|vale)\b/i, NEG = /\b(no|not|don'?t|wait|hold on|stop|cancel|never ?mind|actually|change)\b/i;   // yes means yes (fix round 2, Nov 7, 2026): "ye" and "uh-huh" count as yes too — a plain "Yes" sat unanswered for 22 s on the graded Nov 7 call
 
 // ── schemas shown to the model (kept deliberately small; the server validates again) ──
 const obj = function (props, req) { return { type: "object", properties: props, required: req || [], additionalProperties: false }; };
@@ -75,8 +75,8 @@ function defs() {
       pickup_dock: { type: "boolean", description: "pickup has dock-height loading" }, delivery_dock: { type: "boolean", description: "delivery has dock-height unloading" }, needs_liftgate: { type: "boolean" }, needs_pallet_jack: { type: "boolean" }, site_has_pallet_jack: { type: "boolean" },
       forklift_pickup: { type: "boolean" }, forklift_delivery: { type: "boolean" }, inside_delivery: { type: "boolean" }, hazmat: { type: "boolean" }, special_handling: str(""), special_instructions: str(""), po_number: str(""),
       extra_stops: { type: "integer" }, labor_helpers: { type: "integer" }, labor_hours: { type: "number" }, expected_wait_minutes: { type: "number" }, holding_nights: { type: "integer" }, recurring: { type: "boolean" } })),
-    D("validate_shipment_eligibility", "Verify both addresses and check the shipment against the verified truck limits and service area. Call after all required details are collected."),
-    D("calculate_quote", "Calculate the official price. The price comes only from this tool. Never state a price from memory."),
+    D("validate_shipment_eligibility", "BACKGROUND verification only — address, route and truck-fit verification now runs AFTER the call, not while the caller waits. Do NOT call this before a quote on a live call: calculate_quote prices instantly from the company's own price book. Call it only if a post-call check is explicitly requested."),
+    D("calculate_quote", "Give the official price from the company's own price book. Instant: it runs no address, route or eligibility check, so call it as soon as you have pickup, delivery and the freight basics. The price comes only from this tool. Never state a price from memory."),
     D("quote_special_service", "Official price for junk removal, pop-up events, or recurring service (by load size or dedicated route). The price comes only from this tool. A person schedules these afterwards; offer create_callback_task.", obj({
       service: { type: "string", enum: ["junk_removal", "popup_event", "recurring_load_class", "recurring_route"] },
       pickup_address: str("junk: the address the job is at. Events and routes: the pickup address, full street address with city and state"), delivery_address: str("events and routes: the delivery or event address"),
@@ -193,7 +193,19 @@ const TOOLS = {
   },
   async collect_shipment_details(ctx, a) {
     const intake = Object.assign({}, ctx.session.intake || {}), inc = cleanArgs(a); let changed = false;
-    const lockedKeep = [];
+    const lockedKeep = [], lockedFields = [];
+    // CONFIRMED ANSWERS ARE LOCKED AT THE STATE LAYER (fix round 2, Nov 7, 2026 — graded defect: the
+    // time window was re-asked at 254 s after "Anytime" had been answered at 117 s AND confirmed in
+    // her own read-back). service_date and time_window, once recorded, can never be overwritten by a
+    // later collect — a re-sent or re-heard different value is churn, not news. Only an explicit
+    // caller correction (correction=true) moves them, and that invalidates downstream checks as usual.
+    ["service_date", "time_window"].forEach(function (k) {
+      if (inc[k] !== undefined && intake[k] !== undefined && String(intake[k]) !== String(inc[k])) {
+        if (a && a.correction === true) { intake[k] = inc[k]; changed = true; }
+        else lockedFields.push(k);
+        delete inc[k];
+      }
+    });
     Object.keys(inc).forEach(function (k) {
       // ADDRESSES ARE COMPARED BY IDENTITY, NOT BY SPELLING (Nov 4, 2026 — see intake.normAddr):
       // the same address re-stated in different dress is NOT a change. The old rule invalidated
@@ -271,8 +283,25 @@ const TOOLS = {
       intake._cb_said = true;
       l4say = "Say it ONCE, as a plain statement — not a question, and do not wait for an answer: \"I'll use the number you're calling from, ending in " + l4.split("").join(" ") + ".\" Then ask the next thing you still need in the same turn. Never raise the callback number again unless the caller changes it.";
     }
+    // CONFIRMED-FIELD LEDGER (fix round 2, Nov 7, 2026): every field that has ever validated as
+    // answered on this call is recorded in _confirmed_fields and only ever grows. Together with the
+    // service_date/time_window lock above and the verified-address lock, this is the state-layer
+    // guarantee behind "what is confirmed stays confirmed": a later collect, a resumed turn or a
+    // model re-ask can never un-answer or silently move a settled field.
+    { const CORE = ["customer_name", "callback_phone", "email", "pickup_address", "delivery_address", "service_date", "time_window", "freight_description", "piece_count", "total_weight_lb"];
+      const conf = new Set(Array.isArray(intake._confirmed_fields) ? intake._confirmed_fields : []);
+      CORE.forEach(function (k) { if (v.data[k]) conf.add(k); });
+      if ((v.data.pieces && v.data.pieces.length) || v.data.total_dims) conf.add("dimensions");
+      if (intake._weight_basis) conf.add("weight_basis");
+      intake._confirmed_fields = Array.from(conf);
+    }
     await setIntake(ctx, intake);   // ONE save for the whole collect (Nov 4, 2026): the merge, weight settle, format cap, spelled email and callback flag all land together — the old shape patched the session up to three times per collect, and every patch is a network round trip on the caller's clock
     const res = { ok: true, complete: v.ok, missing: v.missing, problems: v.problems, number_ends_in: l4, say: heavy || l4say, reset: changed ? "Details changed, so earlier checks and any quote were cleared. Re-run validation and quote." : undefined };
+    if (lockedFields.length) {
+      res.locked_fields = lockedFields.slice();
+      const lt = "LOCKED: " + lockedFields.map(function (k) { return k + " is already answered and confirmed on this call as \"" + intake[k] + "\""; }).join("; ") + " — the recorded value stays exactly that. Do NOT ask about it again and do not re-confirm it. Only if the caller says it is WRONG do you change it, by collecting the corrected value with correction=true.";
+      res.say = res.say ? res.say + " " + lt : lt;
+    }
     if (lockedKeep.length) {
       res.locked = lockedKeep.map(function (s) { return s + "_address"; });
       const lt = "The " + lockedKeep.join(" and ") + " address is already verified and saved as \"" + lockedKeep.map(function (s) { return intake[s + "_address"]; }).join("\" / \"") + "\" — it stays exactly that. Do NOT ask for it again and do not re-confirm it. Only if the caller says it is WRONG do you change it, by collecting the corrected address with correction=true.";
@@ -337,7 +366,42 @@ const TOOLS = {
     return { ok: true, status: e.status, reasons: e.blocks.concat(e.reviews).map(function (x) { return x.text; }), say: e.status === "blocked" ? "We cannot take this shipment as described. Follow the REFUSAL PATH: thank them for calling, explain the reason kindly and name the limit, offer the other ways POTENT can help, and ask to add them to the follow-up list. Never end on the refusal or a bare goodbye." : e.status === "review" ? "A person must review this. Offer a callback or transfer. Do not quote." : "Eligible. You may calculate the quote." };
   },
   async calculate_quote(ctx) {
-    const intake = Object.assign({}, ctx.session.intake || {}), el = intake._elig;
+    const intake = Object.assign({}, ctx.session.intake || {});
+    // ── PRICE BOOK PATH (fix round 2, Nov 7, 2026 — conversation-first): when the company has a
+    // price book, the total is KNOWN and stated instantly: no geocoding, no eligibility chain, no
+    // route calculation on the caller's clock (the graded Nov 7 call burned ~171 s "checking" and
+    // never produced a quote). Address/route/fit verification runs AFTER the call
+    // (voice-tools.js postCallVerify). The book quote still records _elig as eligible-via-book with
+    // the company's vehicle profile, so availability and booking keep their existing shapes, and
+    // confirm_eligible_booking still re-checks eligibility from the saved snapshot at confirm time.
+    { const vB = I.validate(intake);
+      if (!vB.ok) return { ok: false, missing: vB.missing, problems: vB.problems, say: "Ask for what is still missing, one thing at a time. Dimensions are NOT required — if the caller does not know them, proceed without them." };
+      const book = PB.resolve(ctx.cfg, vB.data, await isPotentOrg(ctx));
+      if (book) {
+        const d = vB.data, S0 = await S.pricingSettings(ctx.orgId, ctx.cfg), prof = await S.profileOf(ctx.orgId);
+        const lines = [{ code: "book", label: book.label, cents: book.total_cents }];
+        const Lc = function (label, c) { if (c > 0) lines.push({ code: "extra", label: label, cents: c }); };
+        if (S0) {   // the company's own extras, from its own pricing settings — same arithmetic as pricing.js
+          const cen = function (x) { return Math.round(Number(x || 0) * 100); };
+          Lc(d.extra_stops + " additional stop(s)", Math.round(d.extra_stops) * cen(S0.additional_stop_fee));
+          if (d.labor_helpers && d.labor_hours) Lc(d.labor_helpers + " helper(s) x " + d.labor_hours + " h", Math.round(d.labor_helpers * d.labor_hours * cen(S0.additional_labor_hourly)));
+          if (d.inside_delivery) Lc("Inside delivery (minimum)", cen(S0.inside_delivery_min));
+          if (d.holding_nights) Lc(d.holding_nights + " night(s) holding", Math.round(d.holding_nights) * cen(S0.overnight_hold_nightly));
+        }
+        const total = lines.reduce(function (x, l) { return x + l.cents; }, 0);
+        const expMin = S0 && Number(S0.quote_expiration_minutes) ? Number(S0.quote_expiration_minutes) : 30;
+        const expires = new Date(Date.now() + expMin * 60000).toISOString(), number = S.ref("Q");
+        const ins = await B.sb("voice_quotes", { method: "POST", prefer: "return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, number: number, input: d, lines: lines, total_cents: total, miles: null, miles_source: "price_book", settings_version: book.source, expires_at: expires } });
+        const row = rows(ins)[0]; if (!row) return { ok: false, error: "save_failed" };
+        intake._elig = { status: "eligible", blocks: [], reviews: [], profile_id: prof ? prof.id : null, via: "price_book", checked_at: new Date().toISOString() };
+        intake._quote_id = row.id; intake._quote = { id: row.id, number: number, total_cents: total, expires_at: expires, created_at: row.created_at || new Date().toISOString() };
+        await setIntake(ctx, intake, { quote: { id: row.id, number: number, total_cents: total } });
+        return { ok: true, quote_number: number, lines: lines.map(function (l) { return l.label + ": " + P.money(l.cents); }), total: P.money(total), tax_note: "Taxes, if any apply, are not included.", valid_minutes: expMin, exclusions: ["Changes to the pickup, delivery, freight or access may change the price.", "Taxes, if any apply, are not included."], payment: (await isPotentOrg(ctx)) && payOn() ? PAY_HINT : "Payment instructions will be sent by dispatch.", deposit: null, price_book: true, note: "This price comes from the company's own price book. No address, route or eligibility check was run — that verification happens after the call. State the total ONCE, then check availability." };
+      }
+    }
+    // ── LEGACY PATH (no price book): the verified-route quote, unchanged. Eligibility first, route
+    // distance inside the quote, honest failure -> callback. Never an invented price.
+    const el = intake._elig;
     if (!el || el.status !== "eligible") return { ok: false, error: "not_eligible", say: "Run validate_shipment_eligibility first; only eligible shipments can be quoted." };
     const v = I.validate(intake); if (!v.ok) return { ok: false, missing: v.missing, problems: v.problems };
     const d = v.data, S0 = await S.pricingSettings(ctx.orgId, ctx.cfg); let miles = null, mins = null, routeWhy = null;

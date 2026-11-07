@@ -1,6 +1,6 @@
 // Structured shipment intake: the only shape the rest of the system accepts. Anything missing, ambiguous or contradictory is reported, never guessed.
 const num = function (v) { const n = typeof v === "string" ? Number(v.replace(/[, ]/g, "")) : Number(v); return isFinite(n) ? n : NaN; };
-const bool = function (v) { if (v === true || v === false) return v; if (typeof v === "string") { const s = v.trim().toLowerCase(); if (/^(yes|y|true|1)$/.test(s)) return true; if (/^(no|n|false|0)$/.test(s)) return false; } return null; };
+const bool = function (v) { if (v === true || v === false) return v; if (typeof v === "string") { const s = v.trim().toLowerCase(); if (/^(yes|y|ye|yea|yeah|yep|yup|uh-huh|uh huh|true|1)$/.test(s)) return true; if (/^(no|n|false|0)$/.test(s)) return false; } return null; };   // yes means yes (fix round 2, Nov 7, 2026): ye / yea / yeah / yep / uh-huh all count as yes, in the intake layer and not just the prompt
 const clip = function (v, n) { return String(v == null ? "" : v).replace(/\s+/g, " ").trim().slice(0, n); };
 const WINDOWS = ["early", "morning", "afternoon", "evening", "all_day"];
 const LEVELS = ["standard", "same_day", "rush", "recurring", "savannah_early", "savannah_full"];
@@ -53,7 +53,8 @@ function addressCheck(a) {
 function dims(d) { if (!d || typeof d !== "object") return null; const l = num(d.l), w = num(d.w), h = num(d.h); return l > 0 && w > 0 && h > 0 && l <= 1000 && w <= 1000 && h <= 1000 ? { l: l, w: w, h: h, qty: Math.max(1, Math.floor(num(d.qty) || 1)), weight_lb: num(d.weight_lb) > 0 ? num(d.weight_lb) : null } : null; }
 
 // Callers (and test simulators) often state dimensions as "190 x 94 x 80 in", [190,94,80], or {length,width,height}. Accept those as the
-// overall size of the load; anything that does not give exactly three positive numbers is still reported as missing, never guessed.
+// overall size of the load. Dimensions are OPTIONAL (fix round 2, Nov 7, 2026): a caller who does not know them — or never gives
+// them — still gets a quote and a booking; size/fit is verified after the call, never guessed and never a gate on the call.
 function looseDims(raw) {
   const v = raw.total_dims || raw.dimensions || raw.freight_dimensions || raw.dims || raw.size || null;
   const fromObj = function (o) { return { l: o.l != null ? o.l : o.length != null ? o.length : o.length_in, w: o.w != null ? o.w : o.width != null ? o.width : o.width_in, h: o.h != null ? o.h : o.height != null ? o.height : o.height_in }; };
@@ -93,7 +94,9 @@ function validate(raw, now) {
   const tw = num(raw.total_weight_lb); d.total_weight_lb = tw > 0 && tw <= 100000 ? tw : 0; if (!d.total_weight_lb) miss.push("total_weight_lb");
   d.pieces = (Array.isArray(raw.pieces) ? raw.pieces : []).map(dims).filter(Boolean).slice(0, 100);
   d.total_dims = dims(raw.total_dims) || dims(looseDims(raw));
-  if (!d.pieces.length && !d.total_dims) miss.push("dimensions");
+  // NO dimensions requirement (fix round 2, Nov 7, 2026): dimensions used to be a hard gate here — no dims, no quote —
+  // and on the graded Nov 7 call she burned two questions and ~19 s of dead air demanding them, then never quoted at all.
+  // They are recorded when the caller knows them and checked after the call (rules/post-call verification); never required.
   if (Array.isArray(raw.pieces) && raw.pieces.length && raw.pieces.map(dims).some(function (x) { return !x; })) prob.push("a_piece_has_bad_dimensions");
   const listed = d.pieces.reduce(function (a, p) { return a + p.qty; }, 0); if (d.pieces.length && d.piece_count && listed !== d.piece_count && d.pieces.every(function (p) { return p.qty >= 1; }) && listed > d.piece_count) prob.push("piece_dimensions_exceed_piece_count");
   const wl = d.pieces.filter(function (p) { return p.weight_lb; }); if (wl.length === d.pieces.length && d.pieces.length && d.total_weight_lb) { const s = d.pieces.reduce(function (a, p) { return a + p.weight_lb * p.qty; }, 0); if (Math.abs(s - d.total_weight_lb) > Math.max(25, d.total_weight_lb * 0.1)) {
