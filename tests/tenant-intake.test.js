@@ -7,7 +7,7 @@ const cfg = { settings: { intake: TN.sanitize({ name: "Acme Hauling", services: 
 const tenant = P.build(cfg, { name: "Acme Hauling Inc", slug: "acme" });
 ok(/Acme Hauling/.test(tenant) && /\$2 a mile, \$90 minimum/.test(tenant) && /NOT PROVIDED/.test(tenant), "tenant prompt carries the owner's own answers and marks blanks");
 ["POTENT", "10%", "\\$179", "\\$4,995", "Savannah is", "referral code", "Georgia", "Closer", "junk", "wallet", "912", "\\$1,000", "Ella-vate powered"].forEach(function (w) { ok(!new RegExp(w, "i").test(tenant.replace(/Acme Hauling/g, "")), "no POTENT material in a tenant prompt: " + w); });
-ok(/POTENT/.test(potent) && /flat 10%/.test(potent), "POTENT's own prompt still has its material");
+ok(/POTENT/.test(potent) && /POTENT Coins/.test(potent) && !/flat 10%/.test(potent), "POTENT's own prompt still has its material — and it is the coins canon now: Tony ruled Nov 4-5, 2026 that POTENT Coins replaced percentage discounts entirely, so the retired flat-10% line must be GONE");
 ok(/Acknowledge/.test(tenant) && /Associate/.test(tenant), "the playbook discovery style and 3 A's apply to every company");
 ok(!/powered by POTENT/.test(P.greeting({ settings: cfg.settings }, { name: "Acme", slug: "acme" })) && /Acme Hauling/.test(P.greeting({ settings: cfg.settings }, { name: "Acme", slug: "acme" })), "tenant greeting uses the tenant name");
 ok(/powered by POTENT/.test(P.greeting({}, { name: "POTENT Logistics", slug: "potent-logistics" })) && !/AI assistant/.test(P.greeting({}, { name: "POTENT Logistics", slug: "potent-logistics" })), "POTENT greeting unchanged (no AI line)");

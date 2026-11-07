@@ -33,7 +33,7 @@ function createBridge(deps) {
   // like any other result — recovery never depends on the model choosing to resume. Tenant-generic
   // wording only: the bridge holds no business content.
   const TOOL_HOLD_MS = Math.max(20, Number(env.VOICE_TOOL_HOLD_MS) || 1200);   // lowered 2500 -> 1200 (bundle 2026-11-06a, dead-air diagnosis Nov 5, 2026): at 2.5 s most real checks finished before any cover line could fire, so the caller heard pure silence; 1.2 s puts the hold line inside the gap it exists to cover. VOICE_TOOL_HOLD_MS still overrides.
-  const TOOL_HOLD2_MS = Math.max(TOOL_HOLD_MS + 100, Number(env.VOICE_TOOL_HOLD2_MS) || 10000);
+  const TOOL_HOLD2_MS = Math.max(TOOL_HOLD_MS + 100, Number(env.VOICE_TOOL_HOLD2_MS) || 5500);   // stall cap 10000 -> 5500 (bundle 2026-11-07a, graded Nov 6, 2026: the rescue line at 10 s arrived after the caller had already sat through the worst of the silence — or never landed at all behind a queued injection; 5.5 s puts the apology inside the wait, and the route chain's new 6 s budget means a healthy check now finishes before the cap instead of racing it)
   const TOOL_HOLD_GAP_MS = Math.max(0, Number(env.VOICE_TOOL_HOLD_GAP_MS) != null && env.VOICE_TOOL_HOLD_GAP_MS !== "" ? Number(env.VOICE_TOOL_HOLD_GAP_MS) : 12000);
   const HOLD_LINES = ["One second — I'm checking that for you.", "Just a moment — still checking on that for you.", "Hang tight one more second — I'm pulling that up for you."];
   const HOLD_RECOVERY = "I'm so sorry — that check is taking longer than it should on my end. Let's keep right on going; I have everything you've told me so far.";
@@ -342,11 +342,11 @@ function createBridge(deps) {
       };
       holdTimers.push(setTimeout(function () { holdFire(0); }, TOOL_HOLD_MS));
       holdTimers.push(setTimeout(function () { holdFire(1); }, TOOL_HOLD2_MS));
-      const r = await api({ action: "tool", session_id: ctx.session_id, name: m.name, args: m.args, call_key: nk(m.id) }, 15000);
+      const r = await api({ action: "tool", session_id: ctx.session_id, name: m.name, args: m.args, call_key: nk(m.id) }, 12000);   // tool window 15000 -> 12000 (2026-11-07a): the server-side steps now budget themselves to land inside ~9 s (route 6 s + reads/writes), so a 12 s cap only ever catches a genuinely wedged call — and catches it 3 s sooner
       holdTimers.forEach(clearTimeout);
       const stalled = Date.now() - toolStart >= TOOL_HOLD2_MS;   // this check genuinely stalled (the announcement call stalled twice, ~15 s and ~25 s): if it still brought a result back, the result lands with a resume-at-checkpoint note, below
       const unreachable = !r || !r.status || !!r.error || !(r.data && r.data.result);
-      result = (r.data && r.data.result) || { ok: false, error: "tool_unreachable", say: "The system did not answer. Offer a callback; do not guess." };
+      result = (r.data && r.data.result) || { ok: false, error: "tool_unreachable", say: "The system did not answer. Do NOT run that step again on this call. Offer a callback; do not guess." };   // the no-retry clause is 2026-11-07a: a timed-out step re-fired by the model is how one slow check became 36 s of dead air on the Nov 6 call
       // A timed-out / unreachable tool used to be able to strand the call in silence: the error result went
       // to the model and if the model produced nothing, nothing was ever said again (Nov 2, session
       // 86ac437e). The bridge now speaks the recovery line ITSELF, then hands the error result to the model

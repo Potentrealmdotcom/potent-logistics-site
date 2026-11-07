@@ -31,8 +31,8 @@ const second = first.then(async () => {
   process.env.ORS_API_KEY = "k"; const urls = [];
   global.fetch = async (u) => { urls.push(String(u)); return /heigit/.test(u) ? { ok: false, status: 404, text: async () => "{}" } : { ok: true, status: 200, text: async () => JSON.stringify({ routes: [{ summary: { distance: 1609.344, duration: 60 } }] }) }; };
   const r = await require("../netlify/functions/lib/voice/route.js").distance({ lat: 1, lon: 1 }, { lat: 2, lon: 2 });
-  assert.ok(r.ok && urls.length === 2 && /heigit/.test(urls[0]) && /openrouteservice\.org/.test(urls[1]), "falls back to the old host only if the new one 404s");
-  console.log("route host ok");
+  assert.ok(!r.ok && r.reason === "ors_http_404" && urls.length === 1 && /heigit/.test(urls[0]), "no fallback to the dead host: api.openrouteservice.org shut down Nov 2-6 2026, so a HeiGIT 404 is the answer (bundle 2026-11-07a)");
+  console.log("route host ok (dead host never called)");
 }).catch(e => { console.error(e); process.exit(1); });
 
 // backup

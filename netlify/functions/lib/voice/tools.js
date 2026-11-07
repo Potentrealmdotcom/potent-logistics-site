@@ -313,7 +313,7 @@ const TOOLS = {
     const locks = Object.assign({}, intake._addr_lock || {});
     for (let i = 0; i < need.length; i++) {
       const k = need[i], g = found[i], addr = d[k + "_address"];
-      if (g.unknown) return { ok: false, error: "address_check_unavailable", say: "I can't verify addresses right now. Offer a callback or a person." };
+      if (g.unknown) return { ok: false, error: "address_check_unavailable", say: "I can't verify addresses right now. Do NOT run this check again on this call. Offer a callback or a person." };
       if (!g.ok) { notFound.push(k); continue; }
       geo[k] = { input: addr, matched: g.matched, lat: g.lat, lon: g.lon, state: g.state }; d[k + "_state"] = g.state || d[k + "_state"];
       locks[k] = I.normAddr(addr);   // VERIFIED = LOCKED: from here the slot can only change on an explicit caller correction (collect, correction=true)
@@ -343,7 +343,7 @@ const TOOLS = {
     const d = v.data, S0 = await S.pricingSettings(ctx.orgId, ctx.cfg); let miles = null, mins = null, routeWhy = null;
     if (!/^savannah/.test(d.service_level)) { const g = intake._geo; const r = await RT.distance(g.pickup, g.delivery); if (r.ok) { miles = r.miles; mins = r.minutes; intake._route = { miles: miles, minutes: mins, source: r.source }; } else routeWhy = r.reason + (r.detail ? " - " + r.detail : ""); }
     const q = P.quote(d, miles, S0, ctx.cfg.settings && ctx.cfg.settings.quote);
-    if (!q.ok) return { ok: false, review: true, reason: q.reason + (routeWhy ? " [route: " + routeWhy + "]" : ""), route_failure: routeWhy || undefined, say: "You cannot give a price. Offer a callback or a person." };
+    if (!q.ok) return { ok: false, review: true, reason: q.reason + (routeWhy ? " [route: " + routeWhy + "]" : ""), route_failure: routeWhy || undefined, say: "You cannot give a price. Do NOT run calculate_quote again on this call — one attempt per call, the caller has waited enough. Offer a callback or a person; if the caller still wants the job, save everything with create_callback_task so the team can confirm the total and call them back with it." };   // no-retry + details-carrying callback (2026-11-07a, the Nov 6 stall loop)
     const number = S.ref("Q"), ins = await B.sb("voice_quotes", { method: "POST", prefer: "return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, number: number, input: d, lines: q.lines, total_cents: q.total_cents, miles: miles, miles_source: intake._route ? intake._route.source : (miles == null ? "flat_rate" : null), settings_version: q.settings_version, expires_at: q.expires_at } });
     const row = rows(ins)[0]; if (!row) return { ok: false, error: "save_failed" };
     intake._quote_id = row.id; intake._quote = { id: row.id, number: number, total_cents: q.total_cents, expires_at: q.expires_at, created_at: row.created_at || new Date().toISOString() };
