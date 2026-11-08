@@ -37,36 +37,44 @@ exports.handler = async function (event) {
         "Reply with ONLY JSON: {\"items\":[{\"name\":\"\",\"qty\":1,\"lbs_each\":0,\"heavy\":false}],\"total_cu_yd\":0,\"total_lbs\":0,\"material\":\"mixed\",\"confidence\":\"low|medium|high\",\"hazards\":[],\"notes\":\"one short sentence\"}";
     parts.push({ text: prompt });
     try {
-        // Model chain: current flash models first, then the floating alias.
-        // Netlify function logs, Nov 8 2026 (the live 12:22 PM retest): the old
-        // pinned models gemini-2.5-flash and gemini-2.0-flash both returned
-        // 404 NOT_FOUND for this key (retired from the catalog), and only
-        // "gemini-flash-latest" reached a live model, answering 503 UNAVAILABLE
-        // (overloaded). So: current named models first, alias last, and if every
-        // model answers busy/overloaded (429/503), wait and retry the head
-        // models once before giving up. AI_MODEL env overrides the head.
-        var MODELS = [process.env.AI_MODEL, "gemini-3.8-flash", "gemini-2.5-flash-lite", "gemini-flash-latest"].filter(function (m, i, a) { return m && a.indexOf(m) === i; });
+        // Model chain + per-call timeout. What the Netlify logs proved, Nov 8 2026:
+        // the old pinned models (gemini-2.5-flash, gemini-2.0-flash) and
+        // gemini-2.5-flash-lite all return 404 NOT_FOUND for this key (retired),
+        // while gemini-3.8-flash and the "gemini-flash-latest" alias reach live
+        // models but answer 503 UNAVAILABLE when overloaded. Worse, a single
+        // Google call can HANG ~60s with no answer at all, which ate the whole
+        // function budget twice (both test invocations died at exactly
+        // 60000 ms). So: only live models, ONE pass, and a hard 12s abort on
+        // every call — a hang costs 12s, never the whole request. A timeout is
+        // logged as status 0 and falls through like a 503. AI_MODEL env
+        // overrides the head.
+        var MODELS = [process.env.AI_MODEL, "gemini-3.8-flash", "gemini-flash-latest"].filter(function (m, i, a) { return m && a.indexOf(m) === i; });
         var payload = JSON.stringify({ contents: [{ role: "user", parts: parts }], generationConfig: { temperature: 0.2, responseMimeType: "application/json", maxOutputTokens: 1500 } });
         var r = null, gerr = "", usedModel = "";
-        for (var pass = 0; pass < 2 && !usedModel; pass++) {
-            var tries = pass === 0 ? MODELS : MODELS.slice(0, 2);
-            if (pass === 1) await new Promise(function (res) { setTimeout(res, 3000); });
-            for (var mi = 0; mi < tries.length; mi++) {
-                r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + tries[mi] + ":generateContent", {
-                    method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": key }, body: payload
+        for (var mi = 0; mi < MODELS.length; mi++) {
+            var ctl = new AbortController();
+            var timer = setTimeout(function () { ctl.abort(); }, 12000);
+            try {
+                r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + MODELS[mi] + ":generateContent", {
+                    method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": key }, body: payload, signal: ctl.signal
                 });
-                if (r.ok) { usedModel = tries[mi]; break; }
-                gerr = ""; try { var ej = await r.json(); gerr = (ej && ej.error && (ej.error.status || ej.error.message)) || ""; } catch (e2) {}
-                console.error("estimate-load: Gemini refused on", tries[mi], r.status, String(gerr).slice(0, 200));
-                // Busy/overloaded (429/503) or an unknown model (404): fall through to the next model.
-                if ([429, 503, 404].indexOf(r.status) < 0) break;
-                if (mi < tries.length - 1) await new Promise(function (res) { setTimeout(res, 900); });
+            } catch (fe) {
+                // Abort (our 12s cap) or a network failure: log as status 0 and
+                // fall through to the next model like a 503.
+                clearTimeout(timer);
+                r = { ok: false, status: 0, json: function () { return Promise.resolve(null); } };
+                console.error("estimate-load: Gemini call failed/timed out on", MODELS[mi], String(fe && fe.name || fe).slice(0, 120));
             }
-            // A second pass only helps transient overload; anything else is final.
-            if (!r || [429, 503].indexOf(r.status) < 0) break;
+            clearTimeout(timer);
+            if (r.ok) { usedModel = MODELS[mi]; break; }
+            gerr = ""; try { var ej = await r.json(); gerr = (ej && ej.error && (ej.error.status || ej.error.message)) || ""; } catch (e2) {}
+            if (r.status !== 0) console.error("estimate-load: Gemini refused on", MODELS[mi], r.status, String(gerr).slice(0, 200));
+            // Busy/overloaded (429/503), a hang (0), or an unknown model (404): try the next model.
+            if ([0, 429, 503, 404].indexOf(r.status) < 0) break;
+            if (mi < MODELS.length - 1) await new Promise(function (res) { setTimeout(res, 600); });
         }
         if (!r || !r.ok) {
-            return J(502, { ok: false, error: r && r.status === 429 ? "The free AI is busy. Try again in a minute." : "The AI could not read the photos. (Google said " + (r ? r.status : "?") + (gerr ? ": " + String(gerr).slice(0, 160) : "") + ")" });
+            return J(502, { ok: false, error: r && r.status === 429 ? "The free AI is busy. Try again in a minute." : r && r.status === 0 ? "Google did not answer in time. Try again in a minute." : "The AI could not read the photos. (Google said " + (r ? r.status : "?") + (gerr ? ": " + String(gerr).slice(0, 160) : "") + ")" });
         }
         var d = await r.json();
         var txt = (((d.candidates || [])[0] || {}).content || {}).parts; txt = (txt || []).map(function (p) { return p.text || ""; }).join("");
