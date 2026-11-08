@@ -1241,8 +1241,11 @@ var TRUCK_MAX_LBS = 4500; // working payload cap; REAL_TRUCK_PROFILE.maxPayloadL
 var TRUCK_LENGTH = "16ft";
 var TRUCK_WIDTH = "93 inches wide";
 var HELPER_FEE = 100;
-// ─── STATE GAS PRICES (as of June 15, 2026) ──────────────────────────
-// Source: AAA, GasBuddy. Updated manually or via EIA API for GA.
+// ─── STATE GAS PRICES — FALLBACK TABLE (as of June 15, 2026) ─────────
+// Source: AAA, GasBuddy. This table is the last-resort fallback only:
+// at runtime every state's entry is overlaid with the LIVE EIA weekly
+// price (state series where EIA publishes one, else its EIA district)
+// via fetchFuelPricesFromProxy — see the fuel block by calcFuel.
 // Out-of-state jobs use destination state price (fueling up there).
 var GAS_BY_STATE = {
     // Southeast — lowest prices in US
@@ -2246,7 +2249,7 @@ function calcFuel(zone, gas, stateAbbr) {
     var gal = rt / TRUCK_MPG;
     return { miles: zn.estMiles, rt: rt, gal: Math.round(gal * 10) / 10, ppg: ppg, cost: Math.round(gal * ppg), state: stateAbbr || "GA" };
 }
-var EIA_API_KEY = "QYc4D6uqgsUFT4nyTwFNlv7PeHeS7xDhl80SHYmX";
+// The EIA API key lives server-side only (EIA_API_KEY env var on Netlify) — never in browser code.
 var FUEL_PRICE_STATUS_KEY = "pl_fuel_price_status";
 function saveFuelPriceStatus(status) {
     try { localStorage.setItem(FUEL_PRICE_STATUS_KEY, JSON.stringify(status)); } catch (e) { }
@@ -2257,47 +2260,105 @@ function loadFuelPriceStatus() {
         return r ? JSON.parse(r) : { gas: null, diesel: null };
     } catch (e) { return { gas: null, diesel: null }; }
 }
-// Fetches both gas and diesel in one call, via the Netlify serverless function.
+// Fetches both gas and diesel in one call, via the Netlify serverless
+// function, for a given state (default: the company/user home state below).
 // The EIA API does not reliably support direct browser requests (CORS), which
 // is why this was always silently falling back before. Running the fetch on
-// Netlify's server instead of the browser avoids that entirely.
-var _fuelPriceCache = null;
-async function fetchFuelPricesFromProxy() {
-    if (_fuelPriceCache) return _fuelPriceCache;
+// Netlify's server instead of the browser avoids that entirely. The function
+// prices EVERY state live from EIA's weekly data — the state's own EIA
+// series where one exists (9 states), otherwise its EIA district — and says
+// which level priced it. Results are cached per state for 6 hours in this
+// session (EIA prices are weekly), and the last live price for the home
+// state is kept in localStorage as the fallback, with its EIA week shown.
+var FUEL_PRICE_CACHE_MS = 6 * 60 * 60 * 1000;
+var _fuelPriceCache = {}; // state -> { at, json }
+function normalizeFuelState(s) {
+    var v = String(s || "").trim().toUpperCase();
+    if (!/^[A-Z]{2}$/.test(v)) return null;
+    return (GAS_BY_STATE.hasOwnProperty(v) || DIESEL_BY_STATE.hasOwnProperty(v)) ? v : null;
+}
+async function fetchFuelPricesFromProxy(state) {
+    var st = normalizeFuelState(state) || getFuelHomeState();
+    var hit = _fuelPriceCache[st];
+    if (hit && (Date.now() - hit.at) < FUEL_PRICE_CACHE_MS) return hit.json;
     try {
-        var res = await fetch("/.netlify/functions/get-fuel-prices");
+        var res = await fetch("/.netlify/functions/get-fuel-prices?state=" + encodeURIComponent(st));
         var json = await res.json();
-        _fuelPriceCache = json;
+        json.state = json.state || st;
+        _fuelPriceCache[st] = { at: Date.now(), json: json };
         return json;
     } catch (e) {
-        return { gas: null, diesel: null, error: "Network error: " + e.message };
+        return { gas: null, diesel: null, state: st, error: "Network error: " + e.message };
     }
 }
-async function fetchGasPrice() {
-    var status = loadFuelPriceStatus();
-    var result = await fetchFuelPricesFromProxy();
-    if (result.gas) {
-        GAS_BY_STATE["GA"] = result.gas;
-        status.gas = { live: true, period: result.gasPeriod, checkedAt: new Date().toISOString() };
-        saveFuelPriceStatus(status);
-        return result.gas;
-    }
-    status.gas = { live: false, error: result.error || "EIA returned no usable data", checkedAt: new Date().toISOString() };
-    saveFuelPriceStatus(status);
-    return FALLBACK_GAS;
+// Which state prices the app's headline gas/diesel numbers: an explicit
+// choice saved on this device wins, then the signed-in user's / company's
+// own state when their record carries one, then Georgia (POTENT's home).
+var FUEL_HOME_STATE_KEY = "pl_fuel_state";
+function getFuelHomeState() {
+    try {
+        var saved = normalizeFuelState(localStorage.getItem(FUEL_HOME_STATE_KEY));
+        if (saved) return saved;
+    } catch (e) { }
+    try {
+        var u = loadCurrentUser();
+        var fromUser = normalizeFuelState(u && (u.state || u.homeState || u.companyState));
+        if (fromUser) return fromUser;
+    } catch (e) { }
+    try {
+        var fromBrand = normalizeFuelState(PL_BRAND && (PL_BRAND.state || PL_BRAND.homeState));
+        if (fromBrand) return fromBrand;
+    } catch (e) { }
+    return "GA";
 }
-async function fetchDieselPrice() {
+function setFuelHomeState(state) {
+    var st = normalizeFuelState(state);
+    if (!st) return getFuelHomeState();
+    try { localStorage.setItem(FUEL_HOME_STATE_KEY, st); } catch (e) { }
+    try { window.dispatchEvent(new CustomEvent("potent-fuel-state")); } catch (e) { }
+    return st;
+}
+// Applies a proxy result for one fuel to the price tables + status store.
+// On success the live price becomes that state's last known price.
+function applyFuelResult(kind, result) {
+    var st = normalizeFuelState(result && result.state) || getFuelHomeState();
+    var price = result && result[kind];
     var status = loadFuelPriceStatus();
-    var result = await fetchFuelPricesFromProxy();
-    if (result.diesel) {
-        DIESEL_BY_STATE["GA"] = result.diesel;
-        status.diesel = { live: true, period: result.dieselPeriod, checkedAt: new Date().toISOString() };
+    if (price) {
+        if (kind === "gas") GAS_BY_STATE[st] = price; else DIESEL_BY_STATE[st] = price;
+        var entry = { live: true, state: st, price: price, period: (kind === "gas" ? result.gasPeriod : result.dieselPeriod) || result.asOf || null, area: (kind === "gas" ? result.gasArea : result.dieselArea) || null, level: (kind === "gas" ? result.gasLevel : result.dieselLevel) || null, checkedAt: new Date().toISOString() };
+        status[kind] = entry;
+        if (st === getFuelHomeState()) status[kind + "LastLive"] = entry;
         saveFuelPriceStatus(status);
-        return result.diesel;
+        return price;
     }
-    status.diesel = { live: false, error: result.error || "EIA returned no usable data", checkedAt: new Date().toISOString() };
+    // No live price: fall back to the last known price for this state — the
+    // last live price if we have one, else the built-in table value — and
+    // record that it is a fallback plus the week it is as of.
+    var last = status[kind + "LastLive"];
+    var hasLast = !!(last && last.state === st && last.price);
+    var known = hasLast ? last.price : (kind === "gas" ? getGasForState(st) : (DIESEL_BY_STATE[st] || NATIONAL_AVG_DIESEL));
+    status[kind] = { live: false, state: st, price: known, period: hasLast ? last.period : null, tableAsOf: "2026-06-15", error: (result && result.error) || "EIA returned no usable data", checkedAt: new Date().toISOString() };
     saveFuelPriceStatus(status);
-    return FALLBACK_DIESEL;
+    return known;
+}
+async function fetchGasPrice(state) {
+    var result = await fetchFuelPricesFromProxy(state);
+    return applyFuelResult("gas", result);
+}
+async function fetchDieselPrice(state) {
+    var result = await fetchFuelPricesFromProxy(state);
+    return applyFuelResult("diesel", result);
+}
+// Populates the price tables for any state (e.g. an out-of-state quote's
+// destination) without changing the home-state headline numbers or badge.
+async function fetchFuelStateTables(state) {
+    var st = normalizeFuelState(state);
+    if (!st) return null;
+    var result = await fetchFuelPricesFromProxy(st);
+    if (result.gas) GAS_BY_STATE[st] = result.gas;
+    if (result.diesel) DIESEL_BY_STATE[st] = result.diesel;
+    return result;
 }
 var WEIGHT_TIERS = [
     { id: "light", label: "Light", sub: "Under 50 lbs — boxes, small furniture", fee: 0 },
@@ -6369,6 +6430,18 @@ function PhoneQuotePanelInner(props) {
         }, 900);
         return function () { cancelled = true; clearTimeout(timer); };
     }, [form.origin, form.destination, isMileageSvc]);
+    // Live fuel for the OOS destination state: fetch it into the price
+    // tables when the destination city is picked, then re-render so the
+    // quote below prices fuel off the live EIA figure, not the static table.
+    var [fuelTick, setFuelTick] = useState(0);
+    useEffect(function () {
+        if (!form.destCity) return;
+        var st = getStateFromCity(form.destCity);
+        if (!st) return;
+        var cancelled = false;
+        fetchFuelStateTables(st).then(function () { if (!cancelled) setFuelTick(function (v) { return v + 1; }); });
+        return function () { cancelled = true; };
+    }, [form.destCity]);
     var instMiles = isMileageSvc ? (autoInstMiles != null ? autoInstMiles : (Number(form.miles) || 0)) : 0;
     // Live quote — recalculates on every field change
     var q = form.isOOS
@@ -10652,13 +10725,14 @@ function Root() {
         return function(){ window.removeEventListener("potent-sync",handleSync); };
     },[]);
     useEffect(function () {
-        fetchGasPrice().then(function (p) { setGasPPG(p); });
-        fetchDieselPrice().then(function (p) { setDieselPPG(p); });
-        var iv = setInterval(function () {
+        function refreshFuel() {
             fetchGasPrice().then(function (p) { setGasPPG(p); });
             fetchDieselPrice().then(function (p) { setDieselPPG(p); });
-        }, 30 * 60 * 1000); // real 30-minute refresh, matches the documented requirement — was genuinely 6 hours before this fix
-        return function () { clearInterval(iv); };
+        }
+        refreshFuel();
+        var iv = setInterval(refreshFuel, 30 * 60 * 1000); // real 30-minute refresh, matches the documented requirement — was genuinely 6 hours before this fix
+        window.addEventListener("potent-fuel-state", refreshFuel); // home state changed in the fuel badge selector
+        return function () { clearInterval(iv); window.removeEventListener("potent-fuel-state", refreshFuel); };
     }, []);
     function addJob(j) {
         var newJob = j;
@@ -16364,16 +16438,21 @@ function CarrierSafetyLookup(props){
 // ── FUEL PRICE LIVE/FALLBACK INDICATOR ───────────────────────────────
 function FuelPriceLiveBadge(){
     var [status, setStatus] = useState(function(){ return loadFuelPriceStatus(); });
+    var [homeState, setHomeState] = useState(function(){ return getFuelHomeState(); });
     useEffect(function(){
-        var interval = setInterval(function(){ setStatus(loadFuelPriceStatus()); }, 3000);
+        var interval = setInterval(function(){ setStatus(loadFuelPriceStatus()); setHomeState(getFuelHomeState()); }, 3000);
         return function(){ clearInterval(interval); };
     }, []);
     var gasStatus = status.gas;
-    if(!gasStatus) return React.createElement("span", { style: { fontSize: 9, color: C.dim, fontWeight: 700, background: C.surface, borderRadius: 4, padding: "1px 6px" } }, "checking...");
+    var selector = React.createElement("select", { value: homeState, onChange: function(e){ setFuelHomeState(e.target.value); setHomeState(e.target.value); }, title: "State used for live fuel prices", style: { fontSize: 9, fontWeight: 700, background: C.surface, color: C.white, border: "1px solid " + C.border, borderRadius: 4, padding: "1px 2px", marginLeft: 6, fontFamily: "inherit" } },
+        Object.keys(GAS_BY_STATE).sort().map(function(s){ return React.createElement("option", { key: s, value: s }, s); }));
+    if(!gasStatus) return React.createElement("span", null, React.createElement("span", { style: { fontSize: 9, color: C.dim, fontWeight: 700, background: C.surface, borderRadius: 4, padding: "1px 6px" } }, "checking..."), selector);
+    var stLabel = gasStatus.state || homeState;
     if(gasStatus.live){
-        return React.createElement("span", { style: { fontSize: 9, color: C.green, fontWeight: 700, background: C.green+"18", borderRadius: 4, padding: "1px 6px" }, title: "EIA data period: "+gasStatus.period }, "\u25CF LIVE (EIA)");
+        var areaNote = (gasStatus.level && gasStatus.level !== "state") ? " · " + (gasStatus.area || "regional") : "";
+        return React.createElement("span", null, React.createElement("span", { style: { fontSize: 9, color: C.green, fontWeight: 700, background: C.green+"18", borderRadius: 4, padding: "1px 6px" }, title: "EIA data period: "+gasStatus.period }, "\u25CF LIVE (EIA) · " + stLabel + areaNote + (gasStatus.period ? " · week of " + gasStatus.period : "")), selector);
     }
-    return React.createElement("span", { style: { fontSize: 9, color: C.orange, fontWeight: 700, background: C.orange+"18", borderRadius: 4, padding: "1px 6px" }, title: gasStatus.error||"" }, "\u25CF FALLBACK — not live");
+    return React.createElement("span", null, React.createElement("span", { style: { fontSize: 9, color: C.orange, fontWeight: 700, background: C.orange+"18", borderRadius: 4, padding: "1px 6px" }, title: gasStatus.error||"" }, "\u25CF LAST KNOWN · " + stLabel + " · as of " + (gasStatus.period || gasStatus.tableAsOf || "—")), selector);
 }
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
