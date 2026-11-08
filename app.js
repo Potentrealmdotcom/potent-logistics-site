@@ -624,6 +624,22 @@ async function sendEmergencyAlert(driverId,driverName,lat,lng,jobId,reason){
 // OFFLINE SUPPORT
 var OFFLINE_QUEUE_KEY = "potent_offline_queue";
 
+// ── POLL GATE (traffic fix, 2026-11-08) ─────────────────────────────
+// Several screens refreshed themselves from the database on short timers
+// around the clock — including while the app sat backgrounded on a phone
+// or open on a screen nobody was watching — and that steady drip burned
+// through the database plan's free traffic allowance (~6,000 requests an
+// hour). plPoll runs a refresh on its timer ONLY while the app is actually
+// on screen; hidden or backgrounded means zero requests. It returns a real
+// interval id, so every existing clearInterval cleanup works unchanged, and
+// the immediate first call each screen already makes is untouched.
+function plPoll(fn, ms) {
+    return setInterval(function () {
+        if (typeof document !== "undefined" && document.visibilityState && document.visibilityState !== "visible") return;
+        fn();
+    }, ms);
+}
+
 // ── SUPABASE CRUD HELPERS ─────────────────────────────────────────
 function sbGet(table,qs){return fetch(SUPABASE_URL+"/rest/v1/"+table+(qs?"?"+qs:""),{headers:{apikey:SUPABASE_ANON_KEY,Authorization:"Bearer "+SUPABASE_ANON_KEY}}).then(function(r){return r.json();}).catch(function(){return [];});}
 function sbUpsert(table,data){return fetch(SUPABASE_URL+"/rest/v1/"+table,{method:"POST",headers:{apikey:SUPABASE_ANON_KEY,Authorization:"Bearer "+SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates,return=representation"},body:JSON.stringify(Array.isArray(data)?data:[data])}).then(function(r){return r.json();}).catch(function(){return null;});}
@@ -4939,7 +4955,7 @@ function TruckMap(props) {
                     setStatus("error"); });
             }
             poll();
-            pollId = setInterval(poll, 10000);
+            pollId = plPoll(poll, 30000);
         }).catch(function () { if (!cancelled)
             setStatus("error"); });
         return function () {
@@ -5041,7 +5057,7 @@ function FleetMap() {
                     "<a href='https://www.google.com/maps/dir/?api=1&destination=" + row.lat + "," + row.lon + "' target='_blank' style='color:#F0E000;'>Google Maps</a></div>";
             }
             poll();
-            pollId = setInterval(poll, 10000);
+            pollId = plPoll(poll, 30000);
         }).catch(function () { if (!cancelled)
             setErr("Map failed to load. Check your connection."); });
         return function () {
@@ -10559,7 +10575,7 @@ function Root() {
             });
         }
         pull();
-        var iv = setInterval(pull, 120000);
+        var iv = plPoll(pull, 120000);
         return function () { clearInterval(iv); };
     }, [isAdmin]);
     // Pull the latest synced display names once on load so any renames made
@@ -10582,6 +10598,7 @@ function Root() {
     // them to refresh or re-login on their own.
     useEffect(function () {
         function checkRevoked() {
+            if (!loadCurrentUser()) return; // signed out: nobody to force out, skip the fetch
             loadRevokedFromServer().then(function () {
                 var u = loadCurrentUser();
                 if (u && isUserRevoked(u.id)) {
@@ -10593,7 +10610,7 @@ function Root() {
             });
         }
         checkRevoked();
-        var iv = setInterval(checkRevoked, 60000);
+        var iv = plPoll(checkRevoked, 60000);
         return function () { clearInterval(iv); };
     }, []);
     useEffect(function () {
@@ -11740,6 +11757,8 @@ function EnhancedDriverApp(props) {
             var c = latestCoordsRef.current;
             if (!c)
                 return;
+            if (!currentUser)
+                return; // signed out — never broadcast a location
             pingDriverLocation({
                 driver_id: driverId, driver_name: driverName, job_id: sel || null,
                 lat: c.latitude, lon: c.longitude, heading: c.heading || null,
@@ -14923,7 +14942,7 @@ function SafetyDashboard(props){
         Notification.requestPermission();
       }
     }catch(e){}
-    var interval=setInterval(loadAlerts,30000);
+    var interval=plPoll(loadAlerts,30000);
     return function(){clearInterval(interval);};
   },[]);
 
@@ -15897,7 +15916,7 @@ function GeofenceManager(props){
             }).catch(function(){});
         }
         poll();
-        var interval = setInterval(poll, 15000);
+        var interval = plPoll(poll, 30000);
         return function(){ clearInterval(interval); };
     }, [fences]);
 
@@ -21025,7 +21044,7 @@ function VoiceRoom(props) {
     }
     React.useEffect(function () {
         loadMessages();
-        var iv = setInterval(loadMessages, 8000); // real auto-refresh, feels live without a signaling server
+        var iv = plPoll(loadMessages, 30000); // real auto-refresh, feels live without a signaling server
         return function () { clearInterval(iv); };
     }, []);
 

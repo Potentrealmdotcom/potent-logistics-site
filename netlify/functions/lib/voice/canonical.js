@@ -34,7 +34,16 @@ async function recordingExpected(orgId) {
     return !!(cfg.recording_enabled && cfg.recording_consent_confirmed && st.entitlements && st.entitlements.recording);
   } catch (e) { return false; }
 }
+const _healthSeen = new Map();
 async function health(orgId, kind, ok, detail) {
+  // Throttle (traffic fix, 2026-11-08): a stuck transcription job is retried on every poll and
+  // every attempt used to write another identical health row — thousands a day of noise that also
+  // burned database traffic. The same org+kind+detail now lands at most once per 10 minutes per
+  // warm function instance; the first occurrence (the one that matters) always goes through.
+  const hk = (orgId || "") + "|" + kind + "|" + (detail ? String(detail).slice(0, 80) : "");
+  const now = Date.now();
+  if (_healthSeen.get(hk) && now - _healthSeen.get(hk) < 600000) return;
+  _healthSeen.set(hk, now);
   try { await B.sb("voice_provider_health", { method: "POST", prefer: "return=minimal", body: { org_id: orgId || null, provider: "canonical", kind: kind, ok: !!ok, detail: detail ? String(detail).slice(0, 300) : null } }); } catch (e) { /* ignore */ }
 }
 
@@ -49,6 +58,7 @@ async function settleReport(orgId, sessionId) {
   if (!ses.answered_at || ses.provider !== "twilio" || !ses.provider_call_id) return OR.reportCall(orgId, sessionId);
   if (!(await recordingExpected(orgId))) return OR.reportCall(orgId, sessionId);
   if (await hasEvent(orgId, sessionId, "canonical")) return OR.reportCall(orgId, sessionId);   // already stored: report (once-guarded inside)
+  if (await hasEvent(orgId, sessionId, "canonical_closed")) return OR.reportCall(orgId, sessionId);   // already resolved by giveUp: report (once-guarded inside), never re-claim the pending slot
   const endedAt = ses.ended_at ? new Date(ses.ended_at).getTime() : 0;
   if (endedAt && Date.now() - endedAt > waitMs()) {   // the bounded wait already ran out (e.g. the worker was down): fall back to the live transcript
     await health(orgId, "canonical_timeout", false, sessionId);
@@ -66,11 +76,24 @@ async function settleReport(orgId, sessionId) {
 // recording can be role-anchored against them; dual-channel recordings ignore them.
 async function jobs(limit) {
   const pend = rows(await B.sb("voice_events?kind=eq.canonical_pending&select=org_id,session_id,created_at&order=created_at.desc&limit=" + (limit || 20)));
+  if (!pend.length) return [];
+  // Resolve the batch in ONE query (traffic fix, 2026-11-08). The pending claim is never deleted,
+  // so every stored or given-up session used to stay in this list forever and cost its own
+  // per-session lookup on EVERY poll — that per-session lookup was the single busiest route in
+  // the database. Now finished sessions are filtered out in bulk, up front.
+  const ids = pend.map(function (p) { return p.session_id; }).filter(Boolean);
+  if (!ids.length) return [];
+  const doneRows = rows(await B.sb("voice_events?kind=in.(canonical,canonical_closed)&session_id=in.(" + ids.join(",") + ")&select=session_id"));
+  const done = {}; doneRows.forEach(function (r) { done[r.session_id] = true; });
   const out = [];
   for (const p of pend) {
-    if (await hasEvent(p.org_id, p.session_id, "canonical")) continue;
+    if (done[p.session_id]) continue;
     const ses = await S.session(p.org_id, p.session_id);
     if (!ses || !ses.provider_call_id) continue;
+    // Past the bounded wait this is no longer transcription work — settleReport's deadline path
+    // (or giveUp) owns the report. Handing dead jobs to the transcriber made it retry them, and
+    // re-fetch their full transcripts, on every poll around the clock.
+    if (ses.ended_at && Date.now() - new Date(ses.ended_at).getTime() > waitMs()) continue;
     const live = rows(await B.sb("voice_transcripts?session_id=eq." + ses.id + "&select=role,text,seq&order=seq.asc&limit=600"));
     out.push({ session_id: ses.id, org_id: ses.org_id, call_sid: ses.provider_call_id, from_number: ses.from_number, to_number: ses.to_number, direction: ses.direction, ended_at: ses.ended_at, deadline: new Date((ses.ended_at ? new Date(ses.ended_at).getTime() : Date.now()) + waitMs()).toISOString(), live_lines: live.map(function (t) { return { role: t.role, text: t.text }; }) });
   }
@@ -96,7 +119,7 @@ async function mediaSlice(recSid, off) {
 async function recording(orgId, sessionId, offset) {
   const ses = await S.session(orgId, sessionId);
   if (!ses) return { ok: false, error: "no_session" };
-  if (ses.provider !== "twilio" || !ses.provider_call_id || !(await hasEvent(orgId, sessionId, "canonical_pending")) || (await hasEvent(orgId, sessionId, "canonical"))) return { ok: false, error: "not_queued" };
+  if (ses.provider !== "twilio" || !ses.provider_call_id || !(await hasEvent(orgId, sessionId, "canonical_pending")) || (await hasEvent(orgId, sessionId, "canonical")) || (await hasEvent(orgId, sessionId, "canonical_closed"))) return { ok: false, error: "not_queued" };
   const best = await TW.callRecording(ses.provider_call_id);
   if (!best.ok) { await health(orgId, "canonical_recording", false, sessionId + " " + best.reason); return { ok: false, error: best.reason === "recording_not_ready" ? "recording_not_ready" : "twilio_error", retry: true, detail: best.detail || best.reason }; }
   const off = Math.max(0, Math.floor(Number(offset) || 0)), sl = await mediaSlice(best.recording.sid, off);
@@ -124,6 +147,11 @@ async function store(orgId, sessionId, lines, meta) {
 // live transcript, as it always did before this pipeline existed.
 async function giveUp(orgId, sessionId, why) {
   if (await hasEvent(orgId, sessionId, "canonical")) return { ok: true, already: true };
+  // Close the claim (traffic fix, 2026-11-08): a given-up session used to stay "canonical_pending"
+  // forever, so the job list kept handing it back on every poll and its transcript kept being
+  // re-fetched. canonical_closed is the terminal state jobs() and settleReport() check for;
+  // claiming it is once-only, like every firstTime gate, so a repeat giveUp is a cheap no-op.
+  if (!(await S.firstTime(orgId, sessionId, key("canonical_closed", sessionId), "canonical_closed", { why: String(why || "").slice(0, 120) }))) return { ok: true, already: true };
   await health(orgId, "canonical_fallback", false, sessionId + " " + String(why || "").slice(0, 120));
   const rep = await OR.reportCall(orgId, sessionId);
   return { ok: true, report: rep };
