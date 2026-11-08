@@ -161,7 +161,8 @@ function createBridge(deps) {
   }
 
   function handle(tw) {
-    let saidBye = false, agentEnd = false, payPending = false, payStarted = false, idleAt = 0, idleStage = 0, closingAt = 0, closeNudges = 0, deafStage = 0, deafAt = 0, greetHold = true, greetT = null, lastCallerAt = 0, lastCallerTextAt = 0, lastAgentAt = 0, toolDoneAt = 0, toolBusy = 0, nudges = 0, burst = 0, readyAt = 0, wdTimer = null, callerByeAt = 0, byeNudged = false;
+    let saidBye = false, agentEnd = false, payPending = false, payStarted = false, idleAt = 0, idleStage = 0, closingAt = 0, closeNudges = 0, deafStage = 0, deafAt = 0, greetHold = true, greetT = null, lastCallerAt = 0, lastCallerTextAt = 0, lastAgentAt = 0, toolDoneAt = 0, toolBusy = 0, nudges = 0, burst = 0, readyAt = 0, wdTimer = null, callerByeAt = 0, byeNudged = false, lastOwnSpeechAt = 0, lastToolResultAt = 0, agentTurnStartAt = 0, turnAudioSeen = false, hardLaneFor = 0, lastToolSig = "";
+    // lastOwnSpeechAt = the last time HER OWN generated speech played (bridge-ordered lines excluded — see the audio branch); the watchdog's owed test runs on it, because a hold line the bridge ordered landing just after a check used to count as "she answered" and disarm the ladder for that check (Nov 8, 2026, graded: three fast checks, 25–35 s of deliberation after each, no nudge, no rebuild, caller hung up).
     let lang = "English", langTimer = null, flushTimer = null, retries = 0, reconnecting = false, timersSet = false, hist = [], streamSid = null, ctx = null, ai = null, prov = null, connectTimerRef = null, spokeSinceTool = false, toolAt = 0, lastHoldAt = 0, done = false, aiReady = false, buffered = [], lastItem = null, assistStart = null, mediaTs = 0, marks = 0, markQ = [], transferPending = false, transferred = false, xferStarted = false, xferFired = false, startedAt = Date.now(), timers = [], nm = 0, amb = null, pump = null;
     const timer = function (fn, ms) { const t = setTimeout(fn, ms); timers.push(t); return t; };
     const twSend = function (o) { if (tw.readyState === 1) tw.send(JSON.stringify(o)); };
@@ -273,7 +274,7 @@ function createBridge(deps) {
 
     function onReady() { // the AI accepted its setup: start the conversation (or resume it after a reconnect)
       clearTimeout(connectTimerRef);
-      aiReady = true; turnInFlight = false; pendingInjections = []; readyAt = Date.now(); nudges = 0; lastCallerAt = 0; lastCallerTextAt = 0; toolDoneAt = 0; buffered = []; // caller audio is not forwarded while the greeting plays, so background noise cannot interrupt it
+      aiReady = true; turnInFlight = false; pendingInjections = []; turnAudioSeen = false; readyAt = Date.now(); nudges = 0; lastCallerAt = 0; lastCallerTextAt = 0; toolDoneAt = 0; buffered = []; // caller audio is not forwarded while the greeting plays, so background noise cannot interrupt it
       greetHold = !reconnecting && !ctx.resume; clearTimeout(greetT); if (greetHold) greetT = setTimeout(function () { greetHold = false; }, 12000);
       if (ctx.resume) {   // back from the keypad payment: no greeting; tell her the verified result and what was said before
         const rc = String(ctx.resume.code || ""), kind = rc.split(":")[0], val = rc.slice(kind.length + 1), recap = ctx.resume.recap || "(nothing said yet)";
@@ -296,18 +297,19 @@ function createBridge(deps) {
     function onAi(e) {
       const t = e.kind; kinds[t] = (kinds[t] || 0) + 1;
       if (t === "audio" || t === "agent_text") { turnInFlight = true; lastTurnActivityAt = Date.now(); }   // she is mid-turn: bridge injections queue until the boundary (see INJECTION DISCIPLINE above)
-      else if (t === "tool") turnInFlight = false;   // she yielded to a check: the turn is suspended, not in flight — hold lines may speak for her
+      else if (t === "tool") { turnInFlight = false; turnAudioSeen = false; }   // she yielded to a check: the turn is suspended, not in flight — hold lines may speak for her
       if (t !== "agent_text" && t !== "interrupted") flushPendingAgent(false);   // any other event settles the held line as fully spoken
       if (t === "ready") onReady();
       else if (t === "audio") {
         if (!streamSid || !e.payload) return;
         lastAgentAt = Date.now(); nudges = 0;
+        if (!turnAudioSeen) { turnAudioSeen = true; agentTurnStartAt = Date.now(); if (!lastToolResultAt || agentTurnStartAt > lastToolResultAt) lastOwnSpeechAt = agentTurnStartAt; }   // OWN-SPEECH RULE (Nov 8, 2026): a speech turn counts as her answering only if it STARTS after the latest check result was handed to her. A turn that began before it — the hold line she was ordered to say mid-check, still streaming when the result landed — is the pre-result world, and on the graded Nov 8 call exactly that audio used to refresh "she answered" and disarm the watchdog for every check
         if (toolAt) spokeSinceTool = true;
         if (amb) { amb.push(e.payload); return; }   // with a room live, her audio is queued and the pump mixes it over the bed (marks ride the pump's spoken frames)
         twSend({ event: "media", streamSid: streamSid, media: { payload: e.payload } });
         const name = "m" + (++marks); markQ.push(name); twSend({ event: "mark", streamSid: streamSid, mark: { name: name } });
       } else if (t === "interrupted") { // the caller talked over the assistant: stop its audio on the phone
-        turnInFlight = false; pendingInjections = [];   // the interrupted turn is over; injections queued for it die with it instead of landing on her next turn
+        turnInFlight = false; pendingInjections = []; turnAudioSeen = false;   // the interrupted turn is over; injections queued for it die with it instead of landing on her next turn
         flushPendingAgent(true);   // record only the part of her line that actually played (markQ still holds the unplayed chunks)
         if (amb) amb.clear();   // drop her unplayed queued speech; the room itself keeps breathing under the caller
         if (markQ.length) { twSend({ event: "clear", streamSid: streamSid }); markQ = []; }
@@ -316,7 +318,7 @@ function createBridge(deps) {
       else if (t === "agent_text") { flushPendingAgent(false); pendingAgent = { text: String(e.text), key: e.key, chunks: e.chunks || 0, rescue: !!e.rescue }; if (pendingAgent.rescue) flushPendingAgent(false); }
       else if (t === "go_away") { log("ai says it will close soon", e.left); }
       else if (t === "tool") runTool(e);
-      else if (t === "turn_done") { if (greetHold) { greetHold = false; clearTimeout(greetT); } if (transferPending && (spokeSinceTool || e.spoke)) { transferPending = false; doTransfer(); } turnInFlight = false; flushInjections(); }   // turn boundary: she is idle, so anything the bridge queued mid-turn may land now — it cannot restart a finished turn
+      else if (t === "turn_done") { if (greetHold) { greetHold = false; clearTimeout(greetT); } if (transferPending && (spokeSinceTool || e.spoke)) { transferPending = false; doTransfer(); } turnInFlight = false; turnAudioSeen = false; flushInjections(); }   // turn boundary: she is idle, so anything the bridge queued mid-turn may land now — it cannot restart a finished turn
       else if (t === "error") { log("ai reported error", e.message); }
     }
 
@@ -342,7 +344,11 @@ function createBridge(deps) {
       };
       holdTimers.push(setTimeout(function () { holdFire(0); }, TOOL_HOLD_MS));
       holdTimers.push(setTimeout(function () { holdFire(1); }, TOOL_HOLD2_MS));
-      const r = await api({ action: "tool", session_id: ctx.session_id, name: m.name, args: m.args, call_key: nk(m.id) }, 12000);   // tool window 15000 -> 12000 (2026-11-07a): the server-side steps now budget themselves to land inside ~9 s (route 6 s + reads/writes), so a 12 s cap only ever catches a genuinely wedged call — and catches it 3 s sooner
+      const toolSig = m.name + "|" + JSON.stringify(m.args || {}), dupTool = toolSig === lastToolSig; lastToolSig = toolSig;
+      let r;
+      try {   // TOOLBUSY MUST NEVER LEAK (Nov 8, 2026): everything from the tool call to the result delivery runs under try/finally. The watchdog returns early while a check is busy, and on the graded Nov 8 call it recorded ZERO nudges in 121 s — one busy count leaked by a throwing line anywhere in this section silences the watchdog for the rest of the call
+      if (dupTool) { log("tool", m.name, "0ms", "duplicate-skipped"); r = { status: true, data: { result: { ok: true, say: "Those exact details are already saved — do not run that step again. Continue out loud right now with the next step: read back what you have, ask the next question you still need, or give the price." } } }; }   // DUPLICATE STEP GUARD (Nov 8, 2026): in the graded stall she re-ran the identical save after every long deliberation, and each re-run reset the silence clocks; an exact repeat of the step she just ran is now answered instantly, with marching orders, and does not touch toolDoneAt
+      else r = await api({ action: "tool", session_id: ctx.session_id, name: m.name, args: m.args, call_key: nk(m.id) }, 12000);   // tool window 15000 -> 12000 (2026-11-07a): the server-side steps now budget themselves to land inside ~9 s (route 6 s + reads/writes), so a 12 s cap only ever catches a genuinely wedged call — and catches it 3 s sooner
       holdTimers.forEach(clearTimeout);
       // PER-TOOL TIMING LOG (fix round 2, Nov 7, 2026): the graded Nov 7 call's server log held exactly
       // TWO lines for 414 s — no tool names, durations or outcomes — so the grade had to be built from
@@ -371,8 +377,9 @@ function createBridge(deps) {
       // unfinished step; a stall is never a reason to exit. A FAILED check is different — its error
       // result already carries the honest fallback, so no resume note rides with it.
       if (stalled && !unreachable && !done && aiReady && !payPending && !transferPending && !agentEnd) sysNote("That check took much longer than it should, and the caller waited through it — they are still on the line with you. Pick the conversation back up at the exact step you were on before the check: speak the result once, then ask the next question you still need. Do NOT offer a callback or a follow-up because of the wait, do not say you will write anything down for someone to follow up on, and do not re-ask anything the caller already answered.");
-      prov.toolResult(m.id, m.name, result).forEach(aiSend);
-      toolBusy = Math.max(0, toolBusy - 1); toolDoneAt = Date.now(); if (["send_approved_confirmation", "book_demo", "create_callback_task"].indexOf(m.name) >= 0 && result && result.ok !== false) closingAt = Date.now();
+      lastToolResultAt = Date.now(); prov.toolResult(m.id, m.name, result).forEach(aiSend);   // the result hand-off instant: only speech turns STARTING after it count as her answering it (own-speech rule, Nov 8, 2026)
+      } catch (e) { log("tool", m.name, "exception", String((e && e.message) || e).slice(0, 120)); }
+      finally { toolBusy = Math.max(0, toolBusy - 1); if (!dupTool) toolDoneAt = Date.now(); } if (["send_approved_confirmation", "book_demo", "create_callback_task"].indexOf(m.name) >= 0 && result && result.ok !== false) closingAt = Date.now();
     }
     // SILENCE WATCHDOG. Dead air must be impossible: if the caller (or a finished tool) is waiting on her and she has said nothing for ~4 s,
     // (the window WHILE a tool runs belongs to runTool's own hold-on lines above — this watchdog still never fires mid-tool, unchanged)
@@ -394,7 +401,7 @@ function createBridge(deps) {
         if (sinceBye > 16000) { callerByeAt = 0; doEnd(); return; }
       }
       if (toolBusy || transferPending || payPending) return;
-      const owed = Math.max(lastCallerTextAt, toolDoneAt) > lastAgentAt, noGreeting = !lastAgentAt && !reconnecting && readyAt && now - readyAt > 2 * th;   // "owed" counts only REAL caller turns (transcribed speech) and finished tools — never raw loudness: a TV, running water or banging is loud too, and loudness alone used to make the watchdog prod her into answering the room
+      const owed = Math.max(lastCallerTextAt, toolDoneAt) > lastOwnSpeechAt, noGreeting = !lastAgentAt && !reconnecting && readyAt && now - readyAt > 2 * th;   // "owed" counts only REAL caller turns (transcribed speech) and finished tools — never raw loudness: a TV, running water or banging is loud too, and loudness alone used to make the watchdog prod her into answering the room
       if (!lastCallerTextAt && !owed && !closingAt && lastAgentAt && lastCallerAt > lastAgentAt && now - lastCallerAt > th && now - lastAgentAt > th && now - deafAt > 2 * th) { // DEAF LANE: sound from the caller landed after her last line, yet not one word has ever been transcribed this call — her ears are the problem, not the caller. The silent-caller backstop below needs ~12 s between check-ins, so a talking-but-unheard caller gets dead air for a minute and hangs up first (Call 13, Oct 29 2026: 42 s, one check-in, nothing saved). Escalate fast: hearing line, then a fresh AI session, then a saved callback.
         deafAt = now; deafStage++; kinds.deaf_check = (kinds.deaf_check || 0) + 1; api({ action: "health", provider: "bridge", kind: "silence_nudge", ok: false, detail: ("deaf " + deafStage).slice(0, 120) }, 4000);
         if (deafStage === 1) { lastAgentAt = now; sysNote("You have not been able to hear anything the caller said on this call — the line may be bad. In one short warm sentence, tell the caller you can't seem to hear them and ask them to try again. Then wait."); }
@@ -419,10 +426,12 @@ function createBridge(deps) {
           /* after that she stays quiet rather than looping; the site saves a callback if the call ends without one */ }
         return;
       }
+      if (toolDoneAt && hardLaneFor !== toolDoneAt && lastOwnSpeechAt < toolDoneAt && now - toolDoneAt > 12000 && now - lastAgentAt > 6000 && !closingAt) { // POST-TOOL SILENCE (Nov 8, 2026): a check finished over 12 s ago and she has not spoken one word of her own since — the deliberation outran every ladder (the owed test was disarmed by the check's own hold line until today's fix, and each re-save reset the backstop's clocks). Hard cap, once per finished check: rebuild the AI link — the reconnect recap makes the fresh session speak the result and carry on.
+        hardLaneFor = toolDoneAt; log("watchdog", "post_tool_silence", Math.round((now - toolDoneAt) / 1000) + "s"); aiDown("post_tool_silence", "no speech of her own for " + Math.round((now - toolDoneAt) / 1000) + "s after a finished check"); return; }
       if (!owed && !noGreeting) return;
       const since = noGreeting ? readyAt : Math.max(lastCallerTextAt, toolDoneAt), waited = now - since;
       if (waited < th * (nudges + 1) + (noGreeting ? th : 0)) return;
-      nudges++; kinds.silence_nudge = (kinds.silence_nudge || 0) + 1;
+      nudges++; kinds.silence_nudge = (kinds.silence_nudge || 0) + 1; log("watchdog", "nudge", nudges, "after", Math.round(waited / 1000) + "s");   // watchdog stages are log()-visible from Nov 8, 2026: the Nov 8 grade had to be rebuilt from a phone recording because the container log held only tool lines
       api({ action: "health", provider: "bridge", kind: "silence_nudge", ok: false, detail: ("step " + nudges + " after " + Math.round(waited / 1000) + "s" + (noGreeting ? " (greeting never played)" : "")).slice(0, 120) }, 4000);
       if (nudges === 1) { if (noGreeting) bridgeSay(ctx.greeting); else sysNote("The caller is waiting for your answer. Answer now in one short sentence."); }
       else if (nudges === 2) bridgeSay("Still here, one second.");
