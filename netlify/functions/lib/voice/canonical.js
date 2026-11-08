@@ -24,9 +24,24 @@ const rows = S.rows;
 
 const waitMs = function () { const m = Number(process.env.CANONICAL_WAIT_MIN); return (isFinite(m) && m > 0 ? m : 10) * 60000; };
 const key = function (kind, sessionId) { return kind + ":" + sessionId; };
-async function hasEvent(orgId, sessionId, kind) {
-  return rows(await B.sb("voice_events?org_id=eq." + orgId + "&session_id=eq." + sessionId + "&event_key=eq." + encodeURIComponent(key(kind, sessionId)) + "&select=id&limit=1")).length > 0;
+// FRESHNESS WINDOW (traffic fix list, Nov 8, 2026): a pending canonical job older than 45 minutes
+// is crossed off — durably — never chased forever. The window is measured from the pending CLAIM,
+// which always carries a timestamp, never from the session's ended_at: a session whose ended_at
+// was never stamped used to be invisible to every deadline test and was re-served forever.
+const FRESH_MS = 45 * 60000;
+// The session's canonical state in ONE read. This replaces one hasEvent round trip per kind per
+// check: the per-job status checks (settleReport ×3, the recording gate ×3, on every poll) were
+// the chaser's heartbeat and a real slice of the database's busiest route.
+async function canonicalState(orgId, sessionId) {
+  const evs = rows(await B.sb("voice_events?org_id=eq." + orgId + "&session_id=eq." + sessionId + "&kind=in.(canonical_pending,canonical_transcript,canonical_closed,canonical_job_done)&select=kind,created_at"));
+  const st = { pending: null, stored: false, closed: false, done: false };
+  evs.forEach(function (e) { if (e.kind === "canonical_pending") st.pending = e; else if (e.kind === "canonical_transcript") st.stored = true; else if (e.kind === "canonical_closed") st.closed = true; else if (e.kind === "canonical_job_done") st.done = true; });
+  return st;
 }
+// The durable terminal marker: once a session is stored, given up, or crossed off as stale, this
+// claim exists and every reader (jobs, settleReport, the recording gate) treats the session as
+// finished business. Once-only, like every firstTime gate.
+async function terminalMark(orgId, sessionId, why) { return S.firstTime(orgId, sessionId, key("canonical_job_done", sessionId), "canonical_job_done", { why: String(why || "").slice(0, 120) }); }
 // Same gate that starts the Twilio recording when the bridge connects (voice-tools "context").
 async function recordingExpected(orgId) {
   try {
@@ -57,10 +72,19 @@ async function settleReport(orgId, sessionId) {
   // report immediately, exactly as before.
   if (!ses.answered_at || ses.provider !== "twilio" || !ses.provider_call_id) return OR.reportCall(orgId, sessionId);
   if (!(await recordingExpected(orgId))) return OR.reportCall(orgId, sessionId);
-  if (await hasEvent(orgId, sessionId, "canonical")) return OR.reportCall(orgId, sessionId);   // already stored: report (once-guarded inside)
-  if (await hasEvent(orgId, sessionId, "canonical_closed")) return OR.reportCall(orgId, sessionId);   // already resolved by giveUp: report (once-guarded inside), never re-claim the pending slot
+  const st = await canonicalState(orgId, sessionId);
+  if (st.stored || st.closed || st.done) return OR.reportCall(orgId, sessionId);   // terminal (stored / given up / crossed off): report (once-guarded inside), never re-claim the pending slot
   const endedAt = ses.ended_at ? new Date(ses.ended_at).getTime() : 0;
   if (endedAt && Date.now() - endedAt > waitMs()) {   // the bounded wait already ran out (e.g. the worker was down): fall back to the live transcript
+    await health(orgId, "canonical_timeout", false, sessionId);
+    return OR.reportCall(orgId, sessionId);
+  }
+  // Freshness cross-off: the pending claim itself is older than the 45-minute window — waiting
+  // longer will not produce a recording, so the job is finished and the report goes out with the
+  // live transcript. This also rescues sessions whose ended_at was never stamped: the deadline
+  // test above cannot see them, and the old code deferred them on every settle, forever.
+  if (st.pending && st.pending.created_at && Date.now() - new Date(st.pending.created_at).getTime() > FRESH_MS) {
+    await terminalMark(orgId, sessionId, "stale_pending");
     await health(orgId, "canonical_timeout", false, sessionId);
     return OR.reportCall(orgId, sessionId);
   }
@@ -81,13 +105,24 @@ async function jobs(limit) {
   // so every stored or given-up session used to stay in this list forever and cost its own
   // per-session lookup on EVERY poll — that per-session lookup was the single busiest route in
   // the database. Now finished sessions are filtered out in bulk, up front.
+  // THE KINDS MUST BE THE ONES ACTUALLY WRITTEN (root-cause fix, Nov 8, 2026): store() claims
+  // kind "canonical_transcript", giveUp() claims "canonical_closed", and both now also claim
+  // "canonical_job_done". The earlier filter listed kind "canonical" — a kind NOTHING ever
+  // writes (it exists only inside event_key strings) — so the done-set read came back EMPTY on
+  // every poll, no stored session was ever crossed off, and the transcriber re-checked finished
+  // sessions around the clock (one stored session: 8,599 status checks in 24 h). An exclusion
+  // read that returns empty must never be the reason the chase continues.
   const ids = pend.map(function (p) { return p.session_id; }).filter(Boolean);
   if (!ids.length) return [];
-  const doneRows = rows(await B.sb("voice_events?kind=in.(canonical,canonical_closed)&session_id=in.(" + ids.join(",") + ")&select=session_id"));
+  const doneRows = rows(await B.sb("voice_events?kind=in.(canonical_transcript,canonical_closed,canonical_job_done)&session_id=in.(" + ids.join(",") + ")&select=session_id"));
   const done = {}; doneRows.forEach(function (r) { done[r.session_id] = true; });
   const out = [];
   for (const p of pend) {
     if (done[p.session_id]) continue;
+    // Freshness cross-off: a pending claim older than the window is finished business. It is
+    // crossed off DURABLY (the terminal claim lands once), not merely skipped per poll — and
+    // the test is the claim's own age, so it holds even when the session's ended_at is missing.
+    if (p.created_at && Date.now() - new Date(p.created_at).getTime() > FRESH_MS) { await terminalMark(p.org_id, p.session_id, "stale_pending"); continue; }
     const ses = await S.session(p.org_id, p.session_id);
     if (!ses || !ses.provider_call_id) continue;
     // Past the bounded wait this is no longer transcription work — settleReport's deadline path
@@ -119,7 +154,8 @@ async function mediaSlice(recSid, off) {
 async function recording(orgId, sessionId, offset) {
   const ses = await S.session(orgId, sessionId);
   if (!ses) return { ok: false, error: "no_session" };
-  if (ses.provider !== "twilio" || !ses.provider_call_id || !(await hasEvent(orgId, sessionId, "canonical_pending")) || (await hasEvent(orgId, sessionId, "canonical")) || (await hasEvent(orgId, sessionId, "canonical_closed"))) return { ok: false, error: "not_queued" };
+  const st = await canonicalState(orgId, sessionId);   // ONE read for the whole gate (was three)
+  if (ses.provider !== "twilio" || !ses.provider_call_id || !st.pending || st.stored || st.closed || st.done) return { ok: false, error: "not_queued" };
   const best = await TW.callRecording(ses.provider_call_id);
   if (!best.ok) { await health(orgId, "canonical_recording", false, sessionId + " " + best.reason); return { ok: false, error: best.reason === "recording_not_ready" ? "recording_not_ready" : "twilio_error", retry: true, detail: best.detail || best.reason }; }
   const off = Math.max(0, Math.floor(Number(offset) || 0)), sl = await mediaSlice(best.recording.sid, off);
@@ -136,6 +172,7 @@ async function store(orgId, sessionId, lines, meta) {
     .slice(0, 800).map(function (l) { return { role: l.role, text: String(l.text).slice(0, 2000) }; });
   if (!clean.length) return { ok: false, error: "no_lines" };
   if (!(await S.firstTime(orgId, sessionId, key("canonical", sessionId), "canonical_transcript", { engine: (meta && meta.engine) || null, source: (meta && meta.source) || null, lines: clean.length }))) return { ok: true, duplicate: true };
+  await terminalMark(orgId, sessionId, "stored");   // durable terminal marker: jobs() crosses this session off from this moment on
   await B.sb("voice_transcripts?session_id=eq." + sessionId, { method: "DELETE", prefer: "return=minimal" });
   for (const l of clean) await S.transcript(orgId, sessionId, l.role, l.text);   // S.transcript redacts (cards/SSNs) and assigns the next seq, so the shape matches live rows exactly
   await health(orgId, "canonical_stored", true, sessionId + " " + clean.length + " lines " + ((meta && meta.engine) || ""));
@@ -146,12 +183,16 @@ async function store(orgId, sessionId, lines, meta) {
 // Transcription failed or the deadline passed with no recording: the report goes out with the
 // live transcript, as it always did before this pipeline existed.
 async function giveUp(orgId, sessionId, why) {
-  if (await hasEvent(orgId, sessionId, "canonical")) return { ok: true, already: true };
+  const st = await canonicalState(orgId, sessionId);
+  if (st.stored) return { ok: true, already: true };
   // Close the claim (traffic fix, 2026-11-08): a given-up session used to stay "canonical_pending"
   // forever, so the job list kept handing it back on every poll and its transcript kept being
-  // re-fetched. canonical_closed is the terminal state jobs() and settleReport() check for;
-  // claiming it is once-only, like every firstTime gate, so a repeat giveUp is a cheap no-op.
-  if (!(await S.firstTime(orgId, sessionId, key("canonical_closed", sessionId), "canonical_closed", { why: String(why || "").slice(0, 120) }))) return { ok: true, already: true };
+  // re-fetched. canonical_closed + the canonical_job_done terminal marker are the states jobs()
+  // and settleReport() check for; claiming them is once-only, like every firstTime gate, so a
+  // repeat giveUp is a cheap no-op (and a pre-fix closed session still gets its marker).
+  const claimed = await S.firstTime(orgId, sessionId, key("canonical_closed", sessionId), "canonical_closed", { why: String(why || "").slice(0, 120) });
+  await terminalMark(orgId, sessionId, "giveup");
+  if (!claimed) return { ok: true, already: true };
   await health(orgId, "canonical_fallback", false, sessionId + " " + String(why || "").slice(0, 120));
   const rep = await OR.reportCall(orgId, sessionId);
   return { ok: true, report: rep };

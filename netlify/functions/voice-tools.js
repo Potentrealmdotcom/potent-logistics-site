@@ -141,7 +141,18 @@ exports.handler = async function (event) {
   let b; try { b = JSON.parse(event.body || "{}"); } catch (e) { return B.J(400, { error: "Bad request" }); }
   try {
     const act = String(b.action || "");
-    if (act === "health") { await B.sb("voice_provider_health", { method: "POST", prefer: "return=minimal", body: { provider: String(b.provider || "bridge").slice(0, 40), kind: String(b.kind || "ping").slice(0, 40), ok: b.ok !== false, detail: b.detail ? String(b.detail).slice(0, 300) : null } }); return B.J(200, { ok: true }); }
+    if (act === "health") {
+      const hkind = String(b.kind || "ping").slice(0, 40);
+      // silence_nudge rows: FIRST PER CALL ONLY (traffic fix list, Nov 8, 2026). The bridge gates
+      // its own sends per call; this claim is the durable half — if the bridge restarts mid-call
+      // and its per-call flag resets, the row still lands exactly once per session.
+      if (hkind === "silence_nudge" && b.session_id && b.org_id) {
+        const first = await S.firstTime(String(b.org_id), String(b.session_id), "silence_nudge:" + b.session_id, "silence_nudge");
+        if (!first) return B.J(200, { ok: true, deduped: true });
+      }
+      await B.sb("voice_provider_health", { method: "POST", prefer: "return=minimal", body: { provider: String(b.provider || "bridge").slice(0, 40), kind: hkind, ok: b.ok !== false, detail: b.detail ? String(b.detail).slice(0, 300) : null } });
+      return B.J(200, { ok: true });
+    }
     if (EP.rowId(b.session_id)) { const r = await EP.handle(act, b); return B.J(r.status, r.body); }          // an Əlevate call: never touches voice_* tables
     if (act === "context") {
       const tok = TW.readStreamToken(secret(), b.token); if (!tok) return B.J(403, { error: "Bad or expired stream token" });
@@ -181,8 +192,18 @@ exports.handler = async function (event) {
       const used = rows(await B.sb("voice_tool_executions?session_id=eq." + ses.id + "&select=id&limit=100")).length;
       if (used >= 80) return B.J(429, { ok: false, error: "too_many_tool_calls" });
       const cfg = await S.cfgOf(ses.org_id);
-      const r = await T.execute({ orgId: ses.org_id, session: ses, cfg: cfg }, String(b.name || ""), b.args, String(b.call_key || ""));
+      const r = await T.execute({ orgId: ses.org_id, session: ses, cfg: cfg, modelFacing: true }, String(b.name || ""), b.args, String(b.call_key || ""));
       return B.J(200, { result: r });
+    }
+    if (act === "worker_run") {
+      // TALKER/WORKER SPLIT (Nov 8, 2026): the bridge fires this when the talker confirms a job
+      // packet, and holds the request open — Griffin (lib/voice/worker.js) runs the completion
+      // pipeline server-side and the outcome returns in THIS response, which the bridge then
+      // announces into the still-live call. Event-driven; no polling. Exactly-once per session
+      // is enforced inside the worker.
+      const cfg = await S.cfgOf(ses.org_id);
+      const out = await require("./lib/voice/worker").runCompletion({ orgId: ses.org_id, session: ses, cfg: cfg }, { email: b.email });
+      return B.J(200, out);
     }
     if (act === "transcript") {
       const role = ["caller", "agent", "system"].indexOf(b.role) >= 0 ? b.role : "system";

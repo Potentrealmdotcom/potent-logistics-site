@@ -168,6 +168,8 @@ function createBridge(deps) {
     const twSend = function (o) { if (tw.readyState === 1) tw.send(JSON.stringify(o)); };
     const aiSend = function (o) { if (o && ai && ai.readyState === 1) ai.send(JSON.stringify(o)); };
     const kinds = {};   // what the AI link produced this call (audio, caller_text, agent_text, tool...), reported when the call ends
+    let nudgeHealthSent = false;   // silence_nudge health rows: FIRST PER CALL ONLY (traffic fix list, Nov 8, 2026) — a long silent call used to write a row per watchdog stage per lane, thousands of identical rows a day
+    const nudgeHealth = function (detail) { if (nudgeHealthSent) return; nudgeHealthSent = true; api({ action: "health", provider: "bridge", kind: "silence_nudge", ok: false, detail: String(detail).slice(0, 120), session_id: ctx && ctx.session_id, org_id: ctx && ctx.org_id }, 4000); };
     // keys restart at 1 on every stream; after a keypad payment the SECOND stream of the same call reused them and the server dropped every line as a duplicate
     const nonce = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36), nk = function (k) { return k ? nonce + ":" + k : k; };
     const note = function (role, text, key) { if (ctx && text) api({ action: "transcript", session_id: ctx.session_id, role: role, text: text, key: nk(key) }, 8000); };
@@ -348,6 +350,23 @@ function createBridge(deps) {
       let r;
       try {   // TOOLBUSY MUST NEVER LEAK (Nov 8, 2026): everything from the tool call to the result delivery runs under try/finally. The watchdog returns early while a check is busy, and on the graded Nov 8 call it recorded ZERO nudges in 121 s — one busy count leaked by a throwing line anywhere in this section silences the watchdog for the rest of the call
       if (dupTool) { log("tool", m.name, "0ms", "duplicate-skipped"); r = { status: true, data: { result: { ok: true, say: "Those exact details are already saved — do not run that step again. Continue out loud right now with the next step: read back what you have, ask the next question you still need, or give the price." } } }; }   // DUPLICATE STEP GUARD (Nov 8, 2026): in the graded stall she re-ran the identical save after every long deliberation, and each re-run reset the silence clocks; an exact repeat of the step she just ran is now answered instantly, with marching orders, and does not touch toolDoneAt
+      else if (m.name === "confirm_job_packet") {
+        // TALKER/WORKER SPLIT (Nov 8, 2026): the one async hand-off. Griffin (the worker) runs the
+        // whole completion pipeline server-side — verification, availability, the single booking
+        // save — WHILE she keeps talking. She is answered INSTANTLY with "accepted" below; the
+        // worker's outcome comes back on this same request and is announced into the still-live
+        // call as a system note (event-driven — no polling). If the call ends first, the
+        // server-side finish() path completes the record and the owner's report carries it.
+        const wrun = api({ action: "worker_run", session_id: ctx.session_id, email: (m.args && m.args.email) || undefined }, 90000);
+        wrun.then(function (w) {
+          const o = (w && w.data) || {};
+          log("worker", "outcome", (o && o.status) || "unknown");
+          if (done || agentEnd) return;
+          if (o && o.ok) sysNote("BACK OFFICE RESULT — the booking finished while you kept talking. Tell the caller now, once, in your own warm words: " + (o.say_for_agent || "the booking is confirmed.") + " Do not re-ask anything the caller already answered, and run no more steps for this job.");
+          else sysNote("BACK OFFICE RESULT — the booking could not be finished automatically. " + ((o && o.say_for_agent) || "Tell the caller honestly that the job is in and a person will confirm it shortly, and offer a callback (create_callback_task)."));
+        }).catch(function () { log("worker", "outcome", "unreachable"); if (!done && !agentEnd) sysNote("BACK OFFICE RESULT — the booking check did not come back. Do NOT guess an outcome and do not re-run it. Tell the caller the job is with the team and will be confirmed in the written confirmation, and offer a callback (create_callback_task) if they want one sooner."); });
+        r = { status: true, data: { result: { ok: true, accepted: true, say: "The back office is finishing the booking now. Keep talking with the caller naturally — do NOT say you are checking anything and do not invent a result. When the outcome is announced to you, say it once (confirmed, with the reference) and offer the keypad payment." } } };
+      }
       else r = await api({ action: "tool", session_id: ctx.session_id, name: m.name, args: m.args, call_key: nk(m.id) }, 12000);   // tool window 15000 -> 12000 (2026-11-07a): the server-side steps now budget themselves to land inside ~9 s (route 6 s + reads/writes), so a 12 s cap only ever catches a genuinely wedged call — and catches it 3 s sooner
       holdTimers.forEach(clearTimeout);
       // PER-TOOL TIMING LOG (fix round 2, Nov 7, 2026): the graded Nov 7 call's server log held exactly
@@ -403,20 +422,20 @@ function createBridge(deps) {
       if (toolBusy || transferPending || payPending) return;
       const owed = Math.max(lastCallerTextAt, toolDoneAt) > lastOwnSpeechAt, noGreeting = !lastAgentAt && !reconnecting && readyAt && now - readyAt > 2 * th;   // "owed" counts only REAL caller turns (transcribed speech) and finished tools — never raw loudness: a TV, running water or banging is loud too, and loudness alone used to make the watchdog prod her into answering the room
       if (!lastCallerTextAt && !owed && !closingAt && lastAgentAt && lastCallerAt > lastAgentAt && now - lastCallerAt > th && now - lastAgentAt > th && now - deafAt > 2 * th) { // DEAF LANE: sound from the caller landed after her last line, yet not one word has ever been transcribed this call — her ears are the problem, not the caller. The silent-caller backstop below needs ~12 s between check-ins, so a talking-but-unheard caller gets dead air for a minute and hangs up first (Call 13, Oct 29 2026: 42 s, one check-in, nothing saved). Escalate fast: hearing line, then a fresh AI session, then a saved callback.
-        deafAt = now; deafStage++; kinds.deaf_check = (kinds.deaf_check || 0) + 1; api({ action: "health", provider: "bridge", kind: "silence_nudge", ok: false, detail: ("deaf " + deafStage).slice(0, 120) }, 4000);
+        deafAt = now; deafStage++; kinds.deaf_check = (kinds.deaf_check || 0) + 1; nudgeHealth("deaf " + deafStage);
         if (deafStage === 1) { lastAgentAt = now; sysNote("You have not been able to hear anything the caller said on this call — the line may be bad. In one short warm sentence, tell the caller you can't seem to hear them and ask them to try again. Then wait."); }
         else if (deafStage === 2) { aiDown("caller_not_transcribed", "caller audible but never transcribed"); }   // a fresh AI session is the proven cure for a wedged input pipeline; the reconnect recap carries the conversation over
         else if (deafStage === 3) { lastAgentAt = now; sysNote("You still cannot hear the caller at all. Save a callback now: call create_callback_task for the number they are calling from, with the reason that you could not hear the caller (line problem). Then in one short warm sentence say someone will call them right back on this number, say goodbye, and stop."); }
         return;
       }
       if (closingAt && !saidBye && !owed && !noGreeting && closeNudges < 2 && lastAgentAt > closingAt && lastCallerAt <= lastAgentAt && now - lastAgentAt > th * 1.75) { // wrap-up done and the caller is quiet: never leave dead air, ask the close question
-        closeNudges++; lastAgentAt = now; api({ action: "health", provider: "bridge", kind: "silence_nudge", ok: false, detail: ("close " + closeNudges).slice(0, 120) }, 4000);
+        closeNudges++; lastAgentAt = now; nudgeHealth("close " + closeNudges);
         sysNote(closeNudges === 1 ? "The booking is done and the caller is quiet. Ask warmly: \"Is there anything else I can help you with?\"" : "The caller is still quiet. Thank them by name and say a warm goodbye. Do not repeat the job reference — it was already given once on this call; say it again only if they ask.");
         return;
       }
       const quietBase = Math.max(lastAgentAt, lastCallerAt || 0, lastCallerTextAt || 0, toolDoneAt || 0);   // the ladder's silence clock starts at the LATEST sign of life — her voice, the caller's sound or words, or a finished check. Tool time is not absence (Nov 3, 2026): the old clock ran straight through a tool stall, so the moment the check ended the ladder read 12+ s of "silence" that was really the system working, and started scripting an exit
       if (!owed && !noGreeting && !closingAt && (!markQ.length || now - lastAgentAt > th * 8) && readyAt && lastAgentAt && now - quietBase > th * 3 && now - Math.max(idleAt, 0) > th * 3 && (!toolDoneAt || now - toolDoneAt > TOOL_GRACE_MS)) { // dead-air backstop: whatever the cause, nobody has spoken for ~12s, so she checks in — but never inside the grace window after a check finishes, when she is owed the moment to speak its result
-        idleAt = now; idleStage++; kinds.idle_checkin = (kinds.idle_checkin || 0) + 1; api({ action: "health", provider: "bridge", kind: "silence_nudge", ok: false, detail: ("idle " + Math.round((now - lastAgentAt) / 1000) + "s").slice(0, 120) }, 4000);
+        idleAt = now; idleStage++; kinds.idle_checkin = (kinds.idle_checkin || 0) + 1; nudgeHealth("idle " + Math.round((now - lastAgentAt) / 1000) + "s");
         { const n = idleStage;   // the stage is per-absence-episode: any caller sound or transcribed turn resets it to zero (see the resets in onAi and the media handler), so the lines climb only while the caller is truly gone and the same line never repeats across an answer. No forced restart either (a quiet caller is not a broken connection)
           if (n === 1) sysNote("It has been quiet. In one short sentence, check in warmly: ask if they are still with you. Then stay quiet and wait.");   // matches her prompt's one allowed check-in; the old wording ordered the exact "I'm right here, take your time" narration her prompt bans
           else if (n === 2) sysNote("Still quiet. Say one short, different sentence: ask whether they would like to keep going or have someone call them back. Do not repeat your earlier words.");
@@ -432,7 +451,7 @@ function createBridge(deps) {
       const since = noGreeting ? readyAt : Math.max(lastCallerTextAt, toolDoneAt), waited = now - since;
       if (waited < th * (nudges + 1) + (noGreeting ? th : 0)) return;
       nudges++; kinds.silence_nudge = (kinds.silence_nudge || 0) + 1; log("watchdog", "nudge", nudges, "after", Math.round(waited / 1000) + "s");   // watchdog stages are log()-visible from Nov 8, 2026: the Nov 8 grade had to be rebuilt from a phone recording because the container log held only tool lines
-      api({ action: "health", provider: "bridge", kind: "silence_nudge", ok: false, detail: ("step " + nudges + " after " + Math.round(waited / 1000) + "s" + (noGreeting ? " (greeting never played)" : "")).slice(0, 120) }, 4000);
+      nudgeHealth("step " + nudges + " after " + Math.round(waited / 1000) + "s" + (noGreeting ? " (greeting never played)" : ""));
       if (nudges === 1) { if (noGreeting) bridgeSay(ctx.greeting); else sysNote("The caller is waiting for your answer. Answer now in one short sentence."); }
       else if (nudges === 2) bridgeSay("Still here, one second.");
       else { nudges = 0; lastCallerAt = 0; lastCallerTextAt = 0; toolDoneAt = 0; aiDown("silence_watchdog", "no speech for " + Math.round(waited / 1000) + "s"); }

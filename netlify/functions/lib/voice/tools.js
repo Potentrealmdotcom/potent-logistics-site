@@ -40,7 +40,7 @@ async function languageEvidence(ctx, code) {
   return { ok: !t.some(function (x) { return ENGLISH.test(x); }), why: hits ? "one_word" : "english" };
 }
 const FEATURE = { lookup_customer: "inbound", create_or_update_lead: "inbound", get_approved_service_information: "inbound", collect_shipment_details: "quotes", validate_shipment_eligibility: "quotes", calculate_quote: "quotes", quote_special_service: "quotes", check_live_availability: "booking",
-  set_call_language: "inbound", get_playbook: "inbound", lookup_os_feature: "inbound", create_pending_booking: "booking", confirm_eligible_booking: "booking", end_call: "inbound", send_payment_link: "notifications", take_card_payment: "notifications", create_callback_task: "callbacks", book_demo: "callbacks", request_human_handoff: "handoff", send_approved_confirmation: "notifications", look_up_booking_status: "booking", request_reschedule: "booking", request_cancellation: "booking" };
+  set_call_language: "inbound", get_playbook: "inbound", lookup_os_feature: "inbound", create_pending_booking: "booking", confirm_eligible_booking: "booking", submit_job_packet: "quotes", confirm_job_packet: "booking", end_call: "inbound", send_payment_link: "notifications", take_card_payment: "notifications", create_callback_task: "callbacks", book_demo: "callbacks", request_human_handoff: "handoff", send_approved_confirmation: "notifications", look_up_booking_status: "booking", request_reschedule: "booking", request_cancellation: "booking" };
 const CRITICAL = ["pickup_address", "delivery_address", "service_date", "time_window", "service_level", "total_weight_lb", "piece_count", "pieces", "total_dims", "pickup_dock", "delivery_dock", "needs_liftgate", "needs_pallet_jack", "forklift_pickup", "forklift_delivery", "site_has_pallet_jack", "inside_delivery", "hazmat", "special_handling", "extra_stops", "labor_helpers", "labor_hours", "holding_nights", "expected_wait_minutes", "freight_description"];
 const INTAKE_KEYS = CRITICAL.concat(["customer_name", "company", "callback_phone", "email", "pickup_contact_name", "pickup_contact_phone", "delivery_contact_name", "delivery_contact_phone", "special_instructions", "po_number", "recurring"]);
 const clip = function (v, n) { return String(v == null ? "" : v).trim().slice(0, n); };
@@ -65,7 +65,7 @@ function defs() {
     D("lookup_customer", "Check whether the caller's phone number matches a known customer. Returns only a name and whether they are known. Caller ID is NOT proof of identity."),
     D("create_or_update_lead", "Save the caller as a sales lead.", obj({ name: str("Caller name"), company: str("Company"), email: str("Email"), notes: str("What they need") }, ["name"])),
     D("get_approved_service_information", "Get approved company facts. Use this instead of guessing about services, service area, truck limits, scheduling, payment or policies.", obj({ topic: { type: "string", enum: ["services", "service_area", "truck_limits", "scheduling", "payment", "policies", "pricing_policy", "faq"] } }, ["topic"])),
-    D("collect_shipment_details", "Record shipment facts the caller has stated. Send only what the caller actually said. Returns what is still missing or inconsistent.", obj({
+    D("submit_job_packet", "TALKER/WORKER SPLIT (Nov 8, 2026): the ONE hand-off to the back-office worker. After the DETAILS CONFIRM read-back gets a yes, submit EVERYTHING the caller gave you in ONE packet — every fact from the whole conversation at once. It saves the job once and returns the price from the company's own price book instantly. If it says details are still missing, ask for the next missing piece conversationally and submit again with everything you have. Submitting the same packet twice is harmless — it can never create a second job.", obj({
       correction: { type: "boolean", description: "true ONLY when the caller explicitly corrects a detail they already gave (they say the earlier one was wrong). A geocoder-verified address is protected: a fragmentary or malformed replacement is ignored and the verified one stays — correction=true forces the caller's own corrected version through anyway." },
       customer_name: str(""), company: str(""), callback_phone: str("10-digit US number"), use_caller_id: { type: "boolean", description: "true when the caller said yes to using the number they are calling from; then leave callback_phone empty" }, email: str(""), pickup_address: str("full street address with city and state"), delivery_address: str("full street address with city and state"),
       pickup_contact_name: str(""), pickup_contact_phone: str(""), delivery_contact_name: str(""), delivery_contact_phone: str(""), service_date: str("YYYY-MM-DD"), time_window: str("early|morning|afternoon|evening|all_day or HH:MM 24h"),
@@ -75,8 +75,6 @@ function defs() {
       pickup_dock: { type: "boolean", description: "pickup has dock-height loading" }, delivery_dock: { type: "boolean", description: "delivery has dock-height unloading" }, needs_liftgate: { type: "boolean" }, needs_pallet_jack: { type: "boolean" }, site_has_pallet_jack: { type: "boolean" },
       forklift_pickup: { type: "boolean" }, forklift_delivery: { type: "boolean" }, inside_delivery: { type: "boolean" }, hazmat: { type: "boolean" }, special_handling: str(""), special_instructions: str(""), po_number: str(""),
       extra_stops: { type: "integer" }, labor_helpers: { type: "integer" }, labor_hours: { type: "number" }, expected_wait_minutes: { type: "number" }, holding_nights: { type: "integer" }, recurring: { type: "boolean" } })),
-    D("validate_shipment_eligibility", "BACKGROUND verification only — address, route and truck-fit verification now runs AFTER the call, not while the caller waits. Do NOT call this before a quote on a live call: calculate_quote prices instantly from the company's own price book. Call it only if a post-call check is explicitly requested."),
-    D("calculate_quote", "Give the official price from the company's own price book. Instant: it runs no address, route or eligibility check, so call it as soon as you have pickup, delivery and the freight basics. The price comes only from this tool. Never state a price from memory."),
     D("quote_special_service", "Official price for junk removal, pop-up events, or recurring service (by load size or dedicated route). The price comes only from this tool. A person schedules these afterwards; offer create_callback_task.", obj({
       service: { type: "string", enum: ["junk_removal", "popup_event", "recurring_load_class", "recurring_route"] },
       pickup_address: str("junk: the address the job is at. Events and routes: the pickup address, full street address with city and state"), delivery_address: str("events and routes: the delivery or event address"),
@@ -84,9 +82,7 @@ function defs() {
       has_heavy_items: { type: "boolean", description: "junk: heavy items such as safes, pianos, hot tubs, or loose concrete, dirt, brick" },
       total_weight_lb: { type: "number", description: "recurring by load size: the weight per run" }, days_per_week: { type: "integer" }, flex_window: { type: "boolean", description: "recurring by load size: customer accepts a flexible time window" },
       direction: { type: "string", enum: ["oneway", "roundtrip"], description: "recurring_route" } }, ["service"])),
-    D("check_live_availability", "Check real availability for the requested date and window. Never promise a time without this."),
-    D("create_pending_booking", "After you read the quote and details back and the caller clearly says yes, save the booking request."),
-    D("confirm_eligible_booking", "Confirm a saved booking request. Succeeds only if every check still passes.", obj({ booking_id: str("id returned by create_pending_booking") }, ["booking_id"])),
+    D("confirm_job_packet", "After submit_job_packet returned the total, you stated it once, and the caller clearly said yes to booking: hand the job to the back-office worker to finish — verification, availability and the booking save all happen there, off the caller's clock. You are answered instantly; the booking outcome (confirmed + the reference, or what a person still needs to review) is announced to you as a system note while you keep talking. If the caller gave their email after the packet went in, include it here so the worker merges it first.", obj({ email: str("caller's email if they gave it after the packet was submitted — exactly as spelled back and confirmed") })),
     D("book_demo", "Book a 30-minute POTENT OS demo with a person. Use only after the prospect agreed to a demo and you have their name and email. Emails them the booking link and alerts the owner.", obj({ name: str(""), company: str(""), trucks: { type: "integer", description: "how many trucks they run" }, phone: str("number to reach them"), email: str("their email, read back and confirmed"), notes: str("their problem and what they pay today, in a sentence") }, ["name", "email"])),
     D("create_callback_task", "Create a callback for a person to follow up.", obj({ name: str(""), phone: str("number to call"), reason: str(""), preferred_time: str("") }, ["reason"])),
     D("request_human_handoff", "Ask to transfer to a person: negotiations, discounts, complaints, safety concerns, anything uncertain, or when the caller asks for one.", obj({ reason: str("why"), summary: str("one or two sentences for the person") }, ["reason"])),
@@ -95,8 +91,8 @@ function defs() {
     D("get_playbook", "Get the POTENT playbook script for the situation you are in: objections, junk removal, cleanouts, freight, pop-up events, recurring accounts and the wallet, closing, tracking and accounts. Call it when the caller pushes back, hesitates, or you are starting a service you need the questions for. It has no prices; prices only come from the quote tools.", obj({ topic: { type: "string", enum: PLAYBOOK.NAMES } }, ["topic"])),
     D("send_payment_link", "After a booking is CONFIRMED and the caller wants to pay by card, email them a secure Stripe payment link for the exact quoted total. The caller pays on Stripe's page; you never take or repeat card numbers. Needs the confirmed booking_id and an email read back and confirmed.", obj({ booking_id: str(""), email: str("their email exactly as the caller said it"), email_confirmed: { type: "boolean", description: "true only after you spelled it back and the caller said yes" } }, ["booking_id", "email"])),
     D("end_call", "End the call. kind 'caller_done': the NORMAL polite ending — the caller clearly said goodbye or that they are done, and everything they needed is finished. Use it whenever the caller ends the conversation, so the call actually hangs up after your goodbye line; a polite goodbye is NEVER abuse. kind 'abuse': ONLY because the caller kept being abusive or disrespectful AFTER you gave one firm warning — never use it on someone who is merely upset, confused, sad or hard to understand, and never when someone is in danger. kind 'do_not_contact': ONLY when a tool result told you the caller's number is on the do-not-contact list. Say a short goodbye line first.", obj({ reason: str("what happened, one sentence"), kind: { type: "string", enum: ["caller_done", "abuse", "do_not_contact"], description: "why the call is ending: caller_done (the caller said goodbye — the normal ending), abuse, or do_not_contact" } }, ["reason"])),
-    D("take_card_payment", "After a booking is CONFIRMED, take the card payment ON THE CALL by phone keypad. The caller types the card on their keypad; you never hear, see, say or store it. The amount is the quoted total from our system. Needs the confirmed booking_id. After it says ok, say the one short sentence it gives you and then STOP TALKING until you are told the result.", obj({ booking_id: str("") }, ["booking_id"])),
-    D("send_approved_confirmation", "Send the approved written confirmation or request-received notice for this call's booking.", obj({ booking_id: str(""), channel: { type: "string", enum: ["email", "sms"] }, email: str("only for email: exactly what the caller said"), email_confirmed: { type: "boolean", description: "true only after you spelled it back and the caller said yes" }, sms_consent: { type: "boolean", description: "caller agreed to a text message" } }, ["booking_id", "channel"])),
+    D("take_card_payment", "After a booking is CONFIRMED, take the card payment ON THE CALL by phone keypad. The caller types the card on their keypad; you never hear, see, say or store it. The amount is the quoted total from our system. booking_id is optional — omit it and the system finds this call's confirmed booking. After it says ok, say the one short sentence it gives you and then STOP TALKING until you are told the result.", obj({ booking_id: str("") })),
+    D("send_approved_confirmation", "Send the approved written confirmation or request-received notice for this call's booking. booking_id is optional — omit it and the system finds this call's booking.", obj({ booking_id: str(""), channel: { type: "string", enum: ["email", "sms"] }, email: str("only for email: exactly what the caller said"), email_confirmed: { type: "boolean", description: "true only after you spelled it back and the caller said yes" }, sms_consent: { type: "boolean", description: "caller agreed to a text message" } }, ["channel"])),
     D("look_up_booking_status", "Look up a booking. Needs the booking reference and the last 4 digits of the phone number on the booking.", obj({ reference: str(""), phone_last4: str("") }, ["reference", "phone_last4"])),
     D("request_reschedule", "Record a reschedule request (a person completes it).", obj({ reference: str(""), phone_last4: str(""), requested_date: str(""), note: str("") }, ["reference", "phone_last4"])),
     D("request_cancellation", "Record a cancellation request (a person completes it).", obj({ reference: str(""), phone_last4: str(""), note: str("") }, ["reference", "phone_last4"]))
@@ -119,6 +115,13 @@ const vOf = function (ctx) { return I.validate(ctx.session.intake || {}); };
 // Caller consent is read from the stored transcript after the quote was given, not from a flag the model sets.
 async function callerConfirmed(ctx) {
   const q = ctx.session.intake && ctx.session.intake._quote; if (!q) return false;
+  // TALKER/WORKER SPLIT (Nov 8, 2026): in the split flow the caller's yes is spoken BEFORE the
+  // worker creates the booking, and the quote predates later small talk (email spelling etc.), so
+  // the yes can fall outside the last-6 window below. The worker therefore scans the wider
+  // transcript itself and, only after finding a real caller affirmation at/after the quote, stamps
+  // its timestamp into intake._packet_yes_at. That key is NOT in INTAKE_KEYS, so the model can
+  // never set it — the stamp is transcript evidence, same standard as the scan below.
+  if (ctx.session.intake._packet_yes_at && String(ctx.session.intake._packet_yes_at) >= String(q.created_at)) return true;
   const t = rows(await B.sb("voice_transcripts?session_id=eq." + ctx.session.id + "&role=eq.caller&select=text,created_at,seq&order=seq.desc&limit=6"));
   return t.some(function (x) { return String(x.created_at) >= String(q.created_at) && AFFIRM.test(x.text) && !NEG.test(x.text); });
 }
@@ -533,6 +536,11 @@ const TOOLS = {
     return { ok: true, end_call: true, say: "Say ONE short, calm goodbye line now (no lecture, no apology), then stop talking. The call ends right after." };
   },
   async take_card_payment(ctx, a) {
+    // TALKER/WORKER SPLIT (Nov 8, 2026): the booking is finished by the worker and announced by
+    // system note, so she may not hold its id — when NO id is given, resolve this session's
+    // confirmed booking server-side. A non-empty malformed id is still refused (bad_booking):
+    // silence about a garbage id would hide model confusion.
+    if (!a.booking_id) { const bk0 = rows(await B.sb("voice_bookings?org_id=eq." + ctx.orgId + "&session_id=eq." + ctx.session.id + "&status=eq.confirmed&select=id&order=created_at.desc&limit=1"))[0]; if (bk0) a = Object.assign({}, a, { booking_id: bk0.id }); }
     if (!S.UUID.test(String(a.booking_id || ""))) return { ok: false, error: "bad_booking" };
     const bk = rows(await B.sb("voice_bookings?org_id=eq." + ctx.orgId + "&id=eq." + a.booking_id + "&session_id=eq." + ctx.session.id + "&select=*&limit=1"))[0];
     if (!bk) return { ok: false, error: "booking_not_found" };
@@ -582,8 +590,9 @@ const TOOLS = {
     return { ok: true, handoff_id: rows(r)[0] && rows(r)[0].id, transfer_possible: can, transfer: can ? "pending" : "unavailable", say: can ? "Say warmly, in your own voice: \"I'm transferring you now — ok, yes, give me one second.\" Then one short closer — \"All set, putting you through now\" — and stop talking. The system connects them while it rings; do not say they are connected, and do not promise you will stay on the line." : "No one is available right now. Tell the caller honestly and offer a callback (create_callback_task)." };
   },
   async send_approved_confirmation(ctx, a) {
-    const bk = rows(await B.sb("voice_bookings?org_id=eq." + ctx.orgId + "&id=eq." + clip(a.booking_id, 40) + "&session_id=eq." + ctx.session.id + "&select=*&limit=1"))[0];
-    if (!bk || !S.UUID.test(String(a.booking_id))) return { ok: false, error: "booking_not_found" };
+    let bk = S.UUID.test(String(a.booking_id || "")) ? rows(await B.sb("voice_bookings?org_id=eq." + ctx.orgId + "&id=eq." + clip(a.booking_id, 40) + "&session_id=eq." + ctx.session.id + "&select=*&limit=1"))[0] : null;
+    if (!bk && !a.booking_id) bk = rows(await B.sb("voice_bookings?org_id=eq." + ctx.orgId + "&session_id=eq." + ctx.session.id + "&select=*&order=created_at.desc&limit=1"))[0];   // split flow: the worker made the booking; only when NO id was given, resolve this session's latest one
+    if (!bk) return { ok: false, error: "booking_not_found" };
     const channel = a.channel === "sms" ? "sms" : "email", snap = bk.snapshot, d = snap.intake, conf = bk.status === "confirmed", total = P.money(snap.quote.total_cents);
     const to = channel === "email" ? clip(a.email, 120).toLowerCase() || bk.customer_email : bk.customer_phone;
     if (channel === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(to || ""))) return { ok: false, error: "need_valid_email", say: "Ask the caller for their email and read it back." };
@@ -598,8 +607,54 @@ const TOOLS = {
     if (sent) { await B.sb("voice_bookings?id=eq." + bk.id, { method: "PATCH", prefer: "return=minimal", body: Object.assign(channel === "email" ? { customer_email: to } : {}, conf ? { confirmation_sent_at: new Date().toISOString() } : {}) }); return { ok: true, sent: true, kind: conf ? "confirmation" : "request_received_not_confirmed" }; }
     await B.sb("voice_callbacks", { method: "POST", prefer: "return=minimal", body: { org_id: ctx.orgId, session_id: ctx.session.id, name: d.customer_name, phone: bk.customer_phone, reason: "Send " + (conf ? "confirmation" : "request notice") + " for " + bk.reference + " manually (" + channel + " failed)" } });
     return { ok: true, sent: false, say: "The message could not be sent. The booking is kept and a person will follow up. Do not say it was sent." };
+  },
+  // TALKER/WORKER SPLIT v1 (Nov 8, 2026) — the talker's only two shipment tools.
+  // submit_job_packet: ONE packet in, persisted through the same state layer collect always used
+  // (confirmed-field locks, verified-address identity locks, spelled-email ground truth), priced
+  // instantly from the tenant price book. Idempotent by packet hash: an exact resubmit returns the
+  // stored outcome instead of saving again — the Nov 8 r3 failure (the same details saved 8 times
+  // on one call) is structurally impossible from the talk path now.
+  async submit_job_packet(ctx, a) {
+    const hash = packetHash(a), key = "worker_packet:" + ctx.session.id + ":" + hash;
+    const first = await S.firstTime(ctx.orgId, ctx.session.id, key, "worker_packet");
+    const cur = ctx.session.intake || {};
+    if (!first && cur._worker_submit && cur._worker_submit.hash === hash) {
+      const w = cur._worker_submit;
+      return w.price_pending
+        ? { ok: true, duplicate: true, submitted: true, price_pending: true, say: "That job is already in with the back office — do not submit it again. The total will be confirmed in the written confirmation; do not invent a price. Ask if they'd like you to put the booking in." }
+        : { ok: true, duplicate: true, submitted: true, total: w.total, say: "That job is already in with the back office at " + w.total + " — do not submit it again and do not restate the price. Ask: shall I book it? On a clear yes, call confirm_job_packet." };
+    }
+    const res = await TOOLS.collect_shipment_details(ctx, a || {});
+    if (!res || !res.ok) return res || { ok: false, error: "packet_failed" };
+    if (!res.complete) return { ok: false, error: "packet_incomplete", missing: res.missing, problems: res.problems, say: "The job packet still needs: " + (res.missing || []).join(", ") + ". Ask for the next missing piece conversationally, one thing at a time, then submit the packet again carrying everything you have." };
+    const v = vOf(ctx), book = PB.resolve(ctx.cfg, v.data, await isPotentOrg(ctx));
+    if (book) {
+      const q = await TOOLS.calculate_quote(ctx, {});
+      if (q && q.ok) {
+        const intake = ctx.session.intake; intake._worker_submit = { hash: hash, total: q.total, quote_number: q.quote_number, at: new Date().toISOString() };
+        await setIntake(ctx, intake);
+        return { ok: true, submitted: true, total: q.total, lines: q.lines, valid_minutes: q.valid_minutes, say: "State this total ONCE, plainly, with what is included and excluded. Then ask: shall I book it? When the caller clearly says yes, call confirm_job_packet. Run no other step." };
+      }
+    }
+    const intake2 = ctx.session.intake; intake2._worker_submit = { hash: hash, price_pending: true, at: new Date().toISOString() };
+    await setIntake(ctx, intake2);
+    return { ok: true, submitted: true, price_pending: true, say: "The job is in with the back office. This company has no instant price book for this job, so do NOT invent a price: tell the caller the total will be confirmed in the written confirmation. Ask if they'd like you to put the booking in; on a clear yes, call confirm_job_packet." };
+  },
+  // confirm_job_packet: the model-facing half only acknowledges — the bridge fires the worker
+  // (voice-tools action "worker_run") in parallel and announces the outcome back into the call as
+  // a system note. This body is the fallback if the tool is ever executed without the bridge.
+  async confirm_job_packet(ctx, a) {
+    return { ok: true, accepted: true, say: "The back office is finishing the booking now. Keep talking with the caller naturally — do NOT say you are checking anything and do not invent a result. When the outcome is announced to you, say it once (confirmed, with the reference) and offer the keypad payment." };
   }
 };
+// Stable fingerprint of a job packet (facts only; the correction flag is not a fact). Used to make
+// an exact resubmission of the same packet a no-op instead of a second save.
+function packetHash(a) {
+  const c = cleanArgs(a || {}); const keys = Object.keys(c).sort();
+  const s = keys.map(function (k) { return k + "=" + JSON.stringify(c[k]); }).join("|");
+  let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+  return h.toString(16);
+}
 async function verifyRef(ctx, a) {
   const bk = rows(await B.sb("voice_bookings?org_id=eq." + ctx.orgId + "&reference=eq." + encodeURIComponent(clip(a.reference, 30).toUpperCase()) + "&select=*&limit=1"))[0];
   return bk && last4(bk.customer_phone) && last4(bk.customer_phone) === String(a.phone_last4 || "").replace(/\D/g, "").slice(-4) ? bk : null;
@@ -652,10 +707,16 @@ TOOLS.request_reschedule = changeReq("Reschedule"); TOOLS.request_cancellation =
 // POTENT's own selling material, junk/pop-up price list, playbook and Stripe account belong to POTENT's line only; other companies never get them.
 const isPotentOrg = async function (ctx) { if (ctx._isP !== undefined) return ctx._isP; const o = rows(await B.sb("organizations?id=eq." + ctx.orgId + "&select=slug&limit=1"))[0]; return (ctx._isP = !!(o && o.slug === (process.env.POTENT_ORG_SLUG || "potent-logistics"))); };
 const POTENT_ONLY = { quote_special_service: 1, get_playbook: 1, lookup_os_feature: 1, send_payment_link: 1, take_card_payment: 1 };
+// TALKER/WORKER SPLIT (Nov 8, 2026): these steps are no longer on the talk path — they are the
+// WORKER's hands now (lib/voice/worker.js calls them internally). They stay out of defs(), and a
+// model-facing call (ctx.modelFacing, set by the voice-tools "tool" action) is refused outright:
+// defence in depth behind the defs() removal. Internal/test callers never set modelFacing.
+const TALK_PATH_REMOVED = { collect_shipment_details: 1, validate_shipment_eligibility: 1, calculate_quote: 1, check_live_availability: 1, create_pending_booking: 1, confirm_eligible_booking: 1 };
 async function execute(ctx, name, args, callKey) {
   const t0 = Date.now(); let out;
   try {
     if (!TOOLS[name]) return { ok: false, error: "unknown_tool" };
+    if (ctx.modelFacing && TALK_PATH_REMOVED[name]) return { ok: false, error: "moved_to_worker", say: "That step moved to the back office. Capture the details conversationally, submit ONE job packet with submit_job_packet, and hand the booking to the worker with confirm_job_packet." };
     if (!callKey) return { ok: false, error: "missing_call_key" };
     // The duplicate check and the plan check are independent reads: run them TOGETHER (Nov 4,
     // 2026). Every tool call used to pay for them one after another, plus its own work, plus the

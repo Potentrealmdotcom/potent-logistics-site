@@ -96,5 +96,40 @@ const ownerMail = () => EXT.mail.filter(m => /owner@potent.test/.test(JSON.strin
   const after = await vt({ action: "canonical_recording", session_id: s6.id, offset: 0 });
   ok(after.s === 403 && after.j.error === "not_queued", "once the canonical transcript is stored, the recording is no longer fetchable");
 
+  // ── 8. TERMINAL CROSS-OFF (traffic fix, Nov 8, 2026): a finished session is NEVER handed to
+  // the transcriber again. Regression for the dead-session chase: store() claims kind
+  // "canonical_transcript", and the old jobs() exclusion filtered on kind "canonical" — a kind
+  // nothing writes — so the done-set always read back empty and stored sessions were re-served
+  // on every poll around the clock (8,599 status checks in 24 h on one finished session).
+  { const jobsNow = (await vt({ action: "canonical_jobs" })).j.jobs;
+    ok(!jobsNow.some(j => j.session_id === s1.id), "a STORED session is never returned by jobs() again (terminal marker + the kind actually written)");
+    ok(!jobsNow.some(j => j.session_id === s2.id), "a GIVEN-UP session is never returned by jobs() again");
+    ok(T.voice_events.some(e => e.session_id === s1.id && e.kind === "canonical_job_done"), "store() writes the durable canonical_job_done terminal marker");
+    ok(T.voice_events.some(e => e.session_id === s2.id && e.kind === "canonical_job_done"), "giveUp() writes the durable canonical_job_done terminal marker");
+  }
+  // ── 9. THE DEAD-SESSION SHAPE: ended_at never stamped + the pending claim ages past the
+  // 45-minute freshness window. The claim's own age crosses it off — durably — and settleReport
+  // then reports immediately instead of deferring forever (the old deadline test needed ended_at).
+  { const s8 = endedSes(OA, { ended_at: null }); liveLine(s8, "caller", "the shape that never dies");
+    EXT.mail.length = 0;
+    const d8 = await CN.settleReport(OA, s8.id);
+    ok(d8.deferred === true, "dead-shape session (no ended_at) still defers while its claim is fresh");
+    ok((await vt({ action: "canonical_jobs" })).j.jobs.some(j => j.session_id === s8.id), "a FRESH pending job is still served to the transcriber");
+    const pend = T.voice_events.find(e => e.session_id === s8.id && e.kind === "canonical_pending");
+    pend.created_at = new Date(Date.now() - 46 * 60000).toISOString();   // the claim ages past the freshness window
+    ok(!(await vt({ action: "canonical_jobs" })).j.jobs.some(j => j.session_id === s8.id), "a pending job past the 45-minute freshness window is excluded from jobs()");
+    ok(T.voice_events.some(e => e.session_id === s8.id && e.kind === "canonical_job_done"), "crossing off is DURABLE: the terminal marker is claimed, not just skipped per poll");
+    const d8b = await CN.settleReport(OA, s8.id);
+    ok(!d8b.deferred && ownerMail().length === 1, "after the cross-off, settleReport reports at once with the live transcript — never defers again");
+    ok(!(await vt({ action: "canonical_jobs" })).j.jobs.some(j => j.session_id === s8.id), "the crossed-off session stays out of jobs() on later polls");
+  }
+  // ── 10. silence_nudge health rows: first per call only (voice-tools health action, durable half)
+  { const h1 = await vt({ action: "health", provider: "bridge", kind: "silence_nudge", ok: false, detail: "step 1 after 4s", session_id: s1.id, org_id: OA });
+    const h2 = await vt({ action: "health", provider: "bridge", kind: "silence_nudge", ok: false, detail: "step 2 after 8s", session_id: s1.id, org_id: OA });
+    const h3 = await vt({ action: "health", provider: "bridge", kind: "silence_nudge", ok: false, detail: "idle 12s", session_id: s1.id, org_id: OA });
+    const rowsN = T.voice_provider_health.filter(r => r.kind === "silence_nudge");
+    ok(h1.j.ok && h2.j.deduped === true && h3.j.deduped === true && rowsN.length === 1, "silence_nudge: only the FIRST row per call lands; repeats are deduped server-side");
+  }
+
   console.log("voice-canonical: " + n + " assertions PASS");
 })().catch(e => { console.error("FAIL", e); process.exit(1); });

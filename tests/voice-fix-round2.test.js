@@ -59,7 +59,7 @@ const say = (s, who, text) => S.transcript(s.org_id, s.id, who, text);
     const P = require("../netlify/functions/lib/voice/prompt.js").build({ agent_name: "Elevate" }, { name: "POTENT Logistics", slug: "potent-logistics" });
     ok(/Speak up for me just a touch — I don't want to guess on you/.test(P), "prompt carries Tony's exact witty line for an unintelligible answer");
     ok(/length, width and height together/.test(P) && /dimensions are never required/.test(P), "prompt: dimensions are asked as ONE question and are never required");
-    ok(/verification happens AFTER the call/.test(P) && /Do NOT run validate_shipment_eligibility before it/.test(P), "prompt: no verification gauntlet on the call; verification is post-call");
+    ok(/back-office worker \(Griffin\) does every check/.test(P) && !/validate_shipment_eligibility/.test(P), "prompt: no verification gauntlet on the call; verification is the worker's, off the talk path (split, Nov 8, 2026 — supersedes the r2 'after the call' phrasing with Tony's concurrent model)");
   }
   // ── 4. the price book: tenant-generic, config-driven, Potent book only for Potent ──
   { const d = { service_level: "standard" };
