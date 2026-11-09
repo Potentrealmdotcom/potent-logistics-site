@@ -81,7 +81,7 @@ function defs() {
       extra_stops: { type: "integer" }, labor_helpers: { type: "integer" }, labor_hours: { type: "number" }, expected_wait_minutes: { type: "number" }, holding_nights: { type: "integer" }, recurring: { type: "boolean" } })),
 
     D("confirm_job_packet", "After submit_job_packet returned the total, you stated it once, and the caller clearly said yes to booking: hand the job to the back-office worker to finish — verification, availability and the booking save all happen there, off the caller's clock. You are answered instantly; the booking outcome (confirmed + the reference, or what a person still needs to review) is announced to you as a system note while you keep talking. If the caller gave their email after the packet went in, include it here so the worker merges it first.", obj({ email: str("caller's email if they gave it after the packet was submitted — exactly as spelled back and confirmed") })),
-    D("book_demo", "Book a 30-minute POTENT OS demo with a person. Use only after the prospect agreed to a demo and you have their name and email. Emails them the booking link and alerts the owner.", obj({ name: str(""), company: str(""), trucks: { type: "integer", description: "how many trucks they run" }, phone: str("number to reach them"), email: str("their email, read back and confirmed"), notes: str("their problem and what they pay today, in a sentence") }, ["name", "email"])),
+    D("book_demo", "Book a 30-minute POTENT OS demo with a person. Use only after the prospect agreed to a demo, you spelled their email back letter by letter and they said yes, and the full request read-back got a yes. Call it ONCE with email_confirmed true: it answers instantly, saves the demo request exactly once and emails them the booking link. If it answers read_back_required, ask the one question its say names OUT LOUD and wait for the answer — NEVER call it again unchanged: an identical repeat is refused by the system. Only say the demo request is in after it returns ok.", obj({ name: str(""), company: str(""), trucks: { type: "integer", description: "how many trucks they run" }, phone: str("number to reach them"), email: str("their email, read back and confirmed"), email_confirmed: { type: "boolean", description: "true only after you spelled the email back letter by letter and the caller said yes" }, notes: str("their problem and what they pay today, in a sentence") }, ["name", "email"])),
     D("create_callback_task", "Create a callback for a person to follow up.", obj({ name: str(""), phone: str("number to call"), reason: str(""), preferred_time: str("") }, ["reason"])),
     D("request_human_handoff", "Ask to transfer to a person: negotiations, discounts, complaints, safety concerns, anything uncertain, or when the caller asks for one.", obj({ reason: str("why"), summary: str("one or two sentences for the person") }, ["reason"])),
     D("set_call_language", "Lock the language of this call to the caller's language. Call it as soon as the caller speaks a language other than English. Then speak ONLY that language for the whole call.", obj({ language: { type: "string", enum: Object.keys(CALL_LANGS), description: "language code of what the caller is speaking" } }, ["language"])),
@@ -138,6 +138,49 @@ async function emailGate(ctx, a, email) {
   await S.patchSession(ctx.orgId, ctx.session.id, { intake: it });
   const spelled = email.replace(/@/, " at ").replace(/\./g, " dot ").split("").join(" ");
   return { ok: false, error: "read_back_required", gate: (a.email_confirmed === true ? (pend ? "pending_mismatch:" + pend : "no_pending") : "not_confirmed_flag"), email: email, say: "NOT SENT YET. Say: \"Let me read that back: " + spelled + ". Is that right?\" Spell it letter by letter, wait for a clear yes from the caller, and do not call the tool again until you have heard it. If they correct it, use the corrected address. Then call this tool again with the same email and email_confirmed true. If the caller did not clearly say an address, ask for it; never guess or reuse one from memory." };
+}
+// DEMO GATE + DUPLICATE GUARD (Nov 9, 2026 — the 9:14 AM demo call: book_demo bounced 8× with
+// read_back_required and the caller gave up). Root cause, in code: emailGate can only pass when
+// the model sends email_confirmed:true for the address stored in _email_pending — but book_demo's
+// own schema in defs() never declared email_confirmed, and schemas are additionalProperties:false,
+// so on a live call the flag could NEVER be sent; the gate was unsatisfiable by construction.
+// (The unit tests never caught it: they call execute() directly, bypassing defs().) And the demo
+// flow never creates the pending state before the read-back either: EMAIL CAPTURE tells her to
+// spell the address back and get the yes BEFORE calling any tool, so her first book_demo call
+// arrived with the read-back already done conversationally and no _email_pending on file.
+// demoEmailConfirmed therefore accepts the confirmation states the demo conversation actually
+// produces, for THIS tool only (emailGate itself is untouched — the payment/confirmation tools
+// keep their two-call protocol exactly as before):
+//   • the flag is set AND the pending address matches (the classic gate pass), or
+//   • the flag is set AND this address was already gate-cleared (_email_ok), or
+//   • the flag is set AND the address is the one the caller spelled letter by letter
+//     (_email_candidate — the deterministic assembler's ground truth), or
+//   • the flag is set AND no gate is pending for a DIFFERENT address (the read-back happened
+//     conversationally before the first tool call, exactly as EMAIL CAPTURE instructs).
+// A pending gate for a different address still refuses: an address that was read back is never
+// silently swapped for another one.
+function demoEmailConfirmed(ctx, a, email) {
+  if (!a || a.email_confirmed !== true) return false;
+  const it = (ctx.session && ctx.session.intake) || {};
+  if (it._email_ok === email) return true;
+  if (it._email_pending === email) return true;
+  if (it._email_candidate && String(it._email_candidate).toLowerCase() === email) return true;
+  if (!it._email_pending) return true;
+  return false;
+}
+// A demo request's fingerprint: the facts PLUS the confirmation state. book_demo stores its
+// last outcome under this hash on the intake, and an identical repeat call is answered from
+// that stored outcome — the save, the link email and the gate do NOT run again (the same hard
+// rule submit_job_packet carries as _packet_last). The confirmation state is part of the
+// fingerprint for the same reason a packet resubmit carrying a new piece is a new packet:
+// the re-call that carries the caller's yes after the read-back is NEW state, not a retry —
+// it must reach the gate. A truly identical repeat (same facts, same confirmation state)
+// is the retry, and it is refused.
+function demoHash(a, email) {
+  const c = { name: clip(a && a.name, 80).toLowerCase(), company: clip(a && a.company, 100).toLowerCase(), trucks: a && a.trucks != null ? Math.floor(Number(a.trucks)) || 0 : 0, phone: String((a && a.phone) || "").replace(/\D/g, ""), email: email || "", notes: clip(a && a.notes, 200).toLowerCase(), confirmed: a && a.email_confirmed === true ? 1 : 0 };
+  const s = Object.keys(c).sort().map(function (k) { return k + "=" + JSON.stringify(c[k]); }).join("|");
+  let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+  return h.toString(16);
 }
 // THE REFERENCE IS SPOKEN ONCE (Nov 4, 2026 — retest 2: the reference was spoken as one fast
 // blob TWICE, the second time unprompted in the close). The confirm result is the one place the
@@ -485,16 +528,38 @@ const TOOLS = {
     return { ok: true, confirmed: true, reference: bk.reference, job_id: res.job_id, duplicate: !!res.duplicate, reference_spoken: rs.spoken, say: rs.say };
   },
   async book_demo(ctx, a) {
-    const email = clip(a.email, 120).toLowerCase(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { ok: false, error: "need_valid_email", say: "Ask for their email and read it back letter by letter." };
-    { const g = await emailGate(ctx, a, email); if (g) return g; }
+    const email = clip(a.email, 120).toLowerCase(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { ok: false, error: "need_valid_email", say: "Ask for their email OUT LOUD and spell it back letter by letter before you use it. Do not call book_demo again until they have given it and confirmed your read-back." };
+    // NO IDENTICAL RETRY (Nov 9, 2026): an unchanged repeat is answered from the stored
+    // outcome — the gate, the save and the emails do NOT run again. On the 9:14 AM call the
+    // same failing call ran 8 times; a retry can now only ever produce marching orders.
+    const fp = demoHash(a, email), it0 = ctx.session.intake || {}, last = it0._demo_last;
+    if (last && last.hash === fp) {
+      if (last.ok) return { ok: true, duplicate: true, callback_id: last.callback_id, link_emailed: !!last.link_emailed, say: "That demo request is ALREADY in — do not save it again and do not email the link again. " + (last.link_emailed ? "You already told them the booking link was emailed so they can pick a time for the 30-minute demo. Do not say a time is booked." : "A person is already following up on it. Do not say a time is booked.") };
+      return { ok: false, duplicate: true, error: "duplicate_call", say: last.say };
+    }
+    // THE GATE, SATISFIABLE BY THE DEMO FLOW ITSELF (Nov 9, 2026): the old code ran the shared
+    // emailGate, whose pass condition (email_confirmed:true + matching _email_pending) the demo
+    // flow could never produce — book_demo's schema never declared the flag, and the pending
+    // state is only created BY a gated tool call, while the demo flow does its read-back
+    // conversationally first. demoEmailConfirmed (above) accepts the states this conversation
+    // actually produces. A failure here is NEVER retried silently: the result names the one
+    // question to ask out loud, and the duplicate guard above refuses an unchanged re-call.
+    if (!demoEmailConfirmed(ctx, a, email)) {
+      const spelled = email.replace(/@/, " at ").replace(/\./g, " dot ").split("").join(" ");
+      const say = "NOT BOOKED YET — the email has not been read back and confirmed on this call, and the demo cannot be saved without that. Ask OUT LOUD now, once: \"Let me read that back: " + spelled + ". Is that right?\" Spell it letter by letter and wait for a clear yes. Do NOT call book_demo again until you have heard that yes — calling it again unchanged does nothing. When they say yes, call book_demo ONCE with email_confirmed true. If they will not confirm the address, do not keep trying: tell them honestly that a person will follow up to set the demo up, and save that with create_callback_task.";
+      const it = ctx.session.intake || {}; it._email_pending = email; it._demo_last = { hash: fp, ok: false, say: say }; ctx.session.intake = it;
+      await S.patchSession(ctx.orgId, ctx.session.id, { intake: it });
+      return { ok: false, error: "read_back_required", gate: a.email_confirmed === true ? "pending_mismatch" : "not_confirmed_flag", email: email, say: say };
+    }
     const link = process.env.DEMO_BOOKING_URL || "https://calendly.com/potentrealm-pm/30min";
     const phone = I.phone(a.phone) || ctx.session.from_number || null;
     const reason = "OS DEMO REQUESTED: " + clip(a.company, 80) + (a.trucks ? ", " + Math.floor(Number(a.trucks)) + " trucks" : "") + ". " + clip(a.notes, 200) + " Email " + email;
     const r = await B.sb("voice_callbacks", { method: "POST", prefer: "return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, name: clip(a.name, 80) || null, phone: phone, reason: reason.slice(0, 300), preferred_time: "demo" } });
-    if (!r.ok) return { ok: false, error: "save_failed" };
+    if (!r.ok) { const sayF = "The demo request could not be saved. Tell the caller honestly, right now: \"I could not get that saved just now — a person will follow up with you to set the demo up.\" Do NOT say the demo is set up, do not call book_demo again unchanged, and save the follow-up with create_callback_task."; const itF = ctx.session.intake || {}; itF._demo_last = { hash: fp, ok: false, say: sayF }; ctx.session.intake = itF; await S.patchSession(ctx.orgId, ctx.session.id, { intake: itF }); return { ok: false, error: "save_failed", say: sayF }; }
     const mail = await require("../mail").send(email, "Your POTENT OS demo: pick a time", "Hi " + (clip(a.name, 60) || "there") + ",\n\nThanks for talking with us. Pick any time that works for a 30-minute POTENT OS demo here:\n" + link + "\n\nWe will show it live on your numbers. Questions: (912) 914-2166.\n\nPOTENT Operations", null);
     await notifyOwner(ctx.orgId, "OS demo requested: " + clip(a.name, 60) + (a.company ? " (" + clip(a.company, 60) + ")" : ""), reason + (phone ? " Phone " + phone : "") + ". Booking link sent: " + (mail && mail.ok ? "yes" : "NOT SENT, follow up by hand") + ".");
-    await S.patchSession(ctx.orgId, ctx.session.id, { outcome: "callback" });
+    const itS = ctx.session.intake || {}; itS._email_ok = email; itS._demo_last = { hash: fp, ok: true, callback_id: rows(r)[0] && rows(r)[0].id, link_emailed: !!(mail && mail.ok) }; ctx.session.intake = itS;
+    await S.patchSession(ctx.orgId, ctx.session.id, { outcome: "callback", intake: itS });
     return { ok: true, callback_id: rows(r)[0] && rows(r)[0].id, link_emailed: !!(mail && mail.ok), say: mail && mail.ok ? "Tell them you just emailed the booking link and they can pick any time that works for a 30-minute demo. Do not say a time is booked." : "Tell them honestly the email could not be sent right now, that a person will follow up with a time, and do not say a time is booked." };
   },
   async lookup_os_feature(ctx, a) {
