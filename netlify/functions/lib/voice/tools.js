@@ -4,7 +4,6 @@ const B = require("../beats");
 const S = require("./store"), I = require("./intake"), R = require("./rules"), P = require("./pricing"), RT = require("./route"), AV = require("./availability"), V = require("./billing"), TW = require("./adapters/twilio"), PB = require("./pricebook");
 const rows = S.rows;
 const PLAYBOOK = require("./playbook.js");
-const BK = require("./book");   // the tenant BOOK engine (Jarvis build step 1, Nov 9, 2026): "complete" is the book's own question list, never a hard-coded field list
 const EC = require("./email-capture");   // spelled-letter assembly: collect treats its _email_candidate as ground truth (Nov 4, 2026)
 // POTENT'S APPROVED COMPANY LINE (Tony, Nov 3, 2026 — his words, verbatim): what Elevate says Potent
 // does now. Potent builds software; it no longer runs freight and its box truck is sold, so no Potent
@@ -66,10 +65,7 @@ function defs() {
     D("lookup_customer", "Check whether the caller's phone number matches a known customer. Returns only a name and whether they are known. Caller ID is NOT proof of identity."),
     D("create_or_update_lead", "Save the caller as a sales lead.", obj({ name: str("Caller name"), company: str("Company"), email: str("Email"), notes: str("What they need") }, ["name"])),
     D("get_approved_service_information", "Get approved company facts. Use this instead of guessing about services, service area, truck limits, scheduling, payment or policies.", obj({ topic: { type: "string", enum: ["services", "service_area", "truck_limits", "scheduling", "payment", "policies", "pricing_policy", "faq"] } }, ["topic"])),
-    D("submit_job_packet", "TALKER/WORKER SPLIT (Nov 8, 2026): the ONE hand-off to the back-office worker. After the read-back gets a yes, submit EVERYTHING the caller gave you in ONE packet — every fact from the whole conversation at once. It saves the job once and returns the price from the company's own price book instantly. If it says details are still missing, ask for the next missing piece conversationally and submit again with everything you have. Submitting the same packet twice is harmless — it can never create a second job. BOOK SERVICES (Jarvis build, Nov 9, 2026): when this company has a BOOK (see BOOK SERVICES in your instructions) and the caller is booking one of its services, set service to that service's id and carry the caller's answers to the book's questions in answers — completeness is the BOOK's question list for that service, nothing else; a question the caller said they don't know goes in unknown (a don't-know is an answer).", obj({
-      service: str("BOOK services only: the id of the book service being booked, exactly as listed in BOOK SERVICES"),
-      answers: { type: "object", description: "BOOK services only: the caller's answers to the book's questions for this service, keyed by question key exactly as listed in BOOK SERVICES (dates as YYYY-MM-DD)" },
-      unknown: { type: "array", items: { type: "string" }, description: "BOOK services only: question keys the caller said they don't know — a don't-know is an answer and is never re-asked" },
+    D("submit_job_packet", "TALKER/WORKER SPLIT (Nov 8, 2026) + Jarvis step 1 (Nov 9, 2026): the ONE hand-off to the back-office worker — a closing action, not a gate. After the DETAILS CONFIRM read-back gets a yes, submit EVERYTHING the caller gave you in ONE packet — every fact from the whole conversation at once — and KEEP TALKING: the packet is accepted instantly and the price from the company's own price book comes back with it, even if a piece is still being collected. If the result names pieces still needed, ask for the next one OUT LOUD in plain words, one thing at a time, and submit again only when you are carrying that new piece. NEVER submit the same packet twice unchanged — the system refuses an identical resubmit. It can never create a second job.", obj({
       correction: { type: "boolean", description: "true ONLY when the caller explicitly corrects a detail they already gave (they say the earlier one was wrong). A geocoder-verified address is protected: a fragmentary or malformed replacement is ignored and the verified one stays — correction=true forces the caller's own corrected version through anyway." },
       customer_name: str(""), company: str(""), callback_phone: str("10-digit US number"), use_caller_id: { type: "boolean", description: "true when the caller said yes to using the number they are calling from; then leave callback_phone empty" }, email: str(""), pickup_address: str("full street address with city and state"), delivery_address: str("full street address with city and state"),
       pickup_contact_name: str(""), pickup_contact_phone: str(""), delivery_contact_name: str(""), delivery_contact_phone: str(""), service_date: str("YYYY-MM-DD"), time_window: str("early|morning|afternoon|evening|all_day or HH:MM 24h"),
@@ -618,72 +614,56 @@ const TOOLS = {
   // instantly from the tenant price book. Idempotent by packet hash: an exact resubmit returns the
   // stored outcome instead of saving again — the Nov 8 r3 failure (the same details saved 8 times
   // on one call) is structurally impossible from the talk path now.
+  // JARVIS STEP 1 (Nov 9, 2026): the packet is a hand-off, not a gate. A packet with pieces still
+  // missing is ACCEPTED (stored, with its gaps named in plain words for her to ask out loud) and
+  // the book price is speakable from the same result — the graded Nov 9 proof call died because
+  // an incomplete packet was an error she silently retried while the quote sat behind it.
   async submit_job_packet(ctx, a) {
     const hash = packetHash(a), key = "worker_packet:" + ctx.session.id + ":" + hash;
-    const first = await S.firstTime(ctx.orgId, ctx.session.id, key, "worker_packet");
+    await S.firstTime(ctx.orgId, ctx.session.id, key, "worker_packet");   // the submit ledger: one row per distinct packet, kept as the audit trail (the no-identical-retry rule below reads the intake record, which also covers packets accepted with pieces still missing)
     const cur = ctx.session.intake || {};
-    if (!first && cur._worker_submit && cur._worker_submit.hash === hash) {
-      const w = cur._worker_submit;
-      return w.price_pending
+    // HARD RULE — NO IDENTICAL RETRY (Jarvis step 1, Nov 9, 2026): the same packet submitted
+    // again unchanged is answered from the stored outcome and collect does NOT run again. On the
+    // graded Nov 9 call she submitted the same incomplete packet three times, and each silent
+    // retry was a stall the caller could hear; an unchanged resubmit can now only ever produce
+    // marching orders — ask for the next piece out loud.
+    const last = cur._packet_last;
+    if (last && last.hash === hash) {
+      if (last.complete) return last.price_pending
         ? { ok: true, duplicate: true, submitted: true, price_pending: true, say: "That job is already in with the back office — do not submit it again. The total will be confirmed in the written confirmation; do not invent a price. Ask if they'd like you to put the booking in." }
-        : { ok: true, duplicate: true, submitted: true, total: w.total, say: "That job is already in with the back office at " + w.total + " — do not submit it again and do not restate the price. Ask: shall I book it? On a clear yes, call confirm_job_packet." };
-    }
-    // ── BOOK PATH (Jarvis build step 1, Nov 9, 2026): when this company has a BOOK and the
-    // packet names one of its services, "complete" is the BOOK's own question list for that
-    // service — not the shipment field list. The talker captures the book's questions
-    // conversationally; a "don't know" is an answer; nothing outside the book is demanded.
-    // An incomplete book packet is NEVER priced or handed to the worker: the result names
-    // the next missing piece so she asks for it out loud, in conversation.
-    const tenantBook = BK.resolve(ctx.cfg, await orgSlug(ctx));
-    if (tenantBook && a && a.service) {
-      const svc = BK.serviceById(tenantBook, a.service);
-      if (!svc) return { ok: false, error: "unknown_service", say: "That service is not in this company's book. Offer what the book lists (see BOOK SERVICES in your instructions), or take a callback — do not invent a service." };
-      const base = {}; ["customer_name", "company", "callback_phone", "email"].forEach(function (k) { if (a[k] !== undefined) base[k] = a[k]; });
-      if (a.use_caller_id !== undefined) base.use_caller_id = a.use_caller_id;
-      if (Object.keys(base).length) { const cr = await TOOLS.collect_shipment_details(ctx, base); if (cr && cr.do_not_contact) return cr; }
-      const curI = ctx.session.intake || {};
-      const prev = curI._book && curI._book.service === svc.id ? curI._book : { service: svc.id, answers: {}, unknown: [] };
-      const answers = Object.assign({}, prev.answers);
-      const addAns = function (k, v) { if (v !== undefined && v !== null && v !== "") answers[k] = v; };
-      if (a.answers && typeof a.answers === "object") Object.keys(a.answers).forEach(function (k) { addAns(k, a.answers[k]); });
-      svc.questions.forEach(function (q) { addAns(q.key, a[q.key]); });
-      const unknown = Array.from(new Set([].concat(prev.unknown || [], Array.isArray(a.unknown) ? a.unknown : []).map(String)));
-      const fields = { customer_name: curI.customer_name || answers.customer_name || null, callback_phone: curI.callback_phone || answers.callback_phone || null, email: curI.email || answers.email || null, answers: answers, unknown: unknown };
-      const v = BK.validateAnswers(svc, fields), intakeB = ctx.session.intake;
-      intakeB._book = { service: svc.id, answers: v.data.answers, unknown: v.data.unknown, complete: v.ok };
-      if (!v.ok) {
-        await setIntake(ctx, intakeB);
-        const f = v.missing[0];
-        return { ok: false, error: "packet_incomplete", missing: v.missing.map(function (m) { return m.key; }), problems: v.problems, ask_first: f ? f.label : null,
-          say: "The packet for " + svc.name + " still needs: " + v.missing.map(function (m) { return m.label; }).join("; ") + ". Ask for " + (f ? f.label : "it") + " conversationally, one thing at a time — a don't-know is an answer (note it in unknown and move on). Do NOT submit again until you have asked, do NOT say any hold line, and do NOT invent the missing piece." };
-      }
-      if (svc.price_cents != null) {
-        const number = S.ref("Q"), expires = new Date(Date.now() + 30 * 60000).toISOString();
-        const ins = await B.sb("voice_quotes", { method: "POST", prefer: "return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, number: number, input: { book_service: svc.id, answers: v.data.answers }, lines: [{ code: "book", label: svc.name, cents: svc.price_cents }], total_cents: svc.price_cents, miles: null, miles_source: "book", settings_version: "book:" + svc.id, expires_at: expires } });
-        const row = rows(ins)[0]; if (!row) return { ok: false, error: "save_failed" };
-        intakeB._elig = { status: "eligible", blocks: [], reviews: [], profile_id: null, via: "book", checked_at: new Date().toISOString() };
-        intakeB._quote_id = row.id; intakeB._quote = { id: row.id, number: number, total_cents: svc.price_cents, expires_at: expires, created_at: row.created_at || new Date().toISOString() };
-        intakeB._worker_submit = { hash: hash, total: P.money(svc.price_cents), book_service: svc.id, at: new Date().toISOString() };
-        await setIntake(ctx, intakeB, { quote: { id: row.id, number: number, total_cents: svc.price_cents } });
-        return { ok: true, submitted: true, service: svc.name, total: P.money(svc.price_cents), price_free: svc.price_cents === 0, say: svc.price_cents === 0 ? "The " + svc.name + " is free — say so plainly, ONCE. Then ask: shall I book it? On a clear yes, call confirm_job_packet. Run no other step." : "State this total ONCE, plainly. Then ask: shall I book it? On a clear yes, call confirm_job_packet. Run no other step." };
-      }
-      intakeB._worker_submit = { hash: hash, price_pending: true, book_service: svc.id, at: new Date().toISOString() };
-      await setIntake(ctx, intakeB);
-      return { ok: true, submitted: true, service: svc.name, price_pending: true, say: "The booking is in with the back office. This service has no book price, so do NOT invent a number: the price will be confirmed in the written confirmation. Ask if they'd like you to put the booking in; on a clear yes, call confirm_job_packet." };
+        : { ok: true, duplicate: true, submitted: true, total: last.total, say: "That job is already in with the back office at " + last.total + " — do not submit it again and do not restate the price. Ask: shall I book it? On a clear yes, call confirm_job_packet." };
+      const pnd = I.plainNeeds(last.missing, last.problems);
+      return { ok: true, duplicate: true, submitted: true, accepted: true, needs: last.missing || [], missing: last.missing || [], problems: last.problems || [], total: last.total || undefined, say: "You already submitted exactly this packet and nothing has changed since — nothing was sent again, and submitting it again will not change anything. Ask the caller OUT LOUD now, in plain words, for the next piece you still need: " + (pnd.firstAsk || "the next missing piece") + ". One thing at a time; when you have it, submit again carrying everything." };
     }
     const res = await TOOLS.collect_shipment_details(ctx, a || {});
     if (!res || !res.ok) return res || { ok: false, error: "packet_failed" };
-    if (!res.complete) return { ok: false, error: "packet_incomplete", missing: res.missing, problems: res.problems, say: "The job packet still needs: " + (res.missing || []).join(", ") + ". Ask for the next missing piece conversationally, one thing at a time, then submit the packet again carrying everything you have." };
     const v = vOf(ctx), book = PB.resolve(ctx.cfg, v.data, await isPotentOrg(ctx));
+    if (!res.complete) {
+      // ACCEPTED, NOT GATED (Jarvis step 1, Nov 9, 2026): the packet goes in with what she has
+      // and the conversation never stops for it — the pieces still needed come back in plain
+      // words, as the next thing to ASK OUT LOUD, and the price (below) is speakable right now:
+      // the packet files the booking, it does not gate the quote. The worker re-checks
+      // completeness at confirm time (needs_details) instead of anyone stalling here.
+      let total = null;
+      if (book) total = P.money(await bookTotalAtHand(ctx, v.data, book));
+      const pn = I.plainNeeds(res.missing, res.problems);
+      const intakeA = ctx.session.intake;
+      intakeA._worker_submit = { hash: hash, incomplete: true, missing: res.missing || [], problems: res.problems || [], at: new Date().toISOString() };
+      intakeA._packet_last = { hash: hash, complete: false, missing: res.missing || [], problems: res.problems || [], total: total };
+      await setIntake(ctx, intakeA);
+      return { ok: true, submitted: true, accepted: true, needs: res.missing || [], missing: res.missing, problems: res.problems, total: total || undefined, price_from_book: total ? book.source : undefined, say: "The packet is IN with the back office — keep talking; do not pause, wait, or say you are checking anything. It still needs: " + pn.list + ". Ask for the next one OUT LOUD now, in plain words — " + (pn.firstAsk || "the next missing piece") + " — one thing at a time, then keep the conversation moving; when you have it, submit again carrying everything you have (never the same packet unchanged)." + (total ? " The price from this company's price book for the job as described so far is " + total + " — the price does NOT wait on the packet: state it ONCE if the caller asks what it costs, or when you naturally reach the price." : " This company has no instant price for it yet: do NOT invent a number; the total will be confirmed in the written confirmation.") };
+    }
     if (book) {
       const q = await TOOLS.calculate_quote(ctx, {});
       if (q && q.ok) {
         const intake = ctx.session.intake; intake._worker_submit = { hash: hash, total: q.total, quote_number: q.quote_number, at: new Date().toISOString() };
+        intake._packet_last = { hash: hash, complete: true, total: q.total, quote_number: q.quote_number };
         await setIntake(ctx, intake);
         return { ok: true, submitted: true, total: q.total, lines: q.lines, valid_minutes: q.valid_minutes, say: "State this total ONCE, plainly, with what is included and excluded. Then ask: shall I book it? When the caller clearly says yes, call confirm_job_packet. Run no other step." };
       }
     }
     const intake2 = ctx.session.intake; intake2._worker_submit = { hash: hash, price_pending: true, at: new Date().toISOString() };
+    intake2._packet_last = { hash: hash, complete: true, price_pending: true };
     await setIntake(ctx, intake2);
     return { ok: true, submitted: true, price_pending: true, say: "The job is in with the back office. This company has no instant price book for this job, so do NOT invent a price: tell the caller the total will be confirmed in the written confirmation. Ask if they'd like you to put the booking in; on a clear yes, call confirm_job_packet." };
   },
@@ -694,16 +674,28 @@ const TOOLS = {
     return { ok: true, accepted: true, say: "The back office is finishing the booking now. Keep talking with the caller naturally — do NOT say you are checking anything and do not invent a result. When the outcome is announced to you, say it once (confirmed, with the reference) and offer the keypad payment." };
   }
 };
+// The book total from the facts at hand (Jarvis step 1, Nov 9, 2026): the same arithmetic the
+// book path of calculate_quote uses — the book's base total plus the company's own extras from
+// its pricing settings, computed from the details collected SO FAR — but WITHOUT persisting a
+// quote row or touching the intake. It exists so the price is speakable mid-conversation, while
+// a packet piece is still being collected; the formal quote is still written by calculate_quote
+// when the complete packet goes in, and it is the number the booking uses.
+async function bookTotalAtHand(ctx, d, book) {
+  const S0 = await S.pricingSettings(ctx.orgId, ctx.cfg);
+  let cents = book.total_cents;
+  if (S0) {
+    const cen = function (x) { return Math.round(Number(x || 0) * 100); };
+    cents += Math.round(d.extra_stops || 0) * cen(S0.additional_stop_fee);
+    if (d.labor_helpers && d.labor_hours) cents += Math.round(d.labor_helpers * d.labor_hours * cen(S0.additional_labor_hourly));
+    if (d.inside_delivery) cents += cen(S0.inside_delivery_min);
+    if (d.holding_nights) cents += Math.round(d.holding_nights) * cen(S0.overnight_hold_nightly);
+  }
+  return cents;
+}
 // Stable fingerprint of a job packet (facts only; the correction flag is not a fact). Used to make
 // an exact resubmission of the same packet a no-op instead of a second save.
 function packetHash(a) {
-  const c = cleanArgs(a || {});
-  // Book packets (Jarvis build step 1): the service + its answers are facts of the packet too —
-  // two packets for different services, or with different book answers, are different packets.
-  if (a && a.service) c._service = String(a.service);
-  if (a && a.answers && typeof a.answers === "object") c._answers = a.answers;
-  if (a && Array.isArray(a.unknown) && a.unknown.length) c._unknown = a.unknown.slice().sort();
-  const keys = Object.keys(c).sort();
+  const c = cleanArgs(a || {}); const keys = Object.keys(c).sort();
   const s = keys.map(function (k) { return k + "=" + JSON.stringify(c[k]); }).join("|");
   let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
   return h.toString(16);
@@ -759,8 +751,6 @@ TOOLS.request_reschedule = changeReq("Reschedule"); TOOLS.request_cancellation =
 // Run one tool call for a session. Never throws.
 // POTENT's own selling material, junk/pop-up price list, playbook and Stripe account belong to POTENT's line only; other companies never get them.
 const isPotentOrg = async function (ctx) { if (ctx._isP !== undefined) return ctx._isP; const o = rows(await B.sb("organizations?id=eq." + ctx.orgId + "&select=slug&limit=1"))[0]; return (ctx._isP = !!(o && o.slug === (process.env.POTENT_ORG_SLUG || "potent-logistics"))); };
-// The org's slug, cached per call context: the key its BOOK is shelved under (book.js).
-const orgSlug = async function (ctx) { if (ctx._slug !== undefined) return ctx._slug; const o = rows(await B.sb("organizations?id=eq." + ctx.orgId + "&select=slug&limit=1"))[0]; return (ctx._slug = o ? o.slug : null); };
 const POTENT_ONLY = { quote_special_service: 1, get_playbook: 1, lookup_os_feature: 1, send_payment_link: 1, take_card_payment: 1 };
 // TALKER/WORKER SPLIT (Nov 8, 2026): these steps are no longer on the talk path — they are the
 // WORKER's hands now (lib/voice/worker.js calls them internally). They stay out of defs(), and a

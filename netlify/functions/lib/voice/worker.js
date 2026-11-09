@@ -25,7 +25,7 @@
 //  - Verification failures FLAG for owner review (callback task + outcome in the owner
 //    report); they never stall the caller, who is already off the clock.
 //  - Every step logs name + duration + outcome ("worker step <name> <ms>ms <outcome>").
-const B = require("../beats"), S = require("./store"), T = require("./tools");
+const B = require("../beats"), S = require("./store"), T = require("./tools"), I = require("./intake");
 const rows = function (r) { return (r && r.data) || []; };
 function wlog() { console.log.apply(console, ["worker"].concat([].slice.call(arguments))); }
 
@@ -42,6 +42,19 @@ async function runCompletion(ctxIn, opts) {
   // No packet, no run — and crucially NO claim consumed: a stray confirm before any packet
   // must not burn the session's one completion.
   if (!intake._worker_submit) return { ok: false, error: "no_packet", status: "no_packet", ms: Date.now() - t0, say_for_agent: "No job packet was submitted for this call. Capture the details conversationally, do the read-back, and submit the packet first — then confirm." };
+  // COMPLETENESS GATE BEFORE THE CLAIM (Jarvis step 1, Nov 9, 2026): since step 1 the packet is
+  // accepted with pieces still missing, so a confirm can reach the worker holding a shortfall.
+  // That is NOT a failed completion: no claim is consumed and no owner flag is raised — the
+  // answer is conversational (she asks for the named pieces out loud, submits again carrying
+  // them, and a later worker_run completes for real). Date problems land here too: the date is
+  // checked HERE, in the back office, never as a step she waits on, and a wrong date comes back
+  // into the same live call as a question, while the conversation continues.
+  const vGate = I.validate(intake);
+  if (!vGate.ok) {
+    const pn = I.plainNeeds(vGate.missing, vGate.problems);
+    wlog("gate", sid, "needs_details", (Date.now() - t0) + "ms");
+    return { ok: true, status: "needs_details", missing: vGate.missing, problems: vGate.problems, ms: Date.now() - t0, say_for_agent: "The job is in, but it still needs: " + pn.list + ". Nothing is booked yet and nothing is lost. Ask the caller for the next piece OUT LOUD, in plain words — " + (pn.firstAsk || "the next missing piece") + " — one thing at a time, keep the conversation going, then submit the packet again carrying everything and confirm again. Do NOT say it is booked and do not invent a price." };
+  }
   const first = await S.firstTime(orgId, sid, "worker_complete:" + sid, "worker_complete");
   if (!first) {
     const w = intake._worker;

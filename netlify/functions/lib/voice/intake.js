@@ -117,4 +117,30 @@ function validate(raw, now) {
   d.special_handling = clip(raw.special_handling, 300); d.special_instructions = clip(raw.special_instructions, 400); d.po_number = clip(raw.po_number, 60);
   return { ok: !miss.length && !prob.length, missing: miss, problems: prob, data: d };
 }
-module.exports = { canon, normAddr, looseDims, validate, phone, stateOf, cityOf, addressCheck, WINDOWS, LEVELS };
+// PLAIN WORDS FOR WHAT A PACKET STILL NEEDS (Jarvis step 1, Nov 9, 2026): tool results speak in
+// field names (freight_description, total_weight_lb); a caller is asked in plain words. This map
+// is the one vocabulary every "still needs" surface shares — the submit result she acts on
+// mid-call and the worker's needs_details note — so the ask is identical wherever it surfaces.
+const FIELD_WORDS = { customer_name: "their name", callback_phone: "the callback number", pickup_address: "the pickup address", delivery_address: "the delivery address", service_date: "the day for the job", time_window: "the time window", freight_description: "what they are moving", piece_count: "how many pieces there are", total_weight_lb: "the total weight of everything" };
+const FIELD_ASK = { customer_name: "their name", callback_phone: "the number to call them back on", pickup_address: "the pickup address", delivery_address: "the delivery address", service_date: "which day they need it", time_window: "what time window works", freight_description: "what you're moving", piece_count: "how many pieces there are", total_weight_lb: "about how much it all weighs in total" };
+function problemWords(p) {
+  const s = String(p || "");
+  if (s === "service_date_in_the_past") return "the day they gave is in the past — ask which day they actually mean";
+  if (s === "service_date_too_far") return "the day they gave is too far out — confirm the day with them";
+  if (s === "email_invalid") return "the email does not look right — ask them to spell it again";
+  if (s === "pickup_and_delivery_are_the_same") return "the pickup and delivery came out as the same place — confirm the two addresses";
+  if (s === "piece_weights_do_not_match_total") return "the piece weights and the total do not agree — ask whether the weight they gave is the total for everything or for each piece";
+  if (s === "a_piece_has_bad_dimensions") return "one piece's size did not come through cleanly — ask for that piece's rough size again";
+  if (s === "piece_dimensions_exceed_piece_count") return "the pieces listed add up to more than the piece count — confirm how many pieces there are";
+  const am = s.match(/^(\w+)_address_ambiguous: (.*)$/); if (am) return "the " + am[1] + " address needs " + am[2];
+  return s.replace(/_/g, " ");
+}
+// plainNeeds(missing, problems) -> { list, firstAsk }: the spoken form of a validate() shortfall —
+// `list` names everything still needed, `firstAsk` is the very next thing to ask for out loud.
+function plainNeeds(missing, problems) {
+  const miss = (missing || []).map(function (k) { return FIELD_WORDS[k] || String(k).replace(/_/g, " "); });
+  const probs = (problems || []).map(problemWords);
+  const first = (missing && missing.length) ? (FIELD_ASK[missing[0]] || FIELD_WORDS[missing[0]] || String(missing[0]).replace(/_/g, " ")) : (probs.length ? probs[0] : null);
+  return { list: miss.concat(probs).join("; "), firstAsk: first };
+}
+module.exports = { canon, normAddr, looseDims, validate, phone, stateOf, cityOf, addressCheck, WINDOWS, LEVELS, plainNeeds, problemWords, FIELD_WORDS };
