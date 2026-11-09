@@ -124,7 +124,13 @@ async function jobs(limit) {
     // the test is the claim's own age, so it holds even when the session's ended_at is missing.
     if (p.created_at && Date.now() - new Date(p.created_at).getTime() > FRESH_MS) { await terminalMark(p.org_id, p.session_id, "stale_pending"); continue; }
     const ses = await S.session(p.org_id, p.session_id);
-    if (!ses || !ses.provider_call_id) continue;
+    // Never-possible cross-off (traffic hardening, Nov 9, 2026): a pending claim whose session
+    // row is gone, or which never carried a provider call id, can NEVER become a transcription
+    // job — no recording can exist for it. These used to be skipped silently on every poll
+    // forever, occupying the 20-claim window and costing a session lookup per poll for eternity.
+    // Cross them off durably, same terminal marker as every other finished state.
+    if (!ses) { await terminalMark(p.org_id, p.session_id, "no_session"); continue; }
+    if (!ses.provider_call_id) { await terminalMark(p.org_id, p.session_id, "no_call_recording"); continue; }
     // Past the bounded wait this is no longer transcription work — settleReport's deadline path
     // (or giveUp) owns the report. Handing dead jobs to the transcriber made it retry them, and
     // re-fetch their full transcripts, on every poll around the clock.
