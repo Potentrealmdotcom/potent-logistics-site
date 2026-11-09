@@ -4,6 +4,7 @@ const B = require("../beats");
 const S = require("./store"), I = require("./intake"), R = require("./rules"), P = require("./pricing"), RT = require("./route"), AV = require("./availability"), V = require("./billing"), TW = require("./adapters/twilio"), PB = require("./pricebook");
 const rows = S.rows;
 const PLAYBOOK = require("./playbook.js");
+const BK = require("./book");   // the tenant BOOK engine (Jarvis build, Nov 9, 2026): "complete" is the book's own question list, never a hard-coded field list
 const EC = require("./email-capture");   // spelled-letter assembly: collect treats its _email_candidate as ground truth (Nov 4, 2026)
 // POTENT'S APPROVED COMPANY LINE (Tony, Nov 3, 2026 — his words, verbatim): what Elevate says Potent
 // does now. Potent builds software; it no longer runs freight and its box truck is sold, so no Potent
@@ -39,7 +40,7 @@ async function languageEvidence(ctx, code) {
   if (hits >= 2) return { ok: true, why: "words" };
   return { ok: !t.some(function (x) { return ENGLISH.test(x); }), why: hits ? "one_word" : "english" };
 }
-const FEATURE = { lookup_customer: "inbound", create_or_update_lead: "inbound", get_approved_service_information: "inbound", collect_shipment_details: "quotes", validate_shipment_eligibility: "quotes", calculate_quote: "quotes", quote_special_service: "quotes", check_live_availability: "booking",
+const FEATURE = { lookup_customer: "inbound", create_or_update_lead: "inbound", get_approved_service_information: "inbound", collect_shipment_details: "quotes", validate_shipment_eligibility: "quotes", calculate_quote: "quotes", check_live_availability: "booking",
   set_call_language: "inbound", get_playbook: "inbound", lookup_os_feature: "inbound", create_pending_booking: "booking", confirm_eligible_booking: "booking", submit_job_packet: "quotes", confirm_job_packet: "booking", end_call: "inbound", send_payment_link: "notifications", take_card_payment: "notifications", create_callback_task: "callbacks", book_demo: "callbacks", request_human_handoff: "handoff", send_approved_confirmation: "notifications", look_up_booking_status: "booking", request_reschedule: "booking", request_cancellation: "booking" };
 const CRITICAL = ["pickup_address", "delivery_address", "service_date", "time_window", "service_level", "total_weight_lb", "piece_count", "pieces", "total_dims", "pickup_dock", "delivery_dock", "needs_liftgate", "needs_pallet_jack", "forklift_pickup", "forklift_delivery", "site_has_pallet_jack", "inside_delivery", "hazmat", "special_handling", "extra_stops", "labor_helpers", "labor_hours", "holding_nights", "expected_wait_minutes", "freight_description"];
 const INTAKE_KEYS = CRITICAL.concat(["customer_name", "company", "callback_phone", "email", "pickup_contact_name", "pickup_contact_phone", "delivery_contact_name", "delivery_contact_phone", "special_instructions", "po_number", "recurring"]);
@@ -65,23 +66,20 @@ function defs() {
     D("lookup_customer", "Check whether the caller's phone number matches a known customer. Returns only a name and whether they are known. Caller ID is NOT proof of identity."),
     D("create_or_update_lead", "Save the caller as a sales lead.", obj({ name: str("Caller name"), company: str("Company"), email: str("Email"), notes: str("What they need") }, ["name"])),
     D("get_approved_service_information", "Get approved company facts. Use this instead of guessing about services, service area, truck limits, scheduling, payment or policies.", obj({ topic: { type: "string", enum: ["services", "service_area", "truck_limits", "scheduling", "payment", "policies", "pricing_policy", "faq"] } }, ["topic"])),
-    D("submit_job_packet", "TALKER/WORKER SPLIT (Nov 8, 2026) + Jarvis step 1 (Nov 9, 2026): the ONE hand-off to the back-office worker — a closing action, not a gate. After the DETAILS CONFIRM read-back gets a yes, submit EVERYTHING the caller gave you in ONE packet — every fact from the whole conversation at once — and KEEP TALKING: the packet is accepted instantly and the price from the company's own price book comes back with it, even if a piece is still being collected. If the result names pieces still needed, ask for the next one OUT LOUD in plain words, one thing at a time, and submit again only when you are carrying that new piece. NEVER submit the same packet twice unchanged — the system refuses an identical resubmit. It can never create a second job.", obj({
+    D("submit_job_packet", "TALKER/WORKER SPLIT (Nov 8, 2026) + Jarvis step 1 (Nov 9, 2026): the ONE hand-off to the back-office worker — a closing action, not a gate. After the DETAILS CONFIRM read-back gets a yes, submit EVERYTHING the caller gave you in ONE packet — every fact from the whole conversation at once — and KEEP TALKING: the packet is accepted instantly and the price from the company's own price book comes back with it, even if a piece is still being collected. If the result names pieces still needed, ask for the next one OUT LOUD in plain words, one thing at a time, and submit again only when you are carrying that new piece. NEVER submit the same packet twice unchanged — the system refuses an identical resubmit. It can never create a second job. BOOK SERVICES (Jarvis build, Nov 9, 2026): when this company has a BOOK (see BOOK SERVICES in your instructions) and the caller is booking one of its services, set service to that service's id and carry the caller's answers to the book's questions in answers — completeness is the BOOK's question list for that service, nothing else; a question the caller said they don't know goes in unknown (a don't-know is an answer).", obj({
+      service: str("BOOK services only: the id of the book service being booked, exactly as listed in BOOK SERVICES"),
+      answers: { type: "object", description: "BOOK services only: the caller's answers to the book's questions for this service, keyed by question key exactly as listed in BOOK SERVICES (dates as YYYY-MM-DD)" },
+      unknown: { type: "array", items: { type: "string" }, description: "BOOK services only: question keys the caller said they don't know — a don't-know is an answer and is never re-asked" },
       correction: { type: "boolean", description: "true ONLY when the caller explicitly corrects a detail they already gave (they say the earlier one was wrong). A geocoder-verified address is protected: a fragmentary or malformed replacement is ignored and the verified one stays — correction=true forces the caller's own corrected version through anyway." },
       customer_name: str(""), company: str(""), callback_phone: str("10-digit US number"), use_caller_id: { type: "boolean", description: "true when the caller said yes to using the number they are calling from; then leave callback_phone empty" }, email: str(""), pickup_address: str("full street address with city and state"), delivery_address: str("full street address with city and state"),
       pickup_contact_name: str(""), pickup_contact_phone: str(""), delivery_contact_name: str(""), delivery_contact_phone: str(""), service_date: str("YYYY-MM-DD"), time_window: str("early|morning|afternoon|evening|all_day or HH:MM 24h"),
-      service_level: { type: "string", enum: ["standard", "same_day", "rush", "recurring", "savannah_early", "savannah_full"] }, freight_description: str(""), piece_count: { type: "integer" }, total_weight_lb: { type: "number" },
+      service_level: { type: "string", enum: ["standard", "same_day", "rush", "recurring"] }, freight_description: str(""), piece_count: { type: "integer" }, total_weight_lb: { type: "number" },
       pieces: { type: "array", items: obj({ l: { type: "number" }, w: { type: "number" }, h: { type: "number" }, qty: { type: "integer" }, weight_lb: { type: "number" } }, ["l", "w", "h"]) }, total_dims: obj({ l: { type: "number" }, w: { type: "number" }, h: { type: "number" } }, ["l", "w", "h"]),
       weight_basis: { type: "string", enum: ["total", "each"], description: "the caller's settled answer on weight: 'total' when the weight they gave is the total for everything (including when they say it as a total in the same breath, e.g. '500 pounds total'), 'each' when it is per piece. Set it the moment they answer; once set it never re-opens." },
       pickup_dock: { type: "boolean", description: "pickup has dock-height loading" }, delivery_dock: { type: "boolean", description: "delivery has dock-height unloading" }, needs_liftgate: { type: "boolean" }, needs_pallet_jack: { type: "boolean" }, site_has_pallet_jack: { type: "boolean" },
       forklift_pickup: { type: "boolean" }, forklift_delivery: { type: "boolean" }, inside_delivery: { type: "boolean" }, hazmat: { type: "boolean" }, special_handling: str(""), special_instructions: str(""), po_number: str(""),
       extra_stops: { type: "integer" }, labor_helpers: { type: "integer" }, labor_hours: { type: "number" }, expected_wait_minutes: { type: "number" }, holding_nights: { type: "integer" }, recurring: { type: "boolean" } })),
-    D("quote_special_service", "Official price for junk removal, pop-up events, or recurring service (by load size or dedicated route). The price comes only from this tool. A person schedules these afterwards; offer create_callback_task.", obj({
-      service: { type: "string", enum: ["junk_removal", "popup_event", "recurring_load_class", "recurring_route"] },
-      pickup_address: str("junk: the address the job is at. Events and routes: the pickup address, full street address with city and state"), delivery_address: str("events and routes: the delivery or event address"),
-      load_size: { type: "string", enum: ["minimum", "quarter", "half", "threequarter", "full"], description: "junk removal volume" }, truckloads: { type: "integer", description: "junk: full truckloads needed, default 1" },
-      has_heavy_items: { type: "boolean", description: "junk: heavy items such as safes, pianos, hot tubs, or loose concrete, dirt, brick" },
-      total_weight_lb: { type: "number", description: "recurring by load size: the weight per run" }, days_per_week: { type: "integer" }, flex_window: { type: "boolean", description: "recurring by load size: customer accepts a flexible time window" },
-      direction: { type: "string", enum: ["oneway", "roundtrip"], description: "recurring_route" } }, ["service"])),
+
     D("confirm_job_packet", "After submit_job_packet returned the total, you stated it once, and the caller clearly said yes to booking: hand the job to the back-office worker to finish — verification, availability and the booking save all happen there, off the caller's clock. You are answered instantly; the booking outcome (confirmed + the reference, or what a person still needs to review) is announced to you as a system note while you keep talking. If the caller gave their email after the packet went in, include it here so the worker merges it first.", obj({ email: str("caller's email if they gave it after the packet was submitted — exactly as spelled back and confirmed") })),
     D("book_demo", "Book a 30-minute POTENT OS demo with a person. Use only after the prospect agreed to a demo and you have their name and email. Emails them the booking link and alerts the owner.", obj({ name: str(""), company: str(""), trucks: { type: "integer", description: "how many trucks they run" }, phone: str("number to reach them"), email: str("their email, read back and confirmed"), notes: str("their problem and what they pay today, in a sentence") }, ["name", "email"])),
     D("create_callback_task", "Create a callback for a person to follow up.", obj({ name: str(""), phone: str("number to call"), reason: str(""), preferred_time: str("") }, ["reason"])),
@@ -408,7 +406,7 @@ const TOOLS = {
     if (!el || el.status !== "eligible") return { ok: false, error: "not_eligible", say: "Run validate_shipment_eligibility first; only eligible shipments can be quoted." };
     const v = I.validate(intake); if (!v.ok) return { ok: false, missing: v.missing, problems: v.problems };
     const d = v.data, S0 = await S.pricingSettings(ctx.orgId, ctx.cfg); let miles = null, mins = null, routeWhy = null;
-    if (!/^savannah/.test(d.service_level)) { const g = intake._geo; const r = await RT.distance(g.pickup, g.delivery); if (r.ok) { miles = r.miles; mins = r.minutes; intake._route = { miles: miles, minutes: mins, source: r.source }; } else routeWhy = r.reason + (r.detail ? " - " + r.detail : ""); }
+    { const g = intake._geo; const r = await RT.distance(g.pickup, g.delivery); if (r.ok) { miles = r.miles; mins = r.minutes; intake._route = { miles: miles, minutes: mins, source: r.source }; } else routeWhy = r.reason + (r.detail ? " - " + r.detail : ""); }
     const q = P.quote(d, miles, S0, ctx.cfg.settings && ctx.cfg.settings.quote);
     if (!q.ok) return { ok: false, review: true, reason: q.reason + (routeWhy ? " [route: " + routeWhy + "]" : ""), route_failure: routeWhy || undefined, say: "You cannot give a price. Do NOT run calculate_quote again on this call — one attempt per call, the caller has waited enough. Offer a callback or a person; if the caller still wants the job, save everything with create_callback_task so the team can confirm the total and call them back with it." };   // no-retry + details-carrying callback (2026-11-07a, the Nov 6 stall loop)
     const number = S.ref("Q"), ins = await B.sb("voice_quotes", { method: "POST", prefer: "return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, number: number, input: d, lines: q.lines, total_cents: q.total_cents, miles: miles, miles_source: intake._route ? intake._route.source : (miles == null ? "flat_rate" : null), settings_version: q.settings_version, expires_at: q.expires_at } });
@@ -459,7 +457,15 @@ const TOOLS = {
     const prof = await S.profileOf(ctx.orgId, bk.vehicle_profile_id); if (!prof) return fail("Vehicle no longer authorized");
     const gz = (ctx.session.intake && ctx.session.intake._geo) || {}, di = Object.assign({}, snap.intake); di.pickup_state = di.pickup_state || (gz.pickup && gz.pickup.state) || null; di.delivery_state = di.delivery_state || (gz.delivery && gz.delivery.state) || null;
     const e = R.evaluate(di, prof); if (e.status !== "eligible") return fail("Eligibility changed: " + e.blocks.concat(e.reviews).map(function (x) { return x.code; }).join(","));
-    const av = await AV.check(ctx.orgId, prof.id, { start: new Date(bk.window_start), end: new Date(bk.window_end) }, ctx.cfg);
+    // FAIL-SAFE AVAILABILITY (Jarvis mandate, Nov 9, 2026): if the tenant's book does not require
+    // an availability check, there is none — not even this re-check. If the check itself ERRORS,
+    // the booking does not die and nothing loops: it stays saved, flagged for owner review, and
+    // that definitive outcome is what gets announced (the Nov 8 08:00 call died on an errored
+    // availability check with no definitive answer).
+    const savedAv = (ctx.session.intake && ctx.session.intake._avail) || {};
+    let av;
+    if (savedAv.via === "book_no_availability_check") av = { verified: true, available: true, reasons: [] };
+    else { try { av = await AV.check(ctx.orgId, prof.id, { start: new Date(bk.window_start), end: new Date(bk.window_end) }, ctx.cfg); } catch (e) { return fail("Availability check errored — booking flagged for owner review", "The booking is saved and flagged for the owner to review, because the availability check itself errored. Say exactly that, plainly and warmly; do NOT say it is confirmed and do not take payment yet."); } }
     if (!av.verified) return fail("Availability could not be verified: " + av.reasons.join(","));
     if (!av.available) return fail("Time no longer available", "That time was just taken. Not booked. Offer another time or a callback.");
     const d = snap.intake; let res;
@@ -633,7 +639,58 @@ const TOOLS = {
         ? { ok: true, duplicate: true, submitted: true, price_pending: true, say: "That job is already in with the back office — do not submit it again. The total will be confirmed in the written confirmation; do not invent a price. Ask if they'd like you to put the booking in." }
         : { ok: true, duplicate: true, submitted: true, total: last.total, say: "That job is already in with the back office at " + last.total + " — do not submit it again and do not restate the price. Ask: shall I book it? On a clear yes, call confirm_job_packet." };
       const pnd = I.plainNeeds(last.missing, last.problems);
-      return { ok: true, duplicate: true, submitted: true, accepted: true, needs: last.missing || [], missing: last.missing || [], problems: last.problems || [], total: last.total || undefined, say: "You already submitted exactly this packet and nothing has changed since — nothing was sent again, and submitting it again will not change anything. Ask the caller OUT LOUD now, in plain words, for the next piece you still need: " + (pnd.firstAsk || "the next missing piece") + ". One thing at a time; when you have it, submit again carrying everything." };
+      const firstAsk = (last.missing_labels && last.missing_labels[0]) || pnd.firstAsk || "the next missing piece";
+      const needList = (last.missing_labels && last.missing_labels.length) ? last.missing_labels.join("; ") : pnd.list;
+      return { ok: true, duplicate: true, submitted: true, accepted: true, needs: last.missing || [], missing: last.missing || [], problems: last.problems || [], total: last.total || undefined, say: "You already submitted exactly this packet and nothing has changed since — nothing was sent again, and submitting it again will not change anything. It still needs: " + needList + ". Ask the caller OUT LOUD now, in plain words, for the next piece you still need: " + firstAsk + ". One thing at a time; when you have it, submit again carrying everything." };
+    }
+    // ── BOOK PATH (Jarvis build, Nov 9, 2026 — merged with the hand-off rule above): when this
+    // company has a BOOK and the packet names one of its services, "complete" is the BOOK's own
+    // question list for that service — never the shipment field list. The packet is accepted as
+    // a hand-off either way: a complete packet is priced from the book instantly; a packet with
+    // pieces still missing comes back naming the book's missing questions in plain words, as the
+    // next thing to ASK OUT LOUD. The worker enforces book completeness at confirm time
+    // (needs_details). Identical resubmits never reach here — the rule above answers them from
+    // the stored outcome, for book packets exactly as for freight packets, so an unchanged
+    // resubmission is impossible in code, not just discouraged.
+    const tenantBook = BK.resolve(ctx.cfg, await orgSlug(ctx));
+    if (tenantBook && a && a.service) {
+      const svc = BK.serviceById(tenantBook, a.service);
+      if (!svc) return { ok: false, error: "unknown_service", say: "That service is not in this company's book. Offer what the book lists (see BOOK SERVICES in your instructions), or take a callback — do not invent a service." };
+      const base = {}; ["customer_name", "company", "callback_phone", "email"].forEach(function (k) { if (a[k] !== undefined) base[k] = a[k]; });
+      if (a.use_caller_id !== undefined) base.use_caller_id = a.use_caller_id;
+      if (Object.keys(base).length) { const cr = await TOOLS.collect_shipment_details(ctx, base); if (cr && cr.do_not_contact) return cr; }
+      const curI = ctx.session.intake || {};
+      const prev = curI._book && curI._book.service === svc.id ? curI._book : { service: svc.id, answers: {}, unknown: [] };
+      const answers = Object.assign({}, prev.answers);
+      const addAns = function (k, v) { if (v !== undefined && v !== null && v !== "") answers[k] = v; };
+      if (a.answers && typeof a.answers === "object") Object.keys(a.answers).forEach(function (k) { addAns(k, a.answers[k]); });
+      svc.questions.forEach(function (q) { addAns(q.key, a[q.key]); });
+      const unknown = Array.from(new Set([].concat(prev.unknown || [], Array.isArray(a.unknown) ? a.unknown : []).map(String)));
+      const fields = { customer_name: curI.customer_name || answers.customer_name || null, callback_phone: curI.callback_phone || answers.callback_phone || null, email: curI.email || answers.email || null, answers: answers, unknown: unknown };
+      const v = BK.validateAnswers(svc, fields), intakeB = ctx.session.intake;
+      intakeB._book = { service: svc.id, answers: v.data.answers, unknown: v.data.unknown, complete: v.ok };
+      if (!v.ok) {
+        intakeB._worker_submit = { hash: hash, incomplete: true, book_service: svc.id, missing: v.missing.map(function (m) { return m.key; }), at: new Date().toISOString() };
+        intakeB._packet_last = { hash: hash, complete: false, book_service: svc.id, missing: v.missing.map(function (m) { return m.key; }), missing_labels: v.missing.map(function (m) { return m.label; }), problems: v.problems, total: svc.price_cents != null ? P.money(svc.price_cents) : null };
+        await setIntake(ctx, intakeB);
+        const f = v.missing[0];
+        return { ok: true, submitted: true, accepted: true, service: svc.name, needs: v.missing.map(function (m) { return m.key; }), problems: v.problems, total: svc.price_cents != null ? P.money(svc.price_cents) : undefined, say: "The packet for " + svc.name + " is IN with the back office — keep talking; do not pause, wait, or say you are checking anything. It still needs: " + v.missing.map(function (m) { return m.label; }).join("; ") + ". Ask for " + (f ? f.label : "the next piece") + " OUT LOUD now, in plain words — one thing at a time — and when you have it, submit again carrying everything (never the same packet unchanged). A don't-know is an answer: note it in unknown and move on." + (svc.price_cents != null ? " The price from this company's book is " + P.money(svc.price_cents) + " — it does not wait on the packet: state it ONCE when you naturally reach the price." : "") };
+      }
+      if (svc.price_cents != null) {
+        const number = S.ref("Q"), expires = new Date(Date.now() + 30 * 60000).toISOString();
+        const ins = await B.sb("voice_quotes", { method: "POST", prefer: "return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, number: number, input: { book_service: svc.id, answers: v.data.answers }, lines: [{ code: "book", label: svc.name, cents: svc.price_cents }], total_cents: svc.price_cents, miles: null, miles_source: "book", settings_version: "book:" + svc.id, expires_at: expires } });
+        const row = rows(ins)[0]; if (!row) return { ok: false, error: "save_failed" };
+        intakeB._elig = { status: "eligible", blocks: [], reviews: [], profile_id: null, via: "book", checked_at: new Date().toISOString() };
+        intakeB._quote_id = row.id; intakeB._quote = { id: row.id, number: number, total_cents: svc.price_cents, expires_at: expires, created_at: row.created_at || new Date().toISOString() };
+        intakeB._worker_submit = { hash: hash, total: P.money(svc.price_cents), book_service: svc.id, at: new Date().toISOString() };
+        intakeB._packet_last = { hash: hash, complete: true, book_service: svc.id, total: P.money(svc.price_cents), quote_number: number };
+        await setIntake(ctx, intakeB, { quote: { id: row.id, number: number, total_cents: svc.price_cents } });
+        return { ok: true, submitted: true, service: svc.name, total: P.money(svc.price_cents), price_free: svc.price_cents === 0, say: svc.price_cents === 0 ? "The " + svc.name + " is free — say so plainly, ONCE. Then ask: shall I book it? On a clear yes, call confirm_job_packet. Run no other step." : "State this total ONCE, plainly. Then ask: shall I book it? On a clear yes, call confirm_job_packet. Run no other step." };
+      }
+      intakeB._worker_submit = { hash: hash, price_pending: true, book_service: svc.id, at: new Date().toISOString() };
+      intakeB._packet_last = { hash: hash, complete: true, book_service: svc.id, price_pending: true };
+      await setIntake(ctx, intakeB);
+      return { ok: true, submitted: true, service: svc.name, price_pending: true, say: "The booking is in with the back office. This service has no book price, so do NOT invent a number: the price will be confirmed in the written confirmation. Ask if they'd like you to put the booking in; on a clear yes, call confirm_job_packet." };
     }
     const res = await TOOLS.collect_shipment_details(ctx, a || {});
     if (!res || !res.ok) return res || { ok: false, error: "packet_failed" };
@@ -695,7 +752,13 @@ async function bookTotalAtHand(ctx, d, book) {
 // Stable fingerprint of a job packet (facts only; the correction flag is not a fact). Used to make
 // an exact resubmission of the same packet a no-op instead of a second save.
 function packetHash(a) {
-  const c = cleanArgs(a || {}); const keys = Object.keys(c).sort();
+  const c = cleanArgs(a || {});
+  // Book packets (Jarvis build, Nov 9, 2026): the service + its answers are facts of the packet
+  // too — two packets for different services, or with different book answers, are different packets.
+  if (a && a.service) c._service = String(a.service);
+  if (a && a.answers && typeof a.answers === "object") c._answers = a.answers;
+  if (a && Array.isArray(a.unknown) && a.unknown.length) c._unknown = a.unknown.slice().sort();
+  const keys = Object.keys(c).sort();
   const s = keys.map(function (k) { return k + "=" + JSON.stringify(c[k]); }).join("|");
   let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
   return h.toString(16);
@@ -705,42 +768,11 @@ async function verifyRef(ctx, a) {
   return bk && last4(bk.customer_phone) && last4(bk.customer_phone) === String(a.phone_last4 || "").replace(/\D/g, "").slice(-4) ? bk : null;
 }
 TOOLS.look_up_booking_status = async function (ctx, a) { const bk = await verifyRef(ctx, a); if (!bk) return { ok: false, error: "not_verified", say: "Could not match that reference and phone number." }; const w = bk.snapshot && bk.snapshot.intake; return { ok: true, status: bk.status === "pending_review" ? "request received, awaiting confirmation" : bk.status, date: w && w.service_date, window: w && w.time_window }; };
-// Junk removal, pop-up events and recurring service, priced from POTENT's existing price list (ospricing.js). Never invents a number: anything unclear goes to a person.
-TOOLS.quote_special_service = async function (ctx, a) {
-  const OS = require("./ospricing"), svc = String(a.service || ""), review = function (why) { return { ok: false, review: true, reason: why, say: "You cannot give a price for this. Offer a callback or a person." }; };
-  const S0 = await S.pricingSettings(ctx.orgId, ctx.cfg); if (!S0) return review("No approved pricing settings were found.");
-  const cap = Number(S0.payload_limit_lbs) || OS.TRUCK_MAX_LBS, states = (ctx.cfg.service_area && ctx.cfg.service_area.states) || ["GA"];
-  const geo = async function (addr) { const g = await RT.verifyAddress(clip(addr, 240)); if (g.unknown) return { err: review("Address service is unavailable.") }; if (!g.ok) return { err: { ok: false, problems: ["address_not_found"], say: "Ask the caller to repeat the address with street, city and state." } }; if (states.indexOf(String(g.state || "").toUpperCase()) < 0) return { err: review("Outside the service area.") }; return { g: g }; };
-  const lines = [], money = function (d) { return Math.round(d * 100); }; let input = { service: svc }, miles = null, srcMiles = null, extra = {};
-  if (svc === "junk_removal") {
-    if (a.has_heavy_items === true) return review("Heavy items and loose heavy material are priced on weight by a person.");
-    const j = OS.junk(a.load_size, a.truckloads); if (!j) return { ok: false, problems: ["load_size_missing"], say: "Ask how big the load is: single item, quarter, half, three-quarter or full truck." };
-    if (!clip(a.pickup_address, 5)) return { ok: false, problems: ["address_missing"], say: "Ask for the address of the job." };
-    const g = await geo(a.pickup_address); if (g.err) return g.err;
-    lines.push({ code: "junk", label: j.load.label + (j.truckloads > 1 ? ", first truckload" : ""), cents: money(j.load.price) });
-    if (j.truckloads > 1) lines.push({ code: "extra_load", label: (j.truckloads - 1) + " additional truckload(s)", cents: money((j.truckloads - 1) * OS.EXTRA_TRUCKLOAD_FEE) });
-    input = { service: svc, load_size: j.load.id, truckloads: j.truckloads, address: g.g.matched }; extra = { range_max: j.totalMax > j.total ? P.money(money(j.totalMax)) : null };
-  } else if (svc === "popup_event" || svc === "recurring_route") {
-    if (!clip(a.pickup_address, 5) || !clip(a.delivery_address, 5)) return { ok: false, problems: ["address_missing"], say: "Ask for both addresses." };
-    const g1 = await geo(a.pickup_address); if (g1.err) return g1.err; const g2 = await geo(a.delivery_address); if (g2.err) return g2.err;
-    const r = await RT.distance(g1.g, g2.g); if (!r.ok) return review("Route distance could not be verified [route: " + r.reason + (r.detail ? " - " + r.detail : "") + "]."); miles = r.miles; srcMiles = r.source;
-    if (svc === "popup_event") { const e = OS.popup(miles); lines.push({ code: "event", label: "Pop-up event, " + Math.round(e.roundTripMiles) + " round-trip miles" + (e.roundTripMiles > OS.EVENT.flatRoundTripMiles ? " (flat price plus $1 per mile past " + OS.EVENT.flatRoundTripMiles + ")" : " (flat price)"), cents: money(e.total) }); input = { service: svc, pickup: g1.g.matched, delivery: g2.g.matched, miles: Math.round(miles * 10) / 10 }; }
-    else {
-      if (Math.floor(Number(a.days_per_week)) !== 5) return review("Dedicated routes are priced for 5 days a week with no weekends.");
-      const rt = OS.dedicatedRoute(miles, a.direction); if (!rt) return review("This route is outside the dedicated route price list.");
-      lines.push({ code: "route", label: rt.label + ", 5 days a week", cents: money(rt.dailyPrice) }); input = { service: svc, route: rt.id, pickup: g1.g.matched, delivery: g2.g.matched, miles: Math.round(miles * 10) / 10 }; extra = { per_day: true, weekly: P.money(money(rt.weeklyPrice)) };
-    }
-  } else if (svc === "recurring_load_class") {
-    const w = Number(a.total_weight_lb); if (!(w > 0)) return { ok: false, problems: ["weight_missing"], say: "Ask for the weight per run." };
-    if (w > cap) return { ok: false, blocked: true, say: "That is over the " + cap + " lb truck limit. Explain politely and offer a person." };
-    const rl = OS.recurringLoad(w, a.days_per_week, a.flex_window === true, cap); if (!rl) return { ok: false, problems: ["days_per_week_missing"], say: "Ask how many days a week (1 to 5)." };
-    lines.push({ code: "recurring", label: rl.cls.label + " (" + rl.days + " day(s) a week" + (rl.discount ? ", " + Math.round(rl.discount * 100) + "% recurring discount" : "") + ")", cents: money(rl.perDay) }); input = { service: svc, weight_lb: w, days_per_week: rl.days, flex_window: a.flex_window === true }; extra = { per_day: true, weekly: P.money(money(rl.weekly)) };
-  } else return { ok: false, error: "unknown_service" };
-  const total = lines.reduce(function (t, l) { return t + l.cents; }, 0), number = S.ref("Q"), exp = new Date(Date.now() + (Number(S0.quote_expiration_minutes) || 30) * 60000).toISOString();
-  const ins = await B.sb("voice_quotes", { method: "POST", prefer: "return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, number: number, input: input, lines: lines, total_cents: total, miles: miles, miles_source: srcMiles || "flat_rate", settings_version: String(S0.updated_at || ""), expires_at: exp } });
-  if (!rows(ins)[0]) return { ok: false, error: "save_failed" };
-  return Object.assign({ ok: true, quote_number: number, lines: lines.map(function (l) { return l.label + ": " + P.money(l.cents); }), total: P.money(total), valid_minutes: Number(S0.quote_expiration_minutes) || 30, say: "State the total. " + (extra.range_max ? "Say it can run up to " + extra.range_max + " depending on the actual load, confirmed on site. " : "") + (extra.per_day ? "This price is per day" + (extra.weekly ? " (" + extra.weekly + " a week)" : "") + ". " : "") + "A person schedules this service; offer create_callback_task and do not say it is booked.", exclusions: ["Taxes, if any apply, are not included.", "Changes to the job may change the price."] }, extra);
-};
+// JARVIS BUILD STEP 2 (Nov 9, 2026): the special-service pricing tool is REMOVED. It priced one
+// business's junk removal, pop-up events and recurring routes from that business's own price list
+// inside a shared tool — but Potent sells software and services now and performs no physical work
+// (Tony, Nov 5, 2026), and no business's price list belongs in the spine. A business that sells
+// those services carries them in ITS book (book.js) at ITS prices.
 const changeReq = function (kind) { return async function (ctx, a) {
   const bk = await verifyRef(ctx, a); if (!bk) return { ok: false, error: "not_verified", say: "Could not match that reference and phone number." };
   await B.sb("voice_callbacks", { method: "POST", prefer: "return=minimal", body: { org_id: ctx.orgId, session_id: ctx.session.id, name: bk.customer_name, phone: bk.customer_phone, reason: kind + " requested for " + bk.reference + (a.requested_date ? " -> " + clip(a.requested_date, 40) : "") + (a.note ? ": " + clip(a.note, 200) : "") } });
@@ -751,7 +783,9 @@ TOOLS.request_reschedule = changeReq("Reschedule"); TOOLS.request_cancellation =
 // Run one tool call for a session. Never throws.
 // POTENT's own selling material, junk/pop-up price list, playbook and Stripe account belong to POTENT's line only; other companies never get them.
 const isPotentOrg = async function (ctx) { if (ctx._isP !== undefined) return ctx._isP; const o = rows(await B.sb("organizations?id=eq." + ctx.orgId + "&select=slug&limit=1"))[0]; return (ctx._isP = !!(o && o.slug === (process.env.POTENT_ORG_SLUG || "potent-logistics"))); };
-const POTENT_ONLY = { quote_special_service: 1, get_playbook: 1, lookup_os_feature: 1, send_payment_link: 1, take_card_payment: 1 };
+// The org's slug, cached per call context: the key its BOOK is shelved under (book.js).
+const orgSlug = async function (ctx) { if (ctx._slug !== undefined) return ctx._slug; const o = rows(await B.sb("organizations?id=eq." + ctx.orgId + "&select=slug&limit=1"))[0]; return (ctx._slug = o ? o.slug : null); };
+const POTENT_ONLY = { get_playbook: 1, lookup_os_feature: 1, send_payment_link: 1, take_card_payment: 1 };
 // TALKER/WORKER SPLIT (Nov 8, 2026): these steps are no longer on the talk path — they are the
 // WORKER's hands now (lib/voice/worker.js calls them internally). They stay out of defs(), and a
 // model-facing call (ctx.modelFacing, set by the voice-tools "tool" action) is refused outright:

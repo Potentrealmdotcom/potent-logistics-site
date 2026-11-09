@@ -40,15 +40,15 @@ const TOPICS = {
     "'We'll call you if we need you': 'I understand. The only reason I ask is because urgent situations usually happen when companies don't have time to search. Would it make sense to have us as a backup contact before that happens?'"
   ].join("\n"),
   junk_removal: [
-    "JUNK REMOVAL is its own service with its own price list; quote it whenever a caller wants it, even though other chapters focus on larger commercial work. Listen first. Get what they are getting rid of and how much of the truck it fills (single item, quarter, half, three-quarter or full load), the address, and when they want it.",
-    "Price ONLY from quote_special_service (junk removal). It carries the book's list; a big job with more than one truckload adds a fee per extra truckload, which the tool applies. Hazardous or restricted materials are never quoted.",
+    "JUNK REMOVAL: Potent does not sell junk removal anymore (owner ruling, Nov 5, 2026) — Potent sells software and services and performs no physical work. Never quote it and never price it. Say plainly and kindly that we do not do that ourselves, offer what Potent does sell (POTENT OS, Elevate, a demo), and take a callback (create_callback_task) if they want a person to follow up.",
+    "Hazardous or restricted materials are never quoted.",
     "Then close: 'Want me to get that booked for you?' After a confirmed booking offer to take the card right now by phone keypad (take_card_payment). Never send a payment link.",
     "Turn a cleanout into a repeat account: a single cleanout can become a property-management relationship or a recurring removal account. Ask: 'Do you manage other properties, or have more cleanouts coming up?'"
   ].join("\n"),
   cleanout: [
     "COMMERCIAL CLEANOUT / REMOVAL. Commercial cleanouts, business removals, warehouse cleanouts, store fixture removal, large furniture and appliance removal, commercial debris. Get: business or property address, photos when available, a description of the materials, estimated volume, access information, and the preferred completion date.",
     "We do not chase small pickups, household moving, hazardous materials, paint, chemicals or unsafe materials. If the job is that, say so kindly and offer a person.",
-    "Price only through quote_special_service or a person; anything outside the approved price list: say someone will follow up. For approved jobs, the goal is: complete the job, document it, collect payment."
+    "Price only through a person; anything outside the approved price list: say someone will follow up. For approved jobs, the goal is: complete the job, document it, collect payment."
   ].join("\n"),
   freight: [
     "BOOKING A LOAD. Collect: name, phone and email; pickup address and delivery address; what it is (description, number of pieces, approximate weight); when (scheduled, same-day or rush); anything special (stairs, inside delivery, extra stops, heavy items). Then quote from the tools, check live availability, and create the pending booking. The booking is confirmed once the job passes the eligibility check or dispatch approves it.",
@@ -56,12 +56,12 @@ const TOPICS = {
     "Price ONLY from calculate_quote; read it plainly: 'Based on what you need, your price today is X.' Never invent availability, delivery times or promises."
   ].join("\n"),
   popup_events: [
-    "POP-UP EVENTS are a truck, a crew and the set-up at a location. Ask where the event is, the date, and the pickup and drop-off addresses. Quote the flat price through quote_special_service (popup_event), which adds a per-mile amount for each round-trip mile beyond the included distance. Anything unusual goes to management (request_human_handoff or create_callback_task).",
+    "POP-UP EVENTS are a truck, a crew and the set-up at a location. Ask where the event is, the date, and the pickup and drop-off addresses. Pricing is set by a person from the company's own book — never state a number from memory; take the details with create_callback_task. Anything unusual goes to management (request_human_handoff or create_callback_task).",
     "Event companies are repeat buyers: after the quote ask whether more events are coming up, then mention a recurring account (get_playbook recurring)."
   ].join("\n"),
   recurring: [
     "RECURRING ACCOUNTS. A recurring account is a customer with a repeat schedule: a few days a week, or a dedicated route. One emergency shipment is good; a recurring customer changes the company. Ask what they move, how often, which days, and the pickup and delivery locations.",
-    "Price it only through quote_special_service (recurring load or dedicated route). Recurring is priced by how much of the truck the load fills and discounted by days per week; a dedicated route runs five days a week with no weekends. Never state a discount from memory.",
+    "Recurring pricing comes from the company's own book and is finished by a person — never state a price or a discount from memory; capture the route and let the back office price it.",
     "Then set it up: get name, email, company and the route (create_or_update_lead) and create_callback_task so a person sets up the route in the app and finishes the account and wallet. Never say it is already set up.",
     "Ask qualification questions for ongoing business: the legal company name, the main contact, the person who decides, and the accounting contact."
   ].join("\n"),

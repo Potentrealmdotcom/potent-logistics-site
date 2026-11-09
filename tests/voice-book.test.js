@@ -2,9 +2,10 @@
 // JARVIS BUILD (Nov 9, 2026) — the tenant BOOK drives the call.
 // Step 1 proofs: "complete" is the book's own question list for the service being booked.
 //  (i)  a salon-style tenant books an appointment with ZERO freight questions demanded;
-//  (ii) Nov 9 regression: a caller gives partial details — the packet is refused as
-//       incomplete, the result names the book's missing fact so she asks for it out loud,
-//       no hold line is ever prescribed, and the same incomplete packet never slips through;
+//  (ii) Nov 9 regression: a caller gives partial details — the packet is accepted as a
+//       hand-off and names the book's missing fact so she asks for it out loud; no hold
+//       line is ever prescribed; an identical resubmission is answered from the stored
+//       outcome (impossible in code), and the worker enforces completeness at confirm;
 //  plus: a "don't know" is an answer, and the book engine's own validation units.
 process.env.TWILIO_ACCOUNT_SID = "ACtest"; process.env.TWILIO_AUTH_TOKEN = "twtoken"; process.env.TWILIO_SMS_FROM = "+14045550999"; process.env.VOICE_WEBHOOK_URL = "https://hooks.test/voice"; process.env.VOICE_BRIDGE_URL = "wss://voice.test/twilio"; process.env.VOICE_BRIDGE_SECRET = "bridgesecret";
 process.env.ROUTING_PROVIDER = "osrm"; process.env.OSRM_URL = "https://osrm.test"; process.env.RESEND_API_KEY = "rk";
@@ -61,15 +62,14 @@ const HOLD = /let me check|one second|hang on|just a moment|bear with me|still w
     r = await run(s, "submit_job_packet", { service: "haircut", customer_name: "Jo Rivera", use_caller_id: true, answers: { service_date: days(3), service_time: "10:00", bringing_someone: "no" } });
     ok(r.ok && r.duplicate === true, "the same salon packet again is a duplicate — never a second save");
   }
-  // ── (ii) Nov 9 regression: partial details ──
+  // ── (ii) Nov 9 regression: partial details (merged hand-off semantics, Nov 9, 2026) ──
   { const s = newSes(OC);
     let r = await run(s, "submit_job_packet", { service: "haircut", customer_name: "Sam Blue", use_caller_id: true, answers: { service_time: "11:00" } });
-    ok(!r.ok && r.error === "packet_incomplete", "a partial book packet is REFUSED as incomplete — never submitted, never priced");
-    ok(Array.isArray(r.missing) && r.missing.includes("service_date") && r.missing.includes("bringing_someone"), "the refusal names the BOOK's missing facts (the day; bringing someone) — not shipment fields");
-    ok(/conversationally/i.test(r.say) && !HOLD.test(r.say), "the instruction is to ASK out loud, conversationally — and prescribes no hold line");
-    ok(!sesOf(s).intake._worker_submit && !sesOf(s).intake._quote, "nothing was handed to the worker and no quote exists for the incomplete packet");
+    ok(r.ok && r.accepted === true, "a partial book packet is ACCEPTED as a hand-off — the conversation never stops for it");
+    ok(Array.isArray(r.needs) && r.needs.includes("service_date") && r.needs.includes("bringing_someone"), "it names the BOOK's missing facts (the day; bringing someone) — not shipment fields");
+    ok(/OUT LOUD/i.test(r.say) && !HOLD.test(r.say), "the instruction is to ASK out loud — and prescribes no hold line");
     r = await run(s, "submit_job_packet", { service: "haircut", customer_name: "Sam Blue", use_caller_id: true, answers: { service_time: "11:00" } });
-    ok(!r.ok && r.error === "packet_incomplete", "the SAME incomplete packet submitted again is still refused (the Nov 9 loop — resubmitting 3x — now just re-asks)");
+    ok(r.ok && r.duplicate === true, "the SAME partial packet submitted again is a duplicate answered from the stored outcome — the Nov 9 resubmit loop is impossible in code");
     r = await run(s, "submit_job_packet", { service: "haircut", customer_name: "Sam Blue", use_caller_id: true, answers: { service_date: days(2), service_time: "11:00" }, unknown: ["bringing_someone"] });
     ok(r.ok && r.submitted && r.total === "$45.00", "once she asks and the caller answers (or says don't-know), the packet completes and prices from the book");
   }
@@ -78,5 +78,33 @@ const HOLD = /let me check|one second|hang on|just a moment|bear with me|still w
     const r = await run(s, "submit_job_packet", { service: "massage", customer_name: "Jo", use_caller_id: true, answers: {} });
     ok(!r.ok && r.error === "unknown_service", "a service that is not in the book is refused — she offers what the book lists");
   }
-  console.log("\n" + n + " assertions passed — voice-book (step 1)");
+  // ── STEP 2: the spine is stripped; Potent's own book is what Potent sells NOW ──
+  { const pbook = BK.resolve({ settings: {} }, "potent-logistics");
+    ok(pbook && pbook.services.map(x => x.id).join(",") === "os_demo,elevate_consult", "Potent's book resolves by slug and contains ONLY what Potent sells now: the OS demo and the Elevate consultation");
+    ok(pbook.services.every(x => x.price_cents === 0), "both Potent book services are free, priced in the book itself");
+    const pp = P.build({ agent_name: "Elevate" }, { name: "POTENT Logistics", slug: "potent-logistics" });
+    ok(/BOOK SERVICES/.test(pp) && /POTENT OS demo/.test(pp) && /Elevate consultation/.test(pp), "the Potent-line prompt carries Potent's book: bookable demo + consultation");
+    ok(!/backup freight/.test(pp) && !/quote_special_service/.test(pp) && !/never say we do not do junk/.test(pp) && !/one-time pop-up event/.test(pp), "the Potent-line prompt no longer pitches backup freight, pop-up events or junk removal");
+    ok(/does not do junk removal/.test(pp), "the prompt states the current ruling plainly: Potent does not do junk removal");
+    ok(!TL.defs().some(d => d.name === "quote_special_service"), "quote_special_service is gone from the model's tools (Potent junk/pop-up/recurring lists are out of the spine)");
+    const PB = require("../netlify/functions/lib/voice/pricebook");
+    ok(PB.fromPotentBook === undefined && PB.resolve({ settings: {} }, { service_level: "standard" }, true) === null, "the shared price-book resolver holds NO Potent price list anymore — Potent gets no price from shared code");
+    const PBk = require("../netlify/functions/lib/voice/book");
+    ok(PBk.resolve({ settings: {} }, "potent-logistics").services[0].checks.includes("date_not_past"), "Potent's book carries its own worker checks as data");
+    // a demo packet on Potent's own line completes on the book alone
+    const s = newSes(OA);
+    let r = await run(s, "submit_job_packet", { service: "os_demo", customer_name: "Tony Mendes", use_caller_id: true, email: "pprdkt@gmail.com", answers: { company: "Mendes Trucking", trucks: "12", demo_date: days(4), demo_time: "10:00" } });
+    ok(r.ok && r.submitted && r.total === "$0.00" && r.price_free === true, "Potent-line demo packet completes on Potent's book and prices from the book: free");
+    ok(sesOf(s).intake._book && sesOf(s).intake._book.service === "os_demo", "the demo packet is stored as a book packet");
+    // STEP 3: the worker finishes the book booking behind the talker — one save, announced once.
+    const W = require("../netlify/functions/lib/voice/worker");
+    const wr = await W.runCompletion({ orgId: OA, session: sesOf(s), cfg: await S.cfgOf(OA) }, {});
+    ok(wr.status === "request" && wr.reference && wr.total === "$0.00", "STEP 3: the worker completes the demo booking from the book — reference + free price announced");
+    ok(T.voice_bookings.filter(b => b.session_id === s.id).length === 1, "STEP 3: exactly ONE booking was saved");
+    const bkRow = T.voice_bookings.find(b => b.session_id === s.id);
+    ok(bkRow.snapshot && bkRow.snapshot.book === true && bkRow.snapshot.service === "os_demo" && bkRow.review_reason === null, "STEP 3: the saved booking is the book booking, its checks ran clean (no review flag)");
+    const wr2 = await W.runCompletion({ orgId: OA, session: sesOf(s), cfg: await S.cfgOf(OA) }, {});
+    ok(wr2.already === true && T.voice_bookings.filter(b => b.session_id === s.id).length === 1, "STEP 3: a second worker run returns the stored outcome — ONE announced result, still one booking");
+  }
+  console.log("\n" + n + " assertions passed — voice-book (steps 1-3 merged)");
 })().catch(e => { console.error("FAIL:", e && e.message); process.exit(1); });

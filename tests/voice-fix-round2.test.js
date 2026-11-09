@@ -16,7 +16,7 @@ const M = require("./_voicemock.js")({
   organizations: [{ id: OA, name: "POTENT Logistics", slug: "potent-logistics", plan: "fleet", owner_email: "owner@potent.test", license_status: "paid" }, { id: OB, name: "Bravo Haul", slug: "bravo", plan: "starter", owner_email: "b@x.com", license_status: "paid" }],
   voice_plans: [plan("starter", 19900, 300, 50, 2, 15, ENT_START), plan("fleet", 99900, 3000, 40, 15, 30, ENT_ALL)],
   voice_subscriptions: [{ org_id: OA, tier: "fleet", os_plan: "fleet", status: "internal" }, { org_id: OB, tier: "starter", os_plan: "starter", status: "active", current_period_start: null }],
-  voice_agent_config: [{ org_id: OA, human_available: false, transfer_number: null, settings: { numbers: ["+14045550100"], driver_check: "required" } }, { org_id: OB, settings: { numbers: ["+14045550200"], price_book: { flat_total_cents: 62500 } } }],
+  voice_agent_config: [{ org_id: OA, human_available: false, transfer_number: null, settings: { numbers: ["+14045550100"], driver_check: "required", price_book: { flat_total_cents: 40000 } } }, { org_id: OB, settings: { numbers: ["+14045550200"], price_book: { flat_total_cents: 62500 } } }],
   voice_vehicle_profiles: [Object.assign({ id: PROFILE_ID, org_id: OA, name: "2022 Ford E350 16-ft Morgan box truck", kind: "company", max_payload_lb: 4500, interior_l_in: 190, interior_w_in: 94, interior_h_in: 80, door_w_in: 86.5, door_h_in: 71, equipment: { dock_height: true, liftgate: false, pallet_jack: false }, service_area: { states: ["GA"] }, authorized: true, active: true, version: 1, updated_at: "2026-01-01" })],
   drivers: [{ id: "d1", org_id: OA, name: "Driver One", status: "active" }], b2b_pricing_settings: [SETTINGS] });
 const { T, EXT } = M;
@@ -65,7 +65,7 @@ const say = (s, who, text) => S.transcript(s.org_id, s.id, who, text);
   { const d = { service_level: "standard" };
     ok(PB.resolve({ settings: {} }, d, false) === null, "a tenant with no book gets NO book price (never a borrowed Potent price)");
     ok(PB.resolve({ settings: { price_book: { flat_total_cents: 62500 } } }, d, false).total_cents === 62500, "a tenant's own loaded book prices their jobs");
-    ok(PB.resolve({ settings: {} }, d, true).total_cents === 40000, "Potent's own book (its published local flat rate) is the $400 test total");
+    ok(PB.resolve({ settings: {} }, d, true) === null, "even for Potent, no price comes out of shared code (Jarvis build step 2, Nov 9, 2026) — its $400 test total lives in its loaded price_book settings (tenant data), like every other business");
     const s = newSes(OB); await run(s, "collect_shipment_details", full());
     const r = await run(s, "calculate_quote");
     ok(r.ok && r.total === "$625.00" && r.price_book === true, "Bravo Haul's call quotes from BRAVO's book ($625), not Potent's $400");

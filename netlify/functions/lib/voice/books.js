@@ -14,6 +14,30 @@
 // A question the caller says they don't know is ANSWERED ("don't know" is an answer) — it is
 // recorded in the packet's unknown list and never blocks the booking; the worker sees it.
 module.exports = {
+  // POTENT'S OWN BOOK (Jarvis build step 2, Nov 9, 2026) — what Potent sells NOW: software and
+  // services (Tony, Nov 5, 2026: "Potent isn't doing anything but selling services — no physical
+  // anything"). No freight, no junk, no hauling: those are not Potent services anymore, so they
+  // are not in Potent's book. The bookable services are the demo and the consultation — both
+  // free — so a caller on Potent's own line books one of these, at the book price ($0).
+  "potent-logistics": {
+    services: [
+      { id: "os_demo", name: "POTENT OS demo", kind: "demo", price_cents: 0, price_label: "Free", duration_min: 30, needs_email: true,
+        questions: [
+          { key: "company", label: "your company name", required: true },
+          { key: "trucks", label: "how many trucks you run", required: false, kind: "number" },
+          { key: "demo_date", label: "the day for the demo", required: true, kind: "date" },
+          { key: "demo_time", label: "the time that suits you", required: true }
+        ],
+        checks: ["date_not_past", "phone_sane", "email_sane"] },
+      { id: "elevate_consult", name: "Elevate consultation", kind: "consultation", price_cents: 0, price_label: "Free", duration_min: 30, needs_email: true,
+        questions: [
+          { key: "business_type", label: "what kind of business you run", required: true },
+          { key: "demo_date", label: "the day for the consultation", required: true, kind: "date" },
+          { key: "demo_time", label: "the time that suits you", required: true }
+        ],
+        checks: ["date_not_past", "phone_sane", "email_sane"] }
+    ]
+  },
   // A worked example of a FREIGHT tenant's book, kept as data so any hauling company can be
   // loaded with its own version of it (its own prices, its own limits). It is bound to NO
   // organization: freight facts live in a freight business's book, never in the shared spine.

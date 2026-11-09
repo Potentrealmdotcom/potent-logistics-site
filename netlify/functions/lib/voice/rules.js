@@ -1,4 +1,8 @@
 // Eligibility engine: can THIS vehicle profile carry THIS shipment? Deterministic and config-driven; the AI never decides this.
+// A freight LIBRARY, not spine (Jarvis build step 2, Nov 9, 2026): it judges a shipment against ONE company's own vehicle
+// PROFILE — tenant data (payload, cargo box, equipment, service area) read via store.profileOf. It runs only inside the
+// legacy freight chain the worker drives for freight-shaped packets; book services never touch it, and no tenant's
+// limits are written in this file.
 // Result: status "eligible" | "blocked" | "review". Blocked = a hard limit is exceeded. Review = a human must look (unknown, unverified or unusual).
 const DEFAULT_PROFILE = { // GENERIC STARTER TEMPLATE for a company's first vehicle profile (seeded only on an owner's explicit action, and created UNAUTHORIZED until the owner signs off — see voice-api profile_seed_default). It is deliberately NOT any real company's truck: until Nov 3, 2026 this object carried POTENT's own 2022 Ford E350 as the "default", which stamped a for-sale truck onto the product as if it were the operating vehicle. Potent no longer runs freight (Tony, Nov 3, 2026); its live record lives in voice_vehicle_profiles and is maintained there. The numbers below stay a plain mid-size box-truck shape so a new company has something real to edit.
   name: "Starter box truck (template — replace with your vehicle)", max_payload_lb: 4500, interior_l_in: 190, interior_w_in: 94, interior_h_in: 80, door_w_in: 86.5, door_h_in: 71,

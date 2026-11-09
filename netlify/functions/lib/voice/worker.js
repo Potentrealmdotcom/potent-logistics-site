@@ -26,6 +26,7 @@
 //    report); they never stall the caller, who is already off the clock.
 //  - Every step logs name + duration + outcome ("worker step <name> <ms>ms <outcome>").
 const B = require("../beats"), S = require("./store"), T = require("./tools"), I = require("./intake");
+const BK = require("./book"), AV = require("./availability");   // Jarvis build (Nov 9, 2026): the worker runs the tenant BOOK's own checks behind the talker
 const rows = function (r) { return (r && r.data) || []; };
 function wlog() { console.log.apply(console, ["worker"].concat([].slice.call(arguments))); }
 
@@ -49,7 +50,25 @@ async function runCompletion(ctxIn, opts) {
   // them, and a later worker_run completes for real). Date problems land here too: the date is
   // checked HERE, in the back office, never as a step she waits on, and a wrong date comes back
   // into the same live call as a question, while the conversation continues.
-  const vGate = I.validate(intake);
+  const orgRowW = rows(await B.sb("organizations?id=eq." + orgId + "&select=slug&limit=1"))[0];
+  const bookW = BK.resolve(ctxIn.cfg, orgRowW && orgRowW.slug);
+  const bookSvc = (intake._book && intake._book.service && bookW) ? BK.serviceById(bookW, intake._book.service) : null;
+  // BOOK GATE (Jarvis build, Nov 9, 2026): a book packet's completeness is the BOOK's own
+  // question list — checked here, before the claim, exactly like the freight gate below: a
+  // shortfall is a conversation (needs_details), never a failure and never a burned claim. A
+  // booked date in the past is a fact problem and lands here too, not at any check step.
+  if (bookSvc) {
+    const bf = { customer_name: intake.customer_name, callback_phone: intake.callback_phone, email: intake.email, answers: intake._book.answers || {}, unknown: intake._book.unknown || [] };
+    const bv = BK.validateAnswers(bookSvc, bf);
+    let pastLabel = null;
+    if (bv.ok) { const dq = bookSvc.questions.find(function (q) { return q.kind === "date"; }); const dv = dq ? BK.parseDate(bf.answers[dq.key]) : null; if (dv && dv < new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" })) pastLabel = dq.label; }
+    if (!bv.ok || pastLabel) {
+      const labels = bv.missing.map(function (m) { return m.label; }); if (pastLabel) labels.push("a day that is not in the past (" + pastLabel + ")");
+      wlog("gate", sid, "needs_details_book", (Date.now() - t0) + "ms");
+      return { ok: true, status: "needs_details", missing: bv.missing.map(function (m) { return m.key; }), problems: bv.problems, ms: Date.now() - t0, say_for_agent: "The " + bookSvc.name + " booking is in, but it still needs: " + labels.join("; ") + ". Nothing is booked yet and nothing is lost. Ask the caller for the next piece OUT LOUD, in plain words — " + (labels[0] || "the next missing piece") + " — one thing at a time, keep the conversation going, then submit the packet again carrying everything and confirm again. Do NOT say it is booked and do not invent a price." };
+    }
+  }
+  const vGate = bookSvc ? { ok: true } : I.validate(intake);
   if (!vGate.ok) {
     const pn = I.plainNeeds(vGate.missing, vGate.problems);
     wlog("gate", sid, "needs_details", (Date.now() - t0) + "ms");
@@ -84,6 +103,37 @@ async function runCompletion(ctxIn, opts) {
     return r;
   };
   try {
+    // ── BOOK COMPLETION (Jarvis build step 3, Nov 9, 2026): a book service finishes from the
+    // BOOK alone. The price already came from the book at submit; here the worker fact-checks
+    // behind the talker, saves the booking ONCE, and the outcome is announced into the same
+    // call. There is NO availability step unless the book's own checks ask for one (none of
+    // the current books do): a check the book does not require does not exist, so it can never
+    // stall a call or error a booking. Bookings land as requests the team confirms — the
+    // honest state for a demo or consultation.
+    if (bookSvc && intake._book) {
+      const lateEmailB = opts && opts.email;
+      if (lateEmailB && !intake.email) { await run("collect_shipment_details", { email: lateEmailB }); }
+      const bf2 = { customer_name: intake.customer_name, callback_phone: intake.callback_phone, email: intake.email, answers: intake._book.answers || {}, unknown: intake._book.unknown || [] };
+      const checks = BK.runChecks(bookSvc, bf2);
+      intake._book_checks = checks; ctx.session.intake = intake; await S.patchSession(orgId, sid, { intake: intake });
+      const softBad = checks.filter(function (c) { return !c.ok; });
+      const dq = bookSvc.questions.find(function (q) { return q.kind === "date"; }), tq = bookSvc.questions.find(function (q) { return q.kind === "time"; });
+      const dstr = dq ? BK.parseDate(bf2.answers[dq.key]) : null;
+      let ws = null, we = null;
+      if (dstr) { const tstr = tq ? String(bf2.answers[tq.key] || "") : ""; const hm = tstr.match(/^(\d{1,2}):(\d{2})/); const dur = bookSvc.duration_min || 60;
+        if (hm) { ws = AV.zonedToUtc(dstr, ("0" + hm[1]).slice(-2) + ":" + hm[2]); we = new Date(ws.getTime() + dur * 60000); }
+        else { ws = AV.zonedToUtc(dstr, "06:00"); we = AV.zonedToUtc(dstr, "20:00"); } }
+      const idem = sid + ":" + bookSvc.id, refB = S.ref("PV");
+      const bodyB = { org_id: orgId, session_id: sid, quote_id: intake._quote_id || null, idem_key: idem, reference: refB, status: "pending_review", review_reason: softBad.length ? "Book checks flagged: " + softBad.map(function (c) { return c.detail; }).join("; ") : null, vehicle_profile_id: null, window_start: ws ? ws.toISOString() : null, window_end: we ? we.toISOString() : null, customer_name: bf2.customer_name || null, customer_phone: bf2.callback_phone || null, customer_email: bf2.email || null, snapshot: { book: true, service: bookSvc.id, service_name: bookSvc.name, answers: bf2.answers, unknown: bf2.unknown, quote: intake._quote || null, checks: checks } };
+      const ins = await B.sb("voice_bookings", { method: "POST", prefer: "resolution=ignore-duplicates,return=representation", body: bodyB });
+      let rowB = rows(ins)[0]; if (!rowB) rowB = rows(await B.sb("voice_bookings?org_id=eq." + orgId + "&idem_key=eq." + encodeURIComponent(idem) + "&select=*&limit=1"))[0];
+      if (!rowB) return flag("flagged", "book_save_failed", "That booking could not be saved automatically — it is flagged for the owner and a person will follow up. Tell the caller their request is in; do not say it is booked.");
+      await S.patchSession(orgId, sid, { outcome: "booking_requested" });
+      const totalB = intake._quote ? "$" + (intake._quote.total_cents / 100).toFixed(2) : null;
+      const whenB = dstr ? " for " + dstr + (tq && bf2.answers[tq.key] ? " at " + bf2.answers[tq.key] : "") : "";
+      return finish({ ok: true, status: "request", booking_id: rowB.id, reference: rowB.reference, total: totalB, reason: softBad.length ? "book_checks_flagged" : null,
+        say_for_agent: "The " + bookSvc.name + " is BOOKED IN — reference " + rowB.reference + whenB + ". It is saved once, as a request the team confirms from here. Say exactly that, once, warmly, with the reference in its spoken form" + (totalB === "$0.00" ? ", and remind them it is free" : "") + ". Do NOT say a person still needs to check the date or the slot — the back office already finished its checks. Then close warmly." });
+    }
     // 1) A late email (given after the packet went in) merges through the same state layer —
     //    spelled-email ground truth and the locks apply exactly as on the old talk path.
     const lateEmail = opts && opts.email;
@@ -107,7 +157,26 @@ async function runCompletion(ctxIn, opts) {
       if (!qr || !qr.ok) return flag("flagged", "no_price", "The total could not be finished automatically — it is flagged for the owner and will be confirmed in the written confirmation. Do NOT invent a price. Tell the caller the job is in and a person will confirm the total shortly.");
     }
     // 4) Availability (a stored-records check), then the ONE booking save, then confirmation.
-    await run("check_live_availability", {});
+    // 4b) AVAILABILITY — BOOK-DRIVEN + FAIL-SAFE (Jarvis mandate, Nov 9, 2026): if this
+    // tenant's book carries a freight service whose checks do NOT require availability, there
+    // is NO availability check at all. If the check runs and ERRORS, the outcome is still
+    // definitive: the date is accepted, the booking is saved and flagged for owner review —
+    // an errored check never produces silence, a re-confirm loop, or a resubmission. (The
+    // Nov 8 08:00 call died exactly here: the availability tool errored mid-flow and nothing
+    // definitive ever came back.)
+    const freightSvc = bookW ? bookW.services.find(function (sv) { return sv.kind === "freight"; }) : null;
+    if (freightSvc && !(freightSvc.checks || []).includes("availability")) {
+      intake._avail = { verified: false, available: true, via: "book_no_availability_check", reasons: ["the tenant book does not require an availability check"], checked_at: new Date().toISOString() };
+      ctx.session.intake = intake; await S.patchSession(orgId, sid, { intake: intake });
+      wlog("step", "check_live_availability", "0ms", "skipped_by_book");
+    } else {
+      const avRes = await run("check_live_availability", {});
+      if ((!avRes || avRes.ok === false) && !intake._avail) {
+        intake._avail = { verified: false, available: true, accepted_by_rule: "availability_check_error_default_accept", reasons: ["availability_check_error"], checked_at: new Date().toISOString() };
+        ctx.session.intake = intake; await S.patchSession(orgId, sid, { intake: intake });
+        wlog("step", "check_live_availability", "0ms", "error_default_accept_flag");
+      }
+    }
     const pb = await run("create_pending_booking", {});
     if (!pb || !pb.ok) {
       if (pb && pb.error === "caller_has_not_confirmed") return flag("flagged", "no_confirmation_on_record", "The booking is saved but the confirmation from the caller is not on record, so a person will confirm it. Tell the caller their request is in and a person will confirm shortly — do not say it is booked.");

@@ -13,11 +13,11 @@ function quote(d, miles, S, cfg, o) {
   if (!S) return { ok: false, needs_review: true, reason: "No approved pricing settings were found." };
   const L = function (code, label, c) { if (c > 0) lines.push({ code: code, label: label, cents: c }); };
   const level = d.service_level || "standard";
-  if (/^savannah/.test(level)) {
-    if (!/savannah/i.test(intake.cityOf(d.delivery_address))) return { ok: false, needs_review: true, reason: "Savannah service applies only to deliveries in Savannah." };
-    L(level, level === "savannah_early" ? "Savannah dedicated run, 5 a.m. option" : "Savannah dedicated run, all-day option", cents(level === "savannah_early" ? S.savannah_early : S.savannah_fullday));
-  } else if (level === "recurring") {
-    return { ok: false, needs_review: true, reason: "Recurring service is priced with quote_special_service (by load size or dedicated route), not this tool." };
+  // JARVIS BUILD STEP 2 (Nov 9, 2026): the dedicated-run branch is out of the shared pricing
+  // engine. A dedicated run is one business's own offer — it lives in THAT business's book as
+  // a priced service, not as a level baked into every tenant's quote path.
+  if (level === "recurring") {
+    return { ok: false, needs_review: true, reason: "Recurring service is priced from the company's own book by a person, not this tool." };
   } else {
     // One-time freight = the app's Quote tab: a flat price by distance zone, plus the speed adjustment. No per-mile charge.
     const f = OS.freight(miles, level);

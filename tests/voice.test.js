@@ -14,7 +14,7 @@ const M = require("./_voicemock.js")({
   organizations: [{ id: OA, name: "POTENT Logistics", slug: "potent-logistics", plan: "fleet", owner_email: "owner@potent.test", license_status: "paid" }, { id: OB, name: "Bravo Haul", slug: "bravo", plan: "starter", owner_email: "b@x.com", license_status: "paid" }, { id: OC, name: "Cee Co", slug: "cee", plan: "growth", owner_email: "c@x.com", license_status: "paid" }],
   voice_plans: [plan("starter", 19900, 300, 50, 2, 15, ENT_START), plan("growth", 49900, 1000, 45, 5, 20, Object.assign({}, ENT_ALL, { outbound: false, campaigns: false })), plan("fleet", 99900, 3000, 40, 15, 30, ENT_ALL), plan("enterprise", 199900, 10000, 35, 50, 60, ENT_ALL)],
   voice_subscriptions: [{ org_id: OA, tier: "fleet", os_plan: "fleet", status: "internal" }, { org_id: OB, tier: "starter", os_plan: "starter", status: "active", current_period_start: null }],
-  voice_agent_config: [{ org_id: OA, human_available: false, transfer_number: null, settings: { numbers: ["+14045550100"], quote: { size_tiers: TIERS }, driver_check: "required" } }, { org_id: OB, settings: { numbers: ["+14045550200"] } }, { org_id: OC, settings: { numbers: ["+14045550300"] } }],
+  voice_agent_config: [{ org_id: OA, human_available: false, transfer_number: null, settings: { numbers: ["+14045550100"], quote: { size_tiers: TIERS }, driver_check: "required", price_book: { flat_total_cents: 40000 } } }, { org_id: OB, settings: { numbers: ["+14045550200"] } }, { org_id: OC, settings: { numbers: ["+14045550300"] } }],
   voice_vehicle_profiles: [Object.assign({ id: PROFILE_ID, org_id: OA, name: "2022 Ford E350 16-ft Morgan box truck", kind: "company", max_payload_lb: 4500, interior_l_in: 190, interior_w_in: 94, interior_h_in: 80, door_w_in: 86.5, door_h_in: 71, equipment: { dock_height: true, liftgate: false, pallet_jack: false }, service_area: { states: ["GA"] }, authorized: true, active: true, version: 1, updated_at: "2026-01-01" })],
   drivers: [{ id: "d1", org_id: OA, name: "Driver One", status: "active" }], b2b_pricing_settings: [SETTINGS] });
 const { T, EXT } = M;
@@ -34,7 +34,7 @@ const say = (s, who, text) => S.transcript(s.org_id, s.id, who, text);
 async function toQuote(s, over) { await run(s, "collect_shipment_details", full(over)); const el = await run(s, "validate_shipment_eligibility"); if (el.status !== "eligible") return { el }; const q = await run(s, "calculate_quote"); return { el, q }; }
 (async () => {
   // ── tool list / injection surface ──
-  const defs = TL.defs(); ok(defs.length === 18 && defs.every(d => d.type === "function" && d.parameters), "all 18 talk-path tools are defined (split, Nov 8, 2026: the six shipment-chain tools moved to the worker; submit_job_packet + confirm_job_packet added)");
+  const defs = TL.defs(); ok(defs.length === 17 && defs.every(d => d.type === "function" && d.parameters), "all 17 talk-path tools are defined (split, Nov 8, 2026: the six shipment-chain tools moved to the worker; submit_job_packet + confirm_job_packet added. Jarvis build, Nov 9, 2026: the special-service pricing tool removed — one business's junk/pop-up/recurring price lists are out of the spine)");
   ok(!JSON.stringify(defs.map(d=>Object.keys((d.parameters&&d.parameters.properties)||{}))).match(/discount|override|price|org_id|session_id|caller_confirmed|authorized_by/i), "no tool lets the model set a price, discount, company, session or its own confirmation");
   // ── 1. successful call ──
   let s = newSes(); let r = await run(s, "lookup_customer"); ok(r.ok && r.known === false, "unknown caller");
@@ -64,7 +64,7 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
   ok(T.voice_sessions.find(x => x.id === s.id).intake.special_instructions.includes("90% off"), "caller text is stored only as a note");
   r = await run(s, "validate_shipment_eligibility"); ok(r.ok && r.status === "eligible", "eligible after both addresses verified");
   r = await run(s, "calculate_quote"); ok(r.ok && r.total === "$400.00" && r.quote_number && r.exclusions.length >= 2 && r.valid_minutes >= 29, "quote: $400 (Local zone flat price), exclusions, validity"); const QN = r.quote_number;
-  ok(T.voice_quotes.length === 1 && T.voice_quotes[0].total_cents === 40000 && T.voice_quotes[0].miles_source === "price_book" && T.voice_quotes[0].settings_version === "potent_price_book", "quote stored with its source: the price book (fix round 2 — no route distance is computed on the call anymore)");
+  ok(T.voice_quotes.length === 1 && T.voice_quotes[0].total_cents === 40000 && T.voice_quotes[0].miles_source === "price_book" && T.voice_quotes[0].settings_version === "price_book_settings", "quote stored with its source: the price book (fix round 2 — no route distance is computed on the call anymore)");
   r = await run(s, "check_live_availability"); ok(r.ok && r.available === true, "truck is open");
   r = await run(s, "create_pending_booking"); ok(!r.ok && r.error === "caller_has_not_confirmed", "no booking before the caller says yes");
   await say(s, "caller", "hmm wait, no, that is too much"); r = await run(s, "create_pending_booking"); ok(!r.ok, "a hesitant or negative answer is not consent");
@@ -181,7 +181,7 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
   const vt = async (b, auth) => { const r = await VT.handler({ httpMethod: "POST", headers: { authorization: auth === undefined ? "Bearer bridgesecret" : auth }, body: JSON.stringify(b) }); return { s: r.statusCode, j: JSON.parse(r.body) }; };
   ok((await vt({ action: "health" }, "Bearer wrong")).s === 401 && (await vt({ action: "health" }, "")).s === 401, "bridge endpoint needs the shared secret");
   const open = newSes({ provider_call_id: "CA7001", state: "ringing", answered_at: null }); const stok = TW.streamToken("bridgesecret", "CA7001", OA, Date.now() + 60000);
-  let c = await vt({ action: "context", token: stok }); ok(c.s === 200 && c.j.session_id === open.id && /AI/.test(c.j.instructions) && c.j.tools.length === 18 && c.j.max_seconds === 1800 && c.j.recording === false, "bridge gets instructions, the 18 tools (split, Nov 8, 2026), a 30-minute cap for Fleet, recording off");
+  let c = await vt({ action: "context", token: stok }); ok(c.s === 200 && c.j.session_id === open.id && /AI/.test(c.j.instructions) && c.j.tools.length === 17 && c.j.max_seconds === 1800 && c.j.recording === false, "bridge gets instructions, the 17 tools (split, Nov 8, 2026; Jarvis build removed the special-service pricing tool), a 30-minute cap for Fleet, recording off");
   ok(/not being recorded/.test(c.j.instructions) && !/may be recorded/.test(c.j.greeting), "the agent does not claim recording when it is off");
   ok((await vt({ action: "context", token: TW.streamToken("bridgesecret", "CA7001", OA, Date.now() - 1) })).s === 403 && (await vt({ action: "context", token: TW.streamToken("other", "CA7001", OA, Date.now() + 5000) })).s === 403, "expired or forged stream tokens refused");
   T.voice_agent_config[0].recording_enabled = true; T.voice_agent_config[0].recording_consent_confirmed = false; const o2 = newSes({ provider_call_id: "CA7002", state: "ringing" }); c = await vt({ action: "context", token: TW.streamToken("bridgesecret", "CA7002", OA, Date.now() + 60000) }); ok(c.j.recording === false, "recording stays off until consent is confirmed");
@@ -269,27 +269,15 @@ async function toQuote(s, over) { await run(s, "collect_shipment_details", full(
   d = await api(TOK.ownA, { action: "dashboard" }); ok(!JSON.stringify(d.j).includes(sim.id), "simulated calls never appear in the numbers");
   // exports follow the plan
   ok((await api(TOK.ownB, { action: "export_calls" })).s === 403, "Starter has no export"); r = await api(TOK.ownA, { action: "export_calls" }); ok(r.s === 200 && T.voice_audit_logs.some(a => a.action === "calls_exported"), "Fleet export works and is logged");
-  // ── special services: priced from POTENT's existing price list (junk removal, pop-up events, recurring) ──
-  { const sp = newSes(); const Q = a => run(sp, "quote_special_service", a); const atl = "100 Peachtree St NE, Atlanta, GA 30303", mar = "55 Roswell Rd, Marietta, GA 30060", mac = "1 Cherry St, Macon, GA 31201", sav = "1 Dock Rd, Savannah, GA 31401";
-    let q1 = await Q({ service: "junk_removal", load_size: "quarter", pickup_address: atl }); ok(q1.ok && q1.total === "$250.00" && q1.quote_number, "junk quarter load = $250");
-    q1 = await Q({ service: "junk_removal", load_size: "half", pickup_address: atl }); ok(q1.total === "$350.00" && q1.range_max === "$400.00" && /up to \$400\.00/.test(q1.say), "junk half load = $350, range to $400 is stated");
-    q1 = await Q({ service: "junk_removal", load_size: "full", pickup_address: atl, truckloads: 2 }); ok(q1.total === "$1,350.00", "full load $750 + one extra truckload $600");
-    q1 = await Q({ service: "junk_removal", load_size: "minimum", pickup_address: atl }); ok(q1.total === "$179.00", "single item = $179");
-    q1 = await Q({ service: "junk_removal", load_size: "half", pickup_address: atl, has_heavy_items: true }); ok(!q1.ok && q1.review, "heavy items go to a person, no number");
-    q1 = await Q({ service: "junk_removal", pickup_address: atl }); ok(!q1.ok && q1.problems.includes("load_size_missing"), "no load size -> asks, no price");
-    q1 = await Q({ service: "junk_removal", load_size: "quarter", pickup_address: "9 Main St, Columbia, SC 29201" }); ok(!q1.ok && q1.review, "outside the service area -> person");
-    q1 = await Q({ service: "popup_event", pickup_address: atl, delivery_address: mar }); ok(q1.total === "$1,000.00", "pop-up event under 150 round-trip miles = flat $1,000");
-    q1 = await Q({ service: "popup_event", pickup_address: atl, delivery_address: sav }); ok(q1.ok && /\$1 per mile/.test(q1.lines[0]) && parseFloat(q1.total.replace(/[$,]/g, "")) > 1000, "pop-up beyond 150 round-trip miles adds $1 a mile");
-    q1 = await Q({ service: "recurring_load_class", total_weight_lb: 800, days_per_week: 5 }); ok(q1.total === "$213.00" && q1.weekly === "$1,065.00", "Small load (800 lb = 18%) 5 days/week: $250 less 15% = $213 a day");
-    q1 = await Q({ service: "recurring_load_class", total_weight_lb: 800, days_per_week: 3, flex_window: true }); ok(q1.total === "$218.00", "3 days (8%) + flexible window (5%) = 13% off $250");
-    q1 = await Q({ service: "recurring_load_class", total_weight_lb: 800, days_per_week: 2 }); ok(q1.total === "$250.00", "1-2 days a week: no recurring discount");
-    q1 = await Q({ service: "recurring_load_class", total_weight_lb: 2000, days_per_week: 5 }); ok(q1.total === "$191.00", "2,000 lb = 44% = Partial Load $225, 15% off");
-    q1 = await Q({ service: "recurring_load_class", total_weight_lb: 4500, days_per_week: 1 }); ok(q1.total === "$500.00", "full truck = $500");
-    q1 = await Q({ service: "recurring_load_class", total_weight_lb: 4501, days_per_week: 1 }); ok(!q1.ok && q1.blocked, "over 4,500 lb is refused");
-    q1 = await Q({ service: "recurring_route", pickup_address: atl, delivery_address: mar, direction: "oneway", days_per_week: 5 }); ok(q1.total === "$425.00" && q1.weekly === "$2,125.00", "dedicated one-way up to 50 mi = $425/day, $2,125/week");
-    q1 = await Q({ service: "recurring_route", pickup_address: atl, delivery_address: mar, direction: "roundtrip", days_per_week: 4 }); ok(!q1.ok && q1.review, "dedicated routes are priced for 5 days a week only");
-    ok(T.voice_quotes.length >= 11 && T.voice_quotes.every(x => x.total_cents > 0), "every special quote is stored");
-    q1 = await run(sp, "quote_special_service", { service: "mystery" }); ok(!q1.ok, "unknown service refused"); }
+  // ── special services (Jarvis build, Nov 9, 2026): the special-service pricing tool is REMOVED. It priced
+  // POTENT's junk removal, pop-up events and recurring routes from POTENT's own price list inside a shared
+  // tool; Potent sells software and services now and performs no physical work, and no business's price list
+  // belongs in the spine. A business that sells those services carries them in ITS book (tests/voice-book.test.js).
+  { const sp = newSes();
+    ok(!TL.defs().some(d => d.name === "quote_special_service"), "the special-service pricing tool is no longer offered to the model at all");
+    const q1 = await run(sp, "quote_special_service", { service: "junk_removal", load_size: "quarter", pickup_address: "100 Peachtree St NE, Atlanta, GA 30303" });
+    ok(!q1.ok && q1.error === "unknown_tool", "junk removal cannot be priced on Potent's line anymore — the tool is gone, not just gated");
+    ok(T.voice_quotes.filter(x => x.session_id === sp.id).length === 0, "no quote row was created by the removed tool"); }
 
   // ---- KEYPAD PAYMENT (Twilio Pay + Stripe): link retired, amount from our database, "paid" only after Stripe confirms the exact amount
   { const realFetch = global.fetch, STR = { status: "succeeded", amount: 25000, currency: "usd" }; global.fetch = async (u, o) => String(u).startsWith("https://api.stripe.com/v1/payment_intents/") ? { ok: true, status: 200, json: async () => STR, text: async () => JSON.stringify(STR) } : realFetch(u, o);

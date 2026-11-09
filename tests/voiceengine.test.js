@@ -59,10 +59,10 @@ q = P.quote(D({ extra_stops: 2, inside_delivery: true }), 20, SET, C0, { now: NO
 q = P.quote(D({ labor_helpers: 2, labor_hours: 1.5, holding_nights: 1 }), 20, SET, C0, { now: NOW }); ok(q.total_cents === 40000 + 2 * 1.5 * 7500 + 30000, "labor $75/h/person and holding $300/night");
 q = P.quote(D({ expected_wait_minutes: 120 }), 20, SET, C0, { now: NOW }); ok(q.total_cents === 40000 + 7500, "120 min wait, 60 included -> 60 min at $75/h");
 q = P.quote(D({}), null, SET, C0, { now: NOW }); ok(!q.ok && /distance could not be verified/.test(q.reason), "no verified miles -> no price (never fabricated)");
-q = P.quote(D({ service_level: "recurring" }), 20, SET, C0, { now: NOW }); ok(!q.ok && q.needs_review && /quote_special_service/.test(q.reason), "recurring is priced by the recurring tool, not guessed here");
-q = P.quote(D({ service_level: "savannah_early", delivery_address: "1 Dock Rd, Savannah, GA 31401" }), null, SET, C0, { now: NOW }); ok(q.ok && q.total_cents === 75000, "Savannah early dedicated = $750");
-q = P.quote(D({ service_level: "savannah_full", delivery_address: "1 Dock Rd, Savannah, GA 31401" }), null, SET, C0, { now: NOW }); ok(q.total_cents === 85000, "Savannah all-day dedicated = $850");
-q = P.quote(D({ service_level: "savannah_early" }), 20, SET, C0, { now: NOW }); ok(!q.ok, "Savannah price only for Savannah deliveries");
+q = P.quote(D({ service_level: "recurring" }), 20, SET, C0, { now: NOW }); ok(!q.ok && q.needs_review && /own book/.test(q.reason), "recurring is priced from the company's own book by a person, not guessed here");
+// JARVIS BUILD STEP 2 (Nov 9, 2026): the Savannah dedicated-run levels are OUT of the shared pricing engine —
+// a Savannah run is a priced service in that business's own book now. The engine prices no Savannah number.
+q = P.quote(D({ service_level: "savannah_early", delivery_address: "1 Dock Rd, Savannah, GA 31401" }), 20, SET, C0, { now: NOW }); ok(!q.ok || !q.lines.some(l => /savannah/i.test(l.label)), "no Savannah price comes out of the shared engine anymore (it lives in a tenant book)");
 q = P.quote(D({}), 20, SET, C0, { now: NOW, discount_cents: 5000 }); ok(!q.ok && /authorized/.test(q.reason), "a discount with no named authorizer is refused");
 q = P.quote(D({}), 20, SET, C0, { now: NOW, discount_cents: 5000, authorized_by: "owner" }); ok(q.ok && q.total_cents === 35000 && q.lines.some(l => l.code === "discount"), "authorized discount is applied and shown");
 q = P.quote(D({}), 20, SET, C0, { now: NOW, override_total_cents: 20000 }); ok(!q.ok, "override needs authorizer and reason");
