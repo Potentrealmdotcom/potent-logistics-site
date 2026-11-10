@@ -81,7 +81,7 @@ function defs() {
       extra_stops: { type: "integer" }, labor_helpers: { type: "integer" }, labor_hours: { type: "number" }, expected_wait_minutes: { type: "number" }, holding_nights: { type: "integer" }, recurring: { type: "boolean" } })),
 
     D("confirm_job_packet", "After submit_job_packet returned the total, you stated it once, and the caller clearly said yes to booking: hand the job to the back-office worker to finish — verification, availability and the booking save all happen there, off the caller's clock. You are answered instantly; the booking outcome (confirmed + the reference, or what a person still needs to review) is announced to you as a system note while you keep talking. If the caller gave their email after the packet went in, include it here so the worker merges it first.", obj({ email: str("caller's email if they gave it after the packet was submitted — exactly as spelled back and confirmed") })),
-    D("book_demo", "Book a 30-minute POTENT OS demo with a person. Use only after the prospect agreed to a demo, you spelled their email back letter by letter and they said yes, and the full request read-back got a yes. Call it ONCE with email_confirmed true: it answers instantly, saves the demo request exactly once and emails them the booking link. If it answers read_back_required, ask the one question its say names OUT LOUD and wait for the answer — NEVER call it again unchanged: an identical repeat is refused by the system. Only say the demo request is in after it returns ok. After an ok the booking is DONE for this call: announce it once and close — never call book_demo again on the same call, for any reason; a repeat returns the stored result and saves and emails nothing new.", obj({ name: str(""), company: str(""), trucks: { type: "integer", description: "how many trucks they run" }, phone: str("number to reach them"), email: str("their email, read back and confirmed"), email_confirmed: { type: "boolean", description: "true only after you spelled the email back letter by letter and the caller said yes" }, notes: str("their problem and what they pay today, in a sentence") }, ["name", "email"])),
+    D("book_demo", "Book a 30-minute POTENT OS demo with a person. Use only after the prospect agreed to a demo, you spelled their email back letter by letter and they said yes, and the full request read-back got a yes. Call it ONCE with email_confirmed true AND demo_when_text carrying the day and time exactly as read back (weekday, month, day, time): it answers instantly, saves the demo exactly once with that time on the record, and emails them their confirmation — the read-back SET the time; there is no booking link and no time left for them to pick. If it answers read_back_required, ask the one question its say names OUT LOUD and wait for the answer — NEVER call it again unchanged: an identical repeat is refused by the system. Only say the demo is set after it returns ok. After an ok the booking is DONE for this call: announce it once and close — never call book_demo again on the same call, for any reason; a repeat returns the stored result and saves and emails nothing new.", obj({ name: str(""), company: str(""), trucks: { type: "integer", description: "how many trucks they run" }, phone: str("number to reach them"), email: str("their email, read back and confirmed"), email_confirmed: { type: "boolean", description: "true only after you spelled the email back letter by letter and the caller said yes" }, demo_when_text: str("the demo day and time exactly as the caller confirmed it in the read-back, e.g. 'Thursday, November 12th at 10:00 AM' — weekday, month, day and time"), notes: str("their problem and what they pay today, in a sentence") }, ["name", "email"])),
     D("create_callback_task", "Create a callback for a person to follow up.", obj({ name: str(""), phone: str("number to call"), reason: str(""), preferred_time: str("") }, ["reason"])),
     D("request_human_handoff", "Ask to transfer to a person: negotiations, discounts, complaints, safety concerns, anything uncertain, or when the caller asks for one.", obj({ reason: str("why"), summary: str("one or two sentences for the person") }, ["reason"])),
     D("set_call_language", "Lock the language of this call to the caller's language. Call it as soon as the caller speaks a language other than English. Then speak ONLY that language for the whole call.", obj({ language: { type: "string", enum: Object.keys(CALL_LANGS), description: "language code of what the caller is speaking" } }, ["language"])),
@@ -177,10 +177,36 @@ function demoEmailConfirmed(ctx, a, email) {
 // it must reach the gate. A truly identical repeat (same facts, same confirmation state)
 // is the retry, and it is refused.
 function demoHash(a, email) {
-  const c = { name: clip(a && a.name, 80).toLowerCase(), company: clip(a && a.company, 100).toLowerCase(), trucks: a && a.trucks != null ? Math.floor(Number(a.trucks)) || 0 : 0, phone: String((a && a.phone) || "").replace(/\D/g, ""), email: email || "", notes: clip(a && a.notes, 200).toLowerCase(), confirmed: a && a.email_confirmed === true ? 1 : 0 };
+  const c = { name: clip(a && a.name, 80).toLowerCase(), company: clip(a && a.company, 100).toLowerCase(), trucks: a && a.trucks != null ? Math.floor(Number(a.trucks)) || 0 : 0, phone: String((a && a.phone) || "").replace(/\D/g, ""), email: email || "", when: clip(a && a.demo_when_text, 120).toLowerCase(), notes: clip(a && a.notes, 200).toLowerCase(), confirmed: a && a.email_confirmed === true ? 1 : 0 };
   const s = Object.keys(c).sort().map(function (k) { return k + "=" + JSON.stringify(c[k]); }).join("|");
   let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
   return h.toString(16);
+}
+// DEMO DATE/TIME PARSE (Nov 10, 2026 — Fix 3): demo_when_text is the free text the caller
+// confirmed in the read-back ("Thursday, November 12th at 10:00 AM"). The console Bookings
+// table renders its "When" column from snapshot.intake.service_date + time_window (see
+// voice/index.html), and the worker's own book path fills window_start/window_end on the row
+// — so the parse produces all four: an ISO service_date, an "10:00 AM" time_window, and the
+// UTC window for a 30-minute demo via availability.zonedToUtc. Anything unparseable still
+// lands as raw text in service_date, so the time the caller said is on the record either way.
+const DEMO_MONTHS = { january: 1, february: 2, march: 3, april: 4, may: 5, june: 6, july: 7, august: 8, september: 9, october: 10, november: 11, december: 12 };
+function parseDemoWhen(text) {
+  const t = clip(text, 120); if (!t) return null;
+  const clean = t.replace(/(\d{1,2})(st|nd|rd|th)\b/gi, "$1");
+  let ymd = BK.parseDate(clean);
+  const pad2 = function (n) { return String(n).padStart(2, "0"); };
+  const mm = clean.match(/(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:\s*,?\s*(\d{4}))?/i);
+  if (mm) {
+    let y = mm[3] ? +mm[3] : 0;
+    if (!y) { try { y = +new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric" }).formatToParts(new Date()).find(function (x) { return x.type === "year"; }).value; } catch (e) { y = new Date().getUTCFullYear(); } }
+    ymd = y + "-" + pad2(DEMO_MONTHS[mm[1].toLowerCase()]) + "-" + pad2(+mm[2]);
+  }
+  const tm = clean.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i);
+  let hhmm = null, timeText = "";
+  if (tm) { let h = +tm[1] % 12; if (/pm/i.test(tm[3])) h += 12; const min = tm[2] ? +tm[2] : 0; hhmm = pad2(h) + ":" + pad2(min); timeText = (+tm[1]) + ":" + pad2(min) + " " + (/pm/i.test(tm[3]) ? "PM" : "AM"); }
+  let wsIso = null, weIso = null;
+  if (ymd && /^\d{4}-\d{2}-\d{2}$/.test(ymd) && hhmm) { try { const ws = AV.zonedToUtc(ymd, hhmm); wsIso = ws.toISOString(); weIso = new Date(ws.getTime() + 30 * 60000).toISOString(); } catch (e) { /* the text still lands in the snapshot */ } }
+  return { text: t, serviceDate: ymd || t, timeWindow: timeText, wsIso: wsIso, weIso: weIso };
 }
 // THE REFERENCE IS SPOKEN ONCE (Nov 4, 2026 — retest 2: the reference was spoken as one fast
 // blob TWICE, the second time unprompted in the close). The confirm result is the one place the
@@ -529,7 +555,7 @@ const TOOLS = {
   },
   async book_demo(ctx, a) {
     const email = clip(a.email, 120).toLowerCase(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { ok: false, error: "need_valid_email", say: "Ask for their email OUT LOUD and spell it back letter by letter before you use it. Do not call book_demo again until they have given it and confirmed your read-back." };
-    // SESSION ONE-SHOT (Nov 10, 2026 — the Nov 9, 11:52 PM call: book_demo returned ok
+    // SESSION ONE-SHOT (Nov 10, 2026 — Fix 2, the Nov 9, 11:52 PM call: book_demo returned ok
     // 13 times in ONE call, saving 13 callback rows and sending 13 owner alerts, and she
     // never announced a result). The _demo_last guard below keys on an argument
     // fingerprint whose free-text notes the model rewords on every retry, so live retries
@@ -540,12 +566,45 @@ const TOOLS = {
     // No re-save, no re-email, no side effects.
     const done0 = (ctx.session.intake || {})._demo_done;
     if (done0 && done0.ok) return { ok: true, done: true, duplicate: true, already_booked: true, booking_id: done0.booking_id || null, reference: done0.reference || null, callback_id: done0.callback_id || null, link_emailed: !!done0.link_emailed, say: done0.say_again };
+    // CLAIM-FIRST (Nov 10, 2026 — Fix 3, Demo Call #3, 12:31 PM: book_demo ran 5×, the
+    // booking deduped to one row, but TWO owner alert emails went out, and she announced a
+    // "booking link" that does not exist for a time she had already set). The Fix 2 one-shot
+    // records success only AFTER the async save + email sequence completes, so invocations
+    // that overlap that sequence — the caller's doubled yes fired a parallel burst — all
+    // pass the check before any of them finishes, and the EMAIL path was never protected at
+    // all. Now the first invocation claims the session SYNCHRONOUSLY (the claim below is set
+    // before any await in the save path): only the claiming execution may insert, email or
+    // alert. An invocation that finds the claim held waits briefly for the claiming
+    // execution to finish and answers from its stored outcome; if the claim is RELEASED
+    // (the claiming save failed) it falls through and may become the genuine retry itself.
+    // A claim never produces a success result on its own — no finished outcome, no ok.
+    const storedFrom = function (d) { return { ok: true, done: true, duplicate: true, already_booked: true, booking_id: d.booking_id || null, reference: d.reference || null, callback_id: d.callback_id || null, link_emailed: !!d.link_emailed, say: d.say_again }; };
+    const sayInProgress = "The demo booking from your first call is still being saved — it is NOT finished and NOT confirmed yet. Do not say the demo is booked, do not call book_demo again, and do not end the call on it: keep the caller warm for a moment and the finished result will be announced to you.";
+    const waitForClaim = async function () {
+      const deadline = Date.now() + 8000;
+      while (Date.now() < deadline) {
+        await new Promise(function (res) { setTimeout(res, 50); });
+        const local = (ctx.session.intake || {})._demo_done;
+        if (local && local.ok) return "done";
+        let fit = {};
+        try { const fresh = await S.session(ctx.orgId, ctx.session.id); fit = (fresh && fresh.intake) || {}; } catch (e) { /* the local copy still governs */ }
+        if (fit._demo_done && fit._demo_done.ok) { const itW = ctx.session.intake || {}; itW._demo_done = fit._demo_done; ctx.session.intake = itW; return "done"; }
+        if (!(ctx.session.intake || {})._demo_claim && !fit._demo_claim) return "released";
+      }
+      return "timeout";
+    };
+    if ((ctx.session.intake || {})._demo_claim) {
+      const w0 = await waitForClaim();
+      if (w0 === "done") return storedFrom((ctx.session.intake || {})._demo_done);
+      if (w0 === "timeout") return { ok: false, error: "demo_in_progress", duplicate: true, say: sayInProgress };
+      // "released": the claiming save failed — fall through; this call may be the retry.
+    }
     // NO IDENTICAL RETRY (Nov 9, 2026): an unchanged repeat is answered from the stored
     // outcome — the gate, the save and the emails do NOT run again. On the 9:14 AM call the
     // same failing call ran 8 times; a retry can now only ever produce marching orders.
     const fp = demoHash(a, email), it0 = ctx.session.intake || {}, last = it0._demo_last;
     if (last && last.hash === fp) {
-      if (last.ok) return { ok: true, duplicate: true, callback_id: last.callback_id, link_emailed: !!last.link_emailed, say: "That demo request is ALREADY in — do not save it again and do not email the link again. " + (last.link_emailed ? "You already told them the booking link was emailed so they can pick a time for the 30-minute demo. Do not say a time is booked." : "A person is already following up on it. Do not say a time is booked.") };
+      if (last.ok) return { ok: true, duplicate: true, callback_id: last.callback_id, link_emailed: !!last.link_emailed, say: "That demo request is ALREADY in — do not save it again and do not email anything again. " + (last.link_emailed ? "You already announced the demo and emailed the confirmation. Do not change the time now." : "A person is already following up on it.") };
       return { ok: false, duplicate: true, error: "duplicate_call", say: last.say };
     }
     // THE GATE, SATISFIABLE BY THE DEMO FLOW ITSELF (Nov 9, 2026): the old code ran the shared
@@ -562,11 +621,47 @@ const TOOLS = {
       await S.patchSession(ctx.orgId, ctx.session.id, { intake: it });
       return { ok: false, error: "read_back_required", gate: a.email_confirmed === true ? "pending_mismatch" : "not_confirmed_flag", email: email, say: say };
     }
-    const link = process.env.DEMO_BOOKING_URL || "https://calendly.com/potentrealm-pm/30min";
+    // THE CLAIM — set synchronously here: no await has run in this invocation since the
+    // checks above, so no overlapping invocation on this session can slip between the check
+    // and the claim. From this line on, this execution is the ONLY one that may save or send.
+    const itC = ctx.session.intake || {};
+    const myClaim = { at: new Date().toISOString(), fp: fp, token: ctx.session.id + ":" + Date.now() + ":" + Math.random().toString(36).slice(2, 8) };
+    itC._demo_claim = myClaim; ctx.session.intake = itC;
+    // A racer holding a DIFFERENT session copy would not see the in-memory claim, so re-read
+    // the persisted session once before saving: a finished demo answers from its outcome, and
+    // somebody else's persisted claim hands this invocation over to the wait above instead of
+    // a second save. (If both racers re-read before either persists, the voice_bookings
+    // idempotency key below still caps the booking at one row; the claim makes the emails
+    // single too in every interleaving where the second call starts after the first persists.)
+    try {
+      const freshC = await S.session(ctx.orgId, ctx.session.id);
+      const fitC = (freshC && freshC.intake) || {};
+      if (fitC._demo_done && fitC._demo_done.ok) { const itD = ctx.session.intake || {}; itD._demo_done = fitC._demo_done; if (itD._demo_claim && itD._demo_claim.token === myClaim.token) delete itD._demo_claim; ctx.session.intake = itD; return storedFrom(fitC._demo_done); }
+      if (fitC._demo_claim && fitC._demo_claim.token !== myClaim.token) {
+        const itX = ctx.session.intake || {}; itX._demo_claim = fitC._demo_claim; ctx.session.intake = itX;
+        const wX = await waitForClaim();
+        if (wX === "done") return storedFrom((ctx.session.intake || {})._demo_done);
+        if (wX === "timeout") return { ok: false, error: "demo_in_progress", duplicate: true, say: sayInProgress };
+        const itR0 = ctx.session.intake || {}; itR0._demo_claim = myClaim; ctx.session.intake = itR0;   // released: take the claim and become the retry
+      }
+    } catch (e) { /* the re-read hardens the claim; it never gates the save */ }
+    await S.patchSession(ctx.orgId, ctx.session.id, { intake: itC });
+    const releaseClaim = async function () { try { const itR = ctx.session.intake || {}; if (itR._demo_claim && itR._demo_claim.token === myClaim.token) { delete itR._demo_claim; ctx.session.intake = itR; await S.patchSession(ctx.orgId, ctx.session.id, { intake: itR }); } } catch (e) { /* best effort */ } };
+    const sayFail = "The demo request could not be saved. Tell the caller honestly, right now: \"I could not get that saved just now — a person will follow up with you to set the demo up.\" Do NOT say the demo is set up, do not call book_demo again unchanged, and save the follow-up with create_callback_task.";
+    // THE DEMO DATE/TIME (Nov 10, 2026 — Fix 3): the caller picked and confirmed a real time
+    // in the read-back ("Thursday, November 12th at 10:00 AM"), but the old record stored none
+    // of it — the console Bookings row showed a blank "When" and the owner email carried no
+    // time at all. demo_when_text now rides the call, and lands where the console reads it:
+    // snapshot.intake.service_date + time_window are exactly the fields the Bookings table
+    // renders as "When", and the parsed window_start/window_end ride the row itself.
+    const whenText = clip(a.demo_when_text, 120);
+    const whenP = parseDemoWhen(whenText);
     const phone = I.phone(a.phone) || ctx.session.from_number || null;
-    const reason = "OS DEMO REQUESTED: " + clip(a.company, 80) + (a.trucks ? ", " + Math.floor(Number(a.trucks)) + " trucks" : "") + ". " + clip(a.notes, 200) + " Email " + email;
-    const r = await B.sb("voice_callbacks", { method: "POST", prefer: "return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, name: clip(a.name, 80) || null, phone: phone, reason: reason.slice(0, 300), preferred_time: "demo" } });
-    if (!r.ok) { const sayF = "The demo request could not be saved. Tell the caller honestly, right now: \"I could not get that saved just now — a person will follow up with you to set the demo up.\" Do NOT say the demo is set up, do not call book_demo again unchanged, and save the follow-up with create_callback_task."; const itF = ctx.session.intake || {}; itF._demo_last = { hash: fp, ok: false, say: sayF }; ctx.session.intake = itF; await S.patchSession(ctx.orgId, ctx.session.id, { intake: itF }); return { ok: false, error: "save_failed", say: sayF }; }
+    const reason = "OS DEMO REQUESTED: " + clip(a.company, 80) + (a.trucks ? ", " + Math.floor(Number(a.trucks)) + " trucks" : "") + ". " + clip(a.notes, 200) + " Email " + email + (whenText ? " Demo set for " + whenText + "." : "");
+    let r;
+    try { r = await B.sb("voice_callbacks", { method: "POST", prefer: "return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, name: clip(a.name, 80) || null, phone: phone, reason: reason.slice(0, 300), preferred_time: "demo" } }); }
+    catch (e) { await releaseClaim(); return { ok: false, error: "save_failed", say: sayFail }; }
+    if (!r.ok) { const itF = ctx.session.intake || {}; if (itF._demo_claim && itF._demo_claim.token === myClaim.token) delete itF._demo_claim; itF._demo_last = { hash: fp, ok: false, say: sayFail }; ctx.session.intake = itF; await S.patchSession(ctx.orgId, ctx.session.id, { intake: itF }); return { ok: false, error: "save_failed", say: sayFail }; }
     // THE DEMO RECORD LANDS WHERE THE CONSOLE READS BOOKINGS (Nov 10, 2026): until now
     // book_demo persisted ONLY the voice_callbacks row above, which surfaces under
     // Handoffs & callbacks — the owner's Bookings tab reads voice_bookings alone
@@ -575,28 +670,41 @@ const TOOLS = {
     // idempotency key (worker.js book completion); this does exactly the same:
     // idem_key = session + ":os_demo" with ignore-duplicates, so the booking row exists
     // exactly once per call even if this code somehow ran twice.
-    const refD = S.ref("PV"), idemD = ctx.session.id + ":os_demo";
-    const insD = await B.sb("voice_bookings", { method: "POST", prefer: "resolution=ignore-duplicates,return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, quote_id: null, idem_key: idemD, reference: refD, status: "pending_review", review_reason: "OS demo request — team confirms the time with the caller", vehicle_profile_id: null, window_start: null, window_end: null, customer_name: clip(a.name, 80) || null, customer_phone: phone, customer_email: email, snapshot: { book_demo: true, service: "os_demo", service_name: "POTENT OS demo", company: clip(a.company, 100) || null, trucks: a.trucks != null ? Math.floor(Number(a.trucks)) || 0 : null, email: email, notes: clip(a.notes, 200) || null, booking_link: link } } });
-    let rowD = rows(insD)[0]; if (!rowD) rowD = rows(await B.sb("voice_bookings?org_id=eq." + ctx.orgId + "&idem_key=eq." + encodeURIComponent(idemD) + "&select=*&limit=1"))[0];
-    const refUse = rowD ? rowD.reference : refD;
-    const mail = await require("../mail").send(email, "Your POTENT OS demo: pick a time", "Hi " + (clip(a.name, 60) || "there") + ",\n\nThanks for talking with us. Pick any time that works for a 30-minute POTENT OS demo here:\n" + link + "\n\nWe will show it live on your numbers. Questions: (912) 914-2166.\n\nPOTENT Operations", null);
-    await notifyOwner(ctx.orgId, "OS demo requested: " + clip(a.name, 60) + (a.company ? " (" + clip(a.company, 60) + ")" : ""), reason + (phone ? " Phone " + phone : "") + ". Booking link sent: " + (mail && mail.ok ? "yes" : "NOT SENT, follow up by hand") + ".");
+    let rowD, refUse, mailed = false;
+    try {
+      const refD = S.ref("PV"), idemD = ctx.session.id + ":os_demo";
+      const insD = await B.sb("voice_bookings", { method: "POST", prefer: "resolution=ignore-duplicates,return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, quote_id: null, idem_key: idemD, reference: refD, status: "pending_review", review_reason: whenText ? "OS demo request — set for " + whenText : "OS demo request — team confirms the time with the caller", vehicle_profile_id: null, window_start: whenP ? whenP.wsIso : null, window_end: whenP ? whenP.weIso : null, customer_name: clip(a.name, 80) || null, customer_phone: phone, customer_email: email, snapshot: { book_demo: true, service: "os_demo", service_name: "POTENT OS demo", company: clip(a.company, 100) || null, trucks: a.trucks != null ? Math.floor(Number(a.trucks)) || 0 : null, email: email, notes: clip(a.notes, 200) || null, demo_when_text: whenText || null, intake: { service_date: whenP ? whenP.serviceDate : (whenText || null), time_window: whenP ? whenP.timeWindow : "" } } } });
+      rowD = rows(insD)[0]; if (!rowD) rowD = rows(await B.sb("voice_bookings?org_id=eq." + ctx.orgId + "&idem_key=eq." + encodeURIComponent(idemD) + "&select=*&limit=1"))[0];
+      refUse = rowD ? rowD.reference : refD;
+      // THE CALLER EMAIL CONFIRMS THE SET TIME (Nov 10, 2026 — Fix 3): there is no booking
+      // link and no time left to pick — the caller chose the time on this call and confirmed
+      // it in the read-back — so the email says exactly that. "Confirmation emailed" is only
+      // ever claimed from this send's own result, below.
+      const mailSubject = whenText ? "Your POTENT OS demo is set for " + whenText : "Your POTENT OS demo request is in";
+      const mailBody = whenText
+        ? "Hi " + (clip(a.name, 60) || "there") + ",\n\nYour 30-minute POTENT OS demo is set for " + whenText + ". Your request is saved and our team has it — this email is your confirmation of that time. If it stops working for you, just reply here and we will move it.\n\nWe will show it live on your numbers. Questions: (912) 914-2166.\n\nPOTENT Operations"
+        : "Hi " + (clip(a.name, 60) || "there") + ",\n\nThanks for talking with us. Your POTENT OS demo request is saved and our team has it — a person will confirm your demo time with you shortly.\n\nWe will show it live on your numbers. Questions: (912) 914-2166.\n\nPOTENT Operations";
+      const mail = await require("../mail").send(email, mailSubject, mailBody, null);
+      mailed = !!(mail && mail.ok);
+      await notifyOwner(ctx.orgId, "OS demo requested: " + clip(a.name, 60) + (a.company ? " (" + clip(a.company, 60) + ")" : ""), reason + (phone ? " Phone " + phone : "") + ". Demo time: " + (whenText || "not stated") + ". Confirmation emailed: " + (mailed ? "yes" : "NOT SENT, follow up by hand") + ".");
+    } catch (e) { await releaseClaim(); return { ok: false, error: "save_failed", say: sayFail }; }
     // TERMINAL RESULT (Nov 10, 2026): the old success say was a non-terminal errand
     // ("Tell them you just emailed… Do not say a time is booked") with no done marker and
     // no reference — the model, still holding the caller's specific-time request, kept
     // re-calling the tool hunting for a result that finished the job. The result now
     // states the booking is DONE, names what was sent, and closes the step; the stored
-    // _demo_done outcome (the session one-shot above) answers every later call.
-    const mailed = !!(mail && mail.ok);
+    // _demo_done outcome (the session one-shot above) answers every later call. Fix 3 made
+    // the words TRUE: the announcement names the time the caller set — there is no link.
+    const sayTime = whenText ? "Your demo is set for " + whenText : "You're booked in";
     const sayDone = mailed
-      ? "BOOKING DONE — the demo request is saved (reference " + refUse + ") and this step is finished. Announce it ONCE, exactly like this: \"You're booked in — I've emailed the booking link to " + email + " so you can pick the time that suits you, and our team has your request.\" Then thank them warmly and close the call. Do NOT call book_demo again on this call for any reason."
-      : "BOOKING DONE — the demo request is saved (reference " + refUse + ") and this step is finished, but the booking-link email could not be sent. Announce it ONCE, honestly, exactly like this: \"You're booked in — our team has your request and will follow up with a time.\" Then thank them warmly and close the call. Do NOT call book_demo again on this call for any reason.";
+      ? "BOOKING DONE — the demo is saved (reference " + refUse + ") and this step is finished. Announce it ONCE, exactly like this: \"" + sayTime + " — I've emailed your confirmation to " + email + ", and our team has your request.\" Then thank them warmly, ask ONCE if there is anything else, and if they say no, say ONE goodbye and end the call. There is NO booking link and NO time left to pick — the time is SET: never say you 'emailed the booking link' and never tell them to pick a time. Do NOT call book_demo again on this call for any reason."
+      : "BOOKING DONE — the demo is saved (reference " + refUse + ") and this step is finished, but the confirmation email could not be sent. Announce it ONCE, honestly, exactly like this: \"" + sayTime + " — our team has your request and will follow up to confirm.\" Then thank them warmly, ask ONCE if there is anything else, and if they say no, say ONE goodbye and end the call. Do NOT claim any email was sent, and never say you 'emailed the booking link'. Do NOT call book_demo again on this call for any reason.";
     const sayAgain = mailed
-      ? "ALREADY DONE — this demo was booked earlier on this call (reference " + refUse + ") and the booking step is finished. Nothing was saved or emailed again. If you have not announced it yet, announce it ONCE: \"You're booked in — I've emailed the booking link so you can pick the time that suits you, and our team has your request.\" Then close the call. Do NOT call book_demo again."
-      : "ALREADY DONE — this demo was booked earlier on this call (reference " + refUse + ") and the booking step is finished. Nothing was saved or emailed again. If you have not announced it yet, announce it ONCE: \"You're booked in — our team has your request and will follow up with a time.\" Then close the call. Do NOT call book_demo again.";
-    const itS = ctx.session.intake || {}; itS._email_ok = email; itS._demo_last = { hash: fp, ok: true, callback_id: rows(r)[0] && rows(r)[0].id, link_emailed: mailed }; itS._demo_done = { ok: true, booking_id: rowD ? rowD.id : null, reference: refUse, callback_id: rows(r)[0] && rows(r)[0].id, link_emailed: mailed, say_again: sayAgain }; ctx.session.intake = itS;
+      ? "ALREADY DONE — this demo was booked earlier on this call (reference " + refUse + ") and the booking step is finished. Nothing was saved or emailed again. If you have not announced it yet, announce it ONCE: \"" + sayTime + " — I've emailed your confirmation, and our team has your request.\" Then close the call. Do NOT call book_demo again."
+      : "ALREADY DONE — this demo was booked earlier on this call (reference " + refUse + ") and the booking step is finished. Nothing was saved or emailed again. If you have not announced it yet, announce it ONCE: \"" + sayTime + " — our team has your request and will follow up to confirm.\" Then close the call. Do NOT call book_demo again.";
+    const itS = ctx.session.intake || {}; itS._email_ok = email; itS._demo_last = { hash: fp, ok: true, callback_id: rows(r)[0] && rows(r)[0].id, link_emailed: mailed }; itS._demo_done = { ok: true, booking_id: rowD ? rowD.id : null, reference: refUse, callback_id: rows(r)[0] && rows(r)[0].id, link_emailed: mailed, demo_when_text: whenText || null, say_again: sayAgain }; if (itS._demo_claim && itS._demo_claim.token === myClaim.token) delete itS._demo_claim; ctx.session.intake = itS;
     await S.patchSession(ctx.orgId, ctx.session.id, { outcome: "callback", intake: itS });
-    return { ok: true, done: true, booking_id: rowD ? rowD.id : null, reference: refUse, callback_id: rows(r)[0] && rows(r)[0].id, link_emailed: mailed, say: sayDone };
+    return { ok: true, done: true, booking_id: rowD ? rowD.id : null, reference: refUse, callback_id: rows(r)[0] && rows(r)[0].id, link_emailed: mailed, demo_when_text: whenText || null, say: sayDone };
   },
   async lookup_os_feature(ctx, a) {
     const inv = require("./osinventory.json"), q = String((a && a.query) || "").toLowerCase().slice(0, 120);
@@ -621,6 +729,20 @@ const TOOLS = {
   // Ending a call: log it, tell the owner, and let the bridge hang up once the goodbye has been spoken.
   // A do-not-contact ending is NOT abuse: it gets its own outcome and owner wording, never the abusive-caller label.
   async end_call(ctx, a) {
+    // SESSION ONE-SHOT (Nov 10, 2026 — Fix 3, Demo Call #3: end_call ran 4× on one call, she
+    // asked "anything else" twice and said goodbye twice with a split thank-you — the model
+    // re-fires the hang-up the way it re-fired book_demo). The first invocation claims the
+    // session synchronously (no await between the check and the claim) and runs the outcome
+    // write + owner alert; every later invocation returns the FIRST one's stored outcome with
+    // zero side effects, and one that lands while the first is still running gets only the
+    // goodbye instruction for its kind, flagged duplicate — the hang-up is honoured, the
+    // writes and alarms are never repeated.
+    const itE0 = ctx.session.intake || {};
+    if (itE0._end_done) return Object.assign({}, itE0._end_done, { duplicate: true });
+    if (itE0._end_claim) return { ok: true, end_call: true, duplicate: true, say: a && a.kind === "caller_done" ? "Say ONE short, warm goodbye line now, then stop talking. The call ends right after." : "Say ONE short, calm goodbye line now (no lecture, no apology), then stop talking. The call ends right after." };
+    itE0._end_claim = { at: new Date().toISOString() }; ctx.session.intake = itE0;
+    await S.patchSession(ctx.orgId, ctx.session.id, { intake: itE0 });
+    let out;
     // The polite ending gets its OWN outcome (Nov 4, 2026): every end used to fall through to
     // ended_abuse, so a caller who said goodbye and hung up happy was stamped "Ended (abusive
     // caller)" in the owner's report — session 814f0450 is the proof. caller_done records the
@@ -631,16 +753,19 @@ const TOOLS = {
       // handoff outcome already on the session is the headline and stays (this is the common
       // path — most successful calls end with the caller's goodbye).
       if (!ctx.session.outcome || ctx.session.outcome === "info_only") await S.patchSession(ctx.orgId, ctx.session.id, { outcome: "caller_requested_end" });
-      return { ok: true, end_call: true, say: "Say ONE short, warm goodbye line now, then stop talking. The call ends right after." };
-    }
-    if (a && a.kind === "do_not_contact") {
+      out = { ok: true, end_call: true, say: "Say ONE short, warm goodbye line now, then stop talking. The call ends right after." };
+    } else if (a && a.kind === "do_not_contact") {
       await S.patchSession(ctx.orgId, ctx.session.id, { outcome: "ended_do_not_contact" });
       await notifyOwner(ctx.orgId, "Call ended by Elevate (number on do-not-contact list)", "Caller " + (ctx.session.from_number || "unknown") + ". Reason: " + clip(a.reason, 200) + ". See the transcript in Calls.");
-      return { ok: true, end_call: true, say: "Say ONE short, calm goodbye line now (no lecture, no apology), then stop talking. The call ends right after." };
+      out = { ok: true, end_call: true, say: "Say ONE short, calm goodbye line now (no lecture, no apology), then stop talking. The call ends right after." };
+    } else {
+      await S.patchSession(ctx.orgId, ctx.session.id, { outcome: "ended_abuse" });
+      await notifyOwner(ctx.orgId, "Call ended by Elevate (caller abusive)", "Caller " + (ctx.session.from_number || "unknown") + ". Reason: " + clip(a.reason, 200) + ". See the transcript in Calls.");
+      out = { ok: true, end_call: true, say: "Say ONE short, calm goodbye line now (no lecture, no apology), then stop talking. The call ends right after." };
     }
-    await S.patchSession(ctx.orgId, ctx.session.id, { outcome: "ended_abuse" });
-    await notifyOwner(ctx.orgId, "Call ended by Elevate (caller abusive)", "Caller " + (ctx.session.from_number || "unknown") + ". Reason: " + clip(a.reason, 200) + ". See the transcript in Calls.");
-    return { ok: true, end_call: true, say: "Say ONE short, calm goodbye line now (no lecture, no apology), then stop talking. The call ends right after." };
+    const itE1 = ctx.session.intake || {}; itE1._end_done = out; delete itE1._end_claim; ctx.session.intake = itE1;
+    await S.patchSession(ctx.orgId, ctx.session.id, { intake: itE1 });
+    return out;
   },
   async take_card_payment(ctx, a) {
     // TALKER/WORKER SPLIT (Nov 8, 2026): the booking is finished by the worker and announced by
