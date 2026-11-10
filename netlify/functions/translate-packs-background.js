@@ -15,11 +15,19 @@ function batches(list) {
     return out;
 }
 function logRow(lang, kind, msg) { return C.sb("ui_pack_log", { method: "POST", prefer: "return=minimal", body: { lang: lang, kind: kind, msg: String(msg || "").slice(0, 900) } }).catch(function () { }); }
-async function haveFor(lang) { return new Set(Object.keys(await C.allRows(lang))); }
 
 // Does one language until it is complete or the time is up. Returns { lang, left, added }.
 async function doLang(lang, phrases, deadline) {
-    var have = await haveFor(lang), todo = phrases.filter(function (p) { return !have.has(p); }), added = 0, failed = 0;
+    // Cheap completeness check FIRST: one count-only query, never a table download just to decide.
+    // Same completeness bar as the cron (99.5% — a few strings are untranslatable): a language at the
+    // bar is skipped entirely this run — zero page fetches, no pack rebuild, no per-language log row.
+    var stored = await C.countRows(lang);
+    if (stored >= phrases.length * 0.995) return { lang: lang, skipped: true, stored: stored };
+    // Incomplete: download this language's slice ONCE and reuse that same copy for everything below —
+    // the missing-phrase list, and (with this run's new rows merged in) the pack rebuild.
+    // (A count of 0 means the slice is empty — there is nothing to download at all.)
+    var dict = stored > 0 ? await C.allRows(lang) : {};
+    var have = new Set(Object.keys(dict)), todo = phrases.filter(function (p) { return !have.has(p); }), added = 0, failed = 0;
     var queue = batches(todo), notes = [];
     var onNote = function (m) { if (notes.length < 6) notes.push(m); };
     async function worker() {
@@ -27,12 +35,13 @@ async function doLang(lang, phrases, deadline) {
             var b = queue.shift(), res = await C.translateList(lang, b, { timeoutMs: 70000, tries: 3, onNote: onNote });
             var rows = [];
             b.forEach(function (p, i) { if (res[i]) rows.push({ lang: lang, src: p, dst: res[i] }); else failed++; });
-            if (rows.length) { var w = await C.sb("ui_translations?on_conflict=lang,src", { method: "POST", prefer: "resolution=ignore-duplicates,return=minimal", body: rows }); if (w.ok) added += rows.length; }
+            if (rows.length) { var w = await C.sb("ui_translations?on_conflict=lang,src", { method: "POST", prefer: "resolution=ignore-duplicates,return=minimal", body: rows }); if (w.ok) { added += rows.length; rows.forEach(function (r) { dict[r.src] = r.dst; }); } }
         }
     }
     var ws = []; for (var i = 0; i < PARALLEL; i++) ws.push(worker());
     await Promise.all(ws);
-    var pack = await C.buildPack(lang);
+    // No new translations this run -> the stored pack is already right; do not rebuild or re-upload it.
+    var pack = added > 0 ? await C.buildPack(lang, dict) : { ok: true, n: stored, built: false };
     await logRow(lang, "lang_end", JSON.stringify({ todo: todo.length, added: added, failed: failed, pack: pack.n, notes: notes }));
     return { lang: lang, todo: todo.length, added: added, failed: failed, pack: pack.n };
 }

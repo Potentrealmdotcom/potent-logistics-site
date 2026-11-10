@@ -75,7 +75,14 @@ function sb(path, opts) {
     var h = { apikey: key, Authorization: "Bearer " + key, "Content-Type": "application/json" };
     if (opts.prefer) h.Prefer = opts.prefer;
     return fetch(SB + "/rest/v1/" + path, { method: opts.method || "GET", headers: h, body: opts.body === undefined ? undefined : JSON.stringify(opts.body) })
-        .then(function (r) { return r.text().then(function (t) { var d = null; try { d = JSON.parse(t); } catch (e) { } return { ok: r.ok, status: r.status, data: d }; }); });
+        .then(function (r) { return r.text().then(function (t) { var d = null; try { d = JSON.parse(t); } catch (e) { } var cr = r.headers && r.headers.get ? r.headers.get("content-range") : null, cnt = null; if (cr) { var m = /\/(\d+)\s*$/.exec(cr); if (m) cnt = parseInt(m[1], 10); } return { ok: r.ok, status: r.status, data: d, count: cnt }; }); });
+}
+// How many translations are stored for one language — a count-only query (limit=0, empty body back).
+// This is the cheap completeness check: it must never be replaced by a page download.
+async function countRows(lang) {
+    var q = await sb("ui_translations?lang=eq." + lang + "&select=src&limit=0", { prefer: "count=exact" });
+    if (!q.ok) throw new Error("db count failed " + q.status);
+    return typeof q.count === "number" ? q.count : (Array.isArray(q.data) ? q.data.length : 0);
 }
 // every saved translation for one language, page by page (the database returns at most 1000 rows per request)
 async function allRows(lang) {
@@ -89,10 +96,11 @@ async function allRows(lang) {
     return out;
 }
 // Writes the ready-made pack (one JSON per language) that the app downloads.
-async function buildPack(lang) {
-    var t = await allRows(lang), n = Object.keys(t).length;
+// Pass rows you already fetched and it builds from them — no second download of the same slice.
+async function buildPack(lang, rows) {
+    var t = rows || await allRows(lang), n = Object.keys(t).length;
     var w = await sb("ui_packs?on_conflict=lang", { method: "POST", prefer: "resolution=merge-duplicates,return=minimal", body: [{ lang: lang, data: t, n: n, updated_at: new Date().toISOString() }] });
     return { ok: w.ok, n: n };
 }
 function packKey() { return require("crypto").createHash("sha256").update("lang-packs:" + (process.env.SUPABASE_SERVICE_ROLE_KEY || "")).digest("hex"); }
-module.exports = { LANGS, SB, sys, parseList, sane, callModel, translateList, sb, allRows, buildPack, packKey, wait };
+module.exports = { LANGS, SB, sys, parseList, sane, callModel, translateList, sb, allRows, countRows, buildPack, packKey, wait };
