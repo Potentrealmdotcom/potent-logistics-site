@@ -81,7 +81,7 @@ function defs() {
       extra_stops: { type: "integer" }, labor_helpers: { type: "integer" }, labor_hours: { type: "number" }, expected_wait_minutes: { type: "number" }, holding_nights: { type: "integer" }, recurring: { type: "boolean" } })),
 
     D("confirm_job_packet", "After submit_job_packet returned the total, you stated it once, and the caller clearly said yes to booking: hand the job to the back-office worker to finish — verification, availability and the booking save all happen there, off the caller's clock. You are answered instantly; the booking outcome (confirmed + the reference, or what a person still needs to review) is announced to you as a system note while you keep talking. If the caller gave their email after the packet went in, include it here so the worker merges it first.", obj({ email: str("caller's email if they gave it after the packet was submitted — exactly as spelled back and confirmed") })),
-    D("book_demo", "Book a 30-minute POTENT OS demo with a person. Use only after the prospect agreed to a demo, you spelled their email back letter by letter and they said yes, and the full request read-back got a yes. Call it ONCE with email_confirmed true: it answers instantly, saves the demo request exactly once and emails them the booking link. If it answers read_back_required, ask the one question its say names OUT LOUD and wait for the answer — NEVER call it again unchanged: an identical repeat is refused by the system. Only say the demo request is in after it returns ok.", obj({ name: str(""), company: str(""), trucks: { type: "integer", description: "how many trucks they run" }, phone: str("number to reach them"), email: str("their email, read back and confirmed"), email_confirmed: { type: "boolean", description: "true only after you spelled the email back letter by letter and the caller said yes" }, notes: str("their problem and what they pay today, in a sentence") }, ["name", "email"])),
+    D("book_demo", "Book a 30-minute POTENT OS demo with a person. Use only after the prospect agreed to a demo, you spelled their email back letter by letter and they said yes, and the full request read-back got a yes. Call it ONCE with email_confirmed true: it answers instantly, saves the demo request exactly once and emails them the booking link. If it answers read_back_required, ask the one question its say names OUT LOUD and wait for the answer — NEVER call it again unchanged: an identical repeat is refused by the system. Only say the demo request is in after it returns ok. After an ok the booking is DONE for this call: announce it once and close — never call book_demo again on the same call, for any reason; a repeat returns the stored result and saves and emails nothing new.", obj({ name: str(""), company: str(""), trucks: { type: "integer", description: "how many trucks they run" }, phone: str("number to reach them"), email: str("their email, read back and confirmed"), email_confirmed: { type: "boolean", description: "true only after you spelled the email back letter by letter and the caller said yes" }, notes: str("their problem and what they pay today, in a sentence") }, ["name", "email"])),
     D("create_callback_task", "Create a callback for a person to follow up.", obj({ name: str(""), phone: str("number to call"), reason: str(""), preferred_time: str("") }, ["reason"])),
     D("request_human_handoff", "Ask to transfer to a person: negotiations, discounts, complaints, safety concerns, anything uncertain, or when the caller asks for one.", obj({ reason: str("why"), summary: str("one or two sentences for the person") }, ["reason"])),
     D("set_call_language", "Lock the language of this call to the caller's language. Call it as soon as the caller speaks a language other than English. Then speak ONLY that language for the whole call.", obj({ language: { type: "string", enum: Object.keys(CALL_LANGS), description: "language code of what the caller is speaking" } }, ["language"])),
@@ -529,6 +529,17 @@ const TOOLS = {
   },
   async book_demo(ctx, a) {
     const email = clip(a.email, 120).toLowerCase(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { ok: false, error: "need_valid_email", say: "Ask for their email OUT LOUD and spell it back letter by letter before you use it. Do not call book_demo again until they have given it and confirmed your read-back." };
+    // SESSION ONE-SHOT (Nov 10, 2026 — the Nov 9, 11:52 PM call: book_demo returned ok
+    // 13 times in ONE call, saving 13 callback rows and sending 13 owner alerts, and she
+    // never announced a result). The _demo_last guard below keys on an argument
+    // fingerprint whose free-text notes the model rewords on every retry, so live retries
+    // never matched it. A successful demo is therefore claimed on the SESSION, never on
+    // argument bytes: the first success stores its full outcome on the intake as
+    // _demo_done, and every later book_demo call on this call — any wording, any casing,
+    // any time format, flag or no flag — is answered from that stored outcome instantly.
+    // No re-save, no re-email, no side effects.
+    const done0 = (ctx.session.intake || {})._demo_done;
+    if (done0 && done0.ok) return { ok: true, done: true, duplicate: true, already_booked: true, booking_id: done0.booking_id || null, reference: done0.reference || null, callback_id: done0.callback_id || null, link_emailed: !!done0.link_emailed, say: done0.say_again };
     // NO IDENTICAL RETRY (Nov 9, 2026): an unchanged repeat is answered from the stored
     // outcome — the gate, the save and the emails do NOT run again. On the 9:14 AM call the
     // same failing call ran 8 times; a retry can now only ever produce marching orders.
@@ -556,11 +567,36 @@ const TOOLS = {
     const reason = "OS DEMO REQUESTED: " + clip(a.company, 80) + (a.trucks ? ", " + Math.floor(Number(a.trucks)) + " trucks" : "") + ". " + clip(a.notes, 200) + " Email " + email;
     const r = await B.sb("voice_callbacks", { method: "POST", prefer: "return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, name: clip(a.name, 80) || null, phone: phone, reason: reason.slice(0, 300), preferred_time: "demo" } });
     if (!r.ok) { const sayF = "The demo request could not be saved. Tell the caller honestly, right now: \"I could not get that saved just now — a person will follow up with you to set the demo up.\" Do NOT say the demo is set up, do not call book_demo again unchanged, and save the follow-up with create_callback_task."; const itF = ctx.session.intake || {}; itF._demo_last = { hash: fp, ok: false, say: sayF }; ctx.session.intake = itF; await S.patchSession(ctx.orgId, ctx.session.id, { intake: itF }); return { ok: false, error: "save_failed", say: sayF }; }
+    // THE DEMO RECORD LANDS WHERE THE CONSOLE READS BOOKINGS (Nov 10, 2026): until now
+    // book_demo persisted ONLY the voice_callbacks row above, which surfaces under
+    // Handoffs & callbacks — the owner's Bookings tab reads voice_bookings alone
+    // (voice-api.js "bookings" action), so a "successful" demo showed ZERO bookings.
+    // The worker's book path already saves demos into voice_bookings with a session
+    // idempotency key (worker.js book completion); this does exactly the same:
+    // idem_key = session + ":os_demo" with ignore-duplicates, so the booking row exists
+    // exactly once per call even if this code somehow ran twice.
+    const refD = S.ref("PV"), idemD = ctx.session.id + ":os_demo";
+    const insD = await B.sb("voice_bookings", { method: "POST", prefer: "resolution=ignore-duplicates,return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, quote_id: null, idem_key: idemD, reference: refD, status: "pending_review", review_reason: "OS demo request — team confirms the time with the caller", vehicle_profile_id: null, window_start: null, window_end: null, customer_name: clip(a.name, 80) || null, customer_phone: phone, customer_email: email, snapshot: { book_demo: true, service: "os_demo", service_name: "POTENT OS demo", company: clip(a.company, 100) || null, trucks: a.trucks != null ? Math.floor(Number(a.trucks)) || 0 : null, email: email, notes: clip(a.notes, 200) || null, booking_link: link } } });
+    let rowD = rows(insD)[0]; if (!rowD) rowD = rows(await B.sb("voice_bookings?org_id=eq." + ctx.orgId + "&idem_key=eq." + encodeURIComponent(idemD) + "&select=*&limit=1"))[0];
+    const refUse = rowD ? rowD.reference : refD;
     const mail = await require("../mail").send(email, "Your POTENT OS demo: pick a time", "Hi " + (clip(a.name, 60) || "there") + ",\n\nThanks for talking with us. Pick any time that works for a 30-minute POTENT OS demo here:\n" + link + "\n\nWe will show it live on your numbers. Questions: (912) 914-2166.\n\nPOTENT Operations", null);
     await notifyOwner(ctx.orgId, "OS demo requested: " + clip(a.name, 60) + (a.company ? " (" + clip(a.company, 60) + ")" : ""), reason + (phone ? " Phone " + phone : "") + ". Booking link sent: " + (mail && mail.ok ? "yes" : "NOT SENT, follow up by hand") + ".");
-    const itS = ctx.session.intake || {}; itS._email_ok = email; itS._demo_last = { hash: fp, ok: true, callback_id: rows(r)[0] && rows(r)[0].id, link_emailed: !!(mail && mail.ok) }; ctx.session.intake = itS;
+    // TERMINAL RESULT (Nov 10, 2026): the old success say was a non-terminal errand
+    // ("Tell them you just emailed… Do not say a time is booked") with no done marker and
+    // no reference — the model, still holding the caller's specific-time request, kept
+    // re-calling the tool hunting for a result that finished the job. The result now
+    // states the booking is DONE, names what was sent, and closes the step; the stored
+    // _demo_done outcome (the session one-shot above) answers every later call.
+    const mailed = !!(mail && mail.ok);
+    const sayDone = mailed
+      ? "BOOKING DONE — the demo request is saved (reference " + refUse + ") and this step is finished. Announce it ONCE, exactly like this: \"You're booked in — I've emailed the booking link to " + email + " so you can pick the time that suits you, and our team has your request.\" Then thank them warmly and close the call. Do NOT call book_demo again on this call for any reason."
+      : "BOOKING DONE — the demo request is saved (reference " + refUse + ") and this step is finished, but the booking-link email could not be sent. Announce it ONCE, honestly, exactly like this: \"You're booked in — our team has your request and will follow up with a time.\" Then thank them warmly and close the call. Do NOT call book_demo again on this call for any reason.";
+    const sayAgain = mailed
+      ? "ALREADY DONE — this demo was booked earlier on this call (reference " + refUse + ") and the booking step is finished. Nothing was saved or emailed again. If you have not announced it yet, announce it ONCE: \"You're booked in — I've emailed the booking link so you can pick the time that suits you, and our team has your request.\" Then close the call. Do NOT call book_demo again."
+      : "ALREADY DONE — this demo was booked earlier on this call (reference " + refUse + ") and the booking step is finished. Nothing was saved or emailed again. If you have not announced it yet, announce it ONCE: \"You're booked in — our team has your request and will follow up with a time.\" Then close the call. Do NOT call book_demo again.";
+    const itS = ctx.session.intake || {}; itS._email_ok = email; itS._demo_last = { hash: fp, ok: true, callback_id: rows(r)[0] && rows(r)[0].id, link_emailed: mailed }; itS._demo_done = { ok: true, booking_id: rowD ? rowD.id : null, reference: refUse, callback_id: rows(r)[0] && rows(r)[0].id, link_emailed: mailed, say_again: sayAgain }; ctx.session.intake = itS;
     await S.patchSession(ctx.orgId, ctx.session.id, { outcome: "callback", intake: itS });
-    return { ok: true, callback_id: rows(r)[0] && rows(r)[0].id, link_emailed: !!(mail && mail.ok), say: mail && mail.ok ? "Tell them you just emailed the booking link and they can pick any time that works for a 30-minute demo. Do not say a time is booked." : "Tell them honestly the email could not be sent right now, that a person will follow up with a time, and do not say a time is booked." };
+    return { ok: true, done: true, booking_id: rowD ? rowD.id : null, reference: refUse, callback_id: rows(r)[0] && rows(r)[0].id, link_emailed: mailed, say: sayDone };
   },
   async lookup_os_feature(ctx, a) {
     const inv = require("./osinventory.json"), q = String((a && a.query) || "").toLowerCase().slice(0, 120);
