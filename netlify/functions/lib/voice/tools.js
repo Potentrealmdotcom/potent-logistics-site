@@ -81,7 +81,7 @@ function defs() {
       extra_stops: { type: "integer" }, labor_helpers: { type: "integer" }, labor_hours: { type: "number" }, expected_wait_minutes: { type: "number" }, holding_nights: { type: "integer" }, recurring: { type: "boolean" } })),
 
     D("confirm_job_packet", "After submit_job_packet returned the total, you stated it once, and the caller clearly said yes to booking: hand the job to the back-office worker to finish — verification, availability and the booking save all happen there, off the caller's clock. You are answered instantly; the booking outcome (confirmed + the reference, or what a person still needs to review) is announced to you as a system note while you keep talking. If the caller gave their email after the packet went in, include it here so the worker merges it first.", obj({ email: str("caller's email if they gave it after the packet was submitted — exactly as spelled back and confirmed") })),
-    D("book_demo", "Book a 30-minute POTENT OS demo with a person. Use only after the prospect agreed to a demo, you spelled their email back letter by letter and they said yes, and the full request read-back got a yes. Call it ONCE with email_confirmed true AND demo_when_text carrying the day and time exactly as read back (weekday, month, day, time): it answers instantly, saves the demo exactly once with that time on the record, and emails them their confirmation — the read-back SET the time; there is no booking link and no time left for them to pick. If it answers read_back_required, ask the one question its say names OUT LOUD and wait for the answer — NEVER call it again unchanged: an identical repeat is refused by the system. Only say the demo is set after it returns ok. After an ok the booking is DONE for this call: announce it once and close — never call book_demo again on the same call, for any reason; a repeat returns the stored result and saves and emails nothing new.", obj({ name: str(""), company: str(""), trucks: { type: "integer", description: "how many trucks they run" }, phone: str("number to reach them"), email: str("their email, read back and confirmed"), email_confirmed: { type: "boolean", description: "true only after you spelled the email back letter by letter and the caller said yes" }, demo_when_text: str("the demo day and time exactly as the caller confirmed it in the read-back, e.g. 'Thursday, November 12th at 10:00 AM' — weekday, month, day and time"), notes: str("their problem and what they pay today, in a sentence") }, ["name", "email"])),
+    D("book_demo", "Book a 30-minute POTENT OS demo with a person. Use only after the prospect agreed to a demo, you spelled their email back letter by letter and they said yes, and the full request read-back got a yes. The name you pass must be the caller's name in the spelling THEY confirmed letter by letter on this call — the spelling they gave you, never a spelling guessed by ear — and when you speak their name, pronounce it the way THEY confirmed it is said: spelling and pronunciation are both theirs, not your guess. Pass name_confirmed true only after that spell-back got a clear yes — without it the save is refused (read_back_required) and the result tells you the one question to ask out loud. Call it ONCE with email_confirmed true AND demo_when_text carrying the day and time exactly as read back (weekday, month, day, time): it answers instantly, saves the demo exactly once with that time on the record, and emails them their confirmation — the read-back SET the time; there is no booking link and no time left for them to pick. If it answers read_back_required, ask the one question its say names OUT LOUD and wait for the answer — NEVER call it again unchanged: an identical repeat is refused by the system. Only say the demo is set after it returns ok. After an ok the booking is DONE for this call: announce it once and close — never call book_demo again on the same call, for any reason; a repeat returns the stored result and saves and emails nothing new.", obj({ name: str("the caller's name in the spelling they confirmed letter by letter on this call — the spelling they gave you, not what you heard by ear"), company: str(""), trucks: { type: "integer", description: "how many trucks they run" }, phone: str("number to reach them"), email: str("their email, read back and confirmed"), email_confirmed: { type: "boolean", description: "true only after you spelled the email back letter by letter and the caller said yes" }, name_confirmed: { type: "boolean", description: "true only after you asked how to spell their name, spelled it back letter by letter and the caller said yes — the save is refused without it once the name is in question" }, demo_when_text: str("the demo day and time exactly as the caller confirmed it in the read-back, e.g. 'Thursday, November 12th at 10:00 AM' — weekday, month, day and time"), notes: str("their problem and what they pay today, in a sentence") }, ["name", "email"])),
     D("create_callback_task", "Create a callback for a person to follow up.", obj({ name: str(""), phone: str("number to call"), reason: str(""), preferred_time: str("") }, ["reason"])),
     D("request_human_handoff", "Ask to transfer to a person: negotiations, discounts, complaints, safety concerns, anything uncertain, or when the caller asks for one.", obj({ reason: str("why"), summary: str("one or two sentences for the person") }, ["reason"])),
     D("set_call_language", "Lock the language of this call to the caller's language. Call it as soon as the caller speaks a language other than English. Then speak ONLY that language for the whole call.", obj({ language: { type: "string", enum: Object.keys(CALL_LANGS), description: "language code of what the caller is speaking" } }, ["language"])),
@@ -177,7 +177,7 @@ function demoEmailConfirmed(ctx, a, email) {
 // it must reach the gate. A truly identical repeat (same facts, same confirmation state)
 // is the retry, and it is refused.
 function demoHash(a, email) {
-  const c = { name: clip(a && a.name, 80).toLowerCase(), company: clip(a && a.company, 100).toLowerCase(), trucks: a && a.trucks != null ? Math.floor(Number(a.trucks)) || 0 : 0, phone: String((a && a.phone) || "").replace(/\D/g, ""), email: email || "", when: clip(a && a.demo_when_text, 120).toLowerCase(), notes: clip(a && a.notes, 200).toLowerCase(), confirmed: a && a.email_confirmed === true ? 1 : 0 };
+  const c = { name: clip(a && a.name, 80).toLowerCase(), company: clip(a && a.company, 100).toLowerCase(), trucks: a && a.trucks != null ? Math.floor(Number(a.trucks)) || 0 : 0, phone: String((a && a.phone) || "").replace(/\D/g, ""), email: email || "", when: clip(a && a.demo_when_text, 120).toLowerCase(), notes: clip(a && a.notes, 200).toLowerCase(), confirmed: a && a.email_confirmed === true ? 1 : 0, nameconf: a && a.name_confirmed === true ? 1 : 0 };
   const s = Object.keys(c).sort().map(function (k) { return k + "=" + JSON.stringify(c[k]); }).join("|");
   let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
   return h.toString(16);
@@ -621,6 +621,46 @@ const TOOLS = {
       await S.patchSession(ctx.orgId, ctx.session.id, { intake: it });
       return { ok: false, error: "read_back_required", gate: a.email_confirmed === true ? "pending_mismatch" : "not_confirmed_flag", email: email, say: say };
     }
+    // THE NAME GATE (Nov 10, 2026 — Fix 4): Tony's rule — if she doesn't know a name's
+    // spelling she must ASK and confirm it; a caller's name was heard as "Mendis" when it
+    // is spelled M-E-N-D-E-S. The email has had a hard spelled-letter gate all along;
+    // names had only prompt guidance — nothing stopped a save under a spelling nobody
+    // confirmed. This gate reuses the email gate's own plumbing (a declared flag in the
+    // schema — the original demo-gate bug was an UNDECLARED flag the live call could
+    // never send — a pending record on the intake, a read_back_required refusal naming
+    // the one question to ask out loud, and the refusal stored in _demo_last so an
+    // unchanged repeat is answered by the duplicate guard above, never re-run). The
+    // nameconf bit in demoHash is what lets the re-call carrying the caller's yes reach
+    // this gate instead of dying as an "identical" repeat — the same reason the email
+    // confirmation state is in the fingerprint.
+    // Pass states, mirroring demoEmailConfirmed's acceptance of the states the demo
+    // conversation actually produces:
+    //   • name_confirmed:true — the spell-back happened and got its yes: the spelling on
+    //     THIS call is recorded on the intake as _name_spelling, the CONFIRMED spelling.
+    //     Every record below (the voice_callbacks row, the voice_bookings row, the
+    //     caller email, the owner alert) is written from _name_spelling, never from a
+    //     later call's argument — argument drift to a different spelling cannot
+    //     overwrite a confirmed one, and Fix 3's claim/one-shot carries it from there.
+    //   • _name_spelling already on the intake — a confirmed spelling exists; use it.
+    //   • flag absent AND no name question outstanding — the legacy conversational
+    //     state (the read-back, name included, happened in talk before the first tool
+    //     call, exactly the state demoEmailConfirmed accepts for the email): proceed.
+    // Refusal states:
+    //   • name_confirmed explicitly false — she is telling the system the name is NOT
+    //     confirmed: refuse, and record the heard spelling as _name_pending.
+    //   • _name_pending outstanding (an earlier refusal on this call) and still no
+    //     name_confirmed:true — refuse again; once the question is open, only the
+    //     caller's spelled-and-confirmed version closes it.
+    const heardName = clip(a.name, 80);
+    const itN0 = ctx.session.intake || {};
+    if (!itN0._name_spelling && a.name_confirmed !== true && (a.name_confirmed === false || itN0._name_pending)) {
+      const sayName = "NOT BOOKED YET — the caller's name has not been spelled back and confirmed on this call, and the demo cannot be saved under a spelling nobody confirmed. Ask OUT LOUD now, once: \"How do you spell that for me?\" When they spell it, read the spelling back to them letter by letter and wait for a clear yes. Do NOT call book_demo again until you have heard that yes — calling it again unchanged does nothing. When they say yes, call book_demo ONCE with name_confirmed true and the name EXACTLY as they spelled it: their spelling is the ground truth and outranks what you heard by ear. If they will not spell it, do not keep trying: tell them honestly that a person will follow up to set the demo up, and save that with create_callback_task.";
+      const itNg = ctx.session.intake || {}; itNg._name_pending = heardName; itNg._demo_last = { hash: fp, ok: false, say: sayName }; ctx.session.intake = itNg;
+      await S.patchSession(ctx.orgId, ctx.session.id, { intake: itNg });
+      return { ok: false, error: "read_back_required", gate: "name_not_confirmed", name: heardName, say: sayName };
+    }
+    if (a.name_confirmed === true && heardName) { const itNc = ctx.session.intake || {}; if (!itNc._name_spelling) itNc._name_spelling = heardName; if (itNc._name_pending) delete itNc._name_pending; ctx.session.intake = itNc; }
+    const nameUse = (ctx.session.intake || {})._name_spelling || heardName;
     // THE CLAIM — set synchronously here: no await has run in this invocation since the
     // checks above, so no overlapping invocation on this session can slip between the check
     // and the claim. From this line on, this execution is the ONLY one that may save or send.
@@ -659,7 +699,7 @@ const TOOLS = {
     const phone = I.phone(a.phone) || ctx.session.from_number || null;
     const reason = "OS DEMO REQUESTED: " + clip(a.company, 80) + (a.trucks ? ", " + Math.floor(Number(a.trucks)) + " trucks" : "") + ". " + clip(a.notes, 200) + " Email " + email + (whenText ? " Demo set for " + whenText + "." : "");
     let r;
-    try { r = await B.sb("voice_callbacks", { method: "POST", prefer: "return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, name: clip(a.name, 80) || null, phone: phone, reason: reason.slice(0, 300), preferred_time: "demo" } }); }
+    try { r = await B.sb("voice_callbacks", { method: "POST", prefer: "return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, name: nameUse || null, phone: phone, reason: reason.slice(0, 300), preferred_time: "demo" } }); }
     catch (e) { await releaseClaim(); return { ok: false, error: "save_failed", say: sayFail }; }
     if (!r.ok) { const itF = ctx.session.intake || {}; if (itF._demo_claim && itF._demo_claim.token === myClaim.token) delete itF._demo_claim; itF._demo_last = { hash: fp, ok: false, say: sayFail }; ctx.session.intake = itF; await S.patchSession(ctx.orgId, ctx.session.id, { intake: itF }); return { ok: false, error: "save_failed", say: sayFail }; }
     // THE DEMO RECORD LANDS WHERE THE CONSOLE READS BOOKINGS (Nov 10, 2026): until now
@@ -673,7 +713,7 @@ const TOOLS = {
     let rowD, refUse, mailed = false;
     try {
       const refD = S.ref("PV"), idemD = ctx.session.id + ":os_demo";
-      const insD = await B.sb("voice_bookings", { method: "POST", prefer: "resolution=ignore-duplicates,return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, quote_id: null, idem_key: idemD, reference: refD, status: "pending_review", review_reason: whenText ? "OS demo request — set for " + whenText : "OS demo request — team confirms the time with the caller", vehicle_profile_id: null, window_start: whenP ? whenP.wsIso : null, window_end: whenP ? whenP.weIso : null, customer_name: clip(a.name, 80) || null, customer_phone: phone, customer_email: email, snapshot: { book_demo: true, service: "os_demo", service_name: "POTENT OS demo", company: clip(a.company, 100) || null, trucks: a.trucks != null ? Math.floor(Number(a.trucks)) || 0 : null, email: email, notes: clip(a.notes, 200) || null, demo_when_text: whenText || null, intake: { service_date: whenP ? whenP.serviceDate : (whenText || null), time_window: whenP ? whenP.timeWindow : "" } } } });
+      const insD = await B.sb("voice_bookings", { method: "POST", prefer: "resolution=ignore-duplicates,return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, quote_id: null, idem_key: idemD, reference: refD, status: "pending_review", review_reason: whenText ? "OS demo request — set for " + whenText : "OS demo request — team confirms the time with the caller", vehicle_profile_id: null, window_start: whenP ? whenP.wsIso : null, window_end: whenP ? whenP.weIso : null, customer_name: nameUse || null, customer_phone: phone, customer_email: email, snapshot: { book_demo: true, service: "os_demo", service_name: "POTENT OS demo", company: clip(a.company, 100) || null, trucks: a.trucks != null ? Math.floor(Number(a.trucks)) || 0 : null, email: email, notes: clip(a.notes, 200) || null, demo_when_text: whenText || null, intake: { service_date: whenP ? whenP.serviceDate : (whenText || null), time_window: whenP ? whenP.timeWindow : "" } } } });
       rowD = rows(insD)[0]; if (!rowD) rowD = rows(await B.sb("voice_bookings?org_id=eq." + ctx.orgId + "&idem_key=eq." + encodeURIComponent(idemD) + "&select=*&limit=1"))[0];
       refUse = rowD ? rowD.reference : refD;
       // THE CALLER EMAIL CONFIRMS THE SET TIME (Nov 10, 2026 — Fix 3): there is no booking
@@ -682,11 +722,11 @@ const TOOLS = {
       // ever claimed from this send's own result, below.
       const mailSubject = whenText ? "Your POTENT OS demo is set for " + whenText : "Your POTENT OS demo request is in";
       const mailBody = whenText
-        ? "Hi " + (clip(a.name, 60) || "there") + ",\n\nYour 30-minute POTENT OS demo is set for " + whenText + ". Your request is saved and our team has it — this email is your confirmation of that time. If it stops working for you, just reply here and we will move it.\n\nWe will show it live on your numbers. Questions: (912) 914-2166.\n\nPOTENT Operations"
-        : "Hi " + (clip(a.name, 60) || "there") + ",\n\nThanks for talking with us. Your POTENT OS demo request is saved and our team has it — a person will confirm your demo time with you shortly.\n\nWe will show it live on your numbers. Questions: (912) 914-2166.\n\nPOTENT Operations";
+        ? "Hi " + (clip(nameUse, 60) || "there") + ",\n\nYour 30-minute POTENT OS demo is set for " + whenText + ". Your request is saved and our team has it — this email is your confirmation of that time. If it stops working for you, just reply here and we will move it.\n\nWe will show it live on your numbers. Questions: (912) 914-2166.\n\nPOTENT Operations"
+        : "Hi " + (clip(nameUse, 60) || "there") + ",\n\nThanks for talking with us. Your POTENT OS demo request is saved and our team has it — a person will confirm your demo time with you shortly.\n\nWe will show it live on your numbers. Questions: (912) 914-2166.\n\nPOTENT Operations";
       const mail = await require("../mail").send(email, mailSubject, mailBody, null);
       mailed = !!(mail && mail.ok);
-      await notifyOwner(ctx.orgId, "OS demo requested: " + clip(a.name, 60) + (a.company ? " (" + clip(a.company, 60) + ")" : ""), reason + (phone ? " Phone " + phone : "") + ". Demo time: " + (whenText || "not stated") + ". Confirmation emailed: " + (mailed ? "yes" : "NOT SENT, follow up by hand") + ".");
+      await notifyOwner(ctx.orgId, "OS demo requested: " + clip(nameUse, 60) + (a.company ? " (" + clip(a.company, 60) + ")" : ""), reason + (phone ? " Phone " + phone : "") + ". Demo time: " + (whenText || "not stated") + ". Confirmation emailed: " + (mailed ? "yes" : "NOT SENT, follow up by hand") + ".");
     } catch (e) { await releaseClaim(); return { ok: false, error: "save_failed", say: sayFail }; }
     // TERMINAL RESULT (Nov 10, 2026): the old success say was a non-terminal errand
     // ("Tell them you just emailed… Do not say a time is booked") with no done marker and
