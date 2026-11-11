@@ -66,7 +66,8 @@ function defs() {
     D("lookup_customer", "Check whether the caller's phone number matches a known customer. Returns only a name and whether they are known. Caller ID is NOT proof of identity."),
     D("create_or_update_lead", "Save the caller as a sales lead.", obj({ name: str("Caller name"), company: str("Company"), email: str("Email"), notes: str("What they need") }, ["name"])),
     D("get_approved_service_information", "Get approved company facts. Use this instead of guessing about services, service area, truck limits, scheduling, payment or policies.", obj({ topic: { type: "string", enum: ["services", "service_area", "truck_limits", "scheduling", "payment", "policies", "pricing_policy", "faq"] } }, ["topic"])),
-    D("submit_job_packet", "TALKER/WORKER SPLIT (Nov 8, 2026) + Jarvis step 1 (Nov 9, 2026): the ONE hand-off to the back-office worker — a closing action, not a gate. After the DETAILS CONFIRM read-back gets a yes, submit EVERYTHING the caller gave you in ONE packet — every fact from the whole conversation at once — and KEEP TALKING: the packet is accepted instantly and the price from the company's own price book comes back with it, even if a piece is still being collected. If the result names pieces still needed, ask for the next one OUT LOUD in plain words, one thing at a time, and submit again only when you are carrying that new piece. NEVER submit the same packet twice unchanged — the system refuses an identical resubmit. It can never create a second job. BOOK SERVICES (Jarvis build, Nov 9, 2026): when this company has a BOOK (see BOOK SERVICES in your instructions) and the caller is booking one of its services, set service to that service's id and carry the caller's answers to the book's questions in answers — completeness is the BOOK's question list for that service, nothing else; a question the caller said they don't know goes in unknown (a don't-know is an answer).", obj({
+    D("submit_job_packet", "TALKER/WORKER SPLIT (Nov 8, 2026) + Jarvis step 1 (Nov 9, 2026): the ONE hand-off to the back-office worker — a closing action, not a gate. After the DETAILS CONFIRM read-back gets a yes, submit EVERYTHING the caller gave you in ONE packet — every fact from the whole conversation at once — and KEEP TALKING: the packet is accepted instantly and the price from the company's own price book comes back with it, even if a piece is still being collected. If the result names pieces still needed, ask for the next one OUT LOUD in plain words, one thing at a time, and submit again only when you are carrying that new piece. NEVER submit the same packet twice unchanged — the system refuses an identical resubmit. It can never create a second job. BOOK SERVICES (Jarvis build, Nov 9, 2026): when this company has a BOOK (see BOOK SERVICES in your instructions) and the caller is booking one of its services, set service to that service's id and carry the caller's answers to the book's questions in answers — completeness is the BOOK's question list for that service, nothing else; a question the caller said they don't know goes in unknown (a don't-know is an answer). NAME (Fix 7, Nov 11, 2026): if the caller spelled their surname out on this call, pass name_spelled_letters with those letters exactly as spelled — the saved surname is built from them on the packet, on any callback and on the end-of-call record, never from a spelling guessed by ear. A packet that cannot complete (for example a service that is not in the book) is finished ONCE by the system: one callback is saved with what you have and that outcome is final — never submit again hoping it completes.", obj({
+      name_spelled_letters: { type: "string", description: "the surname's letters exactly as the caller spelled them out on this call, hyphen-separated — the saved surname is built from these letters" },
       service: str("BOOK services only: the id of the book service being booked, exactly as listed in BOOK SERVICES"),
       answers: { type: "object", description: "BOOK services only: the caller's answers to the book's questions for this service, keyed by question key exactly as listed in BOOK SERVICES (dates as YYYY-MM-DD)" },
       unknown: { type: "array", items: { type: "string" }, description: "BOOK services only: question keys the caller said they don't know — a don't-know is an answer and is never re-asked" },
@@ -194,6 +195,152 @@ function nameWithSpelledSurname(name, v) {
   parts[parts.length - 1] = sur;
   return parts.join(" ");
 }
+// ── FIX 7 (Nov 11, 2026 — Slang/Mumble Call #1, 9:47 AM: submit_job_packet fired 33× in
+// one call, no booking was created, and the auto-saved callback landed under a name and
+// freight facts nobody confirmed). The freight save path now carries the same protections
+// Fixes 2/3/5/6 gave the demo path, in the forms this path's own contracts allow:
+//  (1) CLAIM-FIRST ONE-SHOT: the first submit claims the session synchronously (the claim
+//      is set in code before the save path's first await and persisted immediately), an
+//      overlapping invocation waits for the claiming execution and answers from its
+//      stored outcome, and a COMPLETED packet is stored as _packet_done — a later submit
+//      carrying the same core facts returns that stored outcome with zero side effects.
+//      A packet whose CORE facts differ is a caller correction/update: it supersedes the
+//      stored outcome and runs (the split build's standing doctrine — a changed packet
+//      updates the same one job; it never creates a second one).
+//  (2) GRACEFUL SINGLE EXIT: a packet that cannot complete (a service id that is not in
+//      the company's book — the live call's "unknown_service" on "boxes of clothes") is
+//      finished ONCE: one callback is saved with what she has, the outcome is stored as
+//      _packet_exit, and every later submit returns that stored outcome — the error can
+//      never be retried in circles again.
+//  (3) LETTERS-BOUND NAME: submit_job_packet carries name_spelled_letters like book_demo
+//      and create_callback_task do; the packet's name is rebuilt from the spelled letters
+//      before anything runs and recorded as _name_spelling, so the packet, the worker's
+//      booking, the graceful-exit callback AND the end-of-call auto-save (which reads
+//      intake.customer_name) all carry the letters-built name.
+//  (4) CORRECTED VALUES STAND: a caller correction (correction=true) to the freight
+//      facts is recorded in _corrected (in collect_shipment_details below); a later
+//      packet carrying the first-heard value for a corrected field cannot overwrite it.
+//      Only a new explicit correction moves a corrected value.
+// Packet identity for (1) is a CORE fingerprint (packetCoreFp): the facts that decide the
+// job and the price, normalized (addresses by identity, strings case/space-folded) — so
+// a resubmit that merely re-dresses the same facts (an optional field toggled, a value
+// re-cased) is the same packet, exactly as addresses already compare by identity.
+const PACKET_CORE = ["customer_name", "callback_phone", "email", "pickup_address", "delivery_address", "service_date", "time_window", "service_level", "freight_description", "piece_count", "total_weight_lb", "extra_stops", "labor_helpers", "labor_hours", "inside_delivery", "holding_nights"];
+const PACKET_IN_PROGRESS_SAY = "That job packet is already being submitted from your first call — it is NOT finished yet. Do not submit it again and do not say it is in: keep the caller warm for a moment and the finished result will be announced to you.";
+const PACKET_EXIT_SAY = "That service is not in this company's book, and this packet cannot be completed as that service. Do NOT submit it again — submitting again will not change anything, and the system will only hand you this same outcome. ONE callback has been saved with everything the caller gave you, so a person will follow up with them. Tell the caller warmly, once, that you have their details saved and a person will call them back to sort it out, thank them for calling, and close warmly. If they would rather book one of the services in BOOK SERVICES, offer that instead — a different service is a new packet.";
+const PACKET_EXIT_NO_PHONE_SAY = "That service is not in this company's book, and this packet cannot be completed as that service. Do NOT submit it again — submitting again will not change anything. No callback could be saved because there is no number for them: ask for the number to call them back on, save it ONCE with create_callback_task carrying everything they gave you, then thank them warmly and close.";
+function normCoreVal(k, v) {
+  if (v == null) return null;
+  if (k === "pickup_address" || k === "delivery_address") return I.normAddr(v);
+  if (typeof v === "string") return v.trim().toLowerCase().replace(/\s+/g, " ");
+  if (typeof v === "number" || typeof v === "boolean") return v;
+  return v;
+}
+function packetCoreFp(a, intake) {
+  const c = cleanArgs(a || {}), base = intake || {}, o = {};
+  PACKET_CORE.forEach(function (k) { const v = c[k] !== undefined ? c[k] : base[k]; const nv = normCoreVal(k, v); if (nv !== null && nv !== undefined && nv !== "") o[k] = nv; });
+  if (a && a.service) o._service = String(a.service).trim().toLowerCase();
+  if (a && a.answers && typeof a.answers === "object") { o._answers = {}; Object.keys(a.answers).sort().forEach(function (k) { const nv = normCoreVal(k, a.answers[k]); if (nv !== null && nv !== "") o._answers[k] = nv; }); }
+  if (a && Array.isArray(a.unknown) && a.unknown.length) o._unknown = a.unknown.map(String).sort();
+  // Spelled letters are confirmation state, as in demoHash: a lettered packet is new
+  // state. When the packet itself carries no letters, the letters of the spelling
+  // already recorded on the intake (_name_spelling) stand in — that is what lets a
+  // fingerprint computed from the saved intake match one computed from the packet.
+  const L = spelledLettersOf(a && a.name_spelled_letters) || (base._name_spelling ? spelledLettersOf(String(base._name_spelling).trim().split(/\s+/).pop()) : "");
+  if (L) o._letters = L;
+  const s = JSON.stringify(o);
+  let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+  return h.toString(16);
+}
+// The stored-outcome returns for a packet that already ran: the exact shapes the
+// identical-resubmit guard has always produced (Jarvis step 1), plus the Fix 7
+// terminal states. A stored return NEVER runs collect, pricing or a save again.
+function packetLastReturn(last) {
+  if (last.failed) return { ok: false, error: last.error || "packet_failed", duplicate: true, callback_saved: true, say: PACKET_EXIT_SAY };
+  if (last.complete) return last.price_pending
+    ? { ok: true, duplicate: true, submitted: true, price_pending: true, say: "That job is already in with the back office — do not submit it again. The total will be confirmed in the written confirmation; do not invent a price. Ask if they'd like you to put the booking in." }
+    : { ok: true, duplicate: true, submitted: true, total: last.total, say: "That job is already in with the back office at " + last.total + " — do not submit it again and do not restate the price. Ask: shall I book it? On a clear yes, call confirm_job_packet." };
+  const pnd = I.plainNeeds(last.missing, last.problems);
+  const firstAsk = (last.missing_labels && last.missing_labels[0]) || pnd.firstAsk || "the next missing piece";
+  const needList = (last.missing_labels && last.missing_labels.length) ? last.missing_labels.join("; ") : pnd.list;
+  return { ok: true, duplicate: true, submitted: true, accepted: true, needs: last.missing || [], missing: last.missing || [], problems: last.problems || [], total: last.total || undefined, say: "You already submitted exactly this packet and nothing has changed since — nothing was sent again, and submitting it again will not change anything. It still needs: " + needList + ". Ask the caller OUT LOUD now, in plain words, for the next piece you still need: " + firstAsk + ". One thing at a time; when you have it, submit again carrying everything." };
+}
+function packetDoneReturn(done) {
+  if (done.price_pending) return { ok: true, duplicate: true, submitted: true, price_pending: true, say: done.say_again };
+  return { ok: true, duplicate: true, submitted: true, total: done.total || undefined, say: done.say_again };
+}
+function packetExitReturn(exit, dup) {
+  return { ok: false, error: "unknown_service", duplicate: dup === true ? true : undefined, callback_saved: !!exit.callback_saved, exit: true, say: exit.say };
+}
+async function waitForPacketClaim(ctx) {
+  const deadline = Date.now() + 5000;
+  while (Date.now() < deadline) {
+    await new Promise(function (res) { setTimeout(res, 50); });
+    const local = (ctx.session && ctx.session.intake) || {};
+    if (local._packet_done) return "done";
+    if (local._packet_exit) return "exit";
+    let fit = {};
+    try { const fresh = await S.session(ctx.orgId, ctx.session.id); fit = (fresh && fresh.intake) || {}; } catch (e) { /* the local copy still governs */ }
+    if (fit._packet_done) { const itW = ctx.session.intake || {}; itW._packet_done = fit._packet_done; ctx.session.intake = itW; return "done"; }
+    if (fit._packet_exit) { const itW = ctx.session.intake || {}; itW._packet_exit = fit._packet_exit; ctx.session.intake = itW; return "exit"; }
+    const claim = fit._packet_claim || local._packet_claim;
+    if (!claim) return "released";
+    if (claim.at && (Date.now() - new Date(claim.at).getTime() > 30000)) return "released";   // a claim older than 30 s is abandoned (its execution died); it must not wedge the call
+  }
+  return "timeout";
+}
+// FIX 7 WRAPPER (Nov 11, 2026): submit_job_packet's claim-first one-shot. The original
+// implementation is submitPacketInner (below the TOOLS table) and is unchanged except
+// for the unknown_service exit; everything in this wrapper is the new state layer.
+async function packetSubmit(ctx, a) {
+  const it0 = ctx.session.intake || {};
+  if (it0._packet_exit) return packetExitReturn(it0._packet_exit, true);   // the graceful exit is final for this call: zero new submissions, zero new callbacks
+  // LETTERS BIND THE PACKET (Fix 7, point 3): whenever the packet carries the spelled
+  // letters, the name it runs with is BUILT from them — before any fingerprint, guard
+  // or save — and recorded as _name_spelling, the record collect_shipment_details
+  // defends against later drift (below). A model string that disagrees loses.
+  const boundName = nameWithSpelledSurname(clip(a.customer_name, 80), a.name_spelled_letters);
+  if (boundName) { a = Object.assign({}, a, { customer_name: boundName }); const itB = ctx.session.intake || {}; itB._name_spelling = boundName; ctx.session.intake = itB; }
+  const fpNew = packetCoreFp(a, ctx.session.intake || {});
+  const done0 = (ctx.session.intake || {})._packet_done;
+  if (done0) {
+    if (done0.core_fp === fpNew) return packetDoneReturn(done0);   // the completed packet, resubmitted in any dressing: the stored outcome, zero side effects
+    const itD = ctx.session.intake || {}; delete itD._packet_done; ctx.session.intake = itD;   // core facts differ: a caller correction/update supersedes the stored outcome and runs
+  }
+  if ((ctx.session.intake || {})._packet_claim) {
+    const w0 = await waitForPacketClaim(ctx);
+    const itW = ctx.session.intake || {};
+    if (w0 === "done" && itW._packet_done) return packetDoneReturn(itW._packet_done);
+    if (w0 === "exit" && itW._packet_exit) return packetExitReturn(itW._packet_exit, true);
+    if (w0 === "timeout") return { ok: false, error: "packet_in_progress", duplicate: true, say: PACKET_IN_PROGRESS_SAY };
+    // "released": the claiming save finished without a terminal outcome, or its claim was abandoned — fall through; this call may be the genuine next submit.
+  }
+  const hash = packetHash(a), last = (ctx.session.intake || {})._packet_last;
+  if (last && (last.hash === hash || (last.core_fp && last.core_fp === fpNew))) return packetLastReturn(last);
+  // THE CLAIM — set synchronously here: no await has run in this invocation since the
+  // checks above, so no overlapping invocation on this session can slip between the
+  // check and the claim; it is then persisted before the save path's first await.
+  // From this line on, this execution is the ONLY one that may submit.
+  const itC = ctx.session.intake || {};
+  const myClaim = { at: new Date().toISOString(), hash: hash, token: ctx.session.id + ":" + Date.now() + ":" + Math.random().toString(36).slice(2, 8) };
+  itC._packet_claim = myClaim; ctx.session.intake = itC;
+  await S.patchSession(ctx.orgId, ctx.session.id, { intake: itC });
+  let out;
+  try { out = await submitPacketInner(ctx, a, hash); }
+  catch (e) { const itR = ctx.session.intake || {}; if (itR._packet_claim && itR._packet_claim.token === myClaim.token) { delete itR._packet_claim; ctx.session.intake = itR; try { await S.patchSession(ctx.orgId, ctx.session.id, { intake: itR }); } catch (e2) { /* best effort */ } } throw e; }
+  const itF = ctx.session.intake || {};
+  if (itF._packet_claim && itF._packet_claim.token === myClaim.token) delete itF._packet_claim;
+  const postFp = packetCoreFp({}, itF);
+  if (itF._packet_last && itF._packet_last.hash === hash && !itF._packet_last.core_fp) itF._packet_last.core_fp = postFp;
+  if (out && out.submitted === true && !out.accepted && !out.duplicate && !out.error) {
+    // A COMPLETED packet is terminal state for these core facts: store the outcome.
+    itF._packet_done = { core_fp: postFp, total: out.total || null, price_pending: out.price_pending === true, quote_number: out.quote_number || null, service: out.service || null, at: new Date().toISOString(), say_again: out.price_pending ? "That job is already in with the back office — do not submit it again. The total will be confirmed in the written confirmation; do not invent a price. Ask if they'd like you to put the booking in." : "That job is already in with the back office" + (out.total ? " at " + out.total : "") + " — do not submit it again and do not restate the price. Ask: shall I book it? On a clear yes, call confirm_job_packet." };
+  }
+  ctx.session.intake = itF;
+  await setIntake(ctx, itF);
+  return out;
+}
+
 // A demo request's fingerprint: the facts PLUS the confirmation state. book_demo stores its
 // last outcome under this hash on the intake, and an identical repeat call is answered from
 // that stored outcome — the save, the link email and the gate do NOT run again (the same hard
@@ -304,6 +451,22 @@ const TOOLS = {
         delete inc[k];
       }
     });
+    // CORRECTED VALUES STAND (Nov 11, 2026 — Fix 7, the slang/mumble call: she first heard
+    // "six pieces" and a garbled freight description; the caller corrected both in plain
+    // words, she said "Got it" — and the saved packet still carried the FIRST hearings,
+    // because every later save simply took whatever the model last sent, first hearings
+    // included). A caller correction (correction=true) to a freight fact is recorded in
+    // _corrected when it lands (below); from then on, a collect or packet carrying the
+    // first-heard value for that field WITHOUT the correction flag is churn, not news —
+    // the corrected value stays, exactly as a confirmed date/time and a verified address
+    // already stay. Only a new explicit correction moves a corrected value.
+    const correctedKept = [];
+    ["piece_count", "total_weight_lb", "freight_description"].forEach(function (k) {
+      if (inc[k] !== undefined && intake._corrected && intake._corrected[k] !== undefined && !(a && a.correction === true)) {
+        const normC = function (v) { return typeof v === "string" ? v.trim().toLowerCase().replace(/\s+/g, " ") : Number(v); };
+        if (normC(inc[k]) !== normC(intake._corrected[k])) { correctedKept.push(k); delete inc[k]; }
+      }
+    });
     Object.keys(inc).forEach(function (k) {
       // ADDRESSES ARE COMPARED BY IDENTITY, NOT BY SPELLING (Nov 4, 2026 — see intake.normAddr):
       // the same address re-stated in different dress is NOT a change. The old rule invalidated
@@ -331,6 +494,18 @@ const TOOLS = {
       if (CRITICAL.indexOf(k) >= 0 && intake[k] !== undefined) changed = true;
       intake[k] = inc[k];
     });
+    // LETTERS-BOUND NAME, DEFENDED AT THE STATE LAYER (Nov 11, 2026 — Fix 7): once a
+    // spelled-letter name is recorded as _name_spelling (by book_demo, or by the Fix 7
+    // packet wrapper), a later collect carrying a different name string is drift, not
+    // news — the recorded spelling stays. A fresh spell-back replaces the record first
+    // (the packet wrapper and book_demo both write _name_spelling before collect runs),
+    // so a caller's own correction of their name still lands; an unlettered re-hearing
+    // never does. This is what the end-of-call auto-save reads (intake.customer_name).
+    if (intake._name_spelling && inc.customer_name !== undefined) intake.customer_name = intake._name_spelling;
+    // Record this call's explicit corrections (see CORRECTED VALUES STAND above): the
+    // values that actually landed, keyed by field, so later first-hearing churn can be
+    // told apart from news.
+    if (a && a.correction === true) { const corr = {}; ["piece_count", "total_weight_lb", "freight_description"].forEach(function (k) { if (inc[k] !== undefined && intake[k] !== undefined) corr[k] = intake[k]; }); if (Object.keys(corr).length) intake._corrected = Object.assign({}, intake._corrected || {}, corr); }
     if (!intake.callback_phone && ctx.session.from_number && a && a.use_caller_id === true) intake.callback_phone = I.phone(ctx.session.from_number) || ctx.session.from_number;
     if (intake.callback_phone && (inc.callback_phone !== undefined || (a && a.use_caller_id === true)) && await suppressed(ctx.orgId, I.phone(intake.callback_phone) || intake.callback_phone)) return { ok: false, error: "do_not_contact", do_not_contact: true, say: "That number is on our do-not-contact list. Do not save it, and do not collect anything else. Politely say you cannot take details or arrange a callback for that number, thank them for calling, and end the call now with end_call using kind do_not_contact." };
     if (a && (a.weight_basis === "total" || a.weight_basis === "each") && intake._weight_basis !== a.weight_basis) { intake._weight_basis = a.weight_basis; changed = true; }   // the caller's settled answer on weight, kept server-side so the question can never re-open
@@ -408,6 +583,11 @@ const TOOLS = {
     if (asStated) {
       const at = "The " + asStated + " address is accepted exactly as the caller stated it: \"" + intake[asStated + "_address"] + "\". Do NOT ask for it again and do not ask them to repeat any part of it — move on to the next thing you need; the checks will work with it as stated.";
       res.say = res.say ? res.say + " " + at : at;
+    }
+    if (correctedKept.length) {
+      res.corrected_kept = correctedKept.slice();
+      const ct = "CORRECTED VALUES STAND: " + correctedKept.map(function (k) { return k + " is \"" + intake[k] + "\" — the value the CALLER corrected it to on this call"; }).join("; ") + ". The first-heard value you just sent does not overwrite a correction, and the saved job carries the corrected values. Do NOT ask about them again; only a new explicit correction from the caller changes them.";
+      res.say = res.say ? res.say + " " + ct : ct;
     }
     if (spelledEmail) {
       res.email_spelled = spelledEmail;
@@ -946,8 +1126,16 @@ const TOOLS = {
   // missing is ACCEPTED (stored, with its gaps named in plain words for her to ask out loud) and
   // the book price is speakable from the same result — the graded Nov 9 proof call died because
   // an incomplete packet was an error she silently retried while the quote sat behind it.
-  async submit_job_packet(ctx, a) {
-    const hash = packetHash(a), key = "worker_packet:" + ctx.session.id + ":" + hash;
+  async submit_job_packet(ctx, a) { return packetSubmit(ctx, a || {}); },
+  // confirm_job_packet: the model-facing half only acknowledges — the bridge fires the worker
+  // (voice-tools action "worker_run") in parallel and announces the outcome back into the call as
+  // a system note. This body is the fallback if the tool is ever executed without the bridge.
+  async confirm_job_packet(ctx, a) {
+    return { ok: true, accepted: true, say: "The back office is finishing the booking now. Keep talking with the caller naturally — do NOT say you are checking anything and do not invent a result. When the outcome is announced to you, say it once (confirmed, with the reference) and offer the keypad payment." };
+  }
+};
+async function submitPacketInner(ctx, a, hash) {
+    const key = "worker_packet:" + ctx.session.id + ":" + hash;
     await S.firstTime(ctx.orgId, ctx.session.id, key, "worker_packet");   // the submit ledger: one row per distinct packet, kept as the audit trail (the no-identical-retry rule below reads the intake record, which also covers packets accepted with pieces still missing)
     const cur = ctx.session.intake || {};
     // HARD RULE — NO IDENTICAL RETRY (Jarvis step 1, Nov 9, 2026): the same packet submitted
@@ -977,7 +1165,38 @@ const TOOLS = {
     const tenantBook = BK.resolve(ctx.cfg, await orgSlug(ctx));
     if (tenantBook && a && a.service) {
       const svc = BK.serviceById(tenantBook, a.service);
-      if (!svc) return { ok: false, error: "unknown_service", say: "That service is not in this company's book. Offer what the book lists (see BOOK SERVICES in your instructions), or take a callback — do not invent a service." };
+      if (!svc) {
+        // GRACEFUL SINGLE EXIT (Nov 11, 2026 — Fix 7): the old bare error here is what the
+        // slang/mumble call died on — the packet could never complete as the service the
+        // model named ("boxes of clothes" classified to a service the book does not hold),
+        // the error carried no finality, and the model retried the submit 33 times,
+        // narrating a hold line on every retry. Now the FIRST unknown_service finishes
+        // the packet: the facts the packet carried are collected, ONE callback is saved
+        // with what she has (under the letters-bound name when the packet carried the
+        // spelled letters), the outcome is stored as _packet_exit, and the wrapper
+        // answers every later submit from that stored outcome — zero new submissions,
+        // zero new callbacks. The error shape is unchanged (ok:false, unknown_service —
+        // the book suite's contract); what changed is that it is now a door that closes
+        // once, warmly, instead of a wall she keeps walking into.
+        // The packet's own facts are collected first (the same state layer every packet
+        // runs through — locks, spelled-email ground truth, corrected values), so the
+        // callback below carries what she actually has, not just the contact fields.
+        const crX = await TOOLS.collect_shipment_details(ctx, a || {});
+        if (crX && crX.do_not_contact) return crX;
+        const curX = ctx.session.intake || {};
+        const phoneX = I.phone(curX.callback_phone) || ctx.session.from_number || null;
+        const haveX = [curX.pickup_address && "pickup " + curX.pickup_address, curX.delivery_address && "drop-off " + curX.delivery_address, curX.service_date && "date " + curX.service_date + (curX.time_window ? " " + curX.time_window : ""), curX.piece_count && curX.piece_count + " pieces", curX.total_weight_lb && curX.total_weight_lb + " lb", curX.freight_description].filter(Boolean);
+        let cbOkX = false;
+        if (phoneX && !(await suppressed(ctx.orgId, phoneX))) {
+          const reasonX = ("Packet could not be completed — service \"" + clip(a.service, 40) + "\" is not in this company's book. " + (haveX.length ? "Has: " + haveX.join("; ") + ". " : "") + "A person follows up from this callback.").slice(0, 300);
+          const rX = await B.sb("voice_callbacks", { method: "POST", prefer: "return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, name: curX.customer_name ? String(curX.customer_name).slice(0, 80) : null, phone: phoneX, reason: reasonX } });
+          cbOkX = !!(rX && rX.ok && rows(rX)[0]);
+        }
+        const exitX = { error: "unknown_service", service: String(a.service).slice(0, 60), at: new Date().toISOString(), callback_saved: cbOkX, say: cbOkX ? PACKET_EXIT_SAY : PACKET_EXIT_NO_PHONE_SAY };
+        const itE = ctx.session.intake || {}; itE._packet_exit = exitX; itE._packet_last = { hash: hash, complete: false, failed: true, error: "unknown_service" }; ctx.session.intake = itE;
+        await setIntake(ctx, itE, cbOkX ? { outcome: "callback" } : undefined);
+        return { ok: false, error: "unknown_service", callback_saved: cbOkX, exit: true, say: exitX.say };
+      }
       const base = {}; ["customer_name", "company", "callback_phone", "email"].forEach(function (k) { if (a[k] !== undefined) base[k] = a[k]; });
       if (a.use_caller_id !== undefined) base.use_caller_id = a.use_caller_id;
       if (Object.keys(base).length) { const cr = await TOOLS.collect_shipment_details(ctx, base); if (cr && cr.do_not_contact) return cr; }
@@ -1045,14 +1264,8 @@ const TOOLS = {
     intake2._packet_last = { hash: hash, complete: true, price_pending: true };
     await setIntake(ctx, intake2);
     return { ok: true, submitted: true, price_pending: true, say: "The job is in with the back office. This company has no instant price book for this job, so do NOT invent a price: tell the caller the total will be confirmed in the written confirmation. Ask if they'd like you to put the booking in; on a clear yes, call confirm_job_packet." };
-  },
-  // confirm_job_packet: the model-facing half only acknowledges — the bridge fires the worker
-  // (voice-tools action "worker_run") in parallel and announces the outcome back into the call as
-  // a system note. This body is the fallback if the tool is ever executed without the bridge.
-  async confirm_job_packet(ctx, a) {
-    return { ok: true, accepted: true, say: "The back office is finishing the booking now. Keep talking with the caller naturally — do NOT say you are checking anything and do not invent a result. When the outcome is announced to you, say it once (confirmed, with the reference) and offer the keypad payment." };
-  }
-};
+}
+
 // The book total from the facts at hand (Jarvis step 1, Nov 9, 2026): the same arithmetic the
 // book path of calculate_quote uses — the book's base total plus the company's own extras from
 // its pricing settings, computed from the details collected SO FAR — but WITHOUT persisting a
@@ -1080,6 +1293,7 @@ function packetHash(a) {
   if (a && a.service) c._service = String(a.service);
   if (a && a.answers && typeof a.answers === "object") c._answers = a.answers;
   if (a && Array.isArray(a.unknown) && a.unknown.length) c._unknown = a.unknown.slice().sort();
+  const pl = spelledLettersOf(a && a.name_spelled_letters); if (pl) c._letters = pl;   // Fix 7: the spelled letters are packet state too (demoHash doctrine) — a lettered packet is not a retry of an unlettered one
   const keys = Object.keys(c).sort();
   const s = keys.map(function (k) { return k + "=" + JSON.stringify(c[k]); }).join("|");
   let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
