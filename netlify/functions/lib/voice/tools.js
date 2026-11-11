@@ -81,8 +81,8 @@ function defs() {
       extra_stops: { type: "integer" }, labor_helpers: { type: "integer" }, labor_hours: { type: "number" }, expected_wait_minutes: { type: "number" }, holding_nights: { type: "integer" }, recurring: { type: "boolean" } })),
 
     D("confirm_job_packet", "After submit_job_packet returned the total, you stated it once, and the caller clearly said yes to booking: hand the job to the back-office worker to finish — verification, availability and the booking save all happen there, off the caller's clock. You are answered instantly; the booking outcome (confirmed + the reference, or what a person still needs to review) is announced to you as a system note while you keep talking. If the caller gave their email after the packet went in, include it here so the worker merges it first.", obj({ email: str("caller's email if they gave it after the packet was submitted — exactly as spelled back and confirmed") })),
-    D("book_demo", "Book a 30-minute POTENT OS demo with a person. Use only after the prospect agreed to a demo, you spelled their email back letter by letter and they said yes, and the full request read-back got a yes. The name you pass must be the caller's name in the spelling THEY confirmed letter by letter on this call — the spelling they gave you, never a spelling guessed by ear — and when you speak their name, pronounce it the way THEY confirmed it is said: spelling and pronunciation are both theirs, not your guess. Pass name_confirmed true only after that spell-back got a clear yes — without it the save is refused (read_back_required) and the result tells you the one question to ask out loud. Call it ONCE with email_confirmed true AND demo_when_text carrying the day and time exactly as read back (weekday, month, day, time): it answers instantly, saves the demo exactly once with that time on the record, and emails them their confirmation — the read-back SET the time; there is no booking link and no time left for them to pick. If it answers read_back_required, ask the one question its say names OUT LOUD and wait for the answer — NEVER call it again unchanged: an identical repeat is refused by the system. Only say the demo is set after it returns ok. After an ok the booking is DONE for this call: announce it once and close — never call book_demo again on the same call, for any reason; a repeat returns the stored result and saves and emails nothing new.", obj({ name: str("the caller's name in the spelling they confirmed letter by letter on this call — the spelling they gave you, not what you heard by ear"), company: str(""), trucks: { type: "integer", description: "how many trucks they run" }, phone: str("number to reach them"), email: str("their email, read back and confirmed"), email_confirmed: { type: "boolean", description: "true only after you spelled the email back letter by letter and the caller said yes" }, name_confirmed: { type: "boolean", description: "true only after you asked how to spell their name, spelled it back letter by letter and the caller said yes — the save is refused without it once the name is in question" }, demo_when_text: str("the demo day and time exactly as the caller confirmed it in the read-back, e.g. 'Thursday, November 12th at 10:00 AM' — weekday, month, day and time"), notes: str("their problem and what they pay today, in a sentence") }, ["name", "email"])),
-    D("create_callback_task", "Create a callback for a person to follow up.", obj({ name: str(""), phone: str("number to call"), reason: str(""), preferred_time: str("") }, ["reason"])),
+    D("book_demo", "Book a 30-minute POTENT OS demo with a person. Use only after the prospect agreed to a demo, you spelled their email back letter by letter and they said yes, and the full request read-back got a yes. The name you pass must be the caller's name in the spelling THEY confirmed letter by letter on this call — the spelling they gave you, never a spelling guessed by ear — and when you speak their name, pronounce it the way THEY confirmed it is said: spelling and pronunciation are both theirs, not your guess. Pass name_confirmed true only after that spell-back got a clear yes — without it the save is refused (read_back_required) and the result tells you the one question to ask out loud. AND pass name_spelled_letters with the surname's letters exactly as the caller spelled them out: the saved surname is built from those letters, so it can never drift to a spelling you guessed by ear. Call it ONCE with email_confirmed true AND demo_when_text carrying the day and time exactly as read back (weekday, month, day, time): it answers instantly, saves the demo exactly once with that time on the record, and emails them their confirmation — the read-back SET the time; there is no booking link and no time left for them to pick. If it answers read_back_required, ask the one question its say names OUT LOUD and wait for the answer — NEVER call it again unchanged: an identical repeat is refused by the system. Only say the demo is set after it returns ok. After an ok the booking is DONE for this call: announce it once and close — never call book_demo again on the same call, for any reason; a repeat returns the stored result and saves and emails nothing new.", obj({ name: str("the caller's name in the spelling they confirmed letter by letter on this call — the spelling they gave you, not what you heard by ear"), company: str(""), trucks: { type: "integer", description: "how many trucks they run" }, phone: str("number to reach them"), email: str("their email, read back and confirmed"), email_confirmed: { type: "boolean", description: "true only after you spelled the email back letter by letter and the caller said yes" }, name_confirmed: { type: "boolean", description: "true only after you asked how to spell their name, spelled it back letter by letter and the caller said yes — the save is refused without it once the name is in question" }, name_spelled_letters: { type: "string", description: "the surname's letters exactly as the caller spelled them out on this call, hyphen-separated — the saved surname is built from these letters, so pass the letters you actually heard spelled, never letters assembled by ear" }, demo_when_text: str("the demo day and time exactly as the caller confirmed it in the read-back, e.g. 'Thursday, November 12th at 10:00 AM' — weekday, month, day and time"), notes: str("their problem and what they pay today, in a sentence") }, ["name", "email"])),
+    D("create_callback_task", "Create a callback for a person to follow up. If the caller spelled their surname out on this call, pass name_spelled_letters with those letters exactly as spelled — the saved surname is built from them, never from a spelling guessed by ear.", obj({ name: str("the caller's name — the spelling they confirmed when they spelled it"), phone: str("number to call"), reason: str(""), preferred_time: str(""), name_spelled_letters: { type: "string", description: "the surname's letters exactly as the caller spelled them out on this call, hyphen-separated — the saved surname is built from these letters" } }, ["reason"])),
     D("request_human_handoff", "Ask to transfer to a person: negotiations, discounts, complaints, safety concerns, anything uncertain, or when the caller asks for one.", obj({ reason: str("why"), summary: str("one or two sentences for the person") }, ["reason"])),
     D("set_call_language", "Lock the language of this call to the caller's language. Call it as soon as the caller speaks a language other than English. Then speak ONLY that language for the whole call.", obj({ language: { type: "string", enum: Object.keys(CALL_LANGS), description: "language code of what the caller is speaking" } }, ["language"])),
     D("lookup_os_feature", "POTENT-only reference: look up whether POTENT OS has a feature, screen or control, and what it does, from the Master Inventory (200 features, 535 screens). Call it when the caller asks if OS can do something or you need the detail behind a feature. It answers only from the book; if nothing matches it says so and you offer to confirm. It has no prices.", obj({ query: { type: "string" } }, ["query"])),
@@ -168,6 +168,32 @@ function demoEmailConfirmed(ctx, a, email) {
   if (!it._email_pending) return true;
   return false;
 }
+// LETTERS-BOUND NAME (Nov 10, 2026 — Fix 6): the surname letters a caller spelled out,
+// carried on a tool call as name_spelled_letters. spelledLettersOf normalizes whatever
+// shape they arrive in (a hyphen/space-separated string, or an array of letters) to the
+// bare A-Z sequence; surnameFromLetters title-cases that sequence into the surname the
+// LETTERS dictate; nameWithSpelledSurname swaps the last word of a full name for it.
+// Fewer than two letters is not a spelling — it is treated as no letters at all, and the
+// caller falls back to whatever path the name was already on.
+function spelledLettersOf(v) {
+  let raw = "";
+  if (Array.isArray(v)) raw = v.join("");
+  else if (typeof v === "string") raw = v;
+  else return "";
+  return raw.replace(/[^A-Za-z]/g, "").toUpperCase();
+}
+function surnameFromLetters(v) {
+  const L = spelledLettersOf(v);
+  if (L.length < 2) return null;
+  return L.charAt(0) + L.slice(1).toLowerCase();
+}
+function nameWithSpelledSurname(name, v) {
+  const sur = surnameFromLetters(v); if (!sur) return null;
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return sur;
+  parts[parts.length - 1] = sur;
+  return parts.join(" ");
+}
 // A demo request's fingerprint: the facts PLUS the confirmation state. book_demo stores its
 // last outcome under this hash on the intake, and an identical repeat call is answered from
 // that stored outcome — the save, the link email and the gate do NOT run again (the same hard
@@ -175,9 +201,11 @@ function demoEmailConfirmed(ctx, a, email) {
 // fingerprint for the same reason a packet resubmit carrying a new piece is a new packet:
 // the re-call that carries the caller's yes after the read-back is NEW state, not a retry —
 // it must reach the gate. A truly identical repeat (same facts, same confirmation state)
-// is the retry, and it is refused.
+// is the retry, and it is refused. The spelled surname letters (Fix 6) are confirmation
+// state too: a call carrying the letters the caller dictated is not the same call as one
+// without them, exactly like the nameconf bit.
 function demoHash(a, email) {
-  const c = { name: clip(a && a.name, 80).toLowerCase(), company: clip(a && a.company, 100).toLowerCase(), trucks: a && a.trucks != null ? Math.floor(Number(a.trucks)) || 0 : 0, phone: String((a && a.phone) || "").replace(/\D/g, ""), email: email || "", when: clip(a && a.demo_when_text, 120).toLowerCase(), notes: clip(a && a.notes, 200).toLowerCase(), confirmed: a && a.email_confirmed === true ? 1 : 0, nameconf: a && a.name_confirmed === true ? 1 : 0 };
+  const c = { name: clip(a && a.name, 80).toLowerCase(), company: clip(a && a.company, 100).toLowerCase(), trucks: a && a.trucks != null ? Math.floor(Number(a.trucks)) || 0 : 0, phone: String((a && a.phone) || "").replace(/\D/g, ""), email: email || "", when: clip(a && a.demo_when_text, 120).toLowerCase(), notes: clip(a && a.notes, 200).toLowerCase(), confirmed: a && a.email_confirmed === true ? 1 : 0, nameconf: a && a.name_confirmed === true ? 1 : 0, letters: spelledLettersOf(a && a.name_spelled_letters) };
   const s = Object.keys(c).sort().map(function (k) { return k + "=" + JSON.stringify(c[k]); }).join("|");
   let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
   return h.toString(16);
@@ -654,12 +682,34 @@ const TOOLS = {
     const heardName = clip(a.name, 80);
     const itN0 = ctx.session.intake || {};
     if (!itN0._name_spelling && a.name_confirmed !== true && (a.name_confirmed === false || itN0._name_pending)) {
-      const sayName = "NOT BOOKED YET — the caller's name has not been spelled back and confirmed on this call, and the demo cannot be saved under a spelling nobody confirmed. Ask OUT LOUD now, once: \"How do you spell that for me?\" When they spell it, read the spelling back to them letter by letter and wait for a clear yes. Do NOT call book_demo again until you have heard that yes — calling it again unchanged does nothing. When they say yes, call book_demo ONCE with name_confirmed true and the name EXACTLY as they spelled it: their spelling is the ground truth and outranks what you heard by ear. If they will not spell it, do not keep trying: tell them honestly that a person will follow up to set the demo up, and save that with create_callback_task.";
+      const sayName = "NOT BOOKED YET — the caller's name has not been spelled back and confirmed on this call, and the demo cannot be saved under a spelling nobody confirmed. Ask OUT LOUD now, once: \"How do you spell that for me?\" When they spell it, read the spelling back to them letter by letter and wait for a clear yes. Do NOT call book_demo again until you have heard that yes — calling it again unchanged does nothing. When they say yes, call book_demo ONCE with name_confirmed true and the name EXACTLY as they spelled it: their spelling is the ground truth and outranks what you heard by ear. Also pass name_spelled_letters with the surname's letters exactly as they spelled them — the saved surname is built from those letters. If they will not spell it, do not keep trying: tell them honestly that a person will follow up to set the demo up, and save that with create_callback_task.";
       const itNg = ctx.session.intake || {}; itNg._name_pending = heardName; itNg._demo_last = { hash: fp, ok: false, say: sayName }; ctx.session.intake = itNg;
       await S.patchSession(ctx.orgId, ctx.session.id, { intake: itNg });
       return { ok: false, error: "read_back_required", gate: "name_not_confirmed", name: heardName, say: sayName };
     }
     if (a.name_confirmed === true && heardName) { const itNc = ctx.session.intake || {}; if (!itNc._name_spelling) itNc._name_spelling = heardName; if (itNc._name_pending) delete itNc._name_pending; ctx.session.intake = itNc; }
+    // LETTERS BIND THE SAVE (Nov 10, 2026 — Fix 6, the Demo Call #4 failure): Fix 4's
+    // gate proved a confirmation HAPPENED, but the string it recorded was still the
+    // model's own assembly of the name — and on that call the caller spelled his
+    // surname out letter by letter while the booking AND the callback still landed
+    // with the model's more common variant of it (the final letter drifted). The gate
+    // verified the process; nothing bound the string to the letters. Now, whenever
+    // an invocation that reached this point carries the spelled letters, the name
+    // that gets saved is BUILT from them (nameWithSpelledSurname) and recorded as
+    // _name_spelling: a model string that disagrees with the dictated letters loses,
+    // so the drift Fix 4 missed is impossible on any save that carries the letters.
+    // Letters on a later invocation REPLACE the recorded spelling — a fresh
+    // spell-back is a correction, the same doctrine as the email gate — and letters
+    // never bypass the gate above: an invocation the gate refuses never reaches here.
+    // A CONFIRMED SAVE WITHOUT LETTERS keeps the Fix 4 path exactly: the confirmed
+    // call's own string, recorded above, is what lands. That is deliberate, not an
+    // oversight — the protected demo/name suites' confirming calls carry no letters
+    // (that is their recorded contract, and they must pass unchanged), and a
+    // letters-required refusal would make the gate unsatisfiable by those very
+    // flows; the prompt now instructs her to pass the letters on every confirmed
+    // save, which is what closes the hole in the live flow.
+    const lettersName = nameWithSpelledSurname(heardName, a.name_spelled_letters);
+    if (lettersName) { const itL = ctx.session.intake || {}; itL._name_spelling = lettersName; if (itL._name_pending) delete itL._name_pending; ctx.session.intake = itL; }
     const nameUse = (ctx.session.intake || {})._name_spelling || heardName;
     // THE CLAIM — set synchronously here: no await has run in this invocation since the
     // checks above, so no overlapping invocation on this session can slip between the check
@@ -850,7 +900,13 @@ const TOOLS = {
   async create_callback_task(ctx, a) {
     const phone = I.phone(a.phone) || ctx.session.from_number; if (!phone) return { ok: false, error: "need_phone_number" };
     if (await suppressed(ctx.orgId, phone)) return { ok: false, error: "do_not_contact", say: "That number is on the do-not-contact list. Do NOT save a callback for it. Politely tell the caller you cannot arrange a callback to that number, thank them for calling, and end the call with end_call using kind do_not_contact." };
-    const r = await B.sb("voice_callbacks", { method: "POST", prefer: "return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, name: clip(a.name, 80) || null, phone: phone, reason: clip(a.reason, 300), preferred_time: clip(a.preferred_time, 80) || null } });
+    // LETTERS-BOUND NAME (Nov 10, 2026 — Fix 6): the same mechanism as book_demo, no
+    // new machinery — when the caller spelled their surname on this call and the
+    // letters ride along, the saved surname is built from them (this is the path
+    // that wrote the drifted spelling on Demo Call #4); without letters the name
+    // saves exactly as passed, as it always has.
+    const cbName = nameWithSpelledSurname(clip(a.name, 80), a.name_spelled_letters) || clip(a.name, 80) || null;
+    const r = await B.sb("voice_callbacks", { method: "POST", prefer: "return=representation", body: { org_id: ctx.orgId, session_id: ctx.session.id, name: cbName, phone: phone, reason: clip(a.reason, 300), preferred_time: clip(a.preferred_time, 80) || null } });
     if (!r.ok) return { ok: false, error: "save_failed" };
     await S.patchSession(ctx.orgId, ctx.session.id, { outcome: "callback" }); return { ok: true, callback_id: rows(r)[0] && rows(r)[0].id, say: "A callback is recorded. Do not promise an exact time." };
   },
