@@ -18,7 +18,11 @@ function parseList(txt, list) {
 }
 function digits(s) { return (String(s).match(/[0-9]+/g) || []).sort().join(","); }
 // A translation is only stored if it keeps every number the English had, so prices and times can never change by accident.
-function sane(src, dst) { return typeof dst === "string" && dst.trim() !== "" && digits(src) === digits(dst) && dst.length < src.length * 6 + 40; }
+// saneWhy names the reason (null = sane) so callers can tell a validator rejection (the model DID
+// answer; the answer broke a rule) from a provider failure (no usable answer at all) — the Nov 11
+// quarantine in the packs job acts only on the former.
+function saneWhy(src, dst) { if (typeof dst !== "string" || dst.trim() === "") return "empty"; if (digits(src) !== digits(dst)) return "digits"; if (dst.length >= src.length * 6 + 40) return "toolong"; return null; }
+function sane(src, dst) { return saneWhy(src, dst) === null; }
 
 function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 // One model call. Returns { list } or { retry: true } (rate limit / server trouble / timeout) or { fail: true }.
@@ -60,7 +64,7 @@ async function translateList(lang, list, opts) {
         if (r.list || r.fail) break;
         await wait(Math.min(30000, Math.max(r.wait || 0, 1500 * Math.pow(2, a))));
     }
-    if (r && r.list) { list.forEach(function (s, i) { res[i] = sane(s, r.list[i]) ? r.list[i] : null; }); return res; }
+    if (r && r.list) { list.forEach(function (s, i) { var w = saneWhy(s, r.list[i]); if (w === null) res[i] = r.list[i]; else if (opts.onReject) { try { opts.onReject(s, r.list[i], w); } catch (e) { } } }); return res; }
     if (r && r.nokey) return res;
     if (list.length > 1 && !opts.noSplit) {                       // bad shape: split and try the halves
         var h = Math.ceil(list.length / 2), x = await translateList(lang, list.slice(0, h), Object.assign({}, opts, { tries: 2 })), y = await translateList(lang, list.slice(h), Object.assign({}, opts, { tries: 2 }));
@@ -103,4 +107,43 @@ async function buildPack(lang, rows) {
     return { ok: w.ok, n: n };
 }
 function packKey() { return require("crypto").createHash("sha256").update("lang-packs:" + (process.env.SUPABASE_SERVICE_ROLE_KEY || "")).digest("hex"); }
-module.exports = { LANGS, SB, sys, parseList, sane, callModel, translateList, sb, allRows, countRows, buildPack, packKey, wait };
+
+// ---- Shared completeness + zero-gain backoff (egress fix, Nov 11 2026) -------------------------
+// ONE place for the rules BOTH gates use: translate-packs-cron (which reads ui_packs.n) and the
+// background job (which reads the ui_translations count). The Nov 11 dashboard fingerprint proved
+// the two counts are equal for all 13 languages (pack n is built from the stored rows), so both
+// callers feed their count into the same functions below and cannot drift apart on the rule itself.
+var BACKOFF_MS = 24 * 60 * 60000;     // a language that gained nothing waits a day, not 15 minutes
+function phrasesHash(phrases) { return require("crypto").createHash("sha256").update(JSON.stringify(phrases)).digest("hex").slice(0, 16); }
+function phraseHash(src) { return require("crypto").createHash("sha256").update(String(src)).digest("hex").slice(0, 10); }
+function isComplete(stored, total) { return stored >= total * 0.995; }   // the one completeness bar, shared
+async function lastLogRow(lang, kinds, limit) {
+    var q = await sb("ui_pack_log?lang=eq." + lang + "&kind=in.(" + kinds + ")&select=kind,msg,at&order=id.desc&limit=" + (limit || 1)).catch(function () { return null; });
+    if (!q || !q.ok || !Array.isArray(q.data)) return [];
+    return q.data.map(function (r) { var at = Date.parse(r.at || ""); return { kind: r.kind, msg: r.msg, atMs: isFinite(at) ? at : 0 }; });
+}
+// The language's most recent finished attempt (its lang_end row), or null.
+async function lastLangEnd(lang) {
+    var rows = await lastLogRow(lang, "lang_end", 1);
+    if (!rows.length) return null;
+    var m = null; try { m = JSON.parse(rows[0].msg || ""); } catch (e) { }
+    if (!m || typeof m.added !== "number") return null;
+    return { added: m.added, todo: typeof m.todo === "number" ? m.todo : 0, pack: m.pack, ph: m.ph || null, atMs: rows[0].atMs };
+}
+// TRUE when the language must not be attempted now: its last finished attempt gained NOTHING,
+// its stored count has not moved since, the phrases list is unchanged (hash match — any edit,
+// addition or new missing key bypasses instantly), and the latest attempt anchor (the lang_end
+// row OR a lang_attempt claim written at the START of a later attempt that then crashed or timed
+// out — claim-then-work, so a mid-run death cannot restart the loop) is under 24h old.
+async function zeroGainBackoff(lang, stored, phrases) {
+    var le = await lastLangEnd(lang);
+    if (!le || le.added !== 0 || !(le.todo > 0)) return false;
+    if (le.pack !== stored) return false;
+    if (le.ph) { if (le.ph !== phrasesHash(phrases)) return false; }
+    else if ((phrases.length - stored) > le.todo + 3) return false;   // pre-hash log rows: count-based growth check
+    var anchor = le.atMs;
+    var latest = await lastLogRow(lang, "lang_end,lang_attempt", 1);
+    if (latest.length && latest[0].atMs > anchor) anchor = latest[0].atMs;
+    return anchor > 0 && (Date.now() - anchor) < BACKOFF_MS;
+}
+module.exports = { LANGS, SB, sys, parseList, sane, saneWhy, callModel, translateList, sb, allRows, countRows, buildPack, packKey, wait, BACKOFF_MS, phrasesHash, phraseHash, isComplete, lastLogRow, lastLangEnd, zeroGainBackoff };
