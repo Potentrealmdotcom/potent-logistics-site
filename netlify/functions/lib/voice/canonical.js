@@ -96,10 +96,33 @@ async function settleReport(orgId, sessionId) {
 }
 
 // Jobs for the bridge-host transcriber: sessions whose report is parked on the canonical pipeline
-// (pending claimed, canonical not yet stored), newest first. The live lines ride along so a mono
-// recording can be role-anchored against them; dual-channel recordings ignore them.
+// (pending claimed, canonical not yet stored), OLDEST first inside the freshness window (jobs
+// cleanup, Nov 12, 2026 — see below). The live lines ride along so a mono recording can be
+// role-anchored against them; dual-channel recordings ignore them.
 async function jobs(limit) {
-  const pend = rows(await B.sb("voice_events?kind=eq.canonical_pending&select=org_id,session_id,created_at&order=created_at.desc&limit=" + (limit || 20)));
+  const lim = limit || 20;
+  const cutoff = new Date(Date.now() - FRESH_MS).toISOString();
+  // STALE-CLAIM SWEEP (jobs cleanup, Nov 12, 2026): pending claims past the freshness window are
+  // finished business, but the claim row is never deleted, so an age-bounded main query alone
+  // would never see them again and nothing would ever cross them off. Sweep them here in bulk —
+  // the same done-set technique as the main batch below, so already-finished sessions cost no
+  // write — and terminal-mark the rest. Bounded per poll (lim rows, oldest first), so a backlog
+  // drains over a few polls instead of in one write burst; once drained this is two narrow reads.
+  const stalePend = rows(await B.sb("voice_events?kind=eq.canonical_pending&select=org_id,session_id,created_at&created_at=lte." + cutoff + "&order=created_at.asc&limit=" + lim));
+  if (stalePend.length) {
+    const sids = stalePend.map(function (p) { return p.session_id; }).filter(Boolean);
+    if (sids.length) {
+      const sdRows = rows(await B.sb("voice_events?kind=in.(canonical_transcript,canonical_closed,canonical_job_done)&session_id=in.(" + sids.join(",") + ")&select=session_id"));
+      const sd = {}; sdRows.forEach(function (r) { sd[r.session_id] = true; });
+      for (const p of stalePend) { if (!sd[p.session_id]) await terminalMark(p.org_id, p.session_id, "stale_pending"); }
+    }
+  }
+  // FAIR WINDOW (jobs cleanup, Nov 12, 2026): the working set is claims inside the freshness
+  // window, OLDEST first. Newest-first starved real jobs: a burst of 20+ newer claims pushed an
+  // older unfinished job out of the limit-20 window on every poll, so it was never fetched,
+  // never marked, never transcribed — silently. Oldest-first is FIFO: the job that has waited
+  // longest is served first, and newer jobs queue behind it inside the same bounded window.
+  const pend = rows(await B.sb("voice_events?kind=eq.canonical_pending&select=org_id,session_id,created_at&created_at=gt." + cutoff + "&order=created_at.asc&limit=" + lim));
   if (!pend.length) return [];
   // Resolve the batch in ONE query (traffic fix, 2026-11-08). The pending claim is never deleted,
   // so every stored or given-up session used to stay in this list forever and cost its own
@@ -133,8 +156,18 @@ async function jobs(limit) {
     if (!ses.provider_call_id) { await terminalMark(p.org_id, p.session_id, "no_call_recording"); continue; }
     // Past the bounded wait this is no longer transcription work — settleReport's deadline path
     // (or giveUp) owns the report. Handing dead jobs to the transcriber made it retry them, and
-    // re-fetch their full transcripts, on every poll around the clock.
-    if (ses.ended_at && Date.now() - new Date(ses.ended_at).getTime() > waitMs()) continue;
+    // re-fetch their full transcripts, on every poll around the clock. Cross the job off DURABLY
+    // (jobs cleanup, Nov 12, 2026): a bare continue left no terminal mark, so the session was
+    // re-looked-up — session row — on every poll until the 45-minute stale check finally caught
+    // it (~35 minutes of pointless polls). The mark waits one FULL extra wait window past the
+    // deadline (2 × waitMs, still well inside the freshness window) on purpose: the recording
+    // gate refuses sessions carrying the done marker, and recordings are fetched in chunks, so
+    // marking at the deadline itself could cut off a slow in-flight download that started
+    // inside the wait. Two windows in, no live download is still fetching — the job is dead
+    // work by any measure. Downstream is unchanged: settleReport already reports at once when
+    // it sees the done claim, store() still accepts a late canonical delivery exactly as it
+    // does after giveUp, and giveUp's own marker write is once-only, so the two never conflict.
+    if (ses.ended_at && Date.now() - new Date(ses.ended_at).getTime() > waitMs()) { if (Date.now() - new Date(ses.ended_at).getTime() > 2 * waitMs()) await terminalMark(p.org_id, p.session_id, "wait_expired"); continue; }
     const live = rows(await B.sb("voice_transcripts?session_id=eq." + ses.id + "&select=role,text,seq&order=seq.asc&limit=600"));
     out.push({ session_id: ses.id, org_id: ses.org_id, call_sid: ses.provider_call_id, from_number: ses.from_number, to_number: ses.to_number, direction: ses.direction, ended_at: ses.ended_at, deadline: new Date((ses.ended_at ? new Date(ses.ended_at).getTime() : Date.now()) + waitMs()).toISOString(), live_lines: live.map(function (t) { return { role: t.role, text: t.text }; }) });
   }
