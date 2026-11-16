@@ -112,20 +112,15 @@ td strong{color:#F2F2F2;}
 .sign-label{font-size:9px;color:#444;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;}
 </style>
 
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-
 <script>
-  window.addEventListener('load', function(){
-    if(window.emailjs) emailjs.init("6Qs0HlOLjJ6jfWHtp");
-  });
   function sendPortalEmail(subject, message, fromName){
-    if(!window.emailjs) return;
-    emailjs.send("service_e3qn0bs","template_nxubdce",{
-      to_email: "potentlogistics@proton.me",
-      from_name: fromName || "Employee Portal",
-      subject: subject,
-      message: message
-    }).catch(function(){});
+    try{
+      fetch('/.netlify/functions/send-email',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ to: "potentlogistics@proton.me", subject: subject, message: message })
+      }).catch(function(){});
+    }catch(e){}
   }
 </script>
 
