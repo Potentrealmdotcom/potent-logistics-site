@@ -212,18 +212,29 @@ function restoreAccess(userId) {
 // Default is a placeholder — the owner should change it on first use.
 var PAYROLL_CODE_KEY = "pl_payroll_code";
 
-// ── MASTER PASSWORD + CUSTOM SLOT PASSWORDS ────────────────────────
+// ── MASTER PASSWORD + CUSTOM SLOT PASSWORDS — LEGACY LOCAL STORES RETIRED (D9) ──
+// Server auth (netlify/functions/auth.js) is the only login check; it has no
+// master-password or slot-password logic, and nothing at login ever read these
+// localStorage keys — the Settings editors were the only readers/writers. The
+// plaintext secrets that used to sit in the browser are purged on load below,
+// and the getters return empty so no new local copy is ever kept. Password
+// changes go to the server (hashed) via setCustomPw, as they already did.
+// (Same retirement the Employee Portal already did for its pl_portal_* keys.)
+// FOLLOW-UP at push time: the two Settings editor sections that call these
+// functions are dead UI now (incl. their "Master password saved" message) and
+// should be removed in the same push.
 var MASTER_PW_KEY = "pl_master_pw";
 var CUSTOM_PWS_KEY = "pl_custom_pws";
-function getMasterPw(){ try{ return localStorage.getItem(MASTER_PW_KEY)||""; }catch(e){ return ""; } }
-function setMasterPw(pw){ try{ localStorage.setItem(MASTER_PW_KEY,pw); }catch(e){} }
-function getCustomPws(){ try{ return JSON.parse(localStorage.getItem(CUSTOM_PWS_KEY)||"{}"); }catch(e){ return {}; } }
+try { localStorage.removeItem(MASTER_PW_KEY); localStorage.removeItem(CUSTOM_PWS_KEY); } catch (e) {}
+function getMasterPw(){ return ""; } // retired local store (D9)
+function setMasterPw(pw){ try{ localStorage.removeItem(MASTER_PW_KEY); }catch(e){} } // never persist a password in the browser (D9)
+function getCustomPws(){ return {}; } // retired local store (D9)
 function setCustomPw(uid,pw){
   // Password changes are stored (hashed) on the server; nothing sensitive is kept in the browser or readable with the public key.
   return plApi("setpw",{userId:uid,newPassword:pw}).then(function(r){ if(!r||!r.ok){ try{ alert((r&&r.error)||"Could not save password."); }catch(e){} } return r; });
 }
 function loadPasswordOverridesFromServer(){ return Promise.resolve(); }
-function clearCustomPw(uid){ try{ var c=getCustomPws(); delete c[uid]; localStorage.setItem(CUSTOM_PWS_KEY,JSON.stringify(c)); }catch(e){} }
+function clearCustomPw(uid){ try{ localStorage.removeItem(CUSTOM_PWS_KEY); }catch(e){} } // legacy store purged wholesale (D9)
 function loadPayrollCode() { try {
     return localStorage.getItem(PAYROLL_CODE_KEY) || "";
 }
@@ -399,7 +410,7 @@ function plApi(action, body) {
 // ── TENANT GATEWAY — company data goes through the server, never straight to the database ──
 // Every read/write of these tables is sent to /.netlify/functions/data-api with the
 // signed-in login, so each company only ever sees and changes its own rows.
-var PL_GATED = ["user_display_names","fleet_vehicles","fleet_maintenance","driver_locations","voice_room_messages","driver_compliance","brokers_carriers_backup","storage_partners","safety_alerts","job_route_legs","job_events","job_scope_changes","vendors","disposal_facilities","properties","potent_wallets","wallet_transactions","rate_cards","service_zones","job_templates","quote_terms_acceptance","jobs","job_photos","junk_jobs","jobs_backup","audit_log_real","expenses_real","commission_rates_real","payment_references","cost_profiles","customer_rate_cards","claims","change_orders","addon_authorizations","my_documents","deadlines","shift_handoffs","escalation_timers","site_profiles","customer_locations","incoming_loads","user_display_names","revoked_users","receipts","job_communications","login_log","push_subscriptions","griffin_queries","recurring_routes","reviews","waitlist","os_prospects","business_rules","factoring_receivables","employee_settings","driver_availability","vehicle_availability","b2b_pricing_settings"];
+var PL_GATED = ["user_display_names","fleet_vehicles","fleet_maintenance","driver_locations","voice_room_messages","driver_compliance","brokers_carriers_backup","storage_partners","safety_alerts","job_route_legs","job_events","job_scope_changes","vendors","disposal_facilities","properties","potent_wallets","wallet_transactions","rate_cards","service_zones","job_templates","quote_terms_acceptance","jobs","job_photos","junk_jobs","jobs_backup","audit_log_real","expenses_real","commission_rates_real","payment_references","cost_profiles","customer_rate_cards","claims","change_orders","addon_authorizations","my_documents","deadlines","shift_handoffs","escalation_timers","site_profiles","customer_locations","incoming_loads","user_display_names","revoked_users","receipts","job_communications","login_log","push_subscriptions","griffin_queries","recurring_routes","reviews","waitlist","os_prospects","business_rules","factoring_receivables","employee_settings","driver_availability","vehicle_availability","b2b_pricing_settings","dvir_reports","driver_blockouts","automation_rules"];
 (function () {
     if (typeof window === "undefined" || !window.fetch || window.__plGate) return;
     window.__plGate = true;
@@ -3451,6 +3462,37 @@ function plRule(k) {
 }
 function plRulesSet(obj) { _plRules = obj; }
 function plMoney(n) { return "$" + (Number(n) || 0).toFixed(2); }
+// ── ONE MONEY MATH (D34) ──────────────────────────────────────────
+// Every money figure the app computes rounds to cents the same way —
+// Math.round(x * 100) / 100 — and formats through plMoney. Before this
+// pass the leaderboard, payroll, and the driver earnings tab each did
+// their own math and disagreed (see the batch-2 report). New money code
+// must use plMoneyRound and the canonical pay helpers below.
+function plMoneyRound(n) { return Math.round((Number(n) || 0) * 100) / 100; }
+// A sales rep's logistics commission rate: their saved employee-settings
+// rate wins, then their roster rate, then the 10% default — the same
+// precedence payroll uses.
+function plRepLogisticsRate(name) {
+    var u = null;
+    try { u = USERS.find(function (x) { return x.name === name; }) || null; } catch (e) { }
+    try { var s = JSON.parse(localStorage.getItem("pl_emp_settings") || "{}"); var e = u ? s[u.id] : null; if (e && Number(e.logisticsRate) > 0) return Number(e.logisticsRate) / 100; } catch (err) { }
+    if (u && typeof u.commLogistics === "number") return u.commLogistics;
+    return 0.10;
+}
+// What a driver earns on one job, from the driver's OWN pay structure
+// (the pl_drivers record payroll settlements are built from) — never a
+// hard-coded percentage. Unknown structure falls back to 25% of the job
+// price, the historical default.
+function plDriverRecordFor(name) { try { var d = JSON.parse(localStorage.getItem("pl_drivers") || "[]"); return (d || []).find(function (x) { return x.name === name; }) || null; } catch (e) { return null; } }
+function plDriverPayForJob(driver, job) {
+    var price = Number(job && (job.finalPrice || job.basePrice)) || 0;
+    if (!driver) return plMoneyRound(price * 0.25);
+    var rate = Number(driver.pay_rate) || 0;
+    if (driver.pay_type === "per_load") return plMoneyRound(rate);
+    if (driver.pay_type === "per_mile") return plMoneyRound(rate * (Number(job && job.miles) || 0));
+    if (driver.pay_type === "percentage") return plMoneyRound(price * rate / 100);
+    return plMoneyRound(price * 0.25);
+}
 // Emails to the customer: quote ready, invoice
 function plQuoteMail(job) {
     var brand = plBrandName();
@@ -3527,6 +3569,98 @@ function BusinessRulesPanel() {
         }),
         isOwner ? React.createElement("button", { onClick: save, style: { background: C.orange, color: "#000", border: "none", borderRadius: 8, padding: "10px 18px", fontSize: 12, fontWeight: 800, cursor: "pointer" } }, "Save rules") : React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "Only the owner can change these."),
         msg && React.createElement("div", { style: { fontSize: 12, color: msg.indexOf("Not saved") === 0 ? C.red : C.green, marginTop: 8 } }, msg));
+}
+// ═══════════════════════════════════════════════════════════════════
+// ⚙ AUTOMATION RULES (D21) — the owner's own if-this-then-that layer.
+// The built-in automations (invoice on completion, review request,
+// detention charge, wallet autopay) are hard-coded into the job flow;
+// THIS layer is the one the owner controls: when a job is created,
+// created with no driver, or reaches a chosen status, run one of the
+// actions the app already knows how to do. Rules live in the
+// automation_rules table (owner-only writes). Each rule fires at most
+// once per job (guard kept in local storage, marked BEFORE the action
+// runs), never fires from the demo workspace, and every firing is
+// written into the job's event log so it can be seen, not wondered at.
+var AUTO_FIRED_KEY = "pl_auto_fired";
+var AUTO_TRIGGERS = [["created", "A job is created"], ["no_driver", "A job is created with no driver assigned"], ["status", "A job reaches a status"]];
+var AUTO_ACTIONS = [["email_invoice", "Email the customer their invoice"], ["email_quote", "Email the customer their quote"], ["notify_owner", "Email me (the owner) an alert"], ["flag", "Flag it in the job's event log"]];
+function autoRuleRowToLocal(r) { return { id: String(r.id || "").split(":").pop(), name: r.name || "Rule", trigger: r.trigger || "status", triggerStatus: r.trigger_status || "", action: r.action || "notify_owner", enabled: r.enabled !== false }; }
+function plLoadAutomationRules() {
+    return plOps("automation_rules", "GET", "select=*&limit=100").then(function (r) {
+        return r.ok && Array.isArray(r.data) ? r.data.map(autoRuleRowToLocal) : [];
+    }).catch(function () { return []; });
+}
+function plAutoFired() { try { return JSON.parse(localStorage.getItem(AUTO_FIRED_KEY) || "{}"); } catch (e) { return {}; } }
+function plAutoMarkFired(jobId, ruleId) { try { var f = plAutoFired(); f[jobId + ":" + ruleId] = Date.now(); var keys = Object.keys(f); if (keys.length > 600) keys.slice(0, keys.length - 600).forEach(function (k) { delete f[k]; }); localStorage.setItem(AUTO_FIRED_KEY, JSON.stringify(f)); } catch (e) { } }
+function plRunAutomationRules(kind, job) {
+    if (!job || !job.id) return;
+    if (typeof plDemoActive === "function" && plDemoActive()) return; // never send real email from the demo workspace
+    plLoadAutomationRules().then(function (rules) {
+        var fired = plAutoFired();
+        rules.forEach(function (rule) {
+            if (!rule.enabled || rule.trigger !== kind) return;
+            if (kind === "status" && (!rule.triggerStatus || rule.triggerStatus !== job.status)) return;
+            if (fired[job.id + ":" + rule.id]) return;
+            plAutoMarkFired(job.id, rule.id);
+            var note = "Automation rule \"" + rule.name + "\" fired";
+            if (rule.action === "email_invoice" || rule.action === "email_quote") {
+                if (job.email) plSendCustomerMail(rule.action === "email_invoice" ? "invoice" : "quote", job).catch(function () { });
+                plOps("job_events", "POST", "", { job_id: job.id, event: "AUTOMATION", kind: "automation", note: note + (job.email ? "" : " (no customer email on the job — nothing sent)") }).catch(function () { });
+            } else if (rule.action === "notify_owner") {
+                var to = plNotifyEmail();
+                if (to) plSendMail(to, "Automation: " + rule.name + " — " + job.id, "Your rule \"" + rule.name + "\" fired on job " + job.id + ".\n\nCustomer: " + (job.customer || "") + "\nRoute: " + (job.origin || "") + " → " + (job.destination || "") + "\nStatus: " + (job.status || "") + "\nTotal: " + plMoney(job.finalPrice || job.basePrice), job.id).catch(function () { });
+                plOps("job_events", "POST", "", { job_id: job.id, event: "AUTOMATION", kind: "automation", note: note }).catch(function () { });
+            } else {
+                plOps("job_events", "POST", "", { job_id: job.id, event: "AUTOMATION_FLAG", kind: "automation", note: note + " — flagged for follow-up" }).catch(function () { });
+            }
+        });
+    }).catch(function () { });
+}
+function AutomationRulesPanel() {
+    var ls = React.useState(null); var rules = ls[0], setRules = ls[1];
+    var fm = React.useState({ name: "", trigger: "status", triggerStatus: "Delivered", action: "notify_owner" }); var form = fm[0], setForm = fm[1];
+    var ms = React.useState(""); var msg = ms[0], setMsg = ms[1];
+    function load() { plLoadAutomationRules().then(function (l) { setRules(l); }); }
+    React.useEffect(function () { load(); }, []);
+    function add() {
+        if (!String(form.name || "").trim()) { setMsg("Give the rule a name first."); return; }
+        var row = { id: "AR-" + Date.now().toString(36), name: form.name.trim(), trigger: form.trigger, trigger_status: form.trigger === "status" ? form.triggerStatus : null, action: form.action, enabled: true };
+        plOps("automation_rules", "POST", "", row).then(function (r) {
+            if (r.ok) { setMsg("Rule saved. It applies from the next job event on."); setForm({ name: "", trigger: "status", triggerStatus: "Delivered", action: "notify_owner" }); load(); }
+            else setMsg("Not saved: " + (r.error || "run the automation SQL first"));
+        });
+    }
+    function toggle(rule) {
+        plOps("automation_rules", "PATCH", "id=eq." + encodeURIComponent(rule.id), { enabled: !rule.enabled }).then(function (r) { if (r.ok) load(); else setMsg("Not saved: " + (r.error || "")); });
+    }
+    function del(rule) {
+        plOps("automation_rules", "DELETE", "id=eq." + encodeURIComponent(rule.id)).then(function (r) { if (r.ok) load(); else setMsg("Delete failed: " + (r.error || "")); });
+    }
+    var inp = { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "8px 10px", fontSize: 12, outline: "none", fontFamily: "inherit", boxSizing: "border-box" };
+    function triggerText(r) { var t = AUTO_TRIGGERS.filter(function (x) { return x[0] === r.trigger; })[0]; return (t ? t[1] : r.trigger) + (r.trigger === "status" ? ": " + r.triggerStatus : ""); }
+    function actionText(r) { var a = AUTO_ACTIONS.filter(function (x) { return x[0] === r.action; })[0]; return a ? a[1] : r.action; }
+    return React.createElement("div", null,
+        React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: C.white, marginBottom: 4 } }, "⚙ Automation Rules"),
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 12 } }, "Your own if-this-then-that, on top of the built-in automations (invoice on completion, review requests, detention). A rule fires once per job, and every firing is written into the job's event log."),
+        rules === null ? React.createElement(LoadingSpinner, { padding: 16 }) :
+            (rules.length === 0 ? React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 12 } }, "No rules yet. Add your first one below.") :
+                rules.map(function (r) {
+                    return React.createElement("div", { key: r.id, style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "10px 12px", marginBottom: 8, opacity: r.enabled ? 1 : 0.55 } },
+                        React.createElement("div", null,
+                            React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.white } }, r.name),
+                            React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "When " + triggerText(r).toLowerCase() + " → " + actionText(r).toLowerCase())),
+                        React.createElement("div", { style: { display: "flex", gap: 6 } },
+                            React.createElement("button", { onClick: function () { toggle(r); }, style: { background: r.enabled ? C.green + "22" : "transparent", border: "1px solid " + (r.enabled ? C.green : C.border), color: r.enabled ? C.green : C.dim, borderRadius: 7, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, r.enabled ? "On" : "Off"),
+                            React.createElement("button", { onClick: function () { del(r); }, style: { background: "transparent", border: "1px solid " + C.border, color: C.dim, borderRadius: 7, padding: "5px 10px", fontSize: 11, cursor: "pointer", fontFamily: "inherit" } }, "Delete")));
+                })),
+        React.createElement("div", { style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 10, padding: 12 } },
+            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 } },
+                React.createElement("input", { value: form.name, onChange: function (e) { setForm(Object.assign({}, form, { name: e.target.value })); }, placeholder: "Rule name (e.g. Alert me on delivery)", style: inp }),
+                React.createElement("select", { value: form.trigger, onChange: function (e) { setForm(Object.assign({}, form, { trigger: e.target.value })); }, style: inp }, AUTO_TRIGGERS.map(function (t) { return React.createElement("option", { key: t[0], value: t[0] }, t[1]); })),
+                form.trigger === "status" && React.createElement("select", { value: form.triggerStatus, onChange: function (e) { setForm(Object.assign({}, form, { triggerStatus: e.target.value })); }, style: inp }, STATUS_FLOW.map(function (s) { return React.createElement("option", { key: s, value: s }, s); })),
+                React.createElement("select", { value: form.action, onChange: function (e) { setForm(Object.assign({}, form, { action: e.target.value })); }, style: inp }, AUTO_ACTIONS.map(function (a) { return React.createElement("option", { key: a[0], value: a[0] }, a[1]); }))),
+            msg && React.createElement("div", { style: { fontSize: 12, color: msg.indexOf("saved") === 0 ? C.green : C.red, marginBottom: 8 } }, msg),
+            React.createElement(Btn, { small: true, onClick: add }, "+ Add rule")));
 }
 function CustomerMailPanel(props) {
     var ms = React.useState(""); var msg = ms[0], setMsg = ms[1];
@@ -3886,7 +4020,7 @@ function GrowthTools(props) {
         var b = Object.assign({}, body); delete b.created_at; delete b.org_id;
         (b.id ? plOps(table, "PATCH", "id=eq." + b.id, b) : plOps(table, "POST", "", b)).then(function (r) { if (r.ok) { setEdit(null); setMsg(""); load(); if (after) after(r); } else setMsg("Not saved: " + r.error); });
     }
-    var tabs = [["accounts", "Accounts"], ["insights", "Insights"], ["alerts", "Alerts" + (alerts.length ? " (" + alerts.length + ")" : "")], ["cards", "Rate cards"], ["zones", "Zones"], ["tpls", "Repeat jobs"], ["send", "Quotes & invoices"], ["payout", "Payout method"], ["rules", "Rules"], ["factoring", "Factoring"], ["charts", "Charts"]];
+    var tabs = [["accounts", "Accounts"], ["insights", "Insights"], ["alerts", "Alerts" + (alerts.length ? " (" + alerts.length + ")" : "")], ["cards", "Rate cards"], ["zones", "Zones"], ["tpls", "Repeat jobs"], ["send", "Quotes & invoices"], ["payout", "Payout method"], ["rules", "Rules"], ["automation", "Automation"], ["factoring", "Factoring"], ["charts", "Charts"]];
     var body = null;
     if (tab === "accounts") {
         if (sel) {
@@ -3980,6 +4114,7 @@ function GrowthTools(props) {
     if (tab === "send") body = React.createElement(CustomerMailPanel, { jobs: props.jobs });
     if (tab === "payout") body = React.createElement(PayoutMethodCard, null);
     if (tab === "rules") body = React.createElement(BusinessRulesPanel, null);
+    if (tab === "automation") body = React.createElement(AutomationRulesPanel, null);
     if (tab === "factoring") body = React.createElement(FactoringPanel, { jobs: props.jobs });
     if (tab === "charts") body = React.createElement(OpsCharts, { jobs: props.jobs });
     return React.createElement("div", { style: { maxWidth: 760, margin: "0 auto" } },
@@ -4215,7 +4350,7 @@ var LEAD_EMAIL_TEMPLATES = {
         subject: function (lead) { return "The system we run our own trucks on"; },
         body: function (lead) {
             return "Hello " + (lead.name || "there") + ",\n\n" +
-                "Quick one from the other side of my business. I'm Tony Figueroa Mendes — I run Potent Logistics in Conyers, and POTENT OS is the software I built to run it on: 735 features covering dispatch, drivers, settlements, maintenance, compliance and documents, all in one system.\n\n" +
+                "Quick one from the other side of my business. I'm Tony Figueroa Mendes — I run Potent Logistics in Conyers, and POTENT OS is the software I built to run it on: 733 features covering dispatch, drivers, settlements, maintenance, compliance and documents, all in one system.\n\n" +
                 "It's the same system we run our own trucks on every day. It works fully offline, it's one payment with no monthly subscription — licenses run $4,995 / $9,995 / $19,995 / $34,995 depending on fleet size — and there's a free demo you can brand as your own company and try before you spend a dollar.\n\n" +
                 "Want me to send you the demo? Reply here and it's yours.\n\n" +
                 "If it's not a fit, reply \"no thanks\" and I'll close the loop — no hard feelings.\n\n" +
@@ -4527,7 +4662,7 @@ var MONTHLY_VOLUME_OPTIONS = [
     { id: "25k_plus", label: "$25,000+/month" },
 ];
 function PartnerApplicationModal(props) {
-    var [f, setF] = useState({ companyName: "", contactPerson: "", title: "", phone: "", email: "", businessAddress: "", businessType: "property_mgmt", monthlyVolume: "1_5k", services: [], paymentTerms: "prepay", billingEmail: "", notes: "", agreeToTerms: false, bankName: "", routingNumber: "", accountNumber: "", achVerified: false });
+    var [f, setF] = useState({ companyName: "", contactPerson: "", title: "", phone: "", email: "", businessAddress: "", businessType: "property_mgmt", monthlyVolume: "1_5k", services: [], paymentTerms: "prepay", billingEmail: "", notes: "", agreeToTerms: false });
     var [sent, setSent] = useState(false);
     var [submitting, setSubmitting] = useState(false);
     var [step, setStep] = useState(0);
@@ -4630,15 +4765,7 @@ function PartnerApplicationModal(props) {
                     React.createElement(TxtIn, { label: "Notes / Special Requirements", value: f.notes, onChange: function (v) { set("notes", v); }, placeholder: "Recurring routes, special scheduling needs, volume discounts...", rows: 2 }),
                     React.createElement("div", { style: { background: "#4299E115", border: "1px solid #4299E133", borderRadius: 9, padding: "12px 14px", marginBottom: 14 } },
                         React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: "#4299E1", marginBottom: 6 } }, "\uD83D\uDCB3 Payment Information (ACH)"),
-                        React.createElement("div", { style: { fontSize: 11, color: C.dim, lineHeight: 1.6, marginBottom: 10 } }, "For fast payment. Select N/A if you prefer to pay another way."),
-                        React.createElement(TxtIn, { label: "Bank Name", value: f.bankName, onChange: function (v) { set("bankName", v); }, placeholder: "e.g. Chase Bank" }),
-                        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" } },
-                            React.createElement(TxtIn, { label: "Routing Number", value: f.routingNumber, onChange: function (v) { set("routingNumber", v); }, placeholder: "9 digits" }),
-                            React.createElement(TxtIn, { label: "Account Number", value: f.accountNumber, onChange: function (v) { set("accountNumber", v); }, placeholder: "Account #" })),
-                        React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", marginTop: 4 } },
-                            React.createElement("button", { onClick: function () { set("bankName", "N/A"); set("routingNumber", "N/A"); set("accountNumber", "N/A"); }, style: { background: "transparent", color: C.dim, border: "1px solid " + C.border, borderRadius: 7, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "N/A"),
-                            React.createElement("button", { onClick: function () { if (f.bankName && f.routingNumber && f.accountNumber && f.bankName !== "N/A") { set("achVerified", true); } }, disabled: f.achVerified, style: { background: f.achVerified ? C.green : "#4299E1", color: "#fff", border: "none", borderRadius: 7, padding: "6px 18px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, f.achVerified ? "\u2705 Verified" : "Verify"),
-                            f.achVerified && React.createElement("div", { style: { fontSize: 11, color: C.green, fontWeight: 700 } }, "Bank info verified"))),
+                        React.createElement("div", { style: { fontSize: 11, color: C.dim, lineHeight: 1.6 } }, "Bank details are collected securely after your account is approved \u2014 never typed into this form.")),
                     React.createElement("div", { style: { background: "#1a1400", border: "1px solid " + C.orange + "44", borderRadius: 9, padding: "12px 14px", marginBottom: 14 } },
                         React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.orange, marginBottom: 6 } }, "\uD83D\uDCCB Surety Bond \u2014 Optional"),
                         React.createElement("div", { style: { fontSize: 11, color: C.dim, lineHeight: 1.6, marginBottom: 10 } }, "A photo of your current surety bond is required before any Net account application can be reviewed."),
@@ -5921,6 +6048,7 @@ function NewJobModal(props) {
     var vehicleFlags = getVehicleFlags(selectedVehicle);
     var driverUsers = USERS.filter(function (u) { return u.role === "driver"; });
     var hosStatus = f.assignedDriverName ? getDriverHOSStatus(f.assignedDriverName, props.allJobs || [], f.date || new Date().toISOString().split("T")[0]) : null;
+    var driverBlockout = f.assignedDriverName ? plDriverBlockedOn(f.assignedDriverName, f.date || new Date().toISOString().split("T")[0], loadBlockoutsCache()) : null;
     var isMileageSvc = MILEAGE_SERVICES.indexOf(f.serviceId) > -1;
     var isLoadSizeSvc = f.serviceId === "junkremoval";
     var isCleanoutSvc = f.serviceId === "cleanout";
@@ -6063,7 +6191,10 @@ function NewJobModal(props) {
                 hosStatus && !hosStatus.overDailyDrive && hosStatus.nearDailyDrive && React.createElement("div", { style: { background: C.orange + "15", border: "1px solid " + C.orange + "44", borderRadius: 9, padding: "10px 14px", marginBottom: 14 } },
                     React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.orange } }, "\u26A0 Approaching daily driving limit \u2014 \u2248" + Math.round(hosStatus.todayMinutes / 60) + " est. hrs today already.")),
                 hosStatus && hosStatus.overWeekly && React.createElement("div", { style: { background: C.red + "18", border: "1px solid " + C.red + "44", borderRadius: 9, padding: "10px 14px", marginBottom: 14 } },
-                    React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.red } }, "\uD83D\uDEA8 Likely over the 60-hour weekly limit \u2014 " + hosStatus.weekJobCount + " jobs in the last 7 days."))),
+                    React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.red } }, "\uD83D\uDEA8 Likely over the 60-hour weekly limit \u2014 " + hosStatus.weekJobCount + " jobs in the last 7 days.")),
+                driverBlockout && React.createElement("div", { style: { background: C.red + "18", border: "1px solid " + C.red + "44", borderRadius: 9, padding: "10px 14px", marginBottom: 14 } },
+                    React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.red, marginBottom: 3 } }, "📅 " + f.assignedDriverName + " is blocked out on this date"),
+                    React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "Off " + driverBlockout.start + " → " + driverBlockout.end + (driverBlockout.reason ? " (" + driverBlockout.reason + ")" : "") + ". Pick another driver or move the job date."))),
             React.createElement(Lbl, null, "Pricing Tier"),
             React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 } }, PRICE_TIERS.map(function (t) {
                 return React.createElement("div", { key: t.id, onClick: function () { set("priceTier", t.id); }, style: { border: "1.5px solid " + (f.priceTier === t.id ? t.color : C.border), borderRadius: 9, padding: "9px 12px", cursor: "pointer", background: f.priceTier === t.id ? t.color + "18" : "transparent", display: "flex", justifyContent: "space-between", alignItems: "center" } },
@@ -10746,6 +10877,9 @@ function Root() {
         } else {
             syncJobToSupabase(newJob);
         }
+        // owner automation rules (D21): job created / created with no driver
+        plRunAutomationRules("created", newJob);
+        if (!newJob.assignedDriverName) plRunAutomationRules("no_driver", newJob);
     }
     function toggleBlockDate(dateStr) {
         setBlockedDates(function (prev) {
@@ -10845,6 +10979,11 @@ function Root() {
         // invoice email once, when the job completes and the wallet did not already pay it
         if (justCompleted && oldJob.email && s === "Completed" && oldJob.paymentStatus !== "paid" && !oldJob.paidOnline) {
             autoPaid.then(function (d) { if (!d) plSendCustomerMail("invoice", oldJob); });
+        }
+        // owner automation rules (D21) — after the built-in sends above, so a
+        // rule never races the automatic invoice / review emails
+        if (oldJob && oldJob.status !== s) {
+            plRunAutomationRules("status", Object.assign({}, oldJob, { status: s }));
         }
         if (justCompleted && oldJob.email) {
             plSendMail(oldJob.email, "How did we do? \u2014 " + id,
@@ -13285,12 +13424,16 @@ function removeBonus(name){
         if (jobDate < rangeStart)
             return;
         if (!repStats[n])
-            repStats[n] = { name: n, calls: 0, followUps: 0, interested: 0, booked: 0, noAnswer: 0, leadsContacted: new Set(), jobsBooked: 0, revenue: 0 };
+            repStats[n] = { name: n, calls: 0, followUps: 0, interested: 0, booked: 0, noAnswer: 0, leadsContacted: new Set(), jobsBooked: 0, revenue: 0, paidRevenue: 0 };
         repStats[n].jobsBooked = (repStats[n].jobsBooked || 0) + 1;
         repStats[n].revenue = (repStats[n].revenue || 0) + (job.finalPrice || 0);
+        // Commission is earned on finished work only — the same basis payroll
+        // states on its own screen ("commission is on Paid / Completed jobs").
+        if (job.status === "Paid" || job.status === "Completed" || job.paymentStatus === "paid")
+            repStats[n].paidRevenue = (repStats[n].paidRevenue || 0) + (Number(job.finalPrice) || Number(job.basePrice) || 0);
     });
     var reps = Object.values(repStats).map(function (r) {
-        var commission = ((r.revenue || 0) * 0.10);
+        var commission = plMoneyRound((r.paidRevenue || 0) * plRepLogisticsRate(r.name));
         // Score: revenue is king, then jobs booked, then leads activity
         var revenuePoints = Math.floor((r.revenue || 0) / 10);
         var score = (r.jobsBooked || 0) * 200 + (r.booked || 0) * 50 + (r.interested || 0) * 20 + (r.followUps || 0) * 5 + (r.calls || 0) * 1 + revenuePoints + (bonusPoints[r.name] || 0);
@@ -13974,16 +14117,22 @@ async function loadFleetFromCloud(){
     var v=await sbGet("fleet_vehicles","select=*&order=created_at.desc");
     var m=await sbGet("fleet_maintenance","select=*&order=date.desc");
     if(!Array.isArray(v))v=loadFleet(); if(!Array.isArray(m))m=loadMaint();
-    var v2=v.map(function(x){return{id:x.id,make:x.make,model:x.model,year:x.year,plate:x.plate,color:x.color||"",vin:x.vin||"",insPolicy:x.ins_policy||"",regExpiry:x.reg_expiry||"",insExpiry:x.ins_expiry||"",oilNext:x.oil_next||"",tireNext:x.tire_next||"",brakeNext:x.brake_next||""};});
-    var m2=m.map(function(x){return{id:x.id,vehicleId:x.vehicle_id,type:x.type,date:x.date||"",cost:x.cost||0,shop:x.shop||"",notes:x.notes||""};});
+    var v2=v.map(function(x){return{id:x.id,make:x.make,model:x.model,year:x.year,plate:x.plate,color:x.color||"",vin:x.vin||"",insPolicy:x.ins_policy||"",regExpiry:x.reg_expiry||"",insExpiry:x.ins_expiry||"",oilNext:x.oil_next||"",tireNext:x.tire_next||"",brakeNext:x.brake_next||"",odometer:x.odometer||"",oilInt:x.oil_interval_mo||"",tireInt:x.tire_interval_mo||"",brakeInt:x.brake_interval_mo||""};});
+    var m2=m.map(function(x){return{id:x.id,vehicleId:x.vehicle_id,type:x.type,date:x.date||"",cost:x.cost||0,shop:x.shop||"",notes:x.notes||"",odo:x.odo_mi||""};});
     try{localStorage.setItem(FLEET_KEY,JSON.stringify(v2));localStorage.setItem(MAINT_KEY,JSON.stringify(m2));}catch(e){}
     return{vehicles:v2,maintenance:m2};
   }catch(e){return{vehicles:loadFleet(),maintenance:loadMaint()};}
 }
 async function saveVehicleToCloud(veh){
-  var payload={id:veh.id,make:veh.make||"",model:veh.model||"",year:veh.year||"",plate:veh.plate||"",color:veh.color||"",vin:veh.vin||"",ins_policy:veh.insPolicy||"",reg_expiry:veh.regExpiry||null,ins_expiry:veh.insExpiry||null,oil_next:veh.oilNext||null,tire_next:veh.tireNext||null,brake_next:veh.brakeNext||null,updated_at:new Date().toISOString()};
+  var legacy={id:veh.id,make:veh.make||"",model:veh.model||"",year:veh.year||"",plate:veh.plate||"",color:veh.color||"",vin:veh.vin||"",ins_policy:veh.insPolicy||"",reg_expiry:veh.regExpiry||null,ins_expiry:veh.insExpiry||null,oil_next:veh.oilNext||null,tire_next:veh.tireNext||null,brake_next:veh.brakeNext||null,updated_at:new Date().toISOString()};
+  // D24 depth fields ride along when the columns exist; if the server rejects
+  // them (SQL not run yet), retry with the legacy payload so a vehicle save
+  // never breaks — the extra fields stay safe in local storage either way.
+  var payload=Object.assign({},legacy,{odometer:veh.odometer===""||veh.odometer===undefined?null:(Number(veh.odometer)||null),oil_interval_mo:Number(veh.oilInt)||null,tire_interval_mo:Number(veh.tireInt)||null,brake_interval_mo:Number(veh.brakeInt)||null});
   if(navigator.onLine){
-    var r=await fetch(SUPABASE_URL+"/rest/v1/fleet_vehicles",{method:"POST",headers:{apikey:SUPABASE_ANON_KEY,Authorization:"Bearer "+SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates,return=representation"},body:JSON.stringify([payload])}).catch(function(){return null;});
+    var post=function(p){return fetch(SUPABASE_URL+"/rest/v1/fleet_vehicles",{method:"POST",headers:{apikey:SUPABASE_ANON_KEY,Authorization:"Bearer "+SUPABASE_ANON_KEY,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates,return=representation"},body:JSON.stringify([p])}).catch(function(){return null;});};
+    var r=await post(payload);
+    if(r&&!r.ok&&r.status!==403){r=await post(legacy);}
     if(r&&r.status===403){var t="";try{var j=await r.json();t=j&&j.error||"";}catch(e){}alert(t||"Truck limit reached for your plan.");try{await loadFleetFromCloud();}catch(e){}}
   }
 }
@@ -13991,8 +14140,25 @@ async function deleteVehicleFromCloud(id){
   if(navigator.onLine)await sbDelete2("fleet_vehicles","id",id);
 }
 async function saveMaintToCloud(rec){
-  var payload={id:rec.id,vehicle_id:rec.vehicleId,type:rec.type||"",date:rec.date||null,cost:rec.cost||0,shop:rec.shop||"",notes:rec.notes||""};
-  if(navigator.onLine)await sbUpsert("fleet_maintenance",payload);
+  var legacy={id:rec.id,vehicle_id:rec.vehicleId,type:rec.type||"",date:rec.date||null,cost:rec.cost||0,shop:rec.shop||"",notes:rec.notes||""};
+  var payload=Object.assign({},legacy,{odo_mi:rec.odo===""||rec.odo===undefined?null:(Number(rec.odo)||null)});
+  if(navigator.onLine){var res=await sbUpsert("fleet_maintenance",payload);if(!Array.isArray(res))await sbUpsert("fleet_maintenance",legacy);}
+}
+// Months between services for a vehicle, by service type (D24).
+function plServiceIntervalMonths(veh, kind){
+  var dflt={oil:6,tire:6,brake:12}[kind]||6;
+  var v=kind==="oil"?veh.oilInt:kind==="tire"?veh.tireInt:veh.brakeInt;
+  return Number(v)>0?Number(v):dflt;
+}
+function plAddMonths(dateStr, months){
+  var d=new Date(String(dateStr).slice(0,10)+"T12:00:00");
+  if(isNaN(d.getTime()))return "";
+  var day=d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth()+(Number(months)||0));
+  var last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+  d.setDate(Math.min(day,last));
+  return d.toISOString().slice(0,10);
 }
 
 // ── COMPLIANCE CLOUD SYNC ─────────────────────────────────────────
@@ -14013,6 +14179,11 @@ async function saveCompToCloud(userId,data){
 }
 
 // ── EMPLOYEE SETTINGS CLOUD SYNC ─────────────────────────────────
+// D13: full routing/account numbers live ONLY in the employee_settings table
+// (owner payroll screen reads them from this in-memory state while online).
+// They are never written into the browser's localStorage cache anymore —
+// plEmpCacheSafe strips them from every cache write below.
+function plEmpCacheSafe(s){ var o={}; Object.keys(s||{}).forEach(function(k){ var v=Object.assign({},s[k]); delete v.routingNum; delete v.accountNum; o[k]=v; }); return o; }
 async function loadEmpSettingsFromCloud(){
   if(!navigator.onLine){try{return JSON.parse(localStorage.getItem("pl_emp_settings")||"{}");}catch(e){return{};}}
   try{
@@ -14020,12 +14191,12 @@ async function loadEmpSettingsFromCloud(){
     if(!Array.isArray(rows)||rows.length===0){try{return JSON.parse(localStorage.getItem("pl_emp_settings")||"{}");}catch(e){return{};}}
     var s={};
     rows.forEach(function(r){s[r.user_id]={displayName:r.display_name||"",hireDate:r.hire_date||"",status:r.status||"active",payType:r.pay_type||"commission",hourlyRate:r.hourly_rate||0,salary:r.salary||0,logisticsRate:r.logistics_rate||10,osRate:r.os_rate||10,loadboardRate:r.loadboard_rate||10,bankName:r.bank_name||"",routingNum:r.routing_num||"",accountNum:r.account_num||""};});
-    try{localStorage.setItem("pl_emp_settings",JSON.stringify(s));}catch(e){}
+    try{localStorage.setItem("pl_emp_settings",JSON.stringify(plEmpCacheSafe(s)));}catch(e){}
     return s;
   }catch(e){try{return JSON.parse(localStorage.getItem("pl_emp_settings")||"{}");}catch(e2){return{};}}
 }
 async function saveEmpSettingToCloud(userId,data){
-  try{var s=JSON.parse(localStorage.getItem("pl_emp_settings")||"{}");s[userId]=Object.assign(s[userId]||{},data);localStorage.setItem("pl_emp_settings",JSON.stringify(s));}catch(e){}
+  try{var s=JSON.parse(localStorage.getItem("pl_emp_settings")||"{}");s[userId]=Object.assign(s[userId]||{},data);localStorage.setItem("pl_emp_settings",JSON.stringify(plEmpCacheSafe(s)));}catch(e){}
   if(!navigator.onLine)return;
   var payload={user_id:userId,display_name:data.displayName||null,hire_date:data.hireDate||null,status:data.status||"active",pay_type:data.payType||"commission",hourly_rate:data.hourlyRate||null,salary:data.salary||null,logistics_rate:data.logisticsRate||10,os_rate:data.osRate||10,loadboard_rate:data.loadboardRate||10,bank_name:data.bankName||null,routing_num:data.routingNum||null,account_num:data.accountNum||null,updated_at:new Date().toISOString()};
   await sbUpsert("employee_settings",payload);
@@ -14141,8 +14312,8 @@ function FleetMaintenance() {
     },[]);
     var _bt_fleetView = useBackableTab("list", "fleetView"); var view = _bt_fleetView[0], setView = _bt_fleetView[1];
     var [selected, setSelected] = useState(null);
-    var [vForm, setVForm] = useState({ vin: "", make: "", model: "", year: "", plate: "", color: "", regExpiry: "", insExpiry: "", insPolicy: "", oilNext: "", tireNext: "", brakeNext: "" });
-    var [mForm, setMForm] = useState({ type: "Oil Change", date: "", cost: "", notes: "", shop: "" });
+    var [vForm, setVForm] = useState({ vin: "", make: "", model: "", year: "", plate: "", color: "", regExpiry: "", insExpiry: "", insPolicy: "", oilNext: "", tireNext: "", brakeNext: "", odometer: "", oilInt: "", tireInt: "", brakeInt: "" });
+    var [mForm, setMForm] = useState({ type: "Oil Change", date: "", cost: "", notes: "", shop: "", odo: "" });
     var [err, setErr] = useState("");
     function saveVehicle() {
         if (!vForm.make || !vForm.model || !vForm.year) {
@@ -14156,7 +14327,7 @@ function FleetMaintenance() {
         setVehicles(updated);
         saveVehicleToCloud(newV);
         setView("list");
-        setVForm({ vin: "", make: "", model: "", year: "", plate: "", color: "", regExpiry: "", insExpiry: "", insPolicy: "", oilNext: "", tireNext: "", brakeNext: "" });
+        setVForm({ vin: "", make: "", model: "", year: "", plate: "", color: "", regExpiry: "", insExpiry: "", insPolicy: "", oilNext: "", tireNext: "", brakeNext: "", odometer: "", oilInt: "", tireInt: "", brakeInt: "" });
         setErr("");
     }
     function deleteVehicle(id) {
@@ -14181,13 +14352,36 @@ function FleetMaintenance() {
         saveMaint(updated);
         setMaintenance(updated);
         saveMaintToCloud(rec);
+        // D24 auto-scheduling: a logged service moves that vehicle's next-due
+        // date forward by its service interval, and the record's odometer
+        // reading becomes the vehicle's current mileage — no hand-typing.
+        var svcKind = rec.type === "Oil Change" ? "oil" : rec.type === "Tire Rotation" ? "tire" : rec.type === "Brake Inspection" ? "brake" : null;
+        if (svcKind || rec.odo) {
+            var updV = Object.assign({}, selected);
+            if (svcKind) updV[svcKind + "Next"] = plAddMonths(rec.date, plServiceIntervalMonths(selected, svcKind));
+            if (rec.odo) updV.odometer = rec.odo;
+            var updatedV = vehicles.map(function (v) { return v.id === updV.id ? updV : v; });
+            saveFleet(updatedV);
+            setVehicles(updatedV);
+            saveVehicleToCloud(updV);
+            setSelected(updV);
+        }
         setView("detail");
-        setMForm({ type: "Oil Change", date: "", cost: "", notes: "", shop: "" });
+        setMForm({ type: "Oil Change", date: "", cost: "", notes: "", shop: "", odo: "" });
         setErr("");
     }
     var alerts = vehicles.filter(function (v) {
         return [daysUntil(v.regExpiry), daysUntil(v.insExpiry), daysUntil(v.oilNext), daysUntil(v.tireNext), daysUntil(v.brakeNext)].some(function (d) { return d !== null && d <= 30; });
     });
+    // D24 cost analytics: what the fleet cost this year, where it went, which truck eats the money.
+    var thisYear = String(new Date().getFullYear());
+    var maintYear = maintenance.filter(function (m) { return String(m.date || "").slice(0, 4) === thisYear; });
+    var spendYear = maintYear.reduce(function (s, m) { return s + (Number(m.cost) || 0); }, 0);
+    var spendByType = {}; maintYear.forEach(function (m) { spendByType[m.type] = (spendByType[m.type] || 0) + (Number(m.cost) || 0); });
+    var topType = Object.keys(spendByType).sort(function (a, b) { return spendByType[b] - spendByType[a]; })[0] || null;
+    var spendByVeh = {}; maintenance.forEach(function (m) { spendByVeh[m.vehicleId] = (spendByVeh[m.vehicleId] || 0) + (Number(m.cost) || 0); });
+    var topVehId = Object.keys(spendByVeh).sort(function (a, b) { return spendByVeh[b] - spendByVeh[a]; })[0] || null;
+    var topVeh = topVehId ? vehicles.find(function (v) { return v.id === topVehId; }) : null;
     if (view === "add" || view === "edit")
         return React.createElement("div", { style: { maxWidth: 600, margin: "0 auto" } },
             React.createElement("div", { style: { display: "flex", gap: 10, alignItems: "center", marginBottom: 16 } },
@@ -14196,7 +14390,7 @@ function FleetMaintenance() {
             err && React.createElement("div", { style: { background: C.red + "18", border: "1px solid " + C.red + "44", borderRadius: 8, padding: "8px 12px", marginBottom: 10, fontSize: 12, color: C.red } }, err),
             React.createElement(Card, null,
                 React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.orange, marginBottom: 10 } }, "Vehicle Info"),
-                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" } }, [["make", "Make", "Ford"], ["model", "Model", "E350"], ["year", "Year", "2022"], ["plate", "Plate", "ABC-1234"], ["color", "Color", "White"], ["vin", "VIN", "1FTNE2EW..."]].map(function (f) {
+                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" } }, [["make", "Make", "Ford"], ["model", "Model", "E350"], ["year", "Year", "2022"], ["plate", "Plate", "ABC-1234"], ["color", "Color", "White"], ["vin", "VIN", "1FTNE2EW..."], ["odometer", "Odometer (miles)", "103825"]].map(function (f) {
                     return React.createElement("div", { key: f[0], style: { marginBottom: 10 } },
                         React.createElement("div", { style: { fontSize: 9, color: C.dim, textTransform: "uppercase", marginBottom: 3 } }, f[1]),
                         React.createElement("input", { value: vForm[f[0]] || "", onChange: function (e) { setVForm(function (p) { var n = Object.assign({}, p); n[f[0]] = e.target.value; return n; }); }, placeholder: f[2], style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "8px 10px", fontSize: 12, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box" } }));
@@ -14208,6 +14402,12 @@ function FleetMaintenance() {
                     return React.createElement("div", { key: f[0], style: { marginBottom: 10 } },
                         React.createElement("div", { style: { fontSize: 9, color: C.dim, textTransform: "uppercase", marginBottom: 3 } }, f[1]),
                         React.createElement("input", { type: isDate ? "date" : "text", value: vForm[f[0]] || "", onChange: function (e) { setVForm(function (p) { var n = Object.assign({}, p); n[f[0]] = e.target.value; return n; }); }, style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "8px 10px", fontSize: 12, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box", colorScheme: "dark" } }));
+                })),
+                React.createElement("div", { style: { fontSize: 9, color: C.dim, textTransform: "uppercase", margin: "4px 0 3px" } }, "Service intervals — months between services (next due date sets itself when you log the service)"),
+                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0 12px" } }, [["oilInt", "Oil every (mo)", "6"], ["tireInt", "Tires every (mo)", "6"], ["brakeInt", "Brakes every (mo)", "12"]].map(function (f) {
+                    return React.createElement("div", { key: f[0], style: { marginBottom: 10 } },
+                        React.createElement("div", { style: { fontSize: 9, color: C.dim, textTransform: "uppercase", marginBottom: 3 } }, f[1]),
+                        React.createElement("input", { type: "number", min: "1", value: vForm[f[0]] || "", placeholder: f[2], onChange: function (e) { setVForm(function (p) { var n = Object.assign({}, p); n[f[0]] = e.target.value; return n; }); }, style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "8px 10px", fontSize: 12, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box" } }));
                 }))),
             React.createElement(Btn, { onClick: saveVehicle, style: { width: "100%", padding: "12px", fontSize: 14 } }, "\uD83D\uDCBE Save Vehicle"));
     if (view === "addmaint" && selected)
@@ -14219,7 +14419,7 @@ function FleetMaintenance() {
                 React.createElement("div", { style: { marginBottom: 10 } },
                     React.createElement("div", { style: { fontSize: 9, color: C.dim, textTransform: "uppercase", marginBottom: 3 } }, "Type"),
                     React.createElement("select", { value: mForm.type, onChange: function (e) { setMForm(function (p) { return Object.assign({}, p, { type: e.target.value }); }); }, style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "8px 10px", fontSize: 12, width: "100%", outline: "none", fontFamily: "inherit", colorScheme: "dark" } }, ["Oil Change", "Tire Rotation", "Brake Inspection", "Tire Replacement", "Battery", "Transmission", "Engine", "AC/Heat", "Electrical", "Body Repair", "DOT Inspection", "Registration", "Insurance Renewal", "Other"].map(function (t) { return React.createElement("option", { key: t }, t); }))),
-                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" } }, [["date", "Date", "date"], ["cost", "Cost ($)", "number"], ["shop", "Shop / Provider", "text"], ["notes", "Notes", "text"]].map(function (f) {
+                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" } }, [["date", "Date", "date"], ["cost", "Cost ($)", "number"], ["odo", "Odometer (mi)", "number"], ["shop", "Shop / Provider", "text"], ["notes", "Notes", "text"]].map(function (f) {
                     return React.createElement("div", { key: f[0], style: { marginBottom: 10, gridColumn: f[0] === "notes" ? "1 / -1" : "auto" } },
                         React.createElement("div", { style: { fontSize: 9, color: C.dim, textTransform: "uppercase", marginBottom: 3 } }, f[1]),
                         React.createElement("input", { type: f[2], value: mForm[f[0]] || "", onChange: function (e) { setMForm(function (p) { var n = Object.assign({}, p); n[f[0]] = e.target.value; return n; }); }, style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "8px 10px", fontSize: 12, width: "100%", outline: "none", fontFamily: "inherit", boxSizing: "border-box", colorScheme: "dark" } }));
@@ -14230,6 +14430,11 @@ function FleetMaintenance() {
         var veh = vehicles.find(function (v) { return v.id === selected.id; }) || selected;
         var vMaint = maintenance.filter(function (m) { return m.vehicleId === veh.id; }).sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
         var totalCost = vMaint.reduce(function (s, m) { return s + (m.cost || 0); }, 0);
+        var lastSvc = [["Oil Change"], ["Tire Rotation"], ["Brake Inspection"]].map(function (pair) {
+            var rec = vMaint.find(function (m) { return m.type === pair[0]; });
+            if (!rec) return null;
+            return { label: pair[0], date: rec.date, miles: (veh.odometer && rec.odo) ? (Number(veh.odometer) - Number(rec.odo)) : null };
+        }).filter(Boolean);
         return React.createElement("div", { style: { maxWidth: 660, margin: "0 auto" } },
             React.createElement("div", { style: { display: "flex", gap: 10, alignItems: "center", marginBottom: 16, flexWrap: "wrap" } },
                 React.createElement(Btn, { onClick: function () { setView("list"); }, variant: "ghost", style: { fontSize: 12, padding: "6px 12px" } }, "\u2190 Fleet"),
@@ -14256,6 +14461,9 @@ function FleetMaintenance() {
                     React.createElement("div", { style: { fontSize: 16, fontWeight: 900, color: C.orange } },
                         "$",
                         totalCost.toLocaleString()))),
+            lastSvc.length > 0 && React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 } }, lastSvc.map(function (s) {
+                return React.createElement("span", { key: s.label, style: { fontSize: 10, fontWeight: 700, color: C.dim, background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: "4px 10px" } }, "Last " + s.label.toLowerCase() + ": " + (s.date || "—") + (s.miles !== null && s.miles >= 0 ? " · " + s.miles.toLocaleString() + " mi since" : ""));
+            })),
             React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 } },
                 React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.white } },
                     "Maintenance History (",
@@ -14270,18 +14478,30 @@ function FleetMaintenance() {
                             React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.white, marginBottom: 2 } }, m.type),
                             React.createElement("div", { style: { fontSize: 11, color: C.dim } },
                                 m.date,
-                                m.shop ? " · " + m.shop : ""),
+                                m.shop ? " · " + m.shop : "",
+                                m.odo ? " · " + Number(m.odo).toLocaleString() + " mi" : ""),
                             m.notes && React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 2 } }, m.notes)),
                         m.cost > 0 && React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: C.orange } },
                             "$",
                             m.cost.toLocaleString())));
             }));
     }
+    if (view === "dvir")
+        return React.createElement("div", { style: { maxWidth: 740, margin: "0 auto" } },
+            React.createElement("button", { onClick: function () { setView("list"); }, style: { background: "none", border: "none", color: C.dim, fontSize: 12, cursor: "pointer", marginBottom: 10, fontFamily: "inherit" } }, "← Back to fleet"),
+            React.createElement("div", { style: { fontSize: 16, fontWeight: 900, color: C.white, marginBottom: 12 } }, "📋 Inspections (DVIR)"),
+            React.createElement(DvirReviewList, null));
     // LIST VIEW
     return React.createElement("div", { style: { maxWidth: 740, margin: "0 auto" } },
         React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 } },
             React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white } }, "\uD83D\uDE97 Fleet Maintenance"),
-            React.createElement(Btn, { onClick: function () { if (plTruckLimitHit()) return; setVForm({ vin: "", make: "", model: "", year: "", plate: "", color: "", regExpiry: "", insExpiry: "", insPolicy: "", oilNext: "", tireNext: "", brakeNext: "" }); setView("add"); }, style: { fontSize: 12, padding: "8px 14px" } }, "+ Add Vehicle")),
+            React.createElement("div", { style: { display: "flex", gap: 8 } },
+                React.createElement(Btn, { small: true, outline: true, onClick: function () { setView("dvir"); }, style: { fontSize: 12, padding: "8px 14px" } }, "📋 Inspections"),
+                React.createElement(Btn, { onClick: function () { if (plTruckLimitHit()) return; setVForm({ vin: "", make: "", model: "", year: "", plate: "", color: "", regExpiry: "", insExpiry: "", insPolicy: "", oilNext: "", tireNext: "", brakeNext: "", odometer: "", oilInt: "", tireInt: "", brakeInt: "" }); setView("add"); }, style: { fontSize: 12, padding: "8px 14px" } }, "+ Add Vehicle"))),
+        maintenance.length > 0 && React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 } },
+            React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: C.white, background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "5px 11px" } }, "💰 Spent " + thisYear + ": " + plMoney(spendYear)),
+            topType && React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: C.white, background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "5px 11px" } }, "Biggest cost: " + topType + " " + plMoney(spendByType[topType])),
+            topVeh && React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: C.white, background: C.card, border: "1px solid " + C.border, borderRadius: 12, padding: "5px 11px" } }, "Costliest truck: " + ((topVeh.year || "") + " " + (topVeh.make || "") + " " + (topVeh.model || "")).trim() + " " + plMoney(spendByVeh[topVehId]))),
         alerts.length > 0 && React.createElement("div", { style: { background: C.orange + "12", border: "1px solid " + C.orange + "44", borderRadius: 10, padding: "12px 14px", marginBottom: 16 } },
             React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.orange, marginBottom: 6 } },
                 "\u26A0 ",
@@ -14330,6 +14550,142 @@ function FleetMaintenance() {
                             ": ",
                             expiryLabel(e.days)); }))),
                     React.createElement("div", { style: { color: C.dim, fontSize: 16 } }, "\u203A")));
+        }));
+}
+// ═══════════════════════════════════════════════════════════════════
+// 📋 DVIR — DRIVER VEHICLE INSPECTION REPORTS (D20)
+// Pre-trip / post-trip inspections. The driver walks the checklist and
+// marks each item OK / Defect / N-A (a defect demands a note), signs
+// with a typed name + certification, and submits. Reports save locally
+// first (offline-safe, same pattern as fleet) and sync to the
+// dvir_reports table through the tenant gateway. The office reviews
+// them under Fleet → Inspections; a vehicle with an unreviewed defect
+// report stays flagged until the office marks it reviewed.
+// ═══════════════════════════════════════════════════════════════════
+var DVIR_KEY = "pl_dvir_reports";
+var DVIR_ITEMS = [
+    ["brakes", "Brakes — service & parking"],
+    ["lights", "Lights, signals & reflectors"],
+    ["tires", "Tires, wheels & lug nuts"],
+    ["steering", "Steering"],
+    ["horn", "Horn"],
+    ["mirrors", "Mirrors"],
+    ["wipers", "Windshield & wipers"],
+    ["fluids", "Fluid levels & leaks (oil, coolant, fuel)"],
+    ["exhaust", "Exhaust system"],
+    ["emergency", "Emergency gear (extinguisher, triangles, first aid)"],
+    ["securement", "Load securement — straps, E-track, doors"],
+    ["coupling", "Coupling / connection devices (if towing)"]
+];
+function loadDvir() { try { return JSON.parse(localStorage.getItem(DVIR_KEY) || "[]"); } catch (e) { return []; } }
+function saveDvir(list) { try { localStorage.setItem(DVIR_KEY, JSON.stringify(list)); } catch (e) { } }
+function dvirDefects(rep) { return (rep.items || []).filter(function (i) { return i.status === "defect"; }); }
+function dvirRowToLocal(r) { return { id: r.id, driverName: r.driver_name || "", vehicleId: r.vehicle_id || "", vehicleLabel: r.vehicle_label || "", kind: r.kind || "pre", items: Array.isArray(r.items) ? r.items : [], odometer: r.odometer || "", signature: r.signature || "", status: r.status || "submitted", createdAt: r.created_at || "" }; }
+function loadDvirFromCloud() {
+    return plOps("dvir_reports", "GET", "select=*&order=created_at.desc&limit=300").then(function (r) {
+        if (r.ok && Array.isArray(r.data) && r.data.length) { var list = r.data.map(dvirRowToLocal); saveDvir(list); return list; }
+        return loadDvir();
+    }).catch(function () { return loadDvir(); });
+}
+function saveDvirToCloud(rep) {
+    return plOps("dvir_reports", "POST", "", { id: rep.id, driver_name: rep.driverName, vehicle_id: rep.vehicleId || null, vehicle_label: rep.vehicleLabel, kind: rep.kind, items: rep.items, odometer: rep.odometer === "" || rep.odometer === null || rep.odometer === undefined ? null : (Number(rep.odometer) || null), signature: rep.signature, status: rep.status }).catch(function () { return { ok: false }; });
+}
+function DvirSection(props) {
+    var me = props.currentUser || {};
+    var vs = React.useState(loadFleet); var vehicles = vs[0];
+    var ks = React.useState("pre"); var kind = ks[0], setKind = ks[1];
+    var sel = React.useState(""); var vehicleId = sel[0], setVehicleId = sel[1];
+    var os = React.useState(""); var odo = os[0], setOdo = os[1];
+    var is2 = React.useState({}); var marks = is2[0], setMarks = is2[1];
+    var sg = React.useState(me.name || ""); var signature = sg[0], setSignature = sg[1];
+    var ct = React.useState(false); var certify = ct[0], setCertify = ct[1];
+    var ms = React.useState(""); var msg = ms[0], setMsg = ms[1];
+    var dn = React.useState(null); var doneRep = dn[0], setDoneRep = dn[1];
+    var mine = loadDvir().filter(function (r) { return !me.name || r.driverName === me.name; }).slice(0, 5);
+    function mark(key, status) { setMarks(function (p) { var n = Object.assign({}, p); n[key] = Object.assign({}, n[key] || {}, { status: status }); return n; }); }
+    function noteFor(key, note) { setMarks(function (p) { var n = Object.assign({}, p); n[key] = Object.assign({}, n[key] || {}, { note: note }); return n; }); }
+    function submit() {
+        var veh = vehicles.find(function (v) { return v.id === vehicleId; });
+        if (!veh) { setMsg("Pick the vehicle you inspected."); return; }
+        var items = [], missing = 0;
+        DVIR_ITEMS.forEach(function (it) {
+            var m = marks[it[0]] || {};
+            if (!m.status) missing++;
+            if (m.status === "defect" && !String(m.note || "").trim()) missing++;
+            items.push({ key: it[0], label: it[1], status: m.status || "", note: m.note || "" });
+        });
+        if (missing) { setMsg("Every item needs a mark, and every defect needs a note describing it."); return; }
+        if (!String(signature || "").trim()) { setMsg("Type your name to sign the inspection."); return; }
+        if (!certify) { setMsg("Check the certification box to sign off."); return; }
+        var defects = items.filter(function (i) { return i.status === "defect"; });
+        var rep = { id: "DVIR-" + Date.now(), driverName: me.name || signature, vehicleId: veh.id, vehicleLabel: ((veh.year || "") + " " + (veh.make || "") + " " + (veh.model || "")).trim() + (veh.plate ? " · " + veh.plate : ""), kind: kind, items: items, odometer: odo, signature: signature, status: defects.length ? "needs_review" : "submitted", createdAt: new Date().toISOString() };
+        var list = [rep].concat(loadDvir()); saveDvir(list); saveDvirToCloud(rep);
+        setDoneRep(rep); setMarks({}); setOdo(""); setCertify(false); setMsg("");
+    }
+    var inp = { width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "8px 10px", fontSize: 12, outline: "none", fontFamily: "inherit", boxSizing: "border-box", colorScheme: "dark" };
+    var seg = function (key, val, label, color) { var on = (marks[key] || {}).status === val; return React.createElement("button", { key: val, onClick: function () { mark(key, val); }, style: { flex: 1, background: on ? color : "transparent", color: on ? "#000" : C.dim, border: "1px solid " + color, borderRadius: 7, padding: "6px 4px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, label); };
+    return React.createElement("div", { style: { maxWidth: 560, margin: "0 auto", padding: "4px 2px 90px" } },
+        React.createElement("div", { style: { fontSize: 17, fontWeight: 900, color: C.white, marginBottom: 4 } }, "📋 Vehicle Inspection (DVIR)"),
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 14 } }, "Walk the truck before and after the trip. Any defect needs a note — the office sees it right away."),
+        doneRep && React.createElement("div", { style: { background: (dvirDefects(doneRep).length ? C.orange : C.green) + "18", border: "1px solid " + (dvirDefects(doneRep).length ? C.orange : C.green) + "44", borderRadius: 10, padding: "12px 14px", marginBottom: 14, fontSize: 12, color: C.white } },
+            dvirDefects(doneRep).length ? ("⚠ Inspection filed with " + dvirDefects(doneRep).length + " defect" + (dvirDefects(doneRep).length === 1 ? "" : "s") + " — flagged for the office to review before this vehicle rolls again.") : "✅ Inspection filed — no defects. You're clear to roll."),
+        React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 10 } },
+            [["pre", "Pre-trip"], ["post", "Post-trip"]].map(function (k) { return React.createElement("button", { key: k[0], onClick: function () { setKind(k[0]); }, style: { flex: 1, background: kind === k[0] ? C.orange : "transparent", color: kind === k[0] ? "#000" : C.dim, border: "1px solid " + (kind === k[0] ? C.orange : C.border), borderRadius: 8, padding: "9px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" } }, k[1]); })),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "2fr 1fr", gap: 8, marginBottom: 12 } },
+            React.createElement("select", { value: vehicleId, onChange: function (e) { setVehicleId(e.target.value); }, style: inp },
+                React.createElement("option", { value: "" }, "Pick the vehicle…"),
+                vehicles.map(function (v) { return React.createElement("option", { key: v.id, value: v.id }, ((v.year || "") + " " + (v.make || "") + " " + (v.model || "")).trim() + (v.plate ? " · " + v.plate : "")); })),
+            React.createElement("input", { type: "number", value: odo, onChange: function (e) { setOdo(e.target.value); }, placeholder: "Odometer", style: inp })),
+        DVIR_ITEMS.map(function (it) {
+            var m = marks[it[0]] || {};
+            return React.createElement("div", { key: it[0], style: { background: C.card, border: "1px solid " + (m.status === "defect" ? C.red + "66" : C.border), borderRadius: 10, padding: "10px 12px", marginBottom: 8 } },
+                React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.white, marginBottom: 8 } }, it[1]),
+                React.createElement("div", { style: { display: "flex", gap: 6 } }, seg(it[0], "ok", "✓ OK", C.green), seg(it[0], "defect", "✗ Defect", C.red), seg(it[0], "na", "N/A", C.dim)),
+                m.status === "defect" && React.createElement("input", { value: m.note || "", onChange: function (e) { noteFor(it[0], e.target.value); }, placeholder: "Describe the defect (required)", style: Object.assign({}, inp, { marginTop: 8 }) }));
+        }),
+        React.createElement("input", { value: signature, onChange: function (e) { setSignature(e.target.value); }, placeholder: "Sign — type your full name", style: Object.assign({}, inp, { marginBottom: 8 }) }),
+        React.createElement("label", { style: { display: "flex", gap: 8, alignItems: "flex-start", fontSize: 11, color: C.dim, marginBottom: 12, cursor: "pointer" } },
+            React.createElement("input", { type: "checkbox", checked: certify, onChange: function (e) { setCertify(e.target.checked); }, style: { width: 15, height: 15, accentColor: C.orange, marginTop: 1 } }),
+            "I certify I inspected this vehicle, the marks above are true, and any defect is described. I understand a vehicle with an unsafe defect must not be driven until the office clears it."),
+        msg && React.createElement("div", { style: { fontSize: 12, color: C.red, marginBottom: 10 } }, msg),
+        React.createElement(Btn, { onClick: submit, style: { width: "100%", padding: "13px", fontSize: 14 } }, "Submit Inspection"),
+        mine.length > 0 && React.createElement("div", { style: { marginTop: 18 } },
+            React.createElement("div", { style: { fontSize: 11, fontWeight: 800, color: C.dim, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 } }, "My recent inspections"),
+            mine.map(function (r) { var d = dvirDefects(r); return React.createElement("div", { key: r.id, style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", marginBottom: 6, fontSize: 11, color: C.dim } }, (r.kind === "pre" ? "Pre-trip" : "Post-trip") + " · " + r.vehicleLabel + " · " + String(r.createdAt || "").slice(0, 10) + (d.length ? " · ⚠ " + d.length + " defect" + (d.length === 1 ? "" : "s") : " · ✅ clear") + (r.status === "reviewed" ? " · reviewed" : "")); })));
+}
+function DvirReviewList() {
+    var ls = React.useState(null); var list = ls[0], setList = ls[1];
+    var fs = React.useState("all"); var filter = fs[0], setFilter = fs[1];
+    var ms = React.useState(""); var msg = ms[0], setMsg = ms[1];
+    function load() { loadDvirFromCloud().then(function (l) { setList(l); }); }
+    React.useEffect(function () { load(); }, []);
+    function review(rep) {
+        plOps("dvir_reports", "PATCH", "id=eq." + encodeURIComponent(rep.id), { status: "reviewed" }).then(function (r) {
+            if (r.ok) { var next = (list || []).map(function (x) { return x.id === rep.id ? Object.assign({}, x, { status: "reviewed" }) : x; }); setList(next); saveDvir(next); }
+            else setMsg("Not saved: " + (r.error || "run the DVIR SQL first"));
+        });
+    }
+    if (list === null) return React.createElement(LoadingSpinner, { padding: 30 });
+    var open = list.filter(function (r) { return dvirDefects(r).length && r.status !== "reviewed"; });
+    var openVehicles = {}; open.forEach(function (r) { openVehicles[r.vehicleLabel] = true; });
+    var shown = list.filter(function (r) { return filter === "all" ? true : filter === "defects" ? dvirDefects(r).length > 0 : r.status === "reviewed"; });
+    return React.createElement("div", null,
+        Object.keys(openVehicles).length > 0 && React.createElement("div", { style: { background: C.red + "14", border: "1px solid " + C.red + "55", borderRadius: 10, padding: "10px 14px", marginBottom: 12, fontSize: 12, color: C.white } }, "⚠ Open defects on: " + Object.keys(openVehicles).join(", ") + " — review the inspection before that vehicle rolls."),
+        React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12 } }, [["all", "All"], ["defects", "With defects"], ["reviewed", "Reviewed"]].map(function (f) { return React.createElement("button", { key: f[0], onClick: function () { setFilter(f[0]); }, style: { background: filter === f[0] ? C.orange : "transparent", color: filter === f[0] ? "#000" : C.dim, border: "1px solid " + (filter === f[0] ? C.orange : C.border), borderRadius: 16, padding: "5px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, f[1]); })),
+        msg && React.createElement("div", { style: { fontSize: 12, color: C.red, marginBottom: 8 } }, msg),
+        shown.length === 0 && React.createElement("div", { style: { color: C.dim, fontSize: 12, textAlign: "center", padding: 24 } }, "No inspections here yet. Drivers file them from the Inspect tab in the driver app."),
+        shown.map(function (r) {
+            var d = dvirDefects(r);
+            return React.createElement("div", { key: r.id, style: { background: C.card, border: "1px solid " + (d.length && r.status !== "reviewed" ? C.red + "55" : C.border), borderRadius: 10, padding: "12px 14px", marginBottom: 8 } },
+                React.createElement("div", { style: { display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" } },
+                    React.createElement("div", null,
+                        React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: C.white } }, (r.kind === "pre" ? "Pre-trip" : "Post-trip") + " — " + r.vehicleLabel),
+                        React.createElement("div", { style: { fontSize: 11, color: C.dim } }, r.driverName + " · " + String(r.createdAt || "").slice(0, 16).replace("T", " ") + (r.odometer ? " · " + Number(r.odometer).toLocaleString() + " mi" : "") + " · signed: " + r.signature)),
+                    r.status === "reviewed"
+                        ? React.createElement("span", { style: { fontSize: 10, fontWeight: 800, color: C.green } }, "✓ REVIEWED")
+                        : React.createElement("button", { onClick: function () { review(r); }, style: { background: "transparent", border: "1px solid " + C.border, color: C.white, borderRadius: 7, padding: "6px 11px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "Mark reviewed")),
+                d.length > 0 && React.createElement("div", { style: { marginTop: 8 } }, d.map(function (x) { return React.createElement("div", { key: x.key, style: { fontSize: 11, color: C.red, marginBottom: 2 } }, "✗ " + x.label + (x.note ? " — " + x.note : "")); })),
+                !d.length && React.createElement("div", { style: { fontSize: 11, color: C.green, marginTop: 6 } }, "✅ No defects"));
         }));
 }
 // ═══════════════════════════════════════════════════════════════════
@@ -20565,7 +20921,8 @@ function DriverEarningsTab(props) {
     var jobs = (props.jobs || []).filter(function (j) { return j.assignedDriverName === (props.currentUser && props.currentUser.name) || !j.assignedDriverName; });
     var paidJobs = jobs.filter(function (j) { return j.paymentStatus === "paid" || j.status === "Paid" || j.status === "Completed"; });
     var pendingJobs = jobs.filter(function (j) { return j.status !== "Completed" && j.status !== "Cancelled" && (j.status === "En Route" || j.status === "In Transit" || j.status === "Delivered"); });
-    var scheduledBalance = pendingJobs.reduce(function (s, j) { return s + (Number(j.finalPrice) || 0) * 0.25; }, 0); // real driver commission rate reference — 25%, matches payroll default
+    var myDriver = plDriverRecordFor(props.currentUser && props.currentUser.name);
+    var scheduledBalance = pendingJobs.reduce(function (s, j) { return s + plDriverPayForJob(myDriver, j); }, 0); // the driver's own pay structure (per load / per mile / %), via the one money path — no hard-coded rate
 
     return React.createElement("div", { style: { maxWidth: 500, margin: "0 auto", padding: "16px" } },
         React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: C.white, marginBottom: 4 } }, "Earnings"),
@@ -20575,7 +20932,7 @@ function DriverEarningsTab(props) {
         React.createElement("div", { style: { fontSize: 11, color: C.dim, fontWeight: 700, textTransform: "uppercase", marginBottom: 8 } }, "Recent Payouts"),
         paidJobs.length === 0 && React.createElement("div", { style: { color: C.faint, fontSize: 12, textAlign: "center", padding: 20 } }, "No paid jobs yet."),
         paidJobs.slice(0, 15).map(function (j) {
-            var driverCut = (Number(j.finalPrice) || 0) * 0.25;
+            var driverCut = plDriverPayForJob(myDriver, j);
             return React.createElement("div", { key: j.id, style: { display: "flex", justifyContent: "space-between", alignItems: "center", background: C.card, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", marginBottom: 6 } },
                 React.createElement("div", null,
                     React.createElement("span", { style: { background: C.green, color: "#000", fontSize: 9, fontWeight: 800, padding: "2px 8px", borderRadius: 10, marginRight: 8 } }, "PAID"),
@@ -20622,7 +20979,7 @@ function DriverHelpTab(props) {
 function DriverAppShell(props) {
     var tabState = useBackableTab("home", "driverTab");
     var tab = tabState[0], setTab = tabState[1];
-    var TABS = [["home", "\uD83C\uDFE0", "Home"], ["loads", "\uD83D\uDCE6", "Loads"], ["voice", "\uD83C\uDF99\uFE0F", "Voice"], ["earnings", "\uD83D\uDCB0", "Earnings"], ["profile", "\uD83D\uDC64", "Profile"], ["help", "\u2753", "Help"]];
+    var TABS = [["home", "\uD83C\uDFE0", "Home"], ["loads", "\uD83D\uDCE6", "Loads"], ["inspect", "\uD83D\uDCCB", "Inspect"], ["voice", "\uD83C\uDF99\uFE0F", "Voice"], ["earnings", "\uD83D\uDCB0", "Earnings"], ["profile", "\uD83D\uDC64", "Profile"], ["help", "\u2753", "Help"]];
     return React.createElement("div", { style: { minHeight: "100vh", background: "#000" } },
         React.createElement(FirstTimeTour, { tourId: "driver-app-shell", steps: DRIVER_APP_TOUR_STEPS }),
         React.createElement("div", { style: { borderBottom: "1px solid " + C.border, padding: "10px 16px", display: "flex", alignItems: "center", gap: 10 } },
@@ -20630,6 +20987,7 @@ function DriverAppShell(props) {
             React.createElement("div", { style: { fontSize: 14, fontWeight: 900, color: C.white } }, "POTENT ", React.createElement("span", { style: { color: C.orange } }, "DRIVER"))),
         tab === "home" && React.createElement(DriverHomeMapTab, { jobs: props.jobs, currentUser: props.currentUser }),
         tab === "loads" && React.createElement(EnhancedDriverApp, props),
+        tab === "inspect" && React.createElement(DvirSection, { currentUser: props.currentUser }),
         tab === "voice" && React.createElement(VoiceRoom, { currentUser: props.currentUser, role: "driver" }),
         tab === "earnings" && React.createElement(DriverEarningsTab, { jobs: props.jobs, currentUser: props.currentUser }),
         tab === "profile" && React.createElement(DriverProfileTab, { currentUser: props.currentUser }),
@@ -21533,6 +21891,76 @@ function PreferredDriverSkillsPanel(props) {
             })));
 }
 
+// ── DRIVER BLOCK-OUT DATES (D29) ─────────────────────────────────
+// Date ranges a driver is NOT available (days off, vacation, personal).
+// The availability toggle above is only a right-now status; block-outs
+// are the calendar. Dispatch sees them here, can check "who's out on
+// <date>", and the assign flow warns before handing a load to a driver
+// who is blocked out on the job's date.
+var BLOCKOUT_KEY = "pl_driver_blockouts";
+function loadBlockoutsCache() { try { return JSON.parse(localStorage.getItem(BLOCKOUT_KEY) || "[]"); } catch (e) { return []; } }
+function saveBlockoutsCache(list) { try { localStorage.setItem(BLOCKOUT_KEY, JSON.stringify(list)); } catch (e) { } }
+function plDriverBlockedOn(driverName, dateStr, blockouts) {
+    if (!driverName || !dateStr) return null;
+    var d = String(dateStr).slice(0, 10);
+    var hit = (blockouts || []).find(function (b) { return b.driverName === driverName && String(b.start || "") <= d && String(b.end || "") >= d; });
+    return hit || null;
+}
+function blockoutRowToLocal(r) { return { id: r.id, driverName: r.driver_name || "", start: r.start_date || "", end: r.end_date || "", reason: r.reason || "" }; }
+function loadBlockoutsFromCloud() {
+    return plOps("driver_blockouts", "GET", "select=*&order=start_date.asc&limit=300").then(function (r) {
+        if (r.ok && Array.isArray(r.data)) { var list = r.data.map(blockoutRowToLocal); saveBlockoutsCache(list); return list; }
+        return loadBlockoutsCache();
+    }).catch(function () { return loadBlockoutsCache(); });
+}
+function BlockoutsPanel() {
+    var drivers = USERS.filter(function (u) { return u.role === "driver"; }).map(function (u) { return u.name; });
+    var ls = React.useState(null); var list = ls[0], setList = ls[1];
+    var fm = React.useState({ driver: drivers[0] || "", start: "", end: "", reason: "" }); var form = fm[0], setForm = fm[1];
+    var ck = React.useState(""); var checkDate = ck[0], setCheckDate = ck[1];
+    var ms = React.useState(""); var msg = ms[0], setMsg = ms[1];
+    function load() { loadBlockoutsFromCloud().then(function (l) { setList(l); }); }
+    React.useEffect(function () { load(); }, []);
+    function add() {
+        if (!form.driver || !form.start || !form.end) { setMsg("Pick the driver and both dates."); return; }
+        if (form.end < form.start) { setMsg("The end date is before the start date."); return; }
+        var row = { id: "BO-" + Date.now(), driver_name: form.driver, start_date: form.start, end_date: form.end, reason: form.reason || null };
+        plOps("driver_blockouts", "POST", "", row).then(function (r) {
+            if (r.ok) { setMsg(""); setForm({ driver: form.driver, start: "", end: "", reason: "" }); load(); }
+            else setMsg("Not saved: " + (r.error || "run the block-out SQL first"));
+        });
+    }
+    function del(b) {
+        plOps("driver_blockouts", "DELETE", "id=eq." + encodeURIComponent(b.id)).then(function (r) { if (r.ok) load(); else setMsg("Delete failed: " + (r.error || "")); });
+    }
+    var inp = { background: C.surface, border: "1px solid " + C.border, borderRadius: 7, color: C.white, padding: "7px 9px", fontSize: 12, outline: "none", fontFamily: "inherit", colorScheme: "dark" };
+    var today = new Date().toISOString().slice(0, 10);
+    var upcoming = (list || []).filter(function (b) { return b.end >= today; });
+    var outOnCheck = checkDate ? drivers.filter(function (d) { return plDriverBlockedOn(d, checkDate, list || []); }) : [];
+    if (list === null) return React.createElement(LoadingSpinner, { padding: 16 });
+    return React.createElement("div", { style: { marginTop: 18, borderTop: "1px solid " + C.border, paddingTop: 16 } },
+        React.createElement("div", { style: { fontSize: 14, fontWeight: 900, color: C.white, marginBottom: 4 } }, "📅 Block-Out Dates"),
+        React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 12 } }, "Dates a driver is off. Dispatch gets a warning before assigning them a load on a blocked date."),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 } },
+            React.createElement("select", { value: form.driver, onChange: function (e) { setForm(Object.assign({}, form, { driver: e.target.value })); }, style: inp }, drivers.map(function (d) { return React.createElement("option", { key: d, value: d }, d); })),
+            React.createElement("input", { value: form.reason, onChange: function (e) { setForm(Object.assign({}, form, { reason: e.target.value })); }, placeholder: "Reason (vacation, personal…)", style: inp }),
+            React.createElement("input", { type: "date", value: form.start, onChange: function (e) { setForm(Object.assign({}, form, { start: e.target.value })); }, style: inp }),
+            React.createElement("input", { type: "date", value: form.end, onChange: function (e) { setForm(Object.assign({}, form, { end: e.target.value })); }, style: inp })),
+        msg && React.createElement("div", { style: { fontSize: 12, color: C.red, marginBottom: 8 } }, msg),
+        React.createElement(Btn, { small: true, onClick: add }, "+ Add block-out"),
+        upcoming.length > 0 && React.createElement("div", { style: { marginTop: 14 } },
+            React.createElement("div", { style: { fontSize: 11, fontWeight: 800, color: C.dim, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 } }, "Coming up"),
+            upcoming.map(function (b) {
+                return React.createElement("div", { key: b.id, style: { display: "flex", justifyContent: "space-between", alignItems: "center", background: C.card, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", marginBottom: 6 } },
+                    React.createElement("div", { style: { fontSize: 12, color: C.white } }, React.createElement("b", null, b.driverName), React.createElement("span", { style: { color: C.dim } }, " · " + b.start + " → " + b.end + (b.reason ? " · " + b.reason : ""))),
+                    React.createElement("button", { onClick: function () { del(b); }, style: { background: "transparent", border: "1px solid " + C.border, color: C.dim, borderRadius: 6, padding: "4px 9px", fontSize: 11, cursor: "pointer", fontFamily: "inherit" } }, "Remove"));
+            })),
+        React.createElement("div", { style: { marginTop: 14, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, padding: 12 } },
+            React.createElement("div", { style: { fontSize: 11, fontWeight: 800, color: C.white, marginBottom: 8 } }, "Who's out on a date?"),
+            React.createElement("input", { type: "date", value: checkDate, onChange: function (e) { setCheckDate(e.target.value); }, style: inp }),
+            checkDate && React.createElement("div", { style: { fontSize: 12, color: outOnCheck.length ? C.red : C.green, marginTop: 8 } }, outOnCheck.length ? ("🚫 Out: " + outOnCheck.join(", ")) : "✅ Everybody is available that day.")));
+}
+
 // ── 22/23. DRIVER & VEHICLE AVAILABILITY CALENDARS ───────────────
 function AvailabilityCalendar(props) {
     var isDriver = props.type === "driver";
@@ -21577,7 +22005,8 @@ function AvailabilityCalendar(props) {
                         var active = st === opt;
                         return React.createElement("button", { key: opt, onClick: function () { setStatus(n, opt); }, style: { background: active ? STATUS_COLOR[opt] : "transparent", color: active ? "#000" : C.dim, border: "1px solid " + STATUS_COLOR[opt], borderRadius: 14, padding: "4px 10px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, opt.replace(/_/g, " "));
                     })));
-        }));
+        }),
+        isDriver && React.createElement(BlockoutsPanel, null));
 }
 
 // ── 32/33. CUSTOMER NOTIFICATION RULES + QUIET HOURS ─────────────
@@ -23584,6 +24013,98 @@ function AdminB2BPricingControls() {
 // Real intent patterns → real function calls. Each checks the actual
 // transcript for real keywords and calls a real data source — never
 // invents an answer.
+// ── PLAIN-WORDS NUMBERS (D23) ─────────────────────────────────────
+// Ask Griffin about the business in plain words — "how much revenue
+// this month?", "what did we spend on fuel last week?", "how many jobs
+// did Marcus complete?" — and get a straight answer computed from the
+// real records. No AI call, no guessing: plNumbersQuery is a pure
+// interpreter (records in, answer out) and returns null when the
+// question is not one it can answer exactly, so Griffin falls through
+// to its other answers untouched.
+function plNumbersWindow(t, now) {
+    function fmt(d) { return d.toISOString().slice(0, 10); }
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (t.indexOf(" today") > -1 || t.indexOf("today ") > -1) return { start: fmt(today), end: fmt(today), label: "today" };
+    if (t.indexOf("yesterday") > -1) { var y = new Date(today); y.setDate(y.getDate() - 1); return { start: fmt(y), end: fmt(y), label: "yesterday" }; }
+    if (t.indexOf("last week") > -1) { var m = new Date(today); m.setDate(m.getDate() - ((m.getDay() + 6) % 7) - 7); var s = new Date(m); s.setDate(s.getDate() + 6); return { start: fmt(m), end: fmt(s), label: "last week" }; }
+    if (t.indexOf("this week") > -1) { var m2 = new Date(today); m2.setDate(m2.getDate() - ((m2.getDay() + 6) % 7)); return { start: fmt(m2), end: fmt(today), label: "this week" }; }
+    if (t.indexOf("last month") > -1) { var f = new Date(now.getFullYear(), now.getMonth() - 1, 1); var l = new Date(now.getFullYear(), now.getMonth(), 0); return { start: fmt(f), end: fmt(l), label: "last month" }; }
+    if (t.indexOf("this year") > -1 || t.indexOf("year to date") > -1) return { start: fmt(new Date(now.getFullYear(), 0, 1)), end: fmt(today), label: "this year" };
+    var months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+    for (var i = 0; i < 12; i++) { if (t.indexOf(months[i]) > -1) { var yr = i > now.getMonth() ? now.getFullYear() - 1 : now.getFullYear(); var mf = new Date(yr, i, 1); var ml = new Date(yr, i + 1, 0); var mend = (yr === now.getFullYear() && i === now.getMonth()) ? today : ml; return { start: fmt(mf), end: fmt(mend), label: "in " + months[i] }; } }
+    return { start: fmt(new Date(now.getFullYear(), now.getMonth(), 1)), end: fmt(today), label: "this month" };
+}
+function plNumbersQuery(text, data, now) {
+    var t = " " + String(text || "").toLowerCase().replace(/\s+/g, " ") + " ";
+    now = now || new Date();
+    var win = plNumbersWindow(t, now);
+    function dayOf(x) { return String(x || "").slice(0, 10); }
+    function inWin(d) { var s = dayOf(d); return s >= win.start && s <= win.end; }
+    var allJobs = data.jobs || [];
+    // "right now" question — not windowed
+    if (t.indexOf("unassigned") > -1 || t.indexOf("no driver") > -1) {
+        var un = allJobs.filter(function (j) { return !j.assignedDriverName && j.status !== "Cancelled" && j.status !== "Completed" && j.status !== "Paid"; });
+        return "There are " + un.length + " unassigned load" + (un.length === 1 ? "" : "s") + " right now.";
+    }
+    var driver = null;
+    (data.driverNames || []).forEach(function (nm) {
+        if (driver || !nm) return;
+        var low = nm.toLowerCase();
+        if (t.indexOf(low) > -1 || t.indexOf(low.split(" ")[0]) > -1) driver = nm;
+    });
+    var jobs = allJobs.filter(function (j) { return inWin(j.date || j.createdAt); });
+    if (driver) jobs = jobs.filter(function (j) { return j.assignedDriverName === driver; });
+    var live = jobs.filter(function (j) { return j.status !== "Cancelled"; });
+    function price(j) { return Number(j.finalPrice) || Number(j.basePrice) || 0; }
+    var revenue = live.reduce(function (s, j) { return s + price(j); }, 0);
+    var who = driver ? (driver + " ") : "";
+    // money customers still owe on finished work
+    if (/outstanding|still owe|owes us|owe us|unpaid|not been paid|haven't paid/.test(t)) {
+        var owed = jobs.filter(function (j) { return (j.status === "Delivered" || j.status === "Completed") && j.paymentStatus !== "paid" && j.status !== "Paid"; });
+        var owedSum = owed.reduce(function (s, j) { return s + price(j); }, 0);
+        return "Customers still owe " + plMoney(owedSum) + " on " + owed.length + " finished job" + (owed.length === 1 ? "" : "s") + " " + win.label + ".";
+    }
+    // spending
+    if (/spend|spent|expense|costs? (us|were|of)/.test(t)) {
+        var exps = (data.expenses || []).filter(function (e) { return inWin(e.date); });
+        var types = {}; exps.forEach(function (e) { if (e.type) types[e.type] = true; });
+        var hitType = Object.keys(types).filter(function (ty) { return t.indexOf(ty.toLowerCase()) > -1; })[0];
+        if (hitType) { var ts = exps.filter(function (e) { return e.type === hitType; }).reduce(function (s, e) { return s + (Number(e.amount) || 0); }, 0); return "You spent " + plMoney(ts) + " on " + hitType + " " + win.label + "."; }
+        var tot = exps.reduce(function (s, e) { return s + (Number(e.amount) || 0); }, 0);
+        return "Total expenses " + win.label + ": " + plMoney(tot) + " across " + exps.length + " expense" + (exps.length === 1 ? "" : "s") + ".";
+    }
+    // driver settlements / payouts
+    if (/settlement|payout|pay out|paid out|driver pay|pay (the )?drivers/.test(t)) {
+        var sets = (data.settlements || []).filter(function (s) { return inWin(s.period_end || s.paid_date); });
+        if (driver) sets = sets.filter(function (s) { return s.driver_name === driver; });
+        if (/owed|owe |unpaid|outstanding/.test(t)) { var un2 = sets.filter(function (s) { return s.status !== "paid"; }); var unSum = un2.reduce(function (s, x) { return s + (Number(x.net_pay) || 0); }, 0); return (driver || "Drivers") + (driver ? " is" : " are") + " owed " + plMoney(unSum) + " in unpaid settlements " + win.label + "."; }
+        var net = sets.reduce(function (s, x) { return s + (Number(x.net_pay) || 0); }, 0);
+        return "Driver payouts " + win.label + ": " + plMoney(net) + " net across " + sets.length + " settlement" + (sets.length === 1 ? "" : "s") + (driver ? " for " + driver : "") + ".";
+    }
+    // average job value
+    if (/average|avg/.test(t)) {
+        if (!live.length) return "No jobs " + win.label + " to average yet.";
+        return "The average job " + win.label + " brought in " + plMoney(revenue / live.length) + " across " + live.length + " job" + (live.length === 1 ? "" : "s") + ".";
+    }
+    // counts
+    if (t.indexOf("how many") > -1) {
+        if (t.indexOf("cancel") > -1) { var cc = jobs.filter(function (j) { return j.status === "Cancelled"; }).length; return who + cc + " job" + (cc === 1 ? " was" : "s were") + " cancelled " + win.label + "."; }
+        if (t.indexOf("complet") > -1 || t.indexOf("deliver") > -1 || t.indexOf("finish") > -1 || t.indexOf("done") > -1) { var dc = jobs.filter(function (j) { return j.status === "Completed" || j.status === "Delivered" || j.status === "Paid"; }).length; return who + "completed " + dc + " job" + (dc === 1 ? "" : "s") + " " + win.label + "."; }
+        return who + live.length + " job" + (live.length === 1 ? "" : "s") + " " + win.label + (driver ? "" : " on the books") + ".";
+    }
+    // revenue
+    if (/revenue|sales|gross|income|made|make|earned|bring in|brought in|top line/.test(t)) {
+        return "Revenue " + win.label + ": " + plMoney(revenue) + " across " + live.length + " job" + (live.length === 1 ? "" : "s") + (driver ? " driven by " + driver : "") + ".";
+    }
+    return null;
+}
+function griffinNumbersAnswer(transcript) {
+    var settlements = []; try { settlements = JSON.parse(localStorage.getItem("pl_settlements") || "[]"); } catch (e) { }
+    var names = [];
+    try { JSON.parse(localStorage.getItem("pl_drivers") || "[]").forEach(function (d) { if (d.name) names.push(d.name); }); } catch (e) { }
+    try { USERS.forEach(function (u) { if (u.role === "driver" && names.indexOf(u.name) < 0) names.push(u.name); }); } catch (e) { }
+    try { return plNumbersQuery(transcript, { jobs: loadJobs(), expenses: loadExpenses(), settlements: settlements, driverNames: names }, new Date()); } catch (e) { return null; }
+}
 function griffinAnswer(transcript, userEmail, userRole, token) {
     var t = transcript.toLowerCase();
 
@@ -23617,6 +24138,8 @@ function griffinAnswer(transcript, userEmail, userRole, token) {
             return fetch(SUPABASE_URL + "/rest/v1/jobs?status=eq.New&select=id&assignedDriverName=is.null", { headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY } })
                 .then(function (r) { return r.json(); }).then(function (rows) { return "There are " + (Array.isArray(rows) ? rows.length : 0) + " real unassigned loads right now."; });
         }
+        var numAns = griffinNumbersAnswer(transcript);
+        if (numAns) return Promise.resolve(numAns);
     }
     // Real deterministic patterns didn't match — fall back to the real
     // real, free, zero-server LLM running directly in the browser via

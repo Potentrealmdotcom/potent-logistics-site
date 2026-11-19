@@ -347,7 +347,7 @@ function paint(){var svg=$("map");if(!svg)return;svg.innerHTML="";var NS="http:/
 function sendText(v){chat.push({role:"user",content:v});setOrb("thinking","Working on it…");if(tab==="chat")draw();$("send").disabled=true;
   api({action:"chat",tz:TZ,lang:PLANG(),messages:chat.map(function(c){return{role:c.role,content:c.content}})}).then(function(j){$("send").disabled=false;
     chat.push({role:"assistant",content:j.ok?j.reply:(j.error||"Something went wrong."),did:j.ok?j.did:null});
-    if(!j.ok)setOrb(navigator.onLine===false?"blocked":"error",j.error||"",5000);else if(j.did&&j.did.length)setOrb("done","Saved "+j.did.length+" item"+(j.did.length>1?"s":""),3000);else setOrb(pc?"listening":"idle");
+    if(!j.ok)setOrb(navigator.onLine===false?"blocked":"error",j.error||"",5000);else if(j.did&&j.did.length){var _sv=0,_dn=0,_em=0;j.did.forEach(function(x){if(x.tool==="send_email")_em++;else if(/^complete_/.test(x.tool||""))_dn++;else _sv++});var _p=[];if(_sv)_p.push("Saved "+_sv+" item"+(_sv>1?"s":""));if(_dn)_p.push("Marked "+_dn+" done");if(_em)_p.push("Sent "+_em+" email"+(_em>1?"s":""));setOrb("done",_p.join(" \u00B7 ")||"Done",3000)}else setOrb(pc?"listening":"idle");
     if(tab==="chat")draw()})}
 $("bar").onsubmit=function(e){e.preventDefault();var v=$("msg").value.trim();if(!v)return;$("msg").value="";sendText(v)};
 

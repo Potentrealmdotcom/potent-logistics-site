@@ -54,6 +54,12 @@ var TABLES = {
     deadlines: { pk: "id" },
     shift_handoffs: { pk: "id" },
     escalation_timers: { pk: "id" },
+    // DVIR inspections (D20): drivers file their own pre/post-trip reports; the office reviews them.
+    dvir_reports: { pk: "id", writeRoles: ["owner", "dispatch", "dispatcher", "driver"] },
+    // driver block-out date ranges (D29): office-managed like driver_availability.
+    driver_blockouts: { pk: "id", writeRoles: ["owner", "dispatch", "dispatcher"] },
+    // owner-defined automation rules (D21): owner-only writes; the owner can delete their own rules.
+    automation_rules: { pk: "id", prefixId: true, writeRoles: ["owner"] },
     site_profiles: {},
     customer_locations: {},
     incoming_loads: { pk: "id", writeRoles: ["owner", "dispatch", "dispatcher"] },
