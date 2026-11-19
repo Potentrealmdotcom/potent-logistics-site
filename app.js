@@ -308,7 +308,7 @@ function plTruckLimitHit() {
 function setActiveOrg(orgId) { _plOrgId = orgId || null; }
 // Per-company local data separation: each company's browser-stored data is parked
 // in its own snapshot, so one company never sees another's jobs/drivers/leads on a shared device.
-var PL_NS_KEEP = /^(pl_user|pl3_auth|pl_token|pl_ns|pl_ns_snap_.*|pl_cam_consent|pl_notif_asked|pl_driver_device_id|pl_tour_seen_.*|pl_tip_seen_.*|pl_getting_started_dismissed|pl_decoy_photo|potent_lang)$/;
+var PL_NS_KEEP = /^(pl_user|pl3_auth|pl_token|pl_ns|pl_ns_snap_.*|pl_cam_consent|pl_notif_asked|pl_driver_device_id|pl_tour_seen_.*|pl_tip_seen_.*|pl_decoy_photo|potent_lang)$/;
 function plSwapNamespace(target) {
     try {
         var cur = localStorage.getItem("pl_ns") || "potent";
@@ -7961,7 +7961,6 @@ function AdminDashboard(props) {
         plEasyMode() ? React.createElement(EasyModeDashboard, { jobs: props.jobs, onUpdateStatus: props.onUpdateStatus, setTab: setTab }) :
         React.createElement("div", { style: { padding: "20px 14px 90px", maxWidth: 740, margin: "0 auto" } },
             props.role === ROLES.OWNER && !(props.currentUser && props.currentUser.isDecoy) && React.createElement(FirstTimeTour, { tourId: "admin-dashboard", steps: ADMIN_DASHBOARD_TOUR_STEPS }),
-            props.role === ROLES.OWNER && !(props.currentUser && props.currentUser.isDecoy) && React.createElement(GettingStartedChecklist, { jobs: props.jobs }),
             tab === "quote" && React.createElement(PhoneQuotePanel, { onAddJob: props.onAddJob, gasPPG: props.gasPPG, role: props.role, currentUser: props.currentUser }),
             tab === "quickquote" && React.createElement(QuickQuotePanel, null),
             tab === "workqueue" && React.createElement(WorkQueue, { jobs: props.jobs, recurringRoutes: props.recurringRoutes }),
@@ -20351,7 +20350,6 @@ var ADMIN_DASHBOARD_TOUR_STEPS = [
     { title: "Welcome To Your Dashboard", body: "Everything is organized into 5 real groups at the top: Jobs, Sales, Fleet, Money, Team. Let's walk through where things actually live." },
     { title: "Jobs & Sales", body: "Jobs is where every booking lives, start to finish. Sales is where you book new work \u2014 Live Call Screen for phone bookings, Leads for your call list, Incoming Loads for brokers sending you freight." },
     { title: "Money & Fleet", body: "Money has your real payment tracking, Claims, and the Accounting Ledger. Fleet has your live GPS map and vehicle documents." },
-    { title: "The Checklist Below", body: "You'll see a real Getting Started checklist right on this screen \u2014 it checks itself off automatically as you do real things, not something you manually tick." },
 ];
 
 var ADMIN_PARTNER_TOUR_STEPS = [
@@ -20509,50 +20507,6 @@ var ACCOUNT_TOS_SECTIONS = [
 // ── MOUNT APP ─────────────────────────────────────────────────────
 // [render relocated to end of file]
 
-// ═══════════════════════════════════════════════════════════════════
-// GETTING STARTED CHECKLIST — the real "aha moment" tracker. Shows
-// what a brand-new admin should actually try, checks itself off as
-// each real thing genuinely happens (not manually dismissed), and
-// disappears once every item is done. Same spirit as Motive/Samsara's
-// setup checklist, using your own real data to know what's done.
-// ═══════════════════════════════════════════════════════════════════
-function GettingStartedChecklist(props) {
-    var jobs = props.jobs || [];
-    var [dismissed, setDismissed] = React.useState(function () {
-        try { return localStorage.getItem("pl_getting_started_dismissed") === "yes"; } catch (e) { return false; }
-    });
-    var [driverCount, setDriverCount] = React.useState(null);
-    var [leadCount, setLeadCount] = React.useState(null);
-
-    React.useEffect(function () {
-        plLeadsFetch("?select=id&limit=1").then(function (r) { return r.json(); }).then(function (rows) { setLeadCount(Array.isArray(rows) ? rows.length : 0); }).catch(function () { setLeadCount(0); });
-    }, []);
-
-    if (dismissed) return null;
-
-    var hasJob = jobs.length > 0;
-    var hasPaidJob = jobs.some(function (j) { return j.paymentStatus === "paid"; });
-    var hasLeads = (leadCount || 0) > 0;
-    var checklistItems = [
-        { done: hasJob, label: "Create your first job", sub: "Sales \u2192 Live Call Screen, or Jobs \u2192 add one directly" },
-        { done: hasPaidJob, label: "Mark a job Paid", sub: "Jobs \u2192 open any job \u2192 real Pay Now / payment status" },
-        { done: hasLeads, label: "Import your lead list", sub: "Sales \u2192 Leads \u2192 Import All Leads button" },
-    ];
-    var doneCount = checklistItems.filter(function (i) { return i.done; }).length;
-    if (doneCount === checklistItems.length) return null; // real completion — disappears on its own, nothing to dismiss
-
-    return React.createElement("div", { style: { background: "#1a1400", border: "1px solid " + C.orange + "66", borderRadius: 10, padding: 16, marginBottom: 16 } },
-        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 } },
-            React.createElement("div", { style: { fontSize: 13, fontWeight: 900, color: C.orange } }, "\uD83D\uDE80 Getting Started (" + doneCount + "/" + checklistItems.length + ")"),
-            React.createElement("button", { onClick: function () { try { localStorage.setItem("pl_getting_started_dismissed", "yes"); } catch (e) {} setDismissed(true); }, style: { background: "transparent", color: C.dim, border: "none", fontSize: 11, cursor: "pointer", fontFamily: "inherit" } }, "Hide")),
-        checklistItems.map(function (item, i) {
-            return React.createElement("div", { key: i, style: { display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0", borderTop: i > 0 ? "1px solid " + C.orange + "22" : "none" } },
-                React.createElement("div", { style: { width: 20, height: 20, borderRadius: "50%", background: item.done ? C.green : "transparent", border: item.done ? "none" : "2px solid " + C.dim, color: "#000", fontSize: 11, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 } }, item.done ? "\u2713" : ""),
-                React.createElement("div", null,
-                    React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: item.done ? C.dim : C.white, textDecoration: item.done ? "line-through" : "none" } }, item.label),
-                    !item.done && React.createElement("div", { style: { fontSize: 10, color: C.dim, marginTop: 1 } }, item.sub)));
-        }));
-}
 
 // ── MOUNT APP ─────────────────────────────────────────────────────
 // [render relocated to end of file]
