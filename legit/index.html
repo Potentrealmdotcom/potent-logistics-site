@@ -36,6 +36,14 @@ nav button.on{color:var(--red)}nav .dot{position:absolute;top:6px;right:22%;back
 .thumbs{display:flex;gap:8px;flex-wrap:wrap}.thumbs img{width:78px;height:78px;border-radius:10px;object-fit:cover}
 .sheet{position:fixed;inset:0;background:#000c;display:flex;align-items:flex-end;justify-content:center;z-index:20}.sheet>div{background:var(--card);border-radius:20px 20px 0 0;padding:18px;width:100%;max-width:520px;max-height:88vh;overflow:auto}
 pre.snap{white-space:pre-wrap;background:#0b0b0d;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px;max-height:160px;overflow:auto}
+/* G79 fold-in additions */
+body.lg-large{font-size:18.5px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.badge.nf{background:#12233d;color:#7db4ff;border-color:#1d3f6e}
+.vibe{font-weight:800;color:var(--amber)}
+.tgl{display:flex;gap:10px;align-items:center;padding:9px 0;cursor:pointer}.tgl>span{flex:1}
+.sw2{position:relative;width:46px;height:26px;flex:none;display:inline-block}.sw2 input{opacity:0;width:100%;height:100%;position:absolute;margin:0;cursor:pointer}.sw2 i{position:absolute;inset:0;background:#222;border:1px solid var(--line);border-radius:99px;pointer-events:none}.sw2 i:after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#8d8d97;transition:.15s}.sw2 input:checked+i{background:#0d2e1c;border-color:#14522f}.sw2 input:checked+i:after{left:22px;background:var(--green)}
+video.lgv{width:100%;border-radius:12px;background:#000;max-height:340px}
 </style></head><body>
 <div id="app" aria-live="polite"></div><footer id="ft" style="text-align:center;padding:6px 0 30px;color:var(--dim);font-size:11px"><img src="/potent-griffin-icon.png" alt="POTENT&reg;" style="height:20px;width:20px;vertical-align:middle;margin-right:6px;opacity:.7"><span id="cp" style="user-select:none;-webkit-user-select:none">&copy; 2026 POTENT&reg; &middot; LEGIT &middot; All Rights Reserved</span> &middot; <a href="/legit/terms.html" style="color:var(--dim)">Terms</a> &middot; <a href="/legit/privacy.html" style="color:var(--dim)">Privacy</a></footer><nav id="nav" hidden><div id="navin"></div></nav>
 <script src="/google-signin.js"></script>
@@ -90,12 +98,12 @@ async function boot(){
   var d=await api("me");if(!d.ok)return;S.user=d.user;S.access=d.access;S.complete=d.complete;S.intentions=d.intentions;route()}
 function route(){clearTimers();
   if(S.access=="banned")return gateBan();if(S.access=="verify")return gateVerify();if(S.access=="paywall")return gatePay();if(S.access!="ok")return auth("login");
-  var tabs=[["discover","Discover"],["matches","Matches"],["love","Love Board"],["wingman","Wingman"],["activity","Activity"],["profile","Profile"]];if(S.user.is_admin)tabs.push(["admin","Admin"]);
+  var tabs=[["discover","Discover"],["matches","Matches"],["love","Love Board"],["wingman","Wingman"],["events","Events"],["activity","Activity"],["profile","Profile"]];if(S.user.is_admin)tabs.push(["admin","Admin"]);
   $("#nav").hidden=false;$("#navin").innerHTML=tabs.map(function(t){return '<button class="'+(S.tab==t[0]?"on":"")+'" data-t="'+t[0]+'">'+t[1]+(t[0]=="activity"&&S.unread?'<span class="dot">'+S.unread+'</span>':'')+'</button>'}).join("");
   document.querySelectorAll("#navin button").forEach(function(b){b.onclick=function(){S.tab=b.dataset.t;route()}});
   if(!S.user.is_admin&&!S.user.onboarded&&!S.complete)return onboard();
   if(!S.complete&&!S.user.is_admin&&S.tab!="profile"){S.tab="profile";return route()}
-  ({discover:discover,matches:matches,love:love,wingman:wingmanTab,activity:activity,profile:profile,admin:admin})[S.tab]()}
+  ({discover:discover,matches:matches,love:love,wingman:wingmanTab,events:eventsTab,activity:activity,profile:profile,admin:admin})[S.tab]()}
 
 /* ---------- step-by-step onboarding (own screens; every lifestyle question is optional and skippable) ---------- */
 var OB={i:0,d:null};
@@ -103,7 +111,7 @@ var OBQ=[
  {k:"gender",t:"How do you identify?",sub:"This is shown on your profile.",opts:[["man","Man"],["woman","Woman"],["nonbinary","Nonbinary"]],req:1},
  {k:"interested_in",t:"Who do you want to meet?",sub:"Pick one or more.",opts:[["man","Men"],["woman","Women"],["nonbinary","Nonbinary people"]],multi:1,req:1},
  {k:"intent",t:"What are you here for?",sub:"Be honest. It saves everyone time.",opts:[["serious","Something serious"],["casual","Something casual"],["one_night","Just tonight"]],req:1},
- {k:"photos",t:"Add your photos",sub:"Real, recent, clear face. Up to 4. No filters, no AI images.",photo:1,req:1},
+ {k:"photos",t:"Add your photos",sub:"LEGIT Honesty Rules: no Snapchat/Instagram filters, no FaceTune or heavy editing, no AI images, and NO photos older than 12 months. First photo: clear face, no sunglasses. Every photo is AI-scanned on upload — filtered ones are rejected.",photo:1,req:1},
  {k:"about.drinking",t:"Do you drink?",sub:"Optional. You can skip any of these.",opts:[["never","Never"],["socially","Socially"],["often","Often"]]},
  {k:"about.smoking",t:"Do you smoke?",sub:"Optional.",opts:[["never","Never"],["socially","Socially"],["regularly","Regularly"]]},
  {k:"about.kids",t:"How do you feel about kids?",sub:"Optional.",opts:[["have","I have kids"],["want","I want kids"],["dont_want","I don't want kids"],["open","Open to it"]]},
@@ -129,7 +137,7 @@ function onboard(){clearTimers();var u=S.user;if(!OB.d)OB.d={about:Object.assign
     else if(q.k.indexOf("about.")==0){var kk=q.k.slice(6);if(d.about[kk]==v)delete d.about[kk];else d.about[kk]=v}
     else d[q.k]=v;onboard()}});
   if(q.photo){$("#th").onclick=function(e){var i=e.target.dataset&&e.target.dataset.i;if(i===undefined)return;d.photos.splice(+i,1);onboard()};
-    $("#pf").onchange=async function(){var fs=[].slice.call(this.files).slice(0,4-d.photos.length);for(var f of fs)d.photos.push({url:await shrink(f,720)});onboard()}}
+    $("#pf").onchange=async function(){var fs=[].slice.call(this.files).slice(0,4-d.photos.length);for(var f of fs){var pp=await LG.preparePhoto(f);if(pp)d.photos.push(pp)}onboard()}}
   if(q.prefs)$("#loc").onclick=function(){navigator.geolocation?navigator.geolocation.getCurrentPosition(async function(p){var r=await api("update_profile",{lat:p.coords.latitude,lng:p.coords.longitude});$("#er").className=r.ok?"ok":"err";$("#er").textContent=r.ok?"Location saved (blurred).":"Could not save"},function(){$("#er").className="err";$("#er").textContent="Location was not allowed. That is fine, you can skip it."}):0};
   async function save(skip){
     if(q.text)d.bio=$("#bi").value;if(q.prefs){d.a1=$("#a1").value;d.a2=$("#a2").value;d.ds=$("#ds").value}
@@ -286,7 +294,7 @@ var PQ=["My ideal first date is...","I'm weirdly good at...","You'll win me over
 function profile(){var u=S.user,ph=u.photos||[];var pr=u.prompts||[];
   app.innerHTML=(u.is_admin?'<div class="card"><a href="/legit/admin/" style="color:var(--red);font-weight:800">Open the Admin console →</a></div>':'')+'<div class="bar"><h2>'+esc(u.name)+' <span class="badge">ID verified</span></h2><button class="btn ghost small" id="lo">Log out</button></div>'+(S.complete?'':'<div class="card" style="border-color:var(--red)">Finish your profile to start swiping: add a photo, who you\'re into, and what you\'re looking for.</div>')+
   (u.paid?'<div class="ok">Lifetime access unlocked ✓</div>':u.trial_ends_at?'<div class="card">Free trial ends '+new Date(u.trial_ends_at).toLocaleString()+'. <button class="btn small sp" id="unl">Unlock for $39.99</button></div>':'')+
-  '<div class="card"><label>Photos (up to 4)</label><div class="thumbs" id="th">'+ph.map(function(x,i){return '<img alt="Photo '+(i+1)+'" src="'+x.url+'" data-i="'+i+'" title="Tap to remove">'}).join("")+'</div><input id="pf" type="file" accept="image/*" multiple '+(ph.length>=4?"disabled":"")+'><div class="dim" style="font-size:12px">Tap a photo to remove it.<br><b style="color:var(--red)">Real photos only.</b> No filters, no animal faces, no AI images. Clear face, recent, you.</div></div>'+
+  '<div class="card"><label>Photos (up to 4)</label><div class="thumbs" id="th">'+ph.map(function(x,i){return '<img alt="Photo '+(i+1)+'" src="'+x.url+'" data-i="'+i+'" title="Tap to remove">'}).join("")+'</div><input id="pf" type="file" accept="image/*" multiple '+(ph.length>=4?"disabled":"")+'><div class="dim" style="font-size:12px">Tap a photo to remove it.<br><b style="color:var(--red)">Real photos only.</b> No filters, no animal faces, no AI images. Clear face, recent, you. Every photo is AI-scanned on upload, and photos older than 12 months are rejected (LEGIT Honesty Rules).</div></div>'+
   '<div class="card"><label for="gd">I am</label><select id="gd"><option value="">Choose</option>'+["man","woman","nonbinary"].map(function(g){return '<option'+(u.gender==g?" selected":"")+'>'+g+'</option>'}).join("")+'</select><label>Interested in</label>'+chips("ii",["man","woman","nonbinary"],u.interested_in||[])+
   '<label for="it" class="sp">Looking for</label><select id="it"><option value="">Choose</option>'+[["serious","Serious"],["casual","Casual"],["one_night","One night"]].map(function(x){return '<option value="'+x[0]+'"'+(u.intent==x[0]?" selected":"")+'>'+x[1]+'</option>'}).join("")+'</select>'+
   '<label for="bt">Body type</label><select id="bt"><option value="">Prefer not to say</option>'+["slim","athletic","average","muscular","curvy","plus"].map(function(g){return '<option'+(u.body_type==g?" selected":"")+'>'+g+'</option>'}).join("")+'</select></div>'+
@@ -297,7 +305,7 @@ function profile(){var u=S.user,ph=u.photos||[];var pr=u.prompts||[];
   ["ii","ti","pb"].forEach(wireChips);$("#lo").onclick=function(){setTok("");S.user=null;auth("login")};
   var unl=$("#unl");unl&&(unl.onclick=async function(){var d=await api("checkout");if(d.url)location.href=d.url});
   $("#th").onclick=async function(e){var i=e.target.dataset&&e.target.dataset.i;if(i===undefined)return;ph.splice(+i,1);var r=await api("update_profile",{photos:ph});if(r.ok){S.user=r.user;S.complete=r.complete;profile()}};
-  $("#pf").onchange=async function(){var fs=[].slice.call(this.files).slice(0,4-ph.length);for(var f of fs)ph.push({url:await shrink(f,720)});var r=await api("update_profile",{photos:ph});if(r.ok){S.user=r.user;S.complete=r.complete;profile()}else $("#er").textContent=r.error};
+  $("#pf").onchange=async function(){var fs=[].slice.call(this.files).slice(0,4-ph.length);for(var f of fs){var pp=await LG.preparePhoto(f);if(pp)ph.push(pp)}var r=await api("update_profile",{photos:ph});if(r.ok){S.user=r.user;S.complete=r.complete;profile()}else $("#er").textContent=r.error};
   $("#loc").onclick=function(){navigator.geolocation?navigator.geolocation.getCurrentPosition(async function(p){var r=await api("update_profile",{lat:p.coords.latitude,lng:p.coords.longitude});$("#er").className="ok";$("#er").textContent=r.ok?"Location saved (blurred).":"Could not save"},function(){$("#er").className="err";$("#er").textContent="Location was not allowed."}):0};
   $("#sv").onclick=async function(){var prompts=[0,1,2].map(function(i){return {question:$("#pq"+i).value,answer:$("#pa"+i).value}}).filter(function(x){return x.answer.trim()});
     var r=await api("update_profile",{gender:$("#gd").value,interested_in:picked("ii"),intent:$("#it").value,body_type:$("#bt").value,bio:$("#bi").value,prompts:prompts,tonight_intentions:picked("ti"),pref_age_min:$("#a1").value,pref_age_max:$("#a2").value,pref_distance:$("#ds").value,pref_body:picked("pb")});
@@ -331,5 +339,240 @@ async function adminPay(){var d=await api("a_payments");if(!d.ok)return;$("#ad")
   $("#ad").innerHTML='<div class="card"><div class="dim">Total collected</div><div class="h" style="font-size:32px">$'+(d.totalCents/100).toFixed(2)+'</div></div>'+(d.payments.length?d.payments.map(function(p){var u=p.legit_users||{};return '<div class="card"><b>$'+((p.amount_cents||0)/100).toFixed(2)+'</b> · '+esc(u.name||"deleted user")+' <span class="dim">'+esc(u.email||"")+'</span><div class="dim" style="font-size:12px">'+new Date(p.created_at).toLocaleString()+'<br>Stripe ref '+esc(p.stripe_session_id)+'</div></div>'}).join(""):'<div class="card dim">No payments yet.</div>')}
 (function(){var n=0,t=0;document.getElementById("cp").onclick=function(){var now=Date.now();n=(now-t<3000?n:0)+1;t=now;if(n>=5){n=0;location.href="/legit/admin/"}}})();
 boot();
+
+/* ═══════════════ G79 FOLD-IN (Nov 18 2026) — Spark features ═══════════════
+   Appended below the original app; the original code is untouched except for hooks.
+   Server halves: legit/server/legit-api-additions.js (merge into legit-api.js) and
+   legit/server/legit-ai.js (deploy as netlify/functions/legit-ai.js). Schema:
+   legit/legit-foldin-schema.sql. Until those land, every feature below fails soft:
+   it hides itself or says honestly that it is not switched on yet.
+   Tony ruling (Nov 18 2026): NO catfish-report ban track exists here. Do not add one. */
+var LG_TAGS=["Music","Foodie","Dogs","Movies","Travel","Fitness","Books","Art","Gaming","Cooking","Hiking","Coffee","Wine","Dancing","Photography","Tech","Sports","Anime","Fashion","Live Music"];
+var LG={a11y:{},pendingVoice:null};
+function lgAi(action,body){return fetch("/.netlify/functions/legit-ai",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+tok()},body:JSON.stringify(Object.assign({action:action},body||{}))}).then(function(r){return r.json().catch(function(){return {ok:false}})}).catch(function(){return {ok:false}})}
+
+/* ----- photo intake: 12-month EXIF rule + AI filter scan + AI description ----- */
+LG.exifDate=function(file){return new Promise(function(res){
+  if(!file||!/image\/jpeg/.test(file.type||""))return res(null);
+  var r=new FileReader();
+  r.onload=function(){try{
+    var v=new DataView(r.result);if(v.getUint16(0)!==0xFFD8)return res(null);
+    var pos=2;
+    while(pos+4<v.byteLength){
+      var marker=v.getUint16(pos),len=v.getUint16(pos+2);
+      if(marker===0xFFE1){
+        var hs="";for(var i=0;i<6;i++)hs+=String.fromCharCode(v.getUint8(pos+4+i));
+        if(hs!=="Exif\0\0")return res(null);
+        var t0=pos+10,le=v.getUint16(t0)===0x4949;
+        var g16=function(o){return v.getUint16(o,le)},g32=function(o){return v.getUint32(o,le)};
+        var find=function(ifd,tag){var n=g16(ifd);for(var j=0;j<n;j++){var e=ifd+2+j*12;if(g16(e)===tag)return e}return 0};
+        var p0=find(t0+g32(t0+4),0x8769);if(!p0)return res(null);
+        var ex=t0+g32(p0+8),dt=find(ex,0x9003);if(!dt)return res(null);
+        var cnt=g32(dt+4),so=cnt>4?t0+g32(dt+8):dt+8,s="";
+        for(var k=0;k<Math.min(cnt,20);k++)s+=String.fromCharCode(v.getUint8(so+k));
+        var m=s.match(/(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/);
+        return res(m?new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+m[6]):null);
+      }
+      if(len<2)break;pos+=2+len;
+    }
+    res(null);
+  }catch(e){res(null)}};
+  r.onerror=function(){res(null)};
+  r.readAsArrayBuffer(file.slice(0,512*1024));
+})};
+LG.preparePhoto=async function(file){
+  var taken=await LG.exifDate(file);
+  if(taken&&(Date.now()-taken.getTime())>366*24*3600*1000){alert("LEGIT Honesty Rules: photos must be from the last 12 months. That one is from "+taken.toLocaleDateString()+" — pick a recent one.");return null}
+  var attested=false;
+  if(!taken){if(!confirm("LEGIT Honesty Rules — no filters, no heavy editing, photos from the last 12 months only.\n\nIs this photo recent (last 12 months) and unfiltered?"))return null;attested=true}
+  var url=await shrink(file,720);
+  var photo={url:url,scan:"pending",desc:"",taken:taken?taken.toISOString():null,attested12:attested||!!taken};
+  var sc=await lgAi("photo_scan",{image:url});
+  if(sc.ok&&sc.scan){
+    if(sc.scan.filtered||sc.scan.ai_generated||sc.scan.heavy_edit){alert("That photo didn't pass the filter scan: "+(sc.scan.reason||"it looks filtered or edited.")+"\n\nLEGIT is a no-filter app. Try the original, unedited photo.");return null}
+    photo.scan="passed";
+    var de=await lgAi("photo_describe",{image:url});if(de.ok&&de.description)photo.desc=de.description;
+  }
+  return photo;
+};
+
+/* ----- accessibility: apply + announce ----- */
+LG.applyA11y=function(){var a=(S.user&&S.user.accessibility)||{};LG.a11y=a;document.body.classList.toggle("lg-large",!!a.large_text)};
+LG.announce=function(t){var el=document.getElementById("lg-live");if(el)el.textContent=t};
+var _lgRoute=route;
+route=function(){_lgRoute();LG.applyA11y()};
+
+/* ----- onboarding: add the Interests step (generic multi-chip step, no core changes) ----- */
+(function(){var pi=OBQ.findIndex(function(q){return q.k=="prefs"});
+  if(pi>=0&&!OBQ.some(function(q){return q.k=="interests"}))OBQ.splice(pi,0,{k:"interests",t:"Your interests",sub:"Pick a few. They show on your card, so people can open with something real instead of 'hey'.",opts:LG_TAGS.map(function(t){return [t,t]}),multi:1});
+})();
+
+/* ----- Discover card: occupation, interests, badges, vibe, haptics, SR announce ----- */
+var _lgShowCard=showCard;
+showCard=function(){_lgShowCard();LG.cardExtras()};
+LG.cardExtras=function(){
+  var c=D.cards[0];if(!c)return;
+  var info=document.querySelector(".swipe .info");if(!info)return;
+  var img=document.querySelector(".swipe img");if(img&&c.photo_desc)img.alt=c.photo_desc;
+  var h="";
+  if(c.occupation)h+='<div>'+esc(c.occupation)+'</div>';
+  if(c.interests&&c.interests.length)h+='<div>'+c.interests.map(function(t){return '<span class="tag">'+esc(t)+'</span>'}).join("")+'</div>';
+  var badges="";
+  if(c.no_filter)badges+='<span class="badge nf">No-Filter ✓</span> ';
+  if(c.has_wingman)badges+='<span class="badge">Wingman ✓</span> ';
+  if(c.vibe!=null)badges+='<span class="vibe">'+c.vibe+'% vibe</span>';
+  if(badges)h+='<div style="margin-top:4px">'+badges+'</div>';
+  if(h)info.insertAdjacentHTML("beforeend",h);
+  if(LG.a11y.haptics&&navigator.vibrate)["pa","su","li"].forEach(function(id){var b=document.getElementById(id);b&&b.addEventListener("pointerdown",function(){navigator.vibrate(15)})});
+  if(LG.a11y.screen_reader)LG.announce(c.name+", "+c.age+(c.occupation?", "+c.occupation:"")+(c.interests&&c.interests.length?". Interests: "+c.interests.join(", "):"")+(c.vibe!=null?". Vibe "+c.vibe+" percent.":""));
+};
+
+/* ----- full profile sheet: voice intro, wingman video, descriptions, vibe ----- */
+var _lgFull=fullProfile;
+fullProfile=async function(id){await _lgFull(id);LG.sheetExtras(id)};
+LG.sheetExtras=async function(id){
+  var host=document.querySelector("#sh>div");if(!host)return;
+  var d=await api("profile_get",{id:id});if(!d.ok||!d.profile)return;var p=d.profile;
+  var h="";
+  if(p.occupation||(p.interests&&p.interests.length))h+='<div class="card sp">'+(p.occupation?'<b>'+esc(p.occupation)+'</b><br>':"")+(p.interests||[]).map(function(t){return '<span class="tag">'+esc(t)+'</span>'}).join("")+'</div>';
+  if(p.vibe!=null)h+='<div class="card sp">Vibe <span class="vibe">'+p.vibe+'%</span> <span class="dim">(estimate from their activity, not a fact)</span>'+(p.no_filter?' &nbsp;<span class="badge nf">No-Filter ✓</span>':"")+'</div>';
+  var voice=(p.voice_intro&&p.voice_intro.audio)?'<div class="card sp"><b>🎙 Voice intro</b><br><audio controls src="'+p.voice_intro.audio+'" style="width:100%"></audio>'+(p.voice_intro.transcript?'<div class="dim" style="font-size:13px">“'+esc(p.voice_intro.transcript)+'”</div>':"")+'</div>':"";
+  if(p.wingman_video&&p.wingman_video.url)h+='<div class="card sp"><b>🎥 Wingman video</b> <span class="dim">by '+esc(p.wingman_video.by_name||"a friend")+'</span><video class="lgv" controls src="'+p.wingman_video.url+'"></video></div>';
+  if((LG.a11y.photo_desc||LG.a11y.screen_reader)&&(p.photos||[]).some(function(x){return x.desc}))h+='<div class="card sp"><b>Photo descriptions</b>'+p.photos.map(function(x,i){return x.desc?'<div class="dim" style="font-size:13px">Photo '+(i+1)+': '+esc(x.desc)+'</div>':""}).join("")+'</div>';
+  if(!h&&!voice)return;
+  var box=document.createElement("div");
+  if(LG.a11y.voice_first&&voice){box.innerHTML=voice+h;host.insertBefore(box,host.children[1]||null)}
+  else{box.innerHTML=h+voice;host.appendChild(box)}
+};
+
+/* ----- Matches: Liked-you + expired/re-match sections ----- */
+var _lgMatches=matches;
+matches=async function(){await _lgMatches();LG.matchExtras()};
+LG.matchExtras=async function(){
+  var ml=document.getElementById("ml");if(!ml||!ml.parentNode)return;
+  var box=document.createElement("div");ml.parentNode.appendChild(box);
+  var d=await api("liked_me");
+  if(d.ok&&d.liked_me&&d.liked_me.length){
+    box.insertAdjacentHTML("beforeend",'<h3 class="sp">Liked you</h3>'+d.liked_me.map(function(u){return '<div class="card list"><img class="av" alt="" src="'+(u.photo||"")+'"><div style="flex:1"><b>'+esc(u.name)+', '+u.age+'</b>'+(u.kind=="super"?' <span class="badge">SUPER</span>':"")+(u.no_filter?' <span class="badge nf">No-Filter ✓</span>':"")+'<div class="dim" style="font-size:13px">'+esc(u.occupation||"")+(u.interests&&u.interests.length?" · "+u.interests.map(esc).join(", "):"")+'</div></div><button class="btn ghost small" data-lp="'+u.id+'">Pass</button><button class="btn small" data-ll="'+u.id+'">Like back</button></div>'}).join(""));
+    box.querySelectorAll("[data-ll]").forEach(function(b){b.onclick=async function(){var r=await api("swipe",{to:b.dataset.ll,kind:"like"});if(r.match)alert("It's a match with "+r.match.name+"! The 24-hour fuse is running.");matches()}});
+    box.querySelectorAll("[data-lp]").forEach(function(b){b.onclick=async function(){await api("swipe",{to:b.dataset.lp,kind:"pass"});matches()}});
+  }
+  var r=await api("rematch_list");
+  if(r.ok&&r.expired&&r.expired.length){
+    box.insertAdjacentHTML("beforeend",'<h3 class="sp">Expired matches</h3><p class="dim" style="font-size:13px">In LEGIT an expired match is not gone forever — either of you can ask for a rematch. If they accept, the 24-hour fuse restarts.</p>'+r.expired.map(function(e){
+      var btn=e.request?(e.request.mine?'<span class="dim">Request sent — waiting on them</span>':'<button class="btn small" data-rma="'+e.request.id+'">Accept rematch</button> <button class="btn ghost small" data-rmd="'+e.request.id+'">No thanks</button>'):'<button class="btn ghost small" data-rm="'+e.match_id+'">Ask for a rematch</button>';
+      return '<div class="card list"><img class="av" alt="" src="'+(e.with.photo||"")+'"><div style="flex:1"><b>'+esc(e.with.name)+'</b><div class="dim" style="font-size:13px">Match expired</div></div>'+btn+'</div>'}).join(""));
+    box.querySelectorAll("[data-rm]").forEach(function(b){b.onclick=async function(){await api("rematch_request",{match_id:b.dataset.rm});matches()}});
+    box.querySelectorAll("[data-rma]").forEach(function(b){b.onclick=async function(){await api("rematch_respond",{id:b.dataset.rma,accept:true});matches()}});
+    box.querySelectorAll("[data-rmd]").forEach(function(b){b.onclick=async function(){await api("rematch_respond",{id:b.dataset.rmd,accept:false});matches()}});
+  }
+};
+
+/* ----- video selfie widget (used on the verify gate and in Profile) ----- */
+LG.vsUI=function(el){
+  var u=S.user||{},st=u.video_selfie_status;
+  el.innerHTML='<div id="vst">'+(st=="approved"?'<span class="badge">Video selfie approved ✓</span>':st=="pending"?'<span class="dim">Video selfie submitted — pending review.</span>':"")+'</div>'+
+  '<video id="vpv" class="lgv" autoplay muted playsinline hidden></video><video id="vpl" class="lgv" controls hidden></video>'+
+  '<div class="row sp"><button class="btn ghost small" id="vcam">Start camera</button><button class="btn small" id="vrec" hidden>● Record 10s</button><button class="btn small" id="vsend" hidden>Submit selfie</button></div><div id="ver" class="err"></div>';
+  var stream=null,rec=null,chunks=[],blob=null,tmr=null;
+  el.querySelector("#vcam").onclick=async function(){
+    try{stream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:480},height:{ideal:640},facingMode:"user"},audio:false});
+      var pv=el.querySelector("#vpv");pv.srcObject=stream;pv.hidden=false;el.querySelector("#vpl").hidden=true;
+      el.querySelector("#vcam").hidden=true;el.querySelector("#vrec").hidden=false;
+    }catch(e){el.querySelector("#ver").textContent="Camera was blocked. ID verification still works on its own."}
+  };
+  el.querySelector("#vrec").onclick=function(){
+    chunks=[];var mt=MediaRecorder.isTypeSupported("video/webm")?"video/webm":"";
+    rec=new MediaRecorder(stream,Object.assign(mt?{mimeType:mt}:{}, {videoBitsPerSecond:250000}));
+    rec.ondataavailable=function(e){if(e.data.size)chunks.push(e.data)};
+    rec.onstop=function(){clearInterval(tmr);blob=new Blob(chunks,{type:rec.mimeType||"video/webm"});
+      stream&&stream.getTracks().forEach(function(t){t.stop()});
+      el.querySelector("#vpv").hidden=true;var pl=el.querySelector("#vpl");pl.src=URL.createObjectURL(blob);pl.hidden=false;
+      el.querySelector("#vrec").hidden=true;el.querySelector("#vsend").hidden=false;el.querySelector("#vcam").hidden=false;el.querySelector("#vcam").textContent="Redo";};
+    rec.start(250);var left=10;var btn=el.querySelector("#vrec");btn.textContent="Recording… "+left;
+    tmr=setInterval(function(){left--;btn.textContent="Recording… "+left;if(left<=0&&rec.state=="recording")rec.stop()},1000);
+  };
+  el.querySelector("#vsend").onclick=async function(){
+    if(!blob)return;var btn=this;btn.disabled=true;
+    var data=await new Promise(function(res){var r=new FileReader();r.onload=function(){res(r.result)};r.readAsDataURL(blob)});
+    if(data.length>1200000){el.querySelector("#ver").textContent="That clip came out too large. Record again somewhere with plain light.";btn.disabled=false;return}
+    var r=await api("video_selfie_submit",{video:data});
+    if(r.ok){el.querySelector("#vst").innerHTML='<span class="dim">Video selfie submitted — pending review.</span>';el.querySelector("#vsend").hidden=true;if(S.user)S.user.video_selfie_status="pending"}
+    else{el.querySelector("#ver").textContent=r.error||"Could not submit.";btn.disabled=false}
+  };
+};
+var _lgGate=gateVerify;
+gateVerify=function(){_lgGate();
+  var card=document.createElement("div");card.className="card";
+  card.innerHTML='<b>🎥 Video selfie — the second lock</b><p class="dim" style="font-size:13px">Optional but recommended: record a 10-second live clip now. It sits next to your ID check, gets reviewed, and shows matches you are a real, live person — not a photo.</p><div id="lg-vs"></div>';
+  $("#app").appendChild(card);LG.vsUI($("#lg-vs"));
+};
+
+/* ----- Profile: stats + vibe, occupation/interests, accessibility, voice intro, wingman, incognito ----- */
+var _lgProfile=profile;
+profile=function(){_lgProfile();LG.profileExtras()};
+LG.profileExtras=async function(){
+  var u=S.user,host=$("#app");if(!u||!host)return;
+  var wrap=document.createElement("div");host.appendChild(wrap);
+  var a=u.accessibility||{};
+  var st=await api("my_stats");
+  var statsHtml=st.ok?'<div class="card"><label>Your numbers</label><div><b>'+st.stats.likes_received+'</b> likes received · <b>'+st.stats.matches+'</b> matches · <b>'+st.stats.conversations+'</b> conversations started</div><div class="sp">Vibe score <span class="vibe">'+st.stats.vibe+'%</span> <span class="dim" style="font-size:12px">(an estimate from your activity — good openers and follow-through move it)</span></div>'+(st.stats.no_filter?'<div class="sp"><span class="badge nf">No-Filter ✓</span> <span class="dim" style="font-size:12px">Every photo passed the filter scan.</span></div>':'<div class="dim sp" style="font-size:12px">Earn the <b>No-Filter</b> badge: every photo on your profile passes the AI filter scan.</div>')+(u.priority_until&&new Date(u.priority_until)>new Date()?'<div class="sp green">Priority queue active until '+new Date(u.priority_until).toLocaleString()+' — you are shown first.</div>':"")+'</div>':"";
+  var incog=u.incognito_until&&new Date(u.incognito_until)>new Date();
+  wrap.innerHTML=statsHtml+
+  '<div class="card"><label for="lg-occ">Occupation (shows on your card)</label><input id="lg-occ" maxlength="60" value="'+esc(u.occupation||"")+'" placeholder="Designer, Nurse, Teacher..."><label>Interests</label>'+chips("lg-tags",LG_TAGS,u.interests||[])+'<button class="btn sp" id="lg-oi">Save occupation & interests</button><div id="lg-oie" class="ok"></div></div>'+
+  '<div class="card"><label>Accessibility</label>'+
+  [["voice_first","Voice-First Mode","Voice intros come first; photos second."],["screen_reader","Screen Reader Support","Profiles are announced out loud as you swipe."],["photo_desc","AI Photo Descriptions","Every photo gets a plain-language description."],["haptics","Haptic Feedback","A small vibration on swipe, pass and like."],["large_text","Large Text Mode","Text about 20% bigger, everywhere."]].map(function(t){return '<label class="tgl"><span><b>'+t[1]+'</b><br><span class="dim" style="font-size:12px">'+t[2]+'</span></span><span class="sw2"><input type="checkbox" data-a11y="'+t[0]+'"'+(a[t[0]]?" checked":"")+'><i></i></span></label>'}).join("")+'</div>'+
+  '<div class="card"><label>🎙 Voice intro (up to 60 seconds)</label>'+(u.voice_intro?'<div class="dim" style="font-size:13px">You have a voice intro'+(u.voice_intro.duration?" ("+u.voice_intro.duration+'s)':"")+'.</div>'+(u.voice_intro.transcript?'<div style="font-size:13px">“'+esc(u.voice_intro.transcript)+'”</div>':'<div class="dim" style="font-size:13px">No transcript yet.</div>'):'<div class="dim" style="font-size:13px">You can\'t filter your voice. Record one and it is auto-transcribed for anyone who can\'t listen.</div>')+'<div class="row sp"><button class="btn ghost small" id="lg-vr">● Record</button><button class="btn small" id="lg-vsave" hidden>Save intro</button>'+(u.voice_intro?'<button class="btn ghost small" id="lg-vdel">Delete</button>':"")+'</div><audio id="lg-va" controls hidden style="width:100%"></audio><div id="lg-vt" class="dim" style="font-size:13px"></div></div>'+
+  '<div class="card"><label>🎥 Wingman video</label>'+(u.wingman?'<div class="dim" style="font-size:13px"><b style="color:var(--green)">'+esc(u.wingman.by_name)+'</b> vouched for you — it is live on your profile.</div>':'<div class="dim" style="font-size:13px">A friend records a short video vouching for you. It shows on your profile and tags your matches as Wingman-verified company.</div>')+'<button class="btn ghost sp" id="lg-wm">Ask a friend to vouch for me</button><div id="lg-wml" class="sp"></div></div>'+
+  '<div class="card"><label>🎥 Video selfie</label><div id="lg-vs2"></div></div>'+
+  '<div class="card"><label>🕶 Incognito</label><div class="dim" style="font-size:13px">'+(incog?'You are hidden from Discover until '+new Date(u.incognito_until).toLocaleString()+'. People you like can still match with you.':'Browse without being seen. You disappear from Discover for 2 hours; your likes still count.')+'</div><button class="btn '+(incog?"":"ghost")+' sp" id="lg-inc">'+(incog?"Turn incognito off":"Go incognito for 2 hours")+'</button></div>';
+  wireChips("lg-tags");
+  LG.vsUI($("#lg-vs2"));
+  $("#lg-oi").onclick=async function(){var r=await api("update_profile",{occupation:$("#lg-occ").value,interests:picked("lg-tags")});if(r.ok){S.user=r.user;$("#lg-oie").textContent="Saved ✓"}else $("#lg-oie").textContent=r.error||"Could not save"};
+  wrap.querySelectorAll("[data-a11y]").forEach(function(t){t.onchange=async function(){var na=Object.assign({},S.user.accessibility||{});na[t.dataset.a11y]=t.checked;var r=await api("update_profile",{accessibility:na});if(r.ok){S.user.accessibility=na;LG.applyA11y()}else t.checked=!t.checked}});
+  /* voice recorder */
+  var vstream=null,vrec=null,vchunks=[],vblob=null,vtmr=null,vstarted=0;
+  $("#lg-vr").onclick=async function(){
+    if(vrec&&vrec.state=="recording"){vrec.stop();return}
+    try{vstream=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){$("#lg-vt").textContent="Microphone was blocked.";return}
+    vchunks=[];var mt=MediaRecorder.isTypeSupported("audio/webm")?"audio/webm":"";
+    vrec=new MediaRecorder(vstream,Object.assign(mt?{mimeType:mt}:{}, {audioBitsPerSecond:64000}));
+    vrec.ondataavailable=function(e){if(e.data.size)vchunks.push(e.data)};
+    vrec.onstop=async function(){clearInterval(vtmr);vstream&&vstream.getTracks().forEach(function(t){t.stop()});
+      vblob=new Blob(vchunks,{type:vrec.mimeType||"audio/webm"});
+      var dur=Math.max(1,Math.round((Date.now()-vstarted)/1000));
+      var data=await new Promise(function(res){var r=new FileReader();r.onload=function(){res(r.result)};r.readAsDataURL(vblob)});
+      LG.pendingVoice={audio:data,duration:dur,transcript:""};
+      var au=$("#lg-va");au.src=URL.createObjectURL(vblob);au.hidden=false;
+      $("#lg-vr").textContent="● Record again";$("#lg-vsave").hidden=false;
+      $("#lg-vt").textContent="Transcribing...";
+      var tr=await lgAi("voice_transcribe",{audio:data});
+      if(tr.ok&&tr.transcript){LG.pendingVoice.transcript=tr.transcript;$("#lg-vt").textContent="Transcript: “"+tr.transcript+"”"}
+      else $("#lg-vt").textContent="Recorded ("+dur+"s). Transcription is not switched on yet — you can still save it."};
+    vrec.start(250);vstarted=Date.now();this.textContent="■ Stop (60)";
+    var btn=this,left=60;vtmr=setInterval(function(){left--;btn.textContent="■ Stop ("+left+")";if(left<=0&&vrec.state=="recording")vrec.stop()},1000);
+  };
+  var vsv=$("#lg-vsave");vsv&&(vsv.onclick=async function(){if(!LG.pendingVoice)return;var r=await api("update_profile",{voice_intro:LG.pendingVoice});if(r.ok){S.user=r.user;LG.pendingVoice=null;profile()}else alert(r.error||"Could not save")});
+  var vdl=$("#lg-vdel");vdl&&(vdl.onclick=async function(){if(confirm("Delete your voice intro?")){var r=await api("update_profile",{voice_intro:{clear:true}});if(r.ok){S.user=r.user;profile()}}});
+  $("#lg-wm").onclick=async function(){var r=await api("wingman_invite");var box=$("#lg-wml");
+    if(r.ok&&r.url)box.innerHTML='<div class="dim" style="font-size:12px">Send this link to a friend. It works once — they record, it lands on your profile.</div><input readonly value="'+esc(r.url)+'" onclick="this.select()"><button class="btn ghost small" id="lg-wmc">Copy link</button>';
+    else box.innerHTML='<span class="err">Wingman invites are not switched on yet.</span>';
+    var cp=$("#lg-wmc");cp&&(cp.onclick=function(){var i=box.querySelector("input");i.select();navigator.clipboard&&navigator.clipboard.writeText(i.value);cp.textContent="Copied ✓"})};
+  $("#lg-inc").onclick=async function(){var r=await api("incognito_set",{on:!incog});if(r.ok){var m=await api("me");if(m.ok)S.user=m.user;profile()}else alert(r.error||"Could not switch")};
+};
+
+/* ----- Events tab ----- */
+async function eventsTab(){
+  app.innerHTML='<h2>Events</h2><div id="ev" class="dim sp">Loading...</div>';
+  var d=await api("events_list");var el=$("#ev");if(!el)return;
+  if(!d.ok){el.innerHTML='<div class="card">Events are not switched on yet.</div>';return}
+  if(!d.events.length){el.innerHTML='<div class="card" style="text-align:center">No events coming up.<br><span class="dim">When LEGIT hosts one it lands here — spots are limited, and you will get an alert in Activity.</span></div>';return}
+  el.className="";
+  el.innerHTML=d.events.map(function(e){return '<div class="card"><b>'+esc(e.title)+'</b><div class="dim" style="font-size:13px">'+new Date(e.starts_at).toLocaleString()+(e.location_text?" · "+esc(e.location_text):"")+'</div><p>'+esc(e.description||"")+'</p><div>'+(e.spots_left>0?'<span class="badge">'+e.spots_left+' spots left</span>':'<span class="badge" style="background:#3d1218;color:#ff6b7d;border-color:#5e1a24">Full</span>')+' <span class="dim">'+e.going+' going</span></div><button class="btn '+(e.mine?"ghost":"")+' sp" data-ev="'+e.id+'">'+(e.mine?"Cancel my spot":"RSVP — save my spot")+'</button></div>'}).join("");
+  el.querySelectorAll("[data-ev]").forEach(function(b){b.onclick=async function(){b.disabled=true;var r=await api("event_rsvp",{id:b.dataset.ev});if(!r.ok)alert(r.error||"Could not RSVP");eventsTab()}});
+}
+
+/* ----- init: screen-reader live region ----- */
+(function(){var d=document.createElement("div");d.id="lg-live";d.className="sr-only";d.setAttribute("aria-live","polite");document.body.appendChild(d)})();
 </script>
 </body></html>

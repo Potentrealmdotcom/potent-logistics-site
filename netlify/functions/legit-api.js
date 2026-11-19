@@ -67,7 +67,14 @@ async function suggestOpeners(other) {
 function pub(u) { // what a user sees about themselves
   return { id: u.id, email: u.email, name: u.name, age: u.age, gender: u.gender, interested_in: u.interested_in, photos: u.photos, body_type: u.body_type, intent: u.intent, tonight_intentions: u.tonight_intentions,
     bio: u.bio, prompts: u.prompts, about: u.about || {}, onboarded: !!u.onboarded_at, pref_age_min: u.pref_age_min, pref_age_max: u.pref_age_max, pref_distance: u.pref_distance, pref_body: u.pref_body, identity_verified: u.identity_verified,
-    strike_count: u.strike_count, is_admin: u.is_admin, paid: u.paid_lifetime_access, trial_ends_at: u.trial_started_at ? new Date(new Date(u.trial_started_at).getTime() + DAY).toISOString() : null };
+    strike_count: u.strike_count, is_admin: u.is_admin, paid: u.paid_lifetime_access, trial_ends_at: u.trial_started_at ? new Date(new Date(u.trial_started_at).getTime() + DAY).toISOString() : null,
+    // fold-in fields (G79):
+    occupation: u.occupation || null, interests: u.interests || [], accessibility: u.accessibility || {},
+    voice_intro: u.voice_intro ? { has_audio: !!u.voice_intro.audio, transcript: u.voice_intro.transcript || "", duration: u.voice_intro.duration || 0 } : null,
+    wingman: u.wingman_video ? { by_name: u.wingman_video.by_name || "A friend", at: u.wingman_video.at || null } : null,
+    video_selfie_status: u.video_selfie ? (u.video_selfie.status || "pending") : null,
+    incognito_until: u.incognito_until || null, priority_until: u.priority_until || null,
+    is_seed: !!u.is_seed, no_filter: noFilter(u) };
 }
 const complete = u => !!(u.gender && u.photos && u.photos.length && u.intent && u.interested_in && u.interested_in.length);
 function miles(a, b) {
@@ -82,6 +89,37 @@ function compat(a, b) { // a rough ESTIMATE from shared tags, shown as an estima
   const c = x => Math.max(40, Math.min(97, Math.round(x)));
   return { chemistry: c(52 + sh * 9 + (same ? 14 : 0)), lifestyle: c(55 + (same ? 18 : 0) + sh * 4), humor: c(58 + ((a.prompts || []).length && (b.prompts || []).length ? 12 : 0) + sh * 3) };
 }
+const TAGS = ["Music", "Foodie", "Dogs", "Movies", "Travel", "Fitness", "Books", "Art", "Gaming", "Cooking", "Hiking", "Coffee", "Wine", "Dancing", "Photography", "Tech", "Sports", "Anime", "Fashion", "Live Music"];
+const cleanTags = v => (Array.isArray(v) ? v : []).filter(x => TAGS.indexOf(x) >= 0).slice(0, 8);
+const A11Y_KEYS = ["voice_first", "screen_reader", "haptics", "large_text", "photo_desc"];
+const cleanA11y = o => { const out = {}; if (o && typeof o === "object") A11Y_KEYS.forEach(k => { if (typeof o[k] === "boolean") out[k] = o[k]; }); return out; };
+// No-Filter badge: at least one photo, and every photo passed the AI filter scan (Spark gap #13).
+const noFilter = u => { const ph = u.photos || []; return ph.length > 0 && ph.every(x => x && x.scan === "passed"); };
+// Vibe Score — a transparent ESTIMATE from real behaviour (never presented as fact):
+// likes-received ratio, opener quality, conversation follow-through, profile completeness,
+// No-Filter bonus, strike penalty. 3 queries; use for the owner (my_stats) and full profiles.
+async function vibeOf(u) {
+  const [sw, op, mt] = await Promise.all([
+    sb("legit_swipes?to_id=eq." + u.id + "&select=kind&limit=100000"),
+    sb("legit_messages?sender_id=eq." + u.id + "&is_opener=eq.true&select=opener_approved&limit=1000"),
+    sb("legit_matches?or=(user_a.eq." + u.id + ",user_b.eq." + u.id + ")&select=first_message_sent&limit=1000")]);
+  const rows = sw.data || [], likes = rows.filter(x => x.kind !== "pass").length;
+  const ratio = rows.length ? likes / rows.length : 0.5;
+  const orows = op.data || [], orate = orows.length ? orows.filter(x => x.opener_approved).length / orows.length : 0.7;
+  const mrows = mt.data || [], mrate = mrows.length ? mrows.filter(x => x.first_message_sent).length / mrows.length : 0.5;
+  const v = 30 + ratio * 30 + orate * 20 + mrate * 20 + (complete(u) ? 6 : 0) + (noFilter(u) ? 4 : 0) - (u.strike_count || 0) * 10;
+  return Math.max(5, Math.min(99, Math.round(v)));
+}
+// Light vibe for Discover cards: likes-received ratio only, ONE query for the whole deck.
+// Returns null for anyone with <3 swipes received — not enough data, show nothing.
+async function vibeLight(ids) {
+  if (!ids.length) return {};
+  const r = await sb("legit_swipes?to_id=in.(" + ids.join(",") + ")&select=to_id,kind&limit=100000");
+  const agg = {}; (r.data || []).forEach(x => { const a = agg[x.to_id] = agg[x.to_id] || { l: 0, p: 0 }; if (x.kind === "pass") a.p++; else a.l++; });
+  const out = {}; ids.forEach(id => { const a = agg[id]; out[id] = (!a || a.l + a.p < 3) ? null : Math.max(40, Math.min(97, Math.round(45 + (a.l / (a.l + a.p)) * 50))); });
+  return out;
+}
+
 async function expireFuses() { await sb("legit_matches?status=eq.active&first_message_sent=eq.false&fuse_expires_at=lt." + encodeURIComponent(new Date().toISOString()), { method: "PATCH", prefer: "return=minimal", body: { status: "expired" } }); }
 async function userById(id) { const r = await sb("legit_users?id=eq." + id + "&select=*"); return r.ok && r.data && r.data[0] || null; }
 async function myMatch(me, id) {
@@ -139,6 +177,23 @@ exports.handler = async function (event) {
       if (!u || !L.checkPw(u.password_hash, b.password)) return J(401, { ok: false, error: "Wrong email or password." });
       return J(200, { ok: true, token: L.sign(u.id) });
     }
+    if (a === "wingman_submit") {
+      // A friend with NO account submits a Wingman video. The invite token is the only credential:
+      // single-use, created by the profile owner via wingman_invite.
+      if (limited("wms" + ip, 10, 3600000)) return J(429, { ok: false, error: "Too many tries. Try later." });
+      const wtoken = clip(b.token, 64);
+      if (!/^[0-9a-f]{32}$/.test(wtoken)) return J(400, { ok: false, error: "Bad link." });
+      const inv = (await sb("legit_wingman_invites?token=eq." + wtoken + "&used_at=is.null&select=*")).data, iv = inv && inv[0];
+      if (!iv) return J(404, { ok: false, error: "This link was already used or has expired." });
+      const vid = String(b.video || "");
+      if (!/^data:video\/(webm|mp4);base64,/.test(vid) || vid.length > 1400000) return J(400, { ok: false, error: "That video is too large. Keep it under about 25 seconds." });
+      const byName = clip(b.by_name, 40) || "A friend";
+      await sb("legit_users?id=eq." + iv.user_id, { method: "PATCH", prefer: "return=minimal", body: { wingman_video: { url: vid, by_name: byName, at: new Date().toISOString() } } });
+      await sb("legit_wingman_invites?token=eq." + wtoken, { method: "PATCH", prefer: "return=minimal", body: { used_at: new Date().toISOString() } });
+      await L.notify(iv.user_id, "wingman", byName + " recorded a Wingman video for you. It's live on your profile!");
+      await logAdmin(null, "wingman_video_live", iv.user_id, byName);
+      return J(200, { ok: true });
+    }
 
     // ───────── everything else needs a login ─────────
     const t = L.verify(L.bearer(event));
@@ -158,6 +213,18 @@ exports.handler = async function (event) {
     }
     if (a === "me") { await refreshIdentity(); const ac = L.accessOf(me); return J(200, { ok: true, access: ac, user: pub(me), complete: complete(me), intentions: INTENTIONS }); }
     if (a === "verify_status") { await refreshIdentity(); return J(200, { ok: true, access: L.accessOf(me) }); }
+    if (a === "video_selfie_submit") {
+      // The SLOT next to ID Verify (Spark gap #3). The clip is stored for review; status starts
+      // "pending". Automatic face-matching is NOT faked: Stripe Identity already does
+      // require_matching_selfie inside the ID flow. A standalone auto-matcher needs a provider
+      // decision from Tony — until then an admin approves via a_user_act vs_approve.
+      if (me.banned) return J(403, { ok: false, error: "Account unavailable." });
+      const vid = String(b.video || "");
+      if (!/^data:video\/(webm|mp4);base64,/.test(vid) || vid.length > 1200000) return J(400, { ok: false, error: "Keep the selfie clip to about 10 seconds." });
+      await sb("legit_users?id=eq." + me.id, { method: "PATCH", prefer: "return=minimal", body: { video_selfie: { url: vid, status: "pending", at: new Date().toISOString() } } });
+      return J(200, { ok: true, status: "pending" });
+    }
+
     if (a === "verify_start") {
       if (me.banned) return J(403, { ok: false, error: "Account unavailable." });
       if (me.identity_verified) return J(200, { ok: true, already: true });
@@ -238,6 +305,13 @@ exports.handler = async function (event) {
         if (act === "ban") await sb("legit_users?id=eq." + u.id, { method: "PATCH", prefer: "return=minimal", body: { banned: true, ban_source: "admin" } });
         else if (act === "unban") await sb("legit_users?id=eq." + u.id, { method: "PATCH", prefer: "return=minimal", body: { banned: false, ban_source: null } });
         else if (act === "grant_paid") await sb("legit_users?id=eq." + u.id, { method: "PATCH", prefer: "return=minimal", body: { paid_lifetime_access: true, paid_at: new Date().toISOString() } });
+        else if (act === "priority") await sb("legit_users?id=eq." + u.id, { method: "PATCH", prefer: "return=minimal", body: { priority_until: new Date(Date.now() + 7 * DAY).toISOString() } });
+        else if (act === "vs_approve" || act === "vs_reject") {
+          if (!u.video_selfie) return J(400, { ok: false, error: "No video selfie on file" });
+          const vs = Object.assign({}, u.video_selfie, { status: act === "vs_approve" ? "approved" : "rejected", reviewed_by: me.id });
+          await sb("legit_users?id=eq." + u.id, { method: "PATCH", prefer: "return=minimal", body: { video_selfie: vs } });
+          await L.notify(u.id, "verify", act === "vs_approve" ? "Your video selfie was approved." : "Your video selfie was not approved. You can record a new one from your profile.");
+        }
         else return J(400, { ok: false, error: "Unknown action" });
         await logAdmin(me.id, "user_" + act, u.id, note);
         return J(200, { ok: true });
@@ -270,6 +344,80 @@ exports.handler = async function (event) {
           revenueToday: pays.filter(p => today(p.created_at)).reduce((x, p) => x + (p.amount_cents || 0), 0) / 100, revenueMonth: pays.filter(p => new Date(p.created_at) >= mon).reduce((x, p) => x + (p.amount_cents || 0), 0) / 100,
           conversion: pct(users.filter(u => u.paid_lifetime_access).length, verified), loveBoardPosts: lb.filter(p => p.both_confirmed).length } });
       }
+      if (a === "a_events") {
+        const r = await sb("legit_events?select=*&order=starts_at.desc&limit=100");
+        const evs = r.data || [];
+        const rs = evs.length ? (await sb("legit_event_rsvps?event_id=in.(" + evs.map(e => e.id).join(",") + ")&select=event_id&limit=10000")).data || [] : [];
+        return J(200, { ok: true, events: evs.map(e => Object.assign({}, e, { going: rs.filter(x => x.event_id === e.id).length })) });
+      }
+      if (a === "a_event_create") {
+        const title = clip(b.title, 80); if (!title) return J(400, { ok: false, error: "Give the event a title." });
+        const starts = new Date(b.starts_at || ""); if (isNaN(starts.getTime())) return J(400, { ok: false, error: "Pick a valid date and time." });
+        const cap = Math.max(2, Math.min(500, parseInt(b.capacity, 10) || 20));
+        const ins = await sb("legit_events", { method: "POST", prefer: "return=representation", body: { title: title, description: clip(b.description, 500), starts_at: starts.toISOString(), location_text: clip(b.location_text, 120), capacity: cap, created_by: me.id } });
+        if (!ins.ok) return J(500, { ok: false, error: "Could not create the event." });
+        // Event alert in everyone's Activity feed (Spark showed these in Activity).
+        const us = (await sb("legit_users?identity_verified=eq.true&banned=eq.false&is_seed=eq.false&select=id&limit=500")).data || [];
+        for (const u of us) await L.notify(u.id, "event", "New event: " + title + " — " + cap + " spots. RSVP in the Events tab.");
+        await logAdmin(me.id, "event_create", ins.data[0].id, title);
+        return J(200, { ok: true, id: ins.data[0].id });
+      }
+      if (a === "a_event_cancel") {
+        if (!UUID.test(String(b.id || ""))) return J(400, { ok: false });
+        await sb("legit_events?id=eq." + b.id, { method: "PATCH", prefer: "return=minimal", body: { cancelled: true } });
+        await logAdmin(me.id, "event_cancel", b.id, "");
+        return J(200, { ok: true });
+      }
+      if (a === "a_seed_list") {
+        const r = await sb("legit_users?is_seed=eq.true&select=id,name,age,seed_batch,created_at,last_seen&order=created_at.desc&limit=1000");
+        const rows = r.data || [], batches = {};
+        rows.forEach(x => batches[x.seed_batch || "(none)"] = (batches[x.seed_batch || "(none)"] || 0) + 1);
+        return J(200, { ok: true, seeds: rows, batches: batches, total: rows.length });
+      }
+      if (a === "a_seed_import") {
+        // Seed profiles ("bot women", Tony Nov 12 + Nov 18 2026): created from the admin-edited seed
+        // file (legit/seed-profiles.json). Every seed is identity_verified + paid so it can appear in
+        // Discover and pass accessOf; is_seed keeps them clearly separated and bulk-removable.
+        // Seeds NEVER log in (random password), never send messages, and like back via [P5].
+        const batch = clip(b.batch, 40) || ("batch-" + new Date().toISOString().slice(0, 10));
+        const list = (Array.isArray(b.profiles) ? b.profiles : []).slice(0, 100);
+        if (!list.length) return J(400, { ok: false, error: "No profiles in the seed file." });
+        let made = 0, failed = 0; const now = new Date().toISOString();
+        for (let i = 0; i < list.length; i++) {
+          const p = list[i] || {}, name = clip(p.name, 40), age = parseInt(p.age, 10);
+          const photos = (Array.isArray(p.photos) ? p.photos : []).slice(0, 4)
+            .filter(x => x && (typeof x.url === "string") && (x.url.indexOf("https://") === 0 || /^data:image\/(jpeg|png|webp);base64,/.test(x.url)) && x.url.length < 400000)
+            .map(x => ({ url: x.url, verified: false, scan: "pending", desc: clip(x.desc, 400) }));
+          if (!name || !(age >= 18 && age <= 99) || !photos.length) { failed++; continue; }
+          const body = { email: "seed." + batch.replace(/[^a-z0-9-]/gi, "") + "." + i + "." + Math.random().toString(36).slice(2, 8) + "@seed.legit.invalid",
+            password_hash: L.hashPw("seed-locked-" + Math.random().toString(36).slice(2) + Date.now()),
+            name: name, age: age, gender: "woman",
+            interested_in: (Array.isArray(p.interested_in) ? p.interested_in : ["man"]).filter(x => ["man", "woman", "nonbinary"].indexOf(x) >= 0),
+            photos: photos, body_type: BODY.indexOf(p.body_type) >= 0 ? p.body_type : null,
+            intent: INTENTS.indexOf(p.intent) >= 0 ? p.intent : "serious",
+            tonight_intentions: (Array.isArray(p.tonight_intentions) ? p.tonight_intentions : []).filter(x => INTENTIONS.indexOf(x) >= 0),
+            bio: scan(clip(p.bio, 500)).text,
+            prompts: (Array.isArray(p.prompts) ? p.prompts : []).slice(0, 3).map(x => ({ question: clip(x.question, 120), answer: scan(clip(x.answer, 200)).text })).filter(x => x.question && x.answer),
+            occupation: clip(p.occupation, 60) || null, interests: cleanTags(p.interests),
+            lat: isFinite(p.lat) ? Math.round(p.lat * 10) / 10 : null, lng: isFinite(p.lng) ? Math.round(p.lng * 10) / 10 : null,
+            identity_verified: true, verified_at: now, trial_started_at: now, paid_lifetime_access: true, paid_at: now,
+            is_seed: true, seed_batch: batch };
+          const ins = await sb("legit_users", { method: "POST", prefer: "return=minimal", body: body });
+          if (ins.ok) made++; else failed++;
+        }
+        await logAdmin(me.id, "seed_import", batch, made + " created, " + failed + " skipped");
+        return J(200, { ok: true, batch: batch, created: made, failed: failed });
+      }
+      if (a === "a_seed_purge") {
+        // Bulk removal: one batch, or every seed when batch is empty. Real users (is_seed=false) are
+        // never touched. Cascades remove the seeds' swipes/matches/messages with them.
+        const batch = clip(b.batch, 40);
+        const q = batch ? "legit_users?is_seed=eq.true&seed_batch=eq." + encodeURIComponent(batch) : "legit_users?is_seed=eq.true";
+        const r = await sb(q, { method: "DELETE", prefer: "return=minimal" });
+        if (!r.ok) return J(500, { ok: false, error: "Purge failed." });
+        await logAdmin(me.id, "seed_purge", batch || "ALL", "");
+        return J(200, { ok: true });
+      }
       return J(400, { ok: false, error: "Unknown action" });
     }
 
@@ -294,9 +442,24 @@ exports.handler = async function (event) {
       if (b.pref_distance !== undefined) p.pref_distance = Math.max(1, Math.min(500, parseInt(b.pref_distance, 10) || 50));
       if (b.pref_body !== undefined) p.pref_body = (Array.isArray(b.pref_body) ? b.pref_body : []).filter(x => BODY.indexOf(x) >= 0);
       if (b.lat !== undefined && b.lng !== undefined && isFinite(b.lat) && isFinite(b.lng)) { p.lat = Math.round(b.lat * 10) / 10; p.lng = Math.round(b.lng * 10) / 10; }   // ~11 km blur on purpose
+      if (b.occupation !== undefined) p.occupation = scan(clip(b.occupation, 60)).text || null;
+      if (b.interests !== undefined) p.interests = cleanTags(b.interests);
+      if (b.accessibility !== undefined) p.accessibility = cleanA11y(b.accessibility);
+      if (b.voice_intro !== undefined) {
+        const vi = b.voice_intro || {};
+        if (vi.clear === true) p.voice_intro = null;
+        else if (typeof vi.audio === "string" && /^data:audio\/(webm|mp4|mpeg|ogg);base64,/.test(vi.audio) && vi.audio.length < 1200000)
+          p.voice_intro = { audio: vi.audio, transcript: clip(vi.transcript, 1200), duration: Math.max(0, Math.min(60, parseInt(vi.duration, 10) || 0)), at: new Date().toISOString() };
+      }
+      // photos: keep the fold-in fields the client earned (scan result from legit-ai, AI description,
+      // EXIF date, 12-month attestation). NOTE: stage 1 trusts the client's scan result because the
+      // scan itself ran server-side in legit-ai under the user's own token. Hardening option for
+      // stage 2: re-run the scan here and ignore client-supplied scan values.
       if (b.photos !== undefined) {
-        const ph = (Array.isArray(b.photos) ? b.photos : []).slice(0, 4).filter(x => x && /^data:image\/(jpeg|png|webp);base64,/.test(String(x.url || "")) && String(x.url).length < 400000);
-        p.photos = ph.map(x => ({ url: x.url, verified: false }));
+        const ph2 = (Array.isArray(b.photos) ? b.photos : []).slice(0, 4).filter(x => x && /^data:image\/(jpeg|png|webp);base64,/.test(String(x.url || "")) && String(x.url).length < 400000);
+        p.photos = ph2.map(x => ({ url: x.url, verified: false,
+          scan: ["passed", "pending", "rejected"].indexOf(x.scan) >= 0 ? x.scan : "pending",
+          desc: clip(x.desc, 400), taken: x.taken ? clip(x.taken, 40) : null, attested12: x.attested12 === true }));
       }
       const r = await sb("legit_users?id=eq." + me.id, { method: "PATCH", prefer: "return=representation", body: p });
       if (!r.ok) return J(500, { ok: false, error: "Could not save." });
@@ -305,11 +468,13 @@ exports.handler = async function (event) {
 
     if (a === "discover") {
       if (!complete(me)) return J(200, { ok: true, cards: [], needProfile: true });
+      // candidates: also hide anyone currently incognito (Spark gap #16)
+      const incog = "&or=(incognito_until.is.null,incognito_until.lt." + encodeURIComponent(new Date().toISOString()) + ")";
       const [sw, bl, cand] = await Promise.all([sb("legit_swipes?from_id=eq." + me.id + "&select=to_id&limit=100000"), sb("legit_blocks?or=(blocker.eq." + me.id + ",blocked.eq." + me.id + ")&select=blocker,blocked"),
-        sb("legit_users?identity_verified=eq.true&banned=eq.false&id=neq." + me.id + "&select=*&limit=500")]);
+        sb("legit_users?identity_verified=eq.true&banned=eq.false&id=neq." + me.id + incog + "&select=*&limit=500")]);
       const skip = {}; (sw.data || []).forEach(x => skip[x.to_id] = 1); (bl.data || []).forEach(x => { skip[x.blocker] = 1; skip[x.blocked] = 1; });
       const fi = b.intention && INTENTIONS.indexOf(b.intention) >= 0 ? b.intention : null;
-      const cards = (cand.data || []).filter(u => {
+      const filtered = (cand.data || []).filter(u => {
         if (skip[u.id] || !complete(u) || L.accessOf(u) !== "ok") return false;
         if (me.interested_in.indexOf(u.gender) < 0 || u.interested_in.indexOf(me.gender) < 0) return false;
         if (u.age < me.pref_age_min || u.age > me.pref_age_max || me.age < u.pref_age_min || me.age > u.pref_age_max) return false;
@@ -317,7 +482,14 @@ exports.handler = async function (event) {
         const d = miles(me, u); if (d != null && d > me.pref_distance) return false;
         if (fi && (u.tonight_intentions || []).indexOf(fi) < 0) return false;
         return true;
-      }).slice(0, 12).map(u => { const d = miles(me, u); return { id: u.id, name: u.name, age: u.age, photo: u.photos[0].url, body_type: u.body_type, intent: u.intent, tonight_intentions: u.tonight_intentions, bio: u.bio, about: u.about || {}, area: d == null ? null : (d < 5 ? "within 5 miles" : "about " + Math.round(d / 5) * 5 + " miles"), compat: compat(me, u) }; });
+      });
+      // priority queue first (Spark gap #17)
+      filtered.sort((x, y) => ((y.priority_until && new Date(y.priority_until) > new Date()) ? 1 : 0) - ((x.priority_until && new Date(x.priority_until) > new Date()) ? 1 : 0));
+      const page = filtered.slice(0, 12); const vibes = await vibeLight(page.map(u => u.id));
+      const cards = page.map(u => { const d = miles(me, u); return { id: u.id, name: u.name, age: u.age, photo: u.photos[0].url, body_type: u.body_type, intent: u.intent, tonight_intentions: u.tonight_intentions, bio: u.bio, about: u.about || {},
+        occupation: u.occupation || null, interests: (u.interests || []).slice(0, 4), no_filter: noFilter(u), has_wingman: !!u.wingman_video, vibe: vibes[u.id],
+        photo_desc: (u.photos[0] && u.photos[0].desc) || null,
+        area: d == null ? null : (d < 5 ? "within 5 miles" : "about " + Math.round(d / 5) * 5 + " miles"), compat: compat(me, u) }; });
       return J(200, { ok: true, cards: cards });
     }
     if (a === "profile_get") {
@@ -325,7 +497,11 @@ exports.handler = async function (event) {
       if (await blockedBetween(me.id, b.id)) return J(404, { ok: false, error: "Not available" });
       const u = await userById(b.id); if (!u || u.banned || !u.identity_verified) return J(404, { ok: false, error: "Not available" });
       const d = miles(me, u);
-      return J(200, { ok: true, profile: { id: u.id, name: u.name, age: u.age, photos: u.photos, body_type: u.body_type, intent: u.intent, tonight_intentions: u.tonight_intentions, bio: u.bio, prompts: u.prompts, about: u.about || {}, id_verified: true, area: d == null ? null : "about " + Math.max(5, Math.round(d / 5) * 5) + " miles", compat: compat(me, u) } });
+      return J(200, { ok: true, profile: { id: u.id, name: u.name, age: u.age, photos: u.photos, body_type: u.body_type, intent: u.intent, tonight_intentions: u.tonight_intentions, bio: u.bio, prompts: u.prompts, about: u.about || {},
+        occupation: u.occupation || null, interests: u.interests || [], no_filter: noFilter(u),
+        voice_intro: u.voice_intro ? { audio: u.voice_intro.audio || null, transcript: u.voice_intro.transcript || "", duration: u.voice_intro.duration || 0 } : null,
+        wingman_video: u.wingman_video ? { url: u.wingman_video.url, by_name: u.wingman_video.by_name || "A friend" } : null,
+        vibe: (await vibeLight([u.id]))[u.id], id_verified: true, area: d == null ? null : "about " + Math.max(5, Math.round(d / 5) * 5) + " miles", compat: compat(me, u) } });
     }
     if (a === "swipe") {
       const to = String(b.to || ""), kind = ["like", "super", "pass"].indexOf(b.kind) >= 0 ? b.kind : null;
@@ -333,6 +509,14 @@ exports.handler = async function (event) {
       const other = await userById(to); if (!other || other.banned || !other.identity_verified || await blockedBetween(me.id, to)) return J(404, { ok: false, error: "Not available" });
       await sb("legit_swipes", { method: "POST", prefer: "resolution=ignore-duplicates,return=minimal", body: { from_id: me.id, to_id: to, kind: kind } });
       if (kind === "pass") return J(200, { ok: true });
+      if (other.is_seed) {
+        // Seed profiles like back instantly so a brand-new app is never a ghost town (Tony, Nov 12 2026).
+        // Seeds never send messages — the match lives or expires by the same 24h fuse as any other.
+        const [ua2, ub2] = me.id < to ? [me.id, to] : [to, me.id];
+        const now2 = new Date(), m2 = await sb("legit_matches", { method: "POST", prefer: "return=representation", body: { user_a: ua2, user_b: ub2, matched_at: now2.toISOString(), fuse_expires_at: new Date(now2.getTime() + DAY).toISOString() } });
+        if (m2.ok) return J(200, { ok: true, match: { id: m2.data[0].id, name: other.name } });
+        return J(200, { ok: true });
+      }
       const back = await sb("legit_swipes?from_id=eq." + to + "&to_id=eq." + me.id + "&kind=in.(like,super)&select=id");
       if (back.ok && back.data && back.data.length) {
         const [ua, ub] = me.id < to ? [me.id, to] : [to, me.id];
@@ -502,6 +686,106 @@ exports.handler = async function (event) {
       if (b.mark_read) await sb("legit_notifications?user_id=eq." + me.id + "&read=eq.false", { method: "PATCH", prefer: "return=minimal", body: { read: true } });
       return J(200, { ok: true, items: r.data || [] });
     }
+
+    if (a === "my_stats") {
+      const [swIn, mt] = await Promise.all([
+        sb("legit_swipes?to_id=eq." + me.id + "&select=kind&limit=100000"),
+        sb("legit_matches?or=(user_a.eq." + me.id + ",user_b.eq." + me.id + ")&select=status,first_message_sent&limit=1000")]);
+      const rows = swIn.data || [], mrows = mt.data || [];
+      return J(200, { ok: true, stats: { likes_received: rows.filter(x => x.kind !== "pass").length,
+        matches: mrows.filter(x => x.status !== "expired").length, conversations: mrows.filter(x => x.first_message_sent).length,
+        vibe: await vibeOf(me), no_filter: noFilter(me) } });
+    }
+    if (a === "liked_me") {
+      // See who liked you (Spark gap #14) — free for everyone; LEGIT has no premium tiers.
+      const [sw, mine, mtch] = await Promise.all([
+        sb("legit_swipes?to_id=eq." + me.id + "&kind=in.(like,super)&select=from_id,kind,created_at&order=created_at.desc&limit=100"),
+        sb("legit_swipes?from_id=eq." + me.id + "&select=to_id&limit=100000"),
+        sb("legit_matches?or=(user_a.eq." + me.id + ",user_b.eq." + me.id + ")&select=user_a,user_b&limit=1000")]);
+      const acted = {}; (mine.data || []).forEach(x => acted[x.to_id] = 1);
+      const matched = {}; (mtch.data || []).forEach(x => { matched[x.user_a] = 1; matched[x.user_b] = 1; });
+      const out = [];
+      for (const s of (sw.data || [])) {
+        if (acted[s.from_id] || matched[s.from_id]) continue;
+        const u = await userById(s.from_id); if (!u || u.banned || !u.identity_verified || u.is_seed) continue;
+        out.push({ id: u.id, name: u.name, age: u.age, photo: u.photos && u.photos[0] ? u.photos[0].url : null, kind: s.kind,
+          occupation: u.occupation || null, interests: (u.interests || []).slice(0, 4), no_filter: noFilter(u) });
+        if (out.length >= 30) break;
+      }
+      return J(200, { ok: true, liked_me: out });
+    }
+    if (a === "rematch_list") {
+      await expireFuses();
+      const r = await sb("legit_matches?status=eq.expired&or=(user_a.eq." + me.id + ",user_b.eq." + me.id + ")&select=*&order=matched_at.desc&limit=50");
+      const reqs = (await sb("legit_rematches?status=eq.pending&select=*&limit=100")).data || [];
+      const byMatch = {}; reqs.forEach(x => byMatch[x.match_id] = x);
+      const out = [];
+      for (const m of (r.data || [])) {
+        const oid = m.user_a === me.id ? m.user_b : m.user_a, o = await userById(oid); if (!o || o.banned) continue;
+        const rq = byMatch[m.id];
+        out.push({ match_id: m.id, with: { id: o.id, name: o.name, photo: o.photos && o.photos[0] ? o.photos[0].url : null },
+          request: rq ? { id: rq.id, mine: rq.requester_id === me.id } : null });
+      }
+      return J(200, { ok: true, expired: out });
+    }
+    if (a === "rematch_request") {
+      // Re-match (Spark gap #15): mutual, unlimited — LEGIT has no tiers, so no 1/week cap.
+      const m = await myMatch(me.id, b.match_id); if (!m || m.status !== "expired") return J(404, { ok: false, error: "That match is not expired." });
+      const oid = m.user_a === me.id ? m.user_b : m.user_a;
+      const ins = await sb("legit_rematches", { method: "POST", prefer: "return=representation", body: { match_id: m.id, requester_id: me.id } });
+      if (!ins.ok) return J(200, { ok: true, already: true });
+      await L.notify(oid, "rematch", me.name + " wants a rematch. Open Matches to accept — if you do, the 24-hour fuse restarts.");
+      return J(200, { ok: true });
+    }
+    if (a === "rematch_respond") {
+      if (!UUID.test(String(b.id || ""))) return J(400, { ok: false });
+      const rr = (await sb("legit_rematches?id=eq." + b.id + "&status=eq.pending&select=*")).data, rq = rr && rr[0];
+      if (!rq) return J(404, { ok: false, error: "Not found" });
+      const m = await myMatch(me.id, rq.match_id); if (!m || rq.requester_id === me.id) return J(403, { ok: false });
+      if (b.accept) {
+        const now = new Date();
+        // Revive the SAME row — legit_matches is unique(user_a,user_b), a second row would fail.
+        await sb("legit_matches?id=eq." + m.id, { method: "PATCH", prefer: "return=minimal", body: { status: "active", matched_at: now.toISOString(), fuse_expires_at: new Date(now.getTime() + DAY).toISOString(), first_message_sent: false } });
+        await sb("legit_rematches?id=eq." + rq.id, { method: "PATCH", prefer: "return=minimal", body: { status: "accepted", resolved_at: now.toISOString() } });
+        await L.notify(rq.requester_id, "rematch", me.name + " accepted your rematch. The 24-hour fuse is running — send a real opener.");
+      } else {
+        await sb("legit_rematches?id=eq." + rq.id, { method: "PATCH", prefer: "return=minimal", body: { status: "declined", resolved_at: new Date().toISOString() } });
+      }
+      return J(200, { ok: true });
+    }
+    if (a === "incognito_set") {
+      // Incognito (Spark gap #16): 2-hour hidden sessions, free — no tiers in LEGIT.
+      const until = b.on ? new Date(Date.now() + 2 * 3600 * 1000).toISOString() : null;
+      await sb("legit_users?id=eq." + me.id, { method: "PATCH", prefer: "return=minimal", body: { incognito_until: until } });
+      return J(200, { ok: true, incognito_until: until });
+    }
+    if (a === "events_list") {
+      const r = await sb("legit_events?cancelled=eq.false&starts_at=gt." + encodeURIComponent(new Date().toISOString()) + "&select=*&order=starts_at.asc&limit=50");
+      const evs = r.data || []; if (!evs.length) return J(200, { ok: true, events: [] });
+      const rs = await sb("legit_event_rsvps?event_id=in.(" + evs.map(e => e.id).join(",") + ")&select=event_id,user_id&limit=10000");
+      const rows = rs.data || [];
+      return J(200, { ok: true, events: evs.map(e => { const going = rows.filter(x => x.event_id === e.id);
+        return { id: e.id, title: e.title, description: e.description, starts_at: e.starts_at, location_text: e.location_text, capacity: e.capacity,
+          going: going.length, spots_left: Math.max(0, e.capacity - going.length), mine: going.some(x => x.user_id === me.id) }; }) });
+    }
+    if (a === "event_rsvp") {
+      if (!UUID.test(String(b.id || ""))) return J(400, { ok: false });
+      const ev = (await sb("legit_events?id=eq." + b.id + "&select=*")).data, e = ev && ev[0];
+      if (!e || e.cancelled) return J(404, { ok: false, error: "Event not found" });
+      const mine = await sb("legit_event_rsvps?event_id=eq." + e.id + "&user_id=eq." + me.id + "&select=event_id");
+      if (mine.data && mine.data.length) { await sb("legit_event_rsvps?event_id=eq." + e.id + "&user_id=eq." + me.id, { method: "DELETE", prefer: "return=minimal" }); return J(200, { ok: true, going: false }); }
+      const cnt = await sb("legit_event_rsvps?event_id=eq." + e.id + "&select=event_id&limit=10000");
+      if ((cnt.data || []).length >= e.capacity) return J(409, { ok: false, error: "This event is full." });
+      await sb("legit_event_rsvps", { method: "POST", prefer: "return=minimal", body: { event_id: e.id, user_id: me.id } });
+      return J(200, { ok: true, going: true });
+    }
+    if (a === "wingman_invite") {
+      const crypto = require("crypto");
+      const token = crypto.randomBytes(16).toString("hex");
+      await sb("legit_wingman_invites", { method: "POST", prefer: "return=minimal", body: { token: token, user_id: me.id } });
+      return J(200, { ok: true, url: L.SITE + "/legit/wingman.html?t=" + token });
+    }
+    if (a === "wingman_mine") return J(200, { ok: true, wingman: me.wingman_video ? { by_name: me.wingman_video.by_name || "A friend", at: me.wingman_video.at || null } : null });
 
     // ───────── Love Board ─────────
     if (a === "lb_feed") {

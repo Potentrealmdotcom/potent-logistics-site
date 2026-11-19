@@ -60,9 +60,9 @@ function sheet(html,after){closeSheet();var x=document.createElement("div");x.cl
 function closeSheet(){var x=$("#sh");x&&x.remove()}
 function bar(){var b=document.createElement("div");b.className="bar";b.innerHTML='<h1 class="h" style="color:var(--red)">LEGIT Admin</h1><button class="btn ghost small" id="lo">Log out</button>';return b}
 var AT="main";
-async function admin(){app.innerHTML='<h2>Admin</h2><div class="row sp" id="at">'+[["main","Overview"],["users","Accounts"],["chats","Chats"],["pay","Payments"],["log","Audit"]].map(function(t){return '<button class="btn '+(AT==t[0]?"":"ghost")+' small" data-at="'+t[0]+'">'+t[1]+'</button>'}).join("")+'</div><div id="ad" class="dim sp">Loading...</div>';
+async function admin(){app.innerHTML='<h2>Admin</h2><div class="row sp" id="at">'+[["main","Overview"],["users","Accounts"],["chats","Chats"],["events","Events"],["seeds","Seeds"],["pay","Payments"],["log","Audit"]].map(function(t){return '<button class="btn '+(AT==t[0]?"":"ghost")+' small" data-at="'+t[0]+'">'+t[1]+'</button>'}).join("")+'</div><div id="ad" class="dim sp">Loading...</div>';
   document.querySelectorAll("[data-at]").forEach(function(b){b.onclick=function(){AT=b.dataset.at;admin()}});
-  if(AT=="users")return adminUsers();if(AT=="pay")return adminPay();if(AT=="chats")return adminChats();if(AT=="log")return adminLog();
+  if(AT=="users")return adminUsers();if(AT=="pay")return adminPay();if(AT=="chats")return adminChats();if(AT=="log")return adminLog();if(AT=="events")return adminEvents();if(AT=="seeds")return adminSeeds();
   var [s,st,rp]=await Promise.all([api("a_stats"),api("a_strikes"),api("a_reports")]);if(!s.ok)return;var x=s.stats;
   var h='<div class="card"><b>Platform stats</b><div class="dim" style="font-size:13px;line-height:1.8">Users '+x.users+' · Active today '+x.dau+' · Verified '+x.verifiedPct+'%<br>Match rate '+x.matchRate+'% · Message rate '+x.messageRate+'% · Ghost rate '+x.ghostRate+'%<br>Strikes today: 1st '+x.strikesToday[0]+' / 2nd '+x.strikesToday[1]+' / 3rd '+x.strikesToday[2]+' · Auto bans '+x.autoBansToday+'<br>Revenue today $'+x.revenueToday.toFixed(2)+' · this month $'+x.revenueMonth.toFixed(2)+' · Trial→paid '+x.conversion+'% · Love Board posts '+x.loveBoardPosts+'</div></div>';
   h+='<h3 class="sp">Strikes</h3>'+(st.strikes.length?st.strikes.map(function(k){var u=k.legit_users||{};return '<div class="card"><b>'+esc(u.name)+'</b> <span class="dim">'+esc(u.email)+'</span><div>Strike '+k.strike_no+' · '+esc(k.reason)+' · '+new Date(k.created_at).toLocaleString()+(u.banned?' · <span class="red">BANNED ('+esc(u.ban_source)+')</span>':'')+(k.reviewed?' · reviewed: '+esc(k.review_action):'')+'</div><pre class="snap">'+esc((k.conversation_snapshot||[]).map(function(m){return (m.original_text)}).join("\n"))+'</pre><div class="row">'+['dismiss','warn','ban','reverse_ban'].map(function(a){return '<button class="btn ghost small" data-k="'+k.id+'" data-a="'+a+'">'+a.replace("_"," ")+'</button>'}).join("")+'</div></div>'}).join(""):'<div class="card dim">No strikes.</div>');
@@ -86,4 +86,32 @@ async function adminPay(){var d=await api("a_payments");if(!d.ok)return;$("#ad")
 async function start(){if(!tok())return auth();var t=await api("a_stats");if(t.login)return;if(!t.ok){setTok("");auth();$("#er").textContent="This login is not an admin account.";return}
   await admin();var top=bar();app.insertBefore(top,app.firstChild);$("#lo").onclick=function(){setTok("");auth()}}
 start();
+
+/* ═══════ G79 FOLD-IN (Nov 18 2026): Events + Seed profiles admin ═══════
+   Backed by the staged actions in legit/server/legit-api-additions.js [D] and the
+   schema in legit/legit-foldin-schema.sql. Until those land, these panels say so. */
+async function adminEvents(){var el=$("#ad");if(!el)return;var d=await api("a_events");
+  if(!d.ok){el.className="";el.innerHTML='<div class="card">Events need the fold-in schema run and the server additions merged first.</div>';return}
+  el.className="";
+  el.innerHTML='<div class="card"><b>Create an event</b><p class="dim" style="font-size:13px">Creating an event sends an alert to every verified user\'s Activity feed. Spots are limited by capacity; the Events tab shows "X spots left" live.</p><label>Title</label><input id="evt" maxlength="80"><label>Date &amp; time</label><input id="evd" type="datetime-local"><label>Where (neighborhood / venue type — never a private address)</label><input id="evl" maxlength="120"><label>Capacity (spots)</label><input id="evc" type="number" value="20" min="2" max="500"><label>Description</label><textarea id="evx" rows="3" maxlength="500"></textarea><div id="eve" class="err"></div><button class="btn" id="evgo">Create + alert everyone</button></div>'+
+  (d.events.length?d.events.map(function(e){return '<div class="card"><b>'+esc(e.title)+'</b><div class="dim" style="font-size:12px">'+new Date(e.starts_at).toLocaleString()+' · '+esc(e.location_text||"")+' · '+e.going+'/'+e.capacity+' going'+(e.cancelled?' · <span class="red">CANCELLED</span>':'')+'</div>'+(e.cancelled?'':'<button class="btn ghost small sp" data-evc="'+e.id+'">Cancel event</button>')+'</div>'}).join(""):'<div class="card dim">No events yet.</div>');
+  $("#evgo").onclick=async function(){var r=await api("a_event_create",{title:$("#evt").value,starts_at:$("#evd").value,location_text:$("#evl").value,capacity:$("#evc").value,description:$("#evx").value});if(r.ok)adminEvents();else $("#eve").textContent=r.error||"Could not create"};
+  el.querySelectorAll("[data-evc]").forEach(function(b){b.onclick=async function(){if(confirm("Cancel this event?")){await api("a_event_cancel",{id:b.dataset.evc});adminEvents()}}});
+}
+async function adminSeeds(){var el=$("#ad");if(!el)return;var d=await api("a_seed_list");
+  el.className="";
+  var head='<div class="card"><b>Seed profiles ("bot women")</b><p class="dim" style="font-size:13px">Tony\'s ruling (Nov 12 + Nov 18 2026): the app must not be empty at launch. Seeds are rows in legit_users with is_seed = true, created from the admin-editable seed file (legit/seed-profiles.json), grouped by batch so they can be purged in one action once real users carry the app. Seeds never log in, never send messages, and carry the verified badge like every LEGIT profile; when a real user likes one, it likes back so a match forms.</p><div class="row"><button class="btn small" id="sd-def">Import the bundled seed file</button><button class="btn ghost small" id="sd-paste">Paste seed JSON instead</button></div><div id="sd-pastebox"></div><div id="sd-msg" class="ok"></div></div>';
+  if(!d.ok){el.innerHTML=head+'<div class="card">Seed tools need the fold-in schema run and the server additions merged first.</div>';wireSeedImport(el);return}
+  var rows=d.seeds||[];
+  el.innerHTML=head+'<div class="card"><b>'+d.total+' seeds live</b><div class="dim" style="font-size:13px">Batches: '+Object.keys(d.batches||{}).map(function(k){return esc(k)+": "+d.batches[k]}).join(" · ")+'</div><div class="row sp"><button class="btn ghost small" id="sd-purge-batch">Purge one batch...</button><button class="btn ghost small" id="sd-purge-all">Purge ALL seeds</button></div></div>'+
+  (rows.length?rows.map(function(s){return '<div class="card" style="padding:8px 10px"><b>'+esc(s.name)+', '+s.age+'</b> <span class="dim" style="font-size:12px">batch '+esc(s.seed_batch||"")+' · added '+new Date(s.created_at).toLocaleString()+'</span></div>'}).join(""):'<div class="card dim">No seeds yet. Import the bundled file to launch with a populated app.</div>');
+  wireSeedImport(el);
+  var pa=$("#sd-purge-all");pa&&(pa.onclick=async function(){if(confirm("Delete ALL seed profiles? Real users are never touched.")){await api("a_seed_purge",{});adminSeeds()}});
+  var pb=$("#sd-purge-batch");pb&&(pb.onclick=async function(){var b=prompt("Batch name to purge (see the batch list above)");if(b){await api("a_seed_purge",{batch:b});adminSeeds()}});
+}
+function wireSeedImport(el){
+  var imp=async function(payload){var r=await api("a_seed_import",payload);var m=$("#sd-msg");if(m)m.textContent=r.ok?("Imported batch "+r.batch+": "+r.created+" created, "+r.failed+" skipped."):(r.error||"Import failed");if(r.ok)setTimeout(adminSeeds,800)};
+  var def=el.querySelector("#sd-def");def&&(def.onclick=async function(){try{var r=await fetch("/legit/seed-profiles.json");var j=await r.json();imp({batch:j.batch,profiles:j.profiles})}catch(e){var m=$("#sd-msg");if(m)m.textContent="Could not load /legit/seed-profiles.json"}});
+  var ps=el.querySelector("#sd-paste");ps&&(ps.onclick=function(){$("#sd-pastebox").innerHTML='<label class="sp">Seed JSON ({"batch":"...","profiles":[...]})</label><textarea id="sd-json" rows="8"></textarea><button class="btn small" id="sd-go">Import this JSON</button>';$("#sd-go").onclick=function(){try{var j=JSON.parse($("#sd-json").value);imp({batch:j.batch,profiles:j.profiles||j})}catch(e){alert("That is not valid JSON.")}}});
+}
 </script></body></html>

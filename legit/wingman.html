@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>LEGIT — Record a Wingman video</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#060607">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Oswald:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060607;--card:#101013;--line:#25252b;--red:#e8112d;--green:#16d96f;--txt:#f2f2f4;--dim:#8d8d97}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.5 Inter,system-ui,sans-serif}
+h1,h2{font-family:Oswald,Impact,sans-serif;text-transform:uppercase;letter-spacing:.04em;margin:0}
+#app{max-width:520px;margin:0 auto;min-height:100vh;padding:16px}
+.btn{background:var(--red);color:#fff;border:0;border-radius:10px;padding:13px 18px;font-weight:800;cursor:pointer;width:100%}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:#c8ccd4}.btn:disabled{opacity:.5}
+input{width:100%;background:#0b0b0d;border:1px solid var(--line);border-radius:10px;padding:12px;margin:5px 0 10px;color:inherit;font:inherit}
+label{font-size:12px;color:var(--dim);font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.dim{color:var(--dim)}.err{color:#ff6b7d;margin:8px 0}.ok{color:var(--green);margin:8px 0}
+video{width:100%;border-radius:12px;background:#000;aspect-ratio:3/4;object-fit:cover}
+.hero{text-align:center;padding:24px 0 8px}.hero h1{font-size:44px;color:var(--red);line-height:1}
+</style></head><body>
+<div id="app">
+  <div class="hero"><h1>LEGIT</h1><p class="dim">Wingman video</p></div>
+  <div class="card">
+    <h2 style="margin-bottom:6px">Vouch for your friend</h2>
+    <p class="dim" style="margin-top:0">Someone on LEGIT asked you to record a short video saying they're the real deal. It goes on their dating profile with your name on it. Keep it under about 25 seconds, be yourself, and only vouch if you mean it.</p>
+    <div id="main">
+      <label for="nm">Your first name</label><input id="nm" maxlength="40" placeholder="e.g. Marcus" autocomplete="off">
+      <video id="pv" autoplay muted playsinline></video>
+      <div id="tm" class="dim" style="text-align:center;font-size:13px;margin:6px 0">Camera is off</div>
+      <button class="btn" id="st">Start camera</button>
+      <button class="btn" id="rc" hidden>● Record</button>
+      <button class="btn ghost" id="up2" style="margin-top:10px">Or upload a video instead</button>
+      <input type="file" id="up" accept="video/*" capture="user" hidden>
+      <div id="er" class="err" role="alert"></div>
+      <button class="btn" id="send" hidden>Send it to their profile</button>
+    </div>
+    <div id="done" hidden>
+      <p class="ok"><b>Done — it's live on their profile.</b></p>
+      <p class="dim">Thanks for being a real wingman. This link is now used up.</p>
+    </div>
+  </div>
+  <p class="dim" style="font-size:12px;text-align:center">The video is stored on your friend's LEGIT profile. LEGIT never posts it anywhere else.</p>
+</div>
+<script>
+var API="/.netlify/functions/legit-api";
+var $=function(s){return document.querySelector(s)};
+var token=new URLSearchParams(location.search).get("t")||"";
+var stream=null,rec=null,chunks=[],blob=null,timer=null,left=25;
+function err(m){$("#er").textContent=m||""}
+if(!/^[0-9a-f]{32}$/.test(token)){$("#main").innerHTML='<p class="err">This link is not valid. Ask your friend to send you a fresh one.</p>'}
+function fmt(b){return new Promise(function(res){var r=new FileReader();r.onload=function(){res(r.result)};r.readAsDataURL(b)})}
+async function startCam(){
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:480},height:{ideal:640},facingMode:"user"},audio:true});
+    $("#pv").srcObject=stream;$("#st").hidden=true;$("#rc").hidden=false;$("#tm").textContent="Camera on. Hit Record when you're ready.";
+  }catch(e){err("Camera was blocked. You can upload a short video instead.")}
+}
+$("#st").onclick=startCam;
+$("#rc").onclick=function(){
+  if(rec&&rec.state=="recording"){rec.stop();return}
+  chunks=[];var mt=MediaRecorder.isTypeSupported("video/webm")?"video/webm":"";
+  rec=new MediaRecorder(stream,Object.assign(mt?{mimeType:mt}:{}, {videoBitsPerSecond:250000,audioBitsPerSecond:64000}));
+  rec.ondataavailable=function(e){if(e.data.size)chunks.push(e.data)};
+  rec.onstop=async function(){clearInterval(timer);blob=new Blob(chunks,{type:rec.mimeType||"video/webm"});
+    $("#pv").srcObject=null;stream&&stream.getTracks().forEach(function(t){t.stop()});
+    $("#pv").src=URL.createObjectURL(blob);$("#pv").muted=false;$("#pv").controls=true;
+    $("#tm").textContent="That's your take. Send it, or reload to redo.";$("#rc").hidden=true;$("#send").hidden=false;};
+  rec.start(250);left=25;$("#rc").textContent="■ Stop (25)";
+  timer=setInterval(function(){left--;$("#rc").textContent="■ Stop ("+left+")";if(left<=0)rec.stop()},1000);
+};
+$("#up2").onclick=function(){$("#up").click()};
+$("#up").onchange=async function(){var f=this.files[0];if(!f)return;
+  if(f.size>1200000){err("That file is too big. Keep it under about 25 seconds.");return}
+  blob=f;$("#pv").srcObject=null;$("#pv").src=URL.createObjectURL(f);$("#pv").controls=true;$("#send").hidden=false;$("#tm").textContent="Video loaded. Send it when ready."};
+$("#send").onclick=async function(){
+  var name=$("#nm").value.trim();if(!name){err("Add your first name so they know who vouched.");return}
+  if(!blob){err("Record or upload a video first.");return}
+  $("#send").disabled=true;err("");
+  var data=await fmt(blob);
+  try{var r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"wingman_submit",token:token,by_name:name,video:data})});
+    var d=await r.json().catch(function(){return {ok:false,error:"Server error"}});
+    if(d.ok){$("#main").hidden=true;$("#done").hidden=false}
+    else{err(d.error||"Could not send. Try again.");$("#send").disabled=false}
+  }catch(e){err("No connection.");$("#send").disabled=false}
+};
+</script>
+</body></html>
